@@ -23,8 +23,12 @@ export class HelloCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
+    const greeting =
+      HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
+      'Hello!';
+
     return interaction.reply({
-      content: HELLO_GREETINGS[0],
+      content: greeting,
     });
   }
 }
