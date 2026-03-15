@@ -11,8 +11,11 @@
     "resolveJsonModule": true,
     "types": ["node"],
     "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
     "paths": {
-      "@zod-schemas/*": ["src/types/zod-schemas/*"]
+      "@zod-schemas/*": ["src/types/zod-schemas/*"],
+      "@data/*": ["src/data/*"]
     }
   },
   "include": ["src"]
