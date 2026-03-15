@@ -1,12 +1,9 @@
 import 'dotenv/config';
 
-import { SapphireClient } from '@sapphire/framework';
-import { env } from '@zod-schemas/env.zod';
-import { GatewayIntentBits } from 'discord.js';
+import { setupShutdown } from './app/setup-shutdown';
+import { startBot } from './app/start-bot';
+import { startHealthServer } from './app/start-health-server';
 
-const client = new SapphireClient({
-  intents: [GatewayIntentBits.Guilds],
-  loadMessageCommandListeners: false,
-});
-
-void client.login(env.DISCORD_TOKEN);
+startHealthServer();
+const bot = startBot();
+setupShutdown(bot);
