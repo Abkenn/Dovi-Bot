@@ -37,7 +37,7 @@ const buildOccurrenceValue = (
 };
 
 export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
-  const embed = new EmbedBuilder().setTitle('Stream Info').setColor(0x7c3aed);
+  const embed = new EmbedBuilder().setTitle('Stream Info').setColor(0xff3131);
 
   if (data.current) {
     embed.addFields({
