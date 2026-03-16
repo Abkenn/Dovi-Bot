@@ -37,14 +37,14 @@ enum ScheduleStatus {
 
 model GuildConfig {
   guildId               String   @id
-  canonicalTimezone     String   @default("Europe/Bucharest")
-  currentWindowMinutes  Int      @default(300)
+  canonicalTimezone     String   @default("America/Sao_Paulo")
+  currentWindowMinutes  Int      @default(240)
   lookaheadDays         Int      @default(21)
 
-  currentStreamGame     String?
-  nextStreamGame        String?
-  nextStreamGamePoll    String?
-  streamTitleOverride   String?
+  defaultStreamKind     StreamKind @default(GAME)
+  defaultGameName       String?
+  defaultMusicMode      MusicMode?
+  defaultTitleOverride  String?
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -59,11 +59,12 @@ model StreamScheduleDefault {
   weekday         Weekday
   startMinutes    Int
   isEnabled       Boolean  @default(true)
-  streamKind      StreamKind
+  durationMinutes Int      @default(240)
+
+  streamKind      StreamKind?
   musicMode       MusicMode?
   titleOverride   String?
   gameName        String?
-  durationMinutes Int      @default(300)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,19 +76,21 @@ model StreamScheduleDefault {
 }
 
 model StreamScheduleOverride {
-  id              String         @id @default(cuid())
-  guildId         String
-  streamDateKey   String
-  status          ScheduleStatus @default(SCHEDULED)
-  startAtUtc      DateTime?
-  streamKind      StreamKind?
-  musicMode       MusicMode?
-  titleOverride   String?
-  gameName        String?
-  durationMinutes Int?
+  id                  String         @id @default(cuid())
+  guildId             String
+  streamDateKey       String
+  resolvedFromWeekday Weekday?
+  status              ScheduleStatus @default(SCHEDULED)
+  startAtUtc          DateTime?
+  durationMinutes     Int?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  streamKind          StreamKind?
+  musicMode           MusicMode?
+  titleOverride       String?
+  gameName            String?
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
 

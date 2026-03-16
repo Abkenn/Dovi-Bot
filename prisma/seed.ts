@@ -3,31 +3,38 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 
-if (!process.env.DATABASE_URL) {
+const databaseUrl = process.env.DATABASE_URL;
+const guildId = process.env.DISCORD_GUILD_ID;
+
+if (!databaseUrl) {
   throw new Error('DATABASE_URL is not set');
 }
 
-if (!process.env.DISCORD_GUILD_ID) {
+if (!guildId) {
   throw new Error('DISCORD_GUILD_ID is not set');
 }
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-
 const prisma = new PrismaClient({
-  adapter,
+  adapter: new PrismaPg({
+    connectionString: databaseUrl,
+  }),
 });
-
-const guildId = process.env.DISCORD_GUILD_ID;
 
 async function main() {
   await prisma.guildConfig.upsert({
     where: { guildId },
-    update: {},
+    update: {
+      canonicalTimezone: 'America/Sao_Paulo',
+      currentWindowMinutes: 240,
+      lookaheadDays: 21,
+      defaultStreamKind: 'GAME',
+    },
     create: {
       guildId,
-      canonicalTimezone: 'UTC',
+      canonicalTimezone: 'America/Sao_Paulo',
+      currentWindowMinutes: 240,
+      lookaheadDays: 21,
+      defaultStreamKind: 'GAME',
     },
   });
 
@@ -38,13 +45,17 @@ async function main() {
         weekday: 'FRIDAY',
       },
     },
-    update: {},
+    update: {
+      startMinutes: 15 * 60 + 10,
+      durationMinutes: 240,
+      isEnabled: true,
+    },
     create: {
       guildId,
       weekday: 'FRIDAY',
-      startMinutes: 20 * 60,
-      streamKind: 'MUSIC',
-      musicMode: 'UNKNOWN',
+      startMinutes: 15 * 60 + 10,
+      durationMinutes: 240,
+      isEnabled: true,
     },
   });
 
@@ -55,13 +66,17 @@ async function main() {
         weekday: 'SATURDAY',
       },
     },
-    update: {},
+    update: {
+      startMinutes: 15 * 60 + 10,
+      durationMinutes: 240,
+      isEnabled: true,
+    },
     create: {
       guildId,
       weekday: 'SATURDAY',
-      startMinutes: 20 * 60,
-      streamKind: 'MUSIC',
-      musicMode: 'UNKNOWN',
+      startMinutes: 15 * 60 + 10,
+      durationMinutes: 240,
+      isEnabled: true,
     },
   });
 }
