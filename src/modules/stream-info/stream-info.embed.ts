@@ -1,9 +1,19 @@
 import { EmbedBuilder } from 'discord.js';
+import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
   const unix = Math.floor(date.getTime() / 1000);
   return `<t:${unix}:${style}>`;
+};
+
+const shouldShowGame = (occurrence: StreamOccurrence): boolean => {
+  const isGame = occurrence.streamKind === StreamKind.GAME;
+  const isDictatorshipMusic =
+    occurrence.streamKind === StreamKind.MUSIC &&
+    occurrence.musicMode === MusicMode.DICTATORSHIP;
+
+  return isGame || isDictatorshipMusic;
 };
 
 const buildOccurrenceValue = (
@@ -19,7 +29,7 @@ const buildOccurrenceValue = (
     `${discordTs(occurrence.startAt, 'F')} (${discordTs(occurrence.startAt, 'R')})`,
   ];
 
-  if (occurrence.gameName?.trim()) {
+  if (shouldShowGame(occurrence) && occurrence.gameName?.trim()) {
     lines.push(`Game: ${occurrence.gameName}`);
   }
 

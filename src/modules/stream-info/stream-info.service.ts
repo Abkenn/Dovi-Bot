@@ -57,7 +57,7 @@ const buildOccurrences = (
         continue;
       }
 
-      const resolved = applyOverrideToOccurrence(base, override);
+      const resolved = applyOverrideToOccurrence(config, base, override);
       if (resolved) {
         occurrences.push(resolved);
       }
@@ -158,6 +158,11 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     throw new Error('No target stream found');
   }
 
+  const switchingToGameWithoutExplicitGame =
+    input.streamKind === 'GAME' &&
+    (input.gameName === null || input.gameName === undefined) &&
+    targetOccurrence?.streamKind !== 'GAME';
+
   const dateKey = input.date ?? targetOccurrence.dateKey;
   const targetLocalDate = DateTime.fromFormat(dateKey, 'yyyy-LL-dd', {
     zone: config.canonicalTimezone,
@@ -210,6 +215,8 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
 
   if (input.gameName !== null && input.gameName !== undefined) {
     updateData.gameName = input.gameName;
+  } else if (switchingToGameWithoutExplicitGame) {
+    updateData.gameName = null;
   }
 
   return prisma.streamScheduleOverride.upsert({

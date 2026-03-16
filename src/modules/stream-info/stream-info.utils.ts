@@ -163,6 +163,7 @@ export const buildDefaultOccurrence = (
 };
 
 export const applyOverrideToOccurrence = (
+  config: GuildConfig,
   occurrence: StreamOccurrence,
   override: StreamScheduleOverride,
 ): StreamOccurrence | null => {
@@ -185,10 +186,20 @@ export const applyOverrideToOccurrence = (
     musicMode,
     override.titleOverride ?? null,
   );
-  const gameName =
-    override.gameName !== null && override.gameName !== undefined
-      ? override.gameName
-      : occurrence.gameName;
+
+  let gameName: string | null;
+
+  if (override.gameName !== null && override.gameName !== undefined) {
+    gameName = override.gameName;
+  } else if (streamKind === StreamKind.GAME) {
+    if (occurrence.streamKind === StreamKind.GAME) {
+      gameName = occurrence.gameName ?? config.defaultGameName ?? null;
+    } else {
+      gameName = config.defaultGameName ?? null;
+    }
+  } else {
+    gameName = occurrence.gameName;
+  }
 
   return {
     ...occurrence,
