@@ -1,8 +1,22 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
+import { ZodError } from 'zod';
 import {
   createCommandErrorLog,
   createCommandExecutionLog,
 } from './command-logging.service';
+
+const getUserFacingErrorMessage = (error: unknown): string => {
+  if (error instanceof ZodError) {
+    const firstIssue = error.issues[0];
+    return firstIssue?.message ?? 'Invalid command input.';
+  }
+
+  if (error instanceof Error) {
+    return error.message || 'Something went wrong while running the command.';
+  }
+
+  return 'Something went wrong while running the command.';
+};
 
 export const withCommandLogging = async <T>({
   interaction,
@@ -44,6 +58,22 @@ export const withCommandLogging = async <T>({
       error,
     });
 
-    throw error;
+    const message = getUserFacingErrorMessage(error);
+
+    try {
+      if (interaction.deferred || interaction.replied) {
+        return await interaction.editReply({
+          content: `Error: ${message}`,
+          embeds: [],
+        });
+      }
+
+      return await interaction.reply({
+        content: `Error: ${message}`,
+        ephemeral: true,
+      });
+    } catch {
+      throw error;
+    }
   }
 };
