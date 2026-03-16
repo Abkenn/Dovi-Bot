@@ -1,5 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
+import { MessageFlags } from 'discord.js';
 import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
@@ -74,7 +75,7 @@ export class SetStreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
 

@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction } from 'discord.js';
+import { type ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { ZodError } from 'zod';
 import {
   createCommandErrorLog,
@@ -70,7 +70,7 @@ export const withCommandLogging = async <T>({
 
       return await interaction.reply({
         content: `Error: ${message}`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     } catch {
       throw error;
