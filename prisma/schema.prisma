@@ -97,3 +97,46 @@ model StreamScheduleOverride {
   @@unique([guildId, streamDateKey])
   @@index([guildId, streamDateKey])
 }
+
+enum CommandExecutionStatus {
+  SUCCESS
+  ERROR
+  TIMEOUT
+}
+
+model CommandExecutionLog {
+  id              String                 @id @default(cuid())
+  guildId         String?
+  channelId       String?
+  userId          String
+  username        String?
+  commandName     String
+  optionsJson     Json?
+  status          CommandExecutionStatus
+  note            String?
+  durationMs      Int?
+  createdAt       DateTime               @default(now())
+
+  errorLog        CommandErrorLog?
+
+  @@index([createdAt])
+  @@index([commandName, createdAt])
+  @@index([status, createdAt])
+  @@index([guildId, createdAt])
+}
+
+model CommandErrorLog {
+  id                 String              @id @default(cuid())
+  commandExecutionId String              @unique
+  errorName          String?
+  errorMessage       String?
+  stack              String?
+  discordCode        Int?
+  httpStatus         Int?
+  rawJson            Json?
+  createdAt          DateTime            @default(now())
+
+  commandExecution   CommandExecutionLog @relation(fields: [commandExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}

@@ -1,5 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
+import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -69,28 +70,36 @@ export class SetStreamInfoCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    await interaction.deferReply({ ephemeral: true });
+    return withCommandLogging({
+      interaction,
+      commandName: this.name,
+      run: async () => {
+        await interaction.deferReply({ ephemeral: true });
 
-    const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
+        const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
 
-    await setStreamInfo({
-      guildId,
-      date: interaction.options.getString('date'),
-      time: interaction.options.getString('time'),
-      streamKind: interaction.options.getString('type') as StreamKind | null,
-      musicMode: interaction.options.getString(
-        'music_mode',
-      ) as MusicMode | null,
-      gameName: interaction.options.getString('game'),
-      title: interaction.options.getString('title'),
-    });
+        await setStreamInfo({
+          guildId,
+          date: interaction.options.getString('date'),
+          time: interaction.options.getString('time'),
+          streamKind: interaction.options.getString(
+            'type',
+          ) as StreamKind | null,
+          musicMode: interaction.options.getString(
+            'music_mode',
+          ) as MusicMode | null,
+          gameName: interaction.options.getString('game'),
+          title: interaction.options.getString('title'),
+        });
 
-    const streamInfo = await getStreamInfo(guildId);
-    const embed = buildStreamInfoEmbed(streamInfo);
+        const streamInfo = await getStreamInfo(guildId);
+        const embed = buildStreamInfoEmbed(streamInfo);
 
-    return interaction.editReply({
-      content: 'Stream info updated.',
-      embeds: [embed],
+        return interaction.editReply({
+          content: 'Stream info updated.',
+          embeds: [embed],
+        });
+      },
     });
   }
 }

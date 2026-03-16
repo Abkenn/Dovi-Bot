@@ -1,6 +1,7 @@
 import { HELLO_GREETINGS } from '@data/hello-greetings';
 import { Command } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
+import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
 
 export class HelloCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -23,12 +24,18 @@ export class HelloCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const greeting =
-      HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
-      'Hello!';
+    return withCommandLogging({
+      interaction,
+      commandName: this.name,
+      run: async () => {
+        const greeting =
+          HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
+          'Hello!';
 
-    return interaction.reply({
-      content: greeting,
+        return interaction.reply({
+          content: greeting,
+        });
+      },
     });
   }
 }

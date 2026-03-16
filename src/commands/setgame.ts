@@ -1,5 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
+import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
   getStreamInfo,
@@ -36,19 +37,25 @@ export class SetGameCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    await interaction.deferReply({ flags: ['Ephemeral'] });
+    return withCommandLogging({
+      interaction,
+      commandName: this.name,
+      run: async () => {
+        await interaction.deferReply({ ephemeral: true });
 
-    const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
-    const game = interaction.options.getString('game', true);
+        const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
+        const game = interaction.options.getString('game', true);
 
-    await setDefaultGameName(guildId, game);
+        await setDefaultGameName(guildId, game);
 
-    const streamInfo = await getStreamInfo(guildId);
-    const embed = buildStreamInfoEmbed(streamInfo);
+        const streamInfo = await getStreamInfo(guildId);
+        const embed = buildStreamInfoEmbed(streamInfo);
 
-    return interaction.editReply({
-      content: `Default game for future regular game streams updated to **${game}**.`,
-      embeds: [embed],
+        return interaction.editReply({
+          content: `Default game for future regular game streams updated to **${game}**.`,
+          embeds: [embed],
+        });
+      },
     });
   }
 }
