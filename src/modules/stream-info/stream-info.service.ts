@@ -14,7 +14,6 @@ import type {
 import {
   applyOverrideToOccurrence,
   buildDefaultOccurrence,
-  parseTimeToMinutes,
   WEEKDAY_TO_LUXON,
 } from './stream-info.utils';
 
@@ -161,34 +160,10 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
   const switchingToGameWithoutExplicitGame =
     input.streamKind === 'GAME' &&
     (input.gameName === null || input.gameName === undefined) &&
-    targetOccurrence?.streamKind !== 'GAME';
-
-  const dateKey = input.date ?? targetOccurrence.dateKey;
-  const targetLocalDate = DateTime.fromFormat(dateKey, 'yyyy-LL-dd', {
-    zone: config.canonicalTimezone,
-  });
-
-  let startAtUtc: Date | null = null;
-
-  if (input.time) {
-    const minutes = parseTimeToMinutes(input.time);
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-
-    startAtUtc = targetLocalDate
-      .set({
-        hour: hours,
-        minute: mins,
-        second: 0,
-        millisecond: 0,
-      })
-      .toUTC()
-      .toJSDate();
-  }
+    targetOccurrence.streamKind !== 'GAME';
 
   const updateData: {
     resolvedFromWeekday: typeof targetOccurrence.weekday;
-    startAtUtc?: Date | null;
     streamKind?: typeof input.streamKind;
     musicMode?: typeof input.musicMode;
     titleOverride?: string | null;
@@ -196,10 +171,6 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
   } = {
     resolvedFromWeekday: targetOccurrence.weekday,
   };
-
-  if (input.time) {
-    updateData.startAtUtc = startAtUtc;
-  }
 
   if (input.streamKind !== null && input.streamKind !== undefined) {
     updateData.streamKind = input.streamKind;
@@ -223,19 +194,66 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     where: {
       guildId_streamDateKey: {
         guildId: input.guildId,
-        streamDateKey: dateKey,
+        streamDateKey: targetOccurrence.dateKey,
       },
     },
     update: updateData,
     create: {
       guildId: input.guildId,
-      streamDateKey: dateKey,
+      streamDateKey: targetOccurrence.dateKey,
       resolvedFromWeekday: targetOccurrence.weekday,
-      startAtUtc: startAtUtc ?? targetOccurrence.startAt,
+      startAtUtc: targetOccurrence.startAt,
       streamKind: input.streamKind ?? null,
       musicMode: input.musicMode ?? null,
       titleOverride: input.title ?? null,
       gameName: input.gameName ?? null,
+    },
+  });
+};
+
+export const resetStreamTitle = async (guildId: string) => {
+  const info = await getStreamInfo(guildId);
+  const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+  const targetOccurrence = target.occurrence;
+
+  if (!targetOccurrence) {
+    throw new Error('No target stream found');
+  }
+
+  return prisma.streamScheduleOverride.upsert({
+    where: {
+      guildId_streamDateKey: {
+        guildId,
+        streamDateKey: targetOccurrence.dateKey,
+      },
+    },
+    update: {
+      titleOverride: null,
+      resolvedFromWeekday: targetOccurrence.weekday,
+    },
+    create: {
+      guildId,
+      streamDateKey: targetOccurrence.dateKey,
+      resolvedFromWeekday: targetOccurrence.weekday,
+      startAtUtc: targetOccurrence.startAt,
+      titleOverride: null,
+    },
+  });
+};
+
+export const resetStreamInfo = async (guildId: string) => {
+  const info = await getStreamInfo(guildId);
+  const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+  const targetOccurrence = target.occurrence;
+
+  if (!targetOccurrence) {
+    throw new Error('No target stream found');
+  }
+
+  return prisma.streamScheduleOverride.deleteMany({
+    where: {
+      guildId,
+      streamDateKey: targetOccurrence.dateKey,
     },
   });
 };

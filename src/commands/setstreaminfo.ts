@@ -27,16 +27,6 @@ export class SetStreamInfoCommand extends Command {
           .setDescription(this.description)
           .addStringOption((option) =>
             option
-              .setName('date')
-              .setDescription('Optional date override in YYYY-MM-DD'),
-          )
-          .addStringOption((option) =>
-            option
-              .setName('time')
-              .setDescription('Optional time override in HH:mm'),
-          )
-          .addStringOption((option) =>
-            option
               .setName('type')
               .setDescription('Optional stream type')
               .addChoices(
@@ -60,7 +50,11 @@ export class SetStreamInfoCommand extends Command {
             option.setName('game').setDescription('Optional game name'),
           )
           .addStringOption((option) =>
-            option.setName('title').setDescription('Optional title override'),
+            option
+              .setName('title')
+              .setDescription(
+                'Optional title override (special event streams)',
+              ),
           ),
       {
         guildIds: [env.DISCORD_GUILD_ID],
@@ -81,8 +75,6 @@ export class SetStreamInfoCommand extends Command {
 
         await setStreamInfo({
           guildId,
-          date: interaction.options.getString('date'),
-          time: interaction.options.getString('time'),
           streamKind: interaction.options.getString(
             'type',
           ) as StreamKind | null,

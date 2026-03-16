@@ -24,8 +24,6 @@ export type StreamInfoResult = {
 
 export type SetStreamInfoInput = {
   guildId: string;
-  date?: string | null;
-  time?: string | null;
   streamKind?: StreamKind | null;
   musicMode?: MusicMode | null;
   title?: string | null;
