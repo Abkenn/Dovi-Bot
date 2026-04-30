@@ -1,6 +1,10 @@
 import { Command } from '@sapphire/framework';
-import { env } from '@zod-schemas/env.zod';
 import { MessageFlags } from 'discord.js';
+import {
+  ADMIN_COMMAND_PERMISSION,
+  COMMAND_GUILDS,
+} from '../config/discord-access';
+import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -14,15 +18,19 @@ export class ResetStreamInfoCommand extends Command {
       ...options,
       name: 'resetstreaminfo',
       description:
-        'Deletes the current or next stream override and reverts to defaults.',
+        'Resets stream override (type, game, title, etc.) for current/next.',
     });
   }
 
   public override registerApplicationCommands(registry: Command.Registry) {
     registry.registerChatInputCommand(
-      (builder) => builder.setName(this.name).setDescription(this.description),
+      (builder) =>
+        builder
+          .setName(this.name)
+          .setDescription(this.description)
+          .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION),
       {
-        guildIds: [env.DISCORD_GUILD_ID],
+        guildIds: [...COMMAND_GUILDS.RESET_STREAM_INFO],
       },
     );
   }
@@ -34,9 +42,16 @@ export class ResetStreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const guildId = await assertCommandGuildAccess(
+          interaction,
+          COMMAND_GUILDS.RESET_STREAM_INFO,
+        );
 
-        const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
+        if (!guildId) {
+          return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         await resetStreamInfo(guildId);
 
@@ -44,7 +59,7 @@ export class ResetStreamInfoCommand extends Command {
         const embed = buildStreamInfoEmbed(streamInfo);
 
         return interaction.editReply({
-          content: 'Stream override reset to defaults.',
+          content: 'Stream info reset.',
           embeds: [embed],
         });
       },

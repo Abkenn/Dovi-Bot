@@ -1,7 +1,8 @@
 import { HELLO_GREETINGS } from '@data/hello-greetings';
 import { Command } from '@sapphire/framework';
-import { env } from '@zod-schemas/env.zod';
-import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
+import { COMMAND_GUILDS } from '../config/discord-access';
+import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
 export class HelloCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -16,7 +17,7 @@ export class HelloCommand extends Command {
     registry.registerChatInputCommand(
       (builder) => builder.setName(this.name).setDescription(this.description),
       {
-        guildIds: [env.DISCORD_GUILD_ID],
+        guildIds: [...COMMAND_GUILDS.HELLO],
       },
     );
   }
@@ -28,6 +29,15 @@ export class HelloCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
+        const guildId = await assertCommandGuildAccess(
+          interaction,
+          COMMAND_GUILDS.HELLO,
+        );
+
+        if (!guildId) {
+          return;
+        }
+
         const greeting =
           HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
           'Hello!';

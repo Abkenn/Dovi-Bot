@@ -1,7 +1,11 @@
 import { Command } from '@sapphire/framework';
-import { env } from '@zod-schemas/env.zod';
 import { MessageFlags } from 'discord.js';
-import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
+import {
+  ADMIN_COMMAND_PERMISSION,
+  COMMAND_GUILDS,
+} from '../config/discord-access';
+import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
   getStreamInfo,
@@ -23,6 +27,7 @@ export class SetGameCommand extends Command {
         builder
           .setName(this.name)
           .setDescription(this.description)
+          .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION)
           .addStringOption((option) =>
             option
               .setName('game')
@@ -30,7 +35,7 @@ export class SetGameCommand extends Command {
               .setRequired(true),
           ),
       {
-        guildIds: [env.DISCORD_GUILD_ID],
+        guildIds: [...COMMAND_GUILDS.SET_GAME],
       },
     );
   }
@@ -42,9 +47,17 @@ export class SetGameCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
+        const guildId = await assertCommandGuildAccess(
+          interaction,
+          COMMAND_GUILDS.SET_GAME,
+        );
+
+        if (!guildId) {
+          return;
+        }
+
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
         const game = interaction.options.getString('game', true);
 
         await setDefaultGameName(guildId, game);

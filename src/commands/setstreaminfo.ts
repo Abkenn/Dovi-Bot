@@ -1,8 +1,12 @@
 import { Command } from '@sapphire/framework';
-import { env } from '@zod-schemas/env.zod';
 import { MessageFlags } from 'discord.js';
-import { withCommandLogging } from 'src/modules/command-logging/with-command-logging';
+import {
+  ADMIN_COMMAND_PERMISSION,
+  COMMAND_GUILDS,
+} from '../config/discord-access';
+import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
+import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
   getStreamInfo,
@@ -25,6 +29,7 @@ export class SetStreamInfoCommand extends Command {
         builder
           .setName(this.name)
           .setDescription(this.description)
+          .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION)
           .addStringOption((option) =>
             option
               .setName('type')
@@ -50,14 +55,10 @@ export class SetStreamInfoCommand extends Command {
             option.setName('game').setDescription('Optional game name'),
           )
           .addStringOption((option) =>
-            option
-              .setName('title')
-              .setDescription(
-                'Optional title override (special event streams)',
-              ),
+            option.setName('title').setDescription('Optional title override'),
           ),
       {
-        guildIds: [env.DISCORD_GUILD_ID],
+        guildIds: [...COMMAND_GUILDS.SET_STREAM_INFO],
       },
     );
   }
@@ -69,9 +70,16 @@ export class SetStreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const guildId = await assertCommandGuildAccess(
+          interaction,
+          COMMAND_GUILDS.SET_STREAM_INFO,
+        );
 
-        const guildId = interaction.guildId ?? env.DISCORD_GUILD_ID;
+        if (!guildId) {
+          return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         await setStreamInfo({
           guildId,
