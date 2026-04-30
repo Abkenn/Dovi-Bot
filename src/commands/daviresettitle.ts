@@ -44,6 +44,7 @@ export class DaviResetTitleCommand extends Command {
     return withCommandLogging({
       interaction,
       commandName: this.name,
+      ephemeral: true,
       run: async () => {
         const sourceGuildId = await assertCommandGuildAccess(
           interaction,

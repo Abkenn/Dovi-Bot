@@ -36,20 +36,26 @@ const isUnknownInteractionError = (error: unknown): boolean =>
   'code' in error &&
   error.code === 10062;
 
+type WithCommandLoggingOptions<T> = {
+  interaction: ChatInputCommandInteraction;
+  commandName: string;
+  ephemeral?: boolean;
+  run: () => Promise<T>;
+};
+
 export const withCommandLogging = async <T>({
   interaction,
   commandName,
+  ephemeral = false,
   run,
-}: {
-  interaction: ChatInputCommandInteraction;
-  commandName: string;
-  run: () => Promise<T>;
-}) => {
+}: WithCommandLoggingOptions<T>) => {
   const startedAt = Date.now();
 
   try {
     if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferReply();
+      await interaction.deferReply(
+        ephemeral ? { flags: MessageFlags.Ephemeral } : undefined,
+      );
     }
 
     const result = await run();
