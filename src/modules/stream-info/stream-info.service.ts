@@ -66,12 +66,60 @@ const buildOccurrences = (
   return occurrences.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 };
 
+const ensureGuildStreamConfig = async (guildId: string) => {
+  const config = await prisma.guildConfig.upsert({
+    where: { guildId },
+    update: {},
+    create: {
+      guildId,
+      canonicalTimezone: 'America/Sao_Paulo',
+      currentWindowMinutes: 240,
+      lookaheadDays: 21,
+      defaultStreamKind: 'GAME',
+    },
+  });
+
+  await prisma.streamScheduleDefault.upsert({
+    where: {
+      guildId_weekday: {
+        guildId,
+        weekday: 'FRIDAY',
+      },
+    },
+    update: {},
+    create: {
+      guildId,
+      weekday: 'FRIDAY',
+      startMinutes: 15 * 60 + 10,
+      durationMinutes: 240,
+      isEnabled: true,
+    },
+  });
+
+  await prisma.streamScheduleDefault.upsert({
+    where: {
+      guildId_weekday: {
+        guildId,
+        weekday: 'SATURDAY',
+      },
+    },
+    update: {},
+    create: {
+      guildId,
+      weekday: 'SATURDAY',
+      startMinutes: 15 * 60 + 10,
+      durationMinutes: 240,
+      isEnabled: true,
+    },
+  });
+
+  return config;
+};
+
 export const getStreamInfo = async (
   guildId: string,
 ): Promise<StreamInfoResult> => {
-  const config = await prisma.guildConfig.findUnique({
-    where: { guildId },
-  });
+  const config = await ensureGuildStreamConfig(guildId);
 
   if (!config) {
     throw new Error(`GuildConfig not found for guildId=${guildId}`);
@@ -132,6 +180,8 @@ export const getStreamInfo = async (
 };
 
 export const setDefaultGameName = async (guildId: string, gameName: string) => {
+  await ensureGuildStreamConfig(guildId);
+
   return prisma.guildConfig.update({
     where: { guildId },
     data: {

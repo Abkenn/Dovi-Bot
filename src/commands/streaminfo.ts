@@ -1,6 +1,5 @@
 import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
@@ -30,16 +29,16 @@ export class StreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
-        const guildId = await assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.STREAM_INFO,
-        );
+        await interaction.deferReply();
+
+        const guildId = interaction.guildId;
 
         if (!guildId) {
-          return;
+          return interaction.editReply({
+            content: 'This command can only be used in a server.',
+            embeds: [],
+          });
         }
-
-        await interaction.deferReply();
 
         const streamInfo = await getStreamInfo(guildId);
         const embed = buildStreamInfoEmbed(streamInfo);
