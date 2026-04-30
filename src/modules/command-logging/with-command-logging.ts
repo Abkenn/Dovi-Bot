@@ -4,18 +4,30 @@ import {
   createCommandErrorLog,
   createCommandExecutionLog,
 } from './command-logging.service';
+import {
+  COMMAND_TIMEOUT_MESSAGE,
+  CommandTimeoutError,
+} from './command-timeout';
 
 const getUserFacingErrorMessage = (error: unknown): string => {
+  if (error instanceof CommandTimeoutError) {
+    return COMMAND_TIMEOUT_MESSAGE;
+  }
+
   if (error instanceof ZodError) {
     const firstIssue = error.issues[0];
     return firstIssue?.message ?? 'Invalid command input.';
   }
 
-  if (error instanceof Error) {
-    return error.message || 'Something went wrong while running the command.';
+  return 'Something went wrong while running the command.';
+};
+
+const getLogStatus = (error: unknown): 'ERROR' | 'TIMEOUT' => {
+  if (error instanceof CommandTimeoutError) {
+    return 'TIMEOUT';
   }
 
-  return 'Something went wrong while running the command.';
+  return 'ERROR';
 };
 
 export const withCommandLogging = async <T>({
@@ -37,18 +49,19 @@ export const withCommandLogging = async <T>({
       commandName,
       status: 'SUCCESS',
       durationMs: Date.now() - startedAt,
-      note: 'Command executed successfully',
+      note: null,
     });
 
     return result;
   } catch (error) {
+    const message = getUserFacingErrorMessage(error);
     const note =
       error instanceof Error ? error.message : 'Unknown command error';
 
     const execution = await createCommandExecutionLog({
       interaction,
       commandName,
-      status: 'ERROR',
+      status: getLogStatus(error),
       durationMs: Date.now() - startedAt,
       note,
     });
@@ -58,18 +71,16 @@ export const withCommandLogging = async <T>({
       error,
     });
 
-    const message = getUserFacingErrorMessage(error);
-
     try {
       if (interaction.deferred || interaction.replied) {
         return await interaction.editReply({
-          content: `Error: ${message}`,
+          content: message,
           embeds: [],
         });
       }
 
       return await interaction.reply({
-        content: `Error: ${message}`,
+        content: message,
         flags: MessageFlags.Ephemeral,
       });
     } catch {

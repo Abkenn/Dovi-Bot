@@ -2,6 +2,25 @@ import { type ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import type { BotGuildId } from './discord-access';
 import { isAllowedGuildForCommand } from './discord-access';
 
+const replyOrEditGuildAccessError = async (
+  interaction: ChatInputCommandInteraction,
+  content: string,
+) => {
+  if (interaction.deferred || interaction.replied) {
+    await interaction.editReply({
+      content,
+      embeds: [],
+    });
+
+    return;
+  }
+
+  await interaction.reply({
+    content,
+    flags: MessageFlags.Ephemeral,
+  });
+};
+
 export const assertCommandGuildAccess = async <
   TAllowedGuildIds extends readonly BotGuildId[],
 >(
@@ -11,19 +30,19 @@ export const assertCommandGuildAccess = async <
   const guildId = interaction.guildId;
 
   if (!guildId) {
-    await interaction.reply({
-      content: 'This command can only be used in a server.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await replyOrEditGuildAccessError(
+      interaction,
+      'This command can only be used in a server.',
+    );
 
     return null;
   }
 
   if (!isAllowedGuildForCommand(guildId, allowedGuildIds)) {
-    await interaction.reply({
-      content: 'This server is not allowed to use this command.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await replyOrEditGuildAccessError(
+      interaction,
+      'This server is not allowed to use this command.',
+    );
 
     return null;
   }
