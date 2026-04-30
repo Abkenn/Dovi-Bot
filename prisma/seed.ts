@@ -4,14 +4,14 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 
 const databaseUrl = process.env.DATABASE_URL;
-const guildId = process.env.DISCORD_GUILD_ID;
+const guildId = process.env.DISCORD_STAGING_ENV_GUILD_ID;
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL is not set');
 }
 
 if (!guildId) {
-  throw new Error('DISCORD_GUILD_ID is not set');
+  throw new Error('DISCORD_STAGING_ENV_GUILD_ID is not set');
 }
 
 const prisma = new PrismaClient({
