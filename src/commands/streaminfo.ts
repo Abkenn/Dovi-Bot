@@ -34,8 +34,6 @@ export class StreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       run: async () => {
-        await interaction.deferReply();
-
         const guildId = await assertCommandGuildAccess(
           interaction,
           COMMAND_GUILDS.STREAM_INFO,

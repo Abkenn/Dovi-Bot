@@ -42,7 +42,7 @@ export class HelloCommand extends Command {
           HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
           'Hello!';
 
-        return interaction.reply({
+        return interaction.editReply({
           content: greeting,
         });
       },

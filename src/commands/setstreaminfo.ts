@@ -1,11 +1,14 @@
 import { Command } from '@sapphire/framework';
-import { MessageFlags } from 'discord.js';
 import {
   ADMIN_COMMAND_PERMISSION,
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
+import {
+  COMMAND_TIMEOUT_MS,
+  withTimeout,
+} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -79,21 +82,25 @@ export class SetStreamInfoCommand extends Command {
           return;
         }
 
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await withTimeout(
+          setStreamInfo({
+            guildId,
+            streamKind: interaction.options.getString(
+              'type',
+            ) as StreamKind | null,
+            musicMode: interaction.options.getString(
+              'music_mode',
+            ) as MusicMode | null,
+            gameName: interaction.options.getString('game'),
+            title: interaction.options.getString('title'),
+          }),
+          COMMAND_TIMEOUT_MS,
+        );
 
-        await setStreamInfo({
-          guildId,
-          streamKind: interaction.options.getString(
-            'type',
-          ) as StreamKind | null,
-          musicMode: interaction.options.getString(
-            'music_mode',
-          ) as MusicMode | null,
-          gameName: interaction.options.getString('game'),
-          title: interaction.options.getString('title'),
-        });
-
-        const streamInfo = await getStreamInfo(guildId);
+        const streamInfo = await withTimeout(
+          getStreamInfo(guildId),
+          COMMAND_TIMEOUT_MS,
+        );
         const embed = buildStreamInfoEmbed(streamInfo);
 
         return interaction.editReply({

@@ -30,6 +30,12 @@ const getLogStatus = (error: unknown): 'ERROR' | 'TIMEOUT' => {
   return 'ERROR';
 };
 
+const isUnknownInteractionError = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  error.code === 10062;
+
 export const withCommandLogging = async <T>({
   interaction,
   commandName,
@@ -42,6 +48,10 @@ export const withCommandLogging = async <T>({
   const startedAt = Date.now();
 
   try {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
+
     const result = await run();
 
     await createCommandExecutionLog({
@@ -58,6 +68,8 @@ export const withCommandLogging = async <T>({
     const note =
       error instanceof Error ? error.message : 'Unknown command error';
 
+    const isUnknownInteraction = isUnknownInteractionError(error);
+
     const execution = await createCommandExecutionLog({
       interaction,
       commandName,
@@ -66,10 +78,16 @@ export const withCommandLogging = async <T>({
       note,
     });
 
-    await createCommandErrorLog({
-      commandExecutionId: execution.id,
-      error,
-    });
+    if (!isUnknownInteraction) {
+      await createCommandErrorLog({
+        commandExecutionId: execution.id,
+        error,
+      });
+    }
+
+    if (isUnknownInteraction) {
+      return;
+    }
 
     try {
       if (interaction.deferred || interaction.replied) {
@@ -84,7 +102,7 @@ export const withCommandLogging = async <T>({
         flags: MessageFlags.Ephemeral,
       });
     } catch {
-      throw error;
+      return;
     }
   }
 };

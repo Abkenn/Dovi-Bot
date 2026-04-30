@@ -1,5 +1,4 @@
 import { Command } from '@sapphire/framework';
-import { MessageFlags } from 'discord.js';
 import {
   ADMIN_COMMAND_PERMISSION,
   BOT_GUILDS,
@@ -7,6 +6,10 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
+import {
+  COMMAND_TIMEOUT_MS,
+  withTimeout,
+} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -79,23 +82,27 @@ export class DaviSetStreamInfoCommand extends Command {
           return;
         }
 
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 
-        await setStreamInfo({
-          guildId: targetGuildId,
-          streamKind: interaction.options.getString(
-            'type',
-          ) as StreamKind | null,
-          musicMode: interaction.options.getString(
-            'music_mode',
-          ) as MusicMode | null,
-          gameName: interaction.options.getString('game'),
-          title: interaction.options.getString('title'),
-        });
+        await withTimeout(
+          setStreamInfo({
+            guildId: targetGuildId,
+            streamKind: interaction.options.getString(
+              'type',
+            ) as StreamKind | null,
+            musicMode: interaction.options.getString(
+              'music_mode',
+            ) as MusicMode | null,
+            gameName: interaction.options.getString('game'),
+            title: interaction.options.getString('title'),
+          }),
+          COMMAND_TIMEOUT_MS,
+        );
 
-        const streamInfo = await getStreamInfo(targetGuildId);
+        const streamInfo = await withTimeout(
+          getStreamInfo(targetGuildId),
+          COMMAND_TIMEOUT_MS,
+        );
         const embed = buildStreamInfoEmbed(streamInfo);
 
         return interaction.editReply({

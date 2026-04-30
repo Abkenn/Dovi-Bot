@@ -1,10 +1,13 @@
 import { Command } from '@sapphire/framework';
-import { MessageFlags } from 'discord.js';
 import {
   ADMIN_COMMAND_PERMISSION,
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import {
+  COMMAND_TIMEOUT_MS,
+  withTimeout,
+} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -50,11 +53,12 @@ export class ResetTitleCommand extends Command {
           return;
         }
 
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await withTimeout(resetStreamTitle(guildId), COMMAND_TIMEOUT_MS);
 
-        await resetStreamTitle(guildId);
-
-        const streamInfo = await getStreamInfo(guildId);
+        const streamInfo = await withTimeout(
+          getStreamInfo(guildId),
+          COMMAND_TIMEOUT_MS,
+        );
         const embed = buildStreamInfoEmbed(streamInfo);
 
         return interaction.editReply({

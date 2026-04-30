@@ -1,5 +1,4 @@
 import { Command } from '@sapphire/framework';
-import { MessageFlags } from 'discord.js';
 import {
   ADMIN_COMMAND_PERMISSION,
   BOT_GUILDS,
@@ -51,8 +50,6 @@ export class DaviStreamInfoCommand extends Command {
         if (!sourceGuildId) {
           return;
         }
-
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const streamInfo = await withTimeout(
           getStreamInfo(BOT_GUILDS.PROD_ENV),
