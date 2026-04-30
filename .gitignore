@@ -164,4 +164,7 @@ docker-compose.override.yml
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /src/generated/prisma
+
+# LLM
 AGENTS.md
+skills/*
