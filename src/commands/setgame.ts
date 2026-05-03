@@ -4,10 +4,6 @@ import {
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import {
-  COMMAND_TIMEOUT_MS,
-  withTimeout,
-} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -50,30 +46,17 @@ export class SetGameCommand extends Command {
       interaction,
       commandName: this.name,
       ephemeral: true,
-      run: async () => {
-        const guildId = await assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.SET_GAME,
-        );
-
-        if (!guildId) {
-          return;
-        }
-
+      beforeDefer: () =>
+        assertCommandGuildAccess(interaction, COMMAND_GUILDS.SET_GAME),
+      run: async ({ editReply, preflight: guildId }) => {
         const game = interaction.options.getString('game', true);
 
-        await withTimeout(
-          setDefaultGameName(guildId, game),
-          COMMAND_TIMEOUT_MS,
-        );
+        await setDefaultGameName(guildId, game);
 
-        const streamInfo = await withTimeout(
-          getStreamInfo(guildId),
-          COMMAND_TIMEOUT_MS,
-        );
+        const streamInfo = await getStreamInfo(guildId);
         const embed = buildStreamInfoEmbed(streamInfo);
 
-        return interaction.editReply({
+        return editReply({
           content: `Default game for future regular game streams updated to **${game}**.`,
           embeds: [embed],
         });

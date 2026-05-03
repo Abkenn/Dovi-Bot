@@ -1,17 +1,24 @@
 import { type ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { ZodError } from 'zod';
+import { CommandExecutionStatus } from '../../generated/prisma/enums';
+import { CommandDeniedError } from './command-denied';
 import {
   createCommandErrorLog,
   createCommandExecutionLog,
 } from './command-logging.service';
 import {
   COMMAND_TIMEOUT_MESSAGE,
+  COMMAND_TIMEOUT_MS,
   CommandTimeoutError,
 } from './command-timeout';
 
 const getUserFacingErrorMessage = (error: unknown): string => {
+  if (error instanceof CommandDeniedError) {
+    return error.message;
+  }
+
   if (error instanceof CommandTimeoutError) {
-    return COMMAND_TIMEOUT_MESSAGE;
+    return error.message || COMMAND_TIMEOUT_MESSAGE;
   }
 
   if (error instanceof ZodError) {
@@ -22,93 +29,231 @@ const getUserFacingErrorMessage = (error: unknown): string => {
   return 'Something went wrong while running the command.';
 };
 
-const getLogStatus = (error: unknown): 'ERROR' | 'TIMEOUT' => {
-  if (error instanceof CommandTimeoutError) {
-    return 'TIMEOUT';
+const getLogStatus = (error: unknown): CommandExecutionStatus => {
+  if (error instanceof CommandDeniedError) {
+    return CommandExecutionStatus.DENIED;
   }
 
-  return 'ERROR';
+  if (error instanceof CommandTimeoutError) {
+    return CommandExecutionStatus.TIMEOUT;
+  }
+
+  return CommandExecutionStatus.ERROR;
 };
 
 const isUnknownInteractionError = (error: unknown): boolean =>
   typeof error === 'object' &&
   error !== null &&
   'code' in error &&
-  error.code === 10062;
+  (error as { code?: unknown }).code === 10062;
 
-type WithCommandLoggingOptions<T> = {
+const shouldCreateErrorLog = (error: unknown): boolean => {
+  if (error instanceof CommandDeniedError) {
+    return false;
+  }
+
+  if (isUnknownInteractionError(error)) {
+    return false;
+  }
+
+  return true;
+};
+
+const logCommandExecutionSafely = async (
+  input: Parameters<typeof createCommandExecutionLog>[0],
+) => {
+  try {
+    return await createCommandExecutionLog(input);
+  } catch (error) {
+    console.error('Failed to log command execution', error);
+    return null;
+  }
+};
+
+const logCommandErrorSafely = async ({
+  interaction,
+  commandName,
+  status,
+  durationMs,
+  note,
+  error,
+  skipErrorLog,
+}: Parameters<typeof createCommandExecutionLog>[0] & {
+  error: unknown;
+  skipErrorLog?: boolean;
+}) => {
+  const execution = await logCommandExecutionSafely({
+    interaction,
+    commandName,
+    status,
+    durationMs: durationMs ?? null,
+    note: note ?? null,
+  });
+
+  if (!execution || skipErrorLog) {
+    return;
+  }
+
+  try {
+    await createCommandErrorLog({
+      commandExecutionId: execution.id,
+      error,
+    });
+  } catch (logError) {
+    console.error('Failed to log command error', logError);
+  }
+};
+
+const replyOrEditCommandError = async (
+  interaction: ChatInputCommandInteraction,
+  message: string,
+) => {
+  try {
+    if (interaction.deferred || interaction.replied) {
+      return await interaction.editReply({
+        content: message,
+        embeds: [],
+      });
+    }
+
+    return await interaction.reply({
+      content: message,
+      flags: MessageFlags.Ephemeral,
+    });
+  } catch {
+    return;
+  }
+};
+
+type CommandEditReplyOptions = Parameters<
+  ChatInputCommandInteraction['editReply']
+>[0];
+
+type CommandEditReplyResult = Awaited<
+  ReturnType<ChatInputCommandInteraction['editReply']>
+>;
+
+export type CommandRunContext = {
+  signal: AbortSignal;
+  hasTimedOut: () => boolean;
+  editReply: (
+    options: CommandEditReplyOptions,
+  ) => Promise<CommandEditReplyResult | undefined>;
+};
+
+type Awaitable<T> = T | Promise<T>;
+
+type WithCommandLoggingOptions<T, TPreflight = void> = {
   interaction: ChatInputCommandInteraction;
   commandName: string;
   ephemeral?: boolean;
-  run: () => Promise<T>;
+  timeoutMs?: number | null;
+  timeoutMessage?: string;
+  /**
+   * Runs before deferReply, so keep this to fast local checks only.
+   * Do not put DB or network calls here.
+   */
+  beforeDefer?: () => Awaitable<TPreflight>;
+  run: (context: CommandRunContext & { preflight: TPreflight }) => Promise<T>;
 };
 
-export const withCommandLogging = async <T>({
+export const withCommandLogging = async <T, TPreflight = void>({
   interaction,
   commandName,
   ephemeral = false,
+  timeoutMs = COMMAND_TIMEOUT_MS,
+  timeoutMessage,
+  beforeDefer,
   run,
-}: WithCommandLoggingOptions<T>) => {
+}: WithCommandLoggingOptions<T, TPreflight>) => {
   const startedAt = Date.now();
+  const abortController = new AbortController();
+  let timeoutId: NodeJS.Timeout | undefined;
+  let hasSentCommandResponse = false;
 
   try {
+    const preflight = beforeDefer
+      ? await beforeDefer()
+      : (undefined as TPreflight);
+
     if (!interaction.deferred && !interaction.replied) {
       await interaction.deferReply(
         ephemeral ? { flags: MessageFlags.Ephemeral } : undefined,
       );
     }
 
-    const result = await run();
+    const runPromise = run({
+      preflight,
+      signal: abortController.signal,
+      hasTimedOut: () => abortController.signal.aborted,
+      editReply: async (options) => {
+        if (abortController.signal.aborted) {
+          return;
+        }
 
-    await createCommandExecutionLog({
+        const response = await interaction.editReply(options);
+        hasSentCommandResponse = true;
+
+        return response;
+      },
+    });
+
+    const result =
+      timeoutMs === null
+        ? await runPromise
+        : await Promise.race([
+            runPromise,
+            new Promise<never>((_, reject) => {
+              timeoutId = setTimeout(() => {
+                abortController.abort();
+                reject(new CommandTimeoutError(timeoutMessage));
+              }, timeoutMs);
+            }),
+          ]);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
+
+    await logCommandExecutionSafely({
       interaction,
       commandName,
-      status: 'SUCCESS',
+      status: CommandExecutionStatus.SUCCESS,
       durationMs: Date.now() - startedAt,
       note: null,
     });
 
     return result;
   } catch (error) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
     const message = getUserFacingErrorMessage(error);
     const note =
       error instanceof Error ? error.message : 'Unknown command error';
 
     const isUnknownInteraction = isUnknownInteractionError(error);
+    const shouldSendResponse = !hasSentCommandResponse && !isUnknownInteraction;
+    const response = shouldSendResponse
+      ? await replyOrEditCommandError(interaction, message)
+      : undefined;
 
-    const execution = await createCommandExecutionLog({
+    await logCommandErrorSafely({
       interaction,
       commandName,
       status: getLogStatus(error),
       durationMs: Date.now() - startedAt,
       note,
+      error,
+      skipErrorLog: !shouldCreateErrorLog(error),
     });
 
-    if (!isUnknownInteraction) {
-      await createCommandErrorLog({
-        commandExecutionId: execution.id,
-        error,
-      });
-    }
-
-    if (isUnknownInteraction) {
-      return;
-    }
-
-    try {
-      if (interaction.deferred || interaction.replied) {
-        return await interaction.editReply({
-          content: message,
-          embeds: [],
-        });
-      }
-
-      return await interaction.reply({
-        content: message,
-        flags: MessageFlags.Ephemeral,
-      });
-    } catch {
-      return;
+    return response;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
     }
   }
 };

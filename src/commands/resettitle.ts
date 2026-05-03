@@ -4,10 +4,6 @@ import {
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import {
-  COMMAND_TIMEOUT_MS,
-  withTimeout,
-} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -44,25 +40,15 @@ export class ResetTitleCommand extends Command {
       interaction,
       commandName: this.name,
       ephemeral: true,
-      run: async () => {
-        const guildId = await assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.RESET_TITLE,
-        );
+      beforeDefer: () =>
+        assertCommandGuildAccess(interaction, COMMAND_GUILDS.RESET_TITLE),
+      run: async ({ editReply, preflight: guildId }) => {
+        await resetStreamTitle(guildId);
 
-        if (!guildId) {
-          return;
-        }
-
-        await withTimeout(resetStreamTitle(guildId), COMMAND_TIMEOUT_MS);
-
-        const streamInfo = await withTimeout(
-          getStreamInfo(guildId),
-          COMMAND_TIMEOUT_MS,
-        );
+        const streamInfo = await getStreamInfo(guildId);
         const embed = buildStreamInfoEmbed(streamInfo);
 
-        return interaction.editReply({
+        return editReply({
           content: 'Title override reset.',
           embeds: [embed],
         });

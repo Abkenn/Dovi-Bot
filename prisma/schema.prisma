@@ -102,6 +102,7 @@ enum CommandExecutionStatus {
   SUCCESS
   ERROR
   TIMEOUT
+  DENIED
 }
 
 model CommandExecutionLog {

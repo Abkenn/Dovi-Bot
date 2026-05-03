@@ -5,10 +5,6 @@ import {
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import {
-  COMMAND_TIMEOUT_MS,
-  withTimeout,
-} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -45,27 +41,20 @@ export class DaviResetStreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       ephemeral: true,
-      run: async () => {
-        const sourceGuildId = await assertCommandGuildAccess(
+      beforeDefer: () =>
+        assertCommandGuildAccess(
           interaction,
           COMMAND_GUILDS.DAVI_RESET_STREAM_INFO,
-        );
-
-        if (!sourceGuildId) {
-          return;
-        }
-
+        ),
+      run: async ({ editReply }) => {
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 
-        await withTimeout(resetStreamInfo(targetGuildId), COMMAND_TIMEOUT_MS);
+        await resetStreamInfo(targetGuildId);
 
-        const streamInfo = await withTimeout(
-          getStreamInfo(targetGuildId),
-          COMMAND_TIMEOUT_MS,
-        );
+        const streamInfo = await getStreamInfo(targetGuildId);
         const embed = buildStreamInfoEmbed(streamInfo);
 
-        return interaction.editReply({
+        return editReply({
           content: 'Prod env stream override reset.',
           embeds: [embed],
         });

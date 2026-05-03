@@ -6,10 +6,6 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
-import {
-  COMMAND_TIMEOUT_MS,
-  withTimeout,
-} from '../modules/command-logging/command-timeout';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 import {
@@ -73,40 +69,30 @@ export class DaviSetStreamInfoCommand extends Command {
       interaction,
       commandName: this.name,
       ephemeral: true,
-      run: async () => {
-        const sourceGuildId = await assertCommandGuildAccess(
+      beforeDefer: () =>
+        assertCommandGuildAccess(
           interaction,
           COMMAND_GUILDS.DAVI_SET_STREAM_INFO,
-        );
-
-        if (!sourceGuildId) {
-          return;
-        }
-
+        ),
+      run: async ({ editReply }) => {
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 
-        await withTimeout(
-          setStreamInfo({
-            guildId: targetGuildId,
-            streamKind: interaction.options.getString(
-              'type',
-            ) as StreamKind | null,
-            musicMode: interaction.options.getString(
-              'music_mode',
-            ) as MusicMode | null,
-            gameName: interaction.options.getString('game'),
-            title: interaction.options.getString('title'),
-          }),
-          COMMAND_TIMEOUT_MS,
-        );
+        await setStreamInfo({
+          guildId: targetGuildId,
+          streamKind: interaction.options.getString(
+            'type',
+          ) as StreamKind | null,
+          musicMode: interaction.options.getString(
+            'music_mode',
+          ) as MusicMode | null,
+          gameName: interaction.options.getString('game'),
+          title: interaction.options.getString('title'),
+        });
 
-        const streamInfo = await withTimeout(
-          getStreamInfo(targetGuildId),
-          COMMAND_TIMEOUT_MS,
-        );
+        const streamInfo = await getStreamInfo(targetGuildId);
         const embed = buildStreamInfoEmbed(streamInfo);
 
-        return interaction.editReply({
+        return editReply({
           content: 'Prod env stream info updated.',
           embeds: [embed],
         });

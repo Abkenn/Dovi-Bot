@@ -28,21 +28,14 @@ export class HelloCommand extends Command {
     return withCommandLogging({
       interaction,
       commandName: this.name,
-      run: async () => {
-        const guildId = await assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.HELLO,
-        );
-
-        if (!guildId) {
-          return;
-        }
-
+      beforeDefer: () =>
+        assertCommandGuildAccess(interaction, COMMAND_GUILDS.HELLO),
+      run: async ({ editReply }) => {
         const greeting =
           HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
           'Hello!';
 
-        return interaction.editReply({
+        return editReply({
           content: greeting,
         });
       },
