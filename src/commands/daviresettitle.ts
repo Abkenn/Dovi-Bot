@@ -6,11 +6,8 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import {
-  getStreamInfo,
-  resetStreamTitle,
-} from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
+import { resetStreamTitle } from '../modules/stream-info/stream-info.service';
 
 export class DaviResetTitleCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -48,12 +45,9 @@ export class DaviResetTitleCommand extends Command {
 
         await resetStreamTitle(targetGuildId);
 
-        const streamInfo = await getStreamInfo(targetGuildId);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
           content: 'Prod env title reset.',
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(targetGuildId)],
         });
       },
     });

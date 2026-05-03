@@ -6,11 +6,8 @@ import {
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import {
-  getStreamInfo,
-  setStreamInfo,
-} from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
+import { setStreamInfo } from '../modules/stream-info/stream-info.service';
 
 export class SetStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -84,12 +81,9 @@ export class SetStreamInfoCommand extends Command {
           title: interaction.options.getString('title'),
         });
 
-        const streamInfo = await getStreamInfo(guildId);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
           content: 'Stream info updated.',
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(guildId)],
         });
       },
     });

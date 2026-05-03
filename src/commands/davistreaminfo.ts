@@ -6,8 +6,7 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import { getStreamInfo } from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
 
 export class DaviStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -41,11 +40,8 @@ export class DaviStreamInfoCommand extends Command {
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, COMMAND_GUILDS.DAVI_STREAM_INFO),
       run: async ({ editReply }) => {
-        const streamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],
         });
       },
     });

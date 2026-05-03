@@ -5,11 +5,8 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import {
-  getStreamInfo,
-  setDefaultGameName,
-} from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
+import { setDefaultGameName } from '../modules/stream-info/stream-info.service';
 
 export class SetGameCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -53,12 +50,9 @@ export class SetGameCommand extends Command {
 
         await setDefaultGameName(guildId, game);
 
-        const streamInfo = await getStreamInfo(guildId);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
           content: `Default game for future regular game streams updated to **${game}**.`,
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(guildId)],
         });
       },
     });

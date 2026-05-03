@@ -6,11 +6,8 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import {
-  getStreamInfo,
-  setDefaultGameName,
-} from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
+import { setDefaultGameName } from '../modules/stream-info/stream-info.service';
 
 export class DaviSetGameCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -55,12 +52,9 @@ export class DaviSetGameCommand extends Command {
 
         await setDefaultGameName(targetGuildId, game);
 
-        const streamInfo = await getStreamInfo(targetGuildId);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
           content: `Prod env default game updated to **${game}**.`,
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(targetGuildId)],
         });
       },
     });

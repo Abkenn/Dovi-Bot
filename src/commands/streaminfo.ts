@@ -2,8 +2,7 @@ import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import { getStreamInfo } from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
 
 export class StreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -32,11 +31,8 @@ export class StreamInfoCommand extends Command {
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, COMMAND_GUILDS.STREAM_INFO),
       run: async ({ editReply, preflight: guildId }) => {
-        const streamInfo = await getStreamInfo(guildId);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(guildId)],
         });
       },
     });

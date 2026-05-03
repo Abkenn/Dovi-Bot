@@ -5,11 +5,8 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
-import {
-  getStreamInfo,
-  resetStreamInfo,
-} from '../modules/stream-info/stream-info.service';
+import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
+import { resetStreamInfo } from '../modules/stream-info/stream-info.service';
 
 export class ResetStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -46,12 +43,9 @@ export class ResetStreamInfoCommand extends Command {
       run: async ({ editReply, preflight: guildId }) => {
         await resetStreamInfo(guildId);
 
-        const streamInfo = await getStreamInfo(guildId);
-        const embed = buildStreamInfoEmbed(streamInfo);
-
         return editReply({
           content: 'Stream info reset.',
-          embeds: [embed],
+          embeds: [await getStreamInfoEmbed(guildId)],
         });
       },
     });
