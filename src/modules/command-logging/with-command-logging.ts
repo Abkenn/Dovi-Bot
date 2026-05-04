@@ -134,6 +134,11 @@ type CommandEditReplyResult = Awaited<
 >;
 
 export type CommandRunContext = {
+  /**
+   * Pass this to command-facing services that may do DB or network work.
+   * It prevents follow-up command work after timeout, but does not cancel
+   * an already in-flight Prisma/Discord request.
+   */
   signal: AbortSignal;
   hasTimedOut: () => boolean;
   editReply: (
@@ -221,7 +226,9 @@ export const withCommandLogging = async <T, TPreflight = void>({
       commandName,
       status: CommandExecutionStatus.SUCCESS,
       durationMs: Date.now() - startedAt,
-      note: null,
+      note: hasSentCommandResponse
+        ? null
+        : 'Command completed without sending a response',
     });
 
     return result;
