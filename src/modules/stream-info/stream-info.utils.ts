@@ -22,6 +22,36 @@ export const WEEKDAY_TO_LUXON: Record<Weekday, number> = {
 export const makeDateKey = (value: DateTime): string =>
   value.toFormat('yyyy-LL-dd');
 
+export const isOngoingOccurrence = (
+  occurrence: StreamOccurrence,
+  now: DateTime,
+): boolean => {
+  const nowMs = now.toMillis();
+  const startMs = occurrence.startAt.getTime();
+  const endMs = occurrence.endAt.getTime();
+
+  return nowMs >= startMs && nowMs <= endMs;
+};
+
+export const findCurrentOccurrence = (
+  occurrences: readonly StreamOccurrence[],
+  now: DateTime,
+): StreamOccurrence | null =>
+  occurrences.find((occurrence) => isOngoingOccurrence(occurrence, now)) ??
+  null;
+
+export const findNextOccurrence = (
+  occurrences: readonly StreamOccurrence[],
+  now: DateTime,
+): StreamOccurrence | null => {
+  const nowMs = now.toMillis();
+
+  return (
+    occurrences.find((occurrence) => occurrence.startAt.getTime() > nowMs) ??
+    null
+  );
+};
+
 export const resolveTitle = (
   streamKind: StreamKind,
   musicMode: MusicMode | null,

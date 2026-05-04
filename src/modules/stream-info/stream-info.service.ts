@@ -14,8 +14,15 @@ import type {
 import {
   applyOverrideToOccurrence,
   buildDefaultOccurrence,
+  findCurrentOccurrence,
+  findNextOccurrence,
   WEEKDAY_TO_LUXON,
 } from './stream-info.utils';
+import {
+  DEFAULT_GUILD_STREAM_CONFIG,
+  DEFAULT_STREAM_SCHEDULE,
+  startTimeToMinutes,
+} from './stream-schedule.config';
 
 const getCandidateDates = (
   nowLocal: DateTime,
@@ -72,46 +79,28 @@ const ensureGuildStreamConfig = async (guildId: string) => {
     update: {},
     create: {
       guildId,
-      canonicalTimezone: 'America/Sao_Paulo',
-      currentWindowMinutes: 240,
-      lookaheadDays: 21,
-      defaultStreamKind: 'GAME',
+      ...DEFAULT_GUILD_STREAM_CONFIG,
     },
   });
 
-  await prisma.streamScheduleDefault.upsert({
-    where: {
-      guildId_weekday: {
-        guildId,
-        weekday: 'FRIDAY',
+  for (const rule of DEFAULT_STREAM_SCHEDULE) {
+    await prisma.streamScheduleDefault.upsert({
+      where: {
+        guildId_weekday: {
+          guildId,
+          weekday: rule.weekday,
+        },
       },
-    },
-    update: {},
-    create: {
-      guildId,
-      weekday: 'FRIDAY',
-      startMinutes: 15 * 60 + 10,
-      durationMinutes: 240,
-      isEnabled: true,
-    },
-  });
-
-  await prisma.streamScheduleDefault.upsert({
-    where: {
-      guildId_weekday: {
+      update: {},
+      create: {
         guildId,
-        weekday: 'SATURDAY',
+        weekday: rule.weekday,
+        startMinutes: startTimeToMinutes(rule.startTime),
+        durationMinutes: rule.durationMinutes,
+        isEnabled: rule.isEnabled,
       },
-    },
-    update: {},
-    create: {
-      guildId,
-      weekday: 'SATURDAY',
-      startMinutes: 15 * 60 + 10,
-      durationMinutes: 240,
-      isEnabled: true,
-    },
-  });
+    });
+  }
 
   return config;
 };
@@ -161,16 +150,9 @@ export const getStreamInfo = async (
   }
 
   const occurrences = buildOccurrences(config, defaults, overrides);
-  const nowMs = DateTime.utc().toMillis();
-
-  const current =
-    occurrences.find(
-      (item) =>
-        nowMs >= item.startAt.getTime() && nowMs <= item.endAt.getTime(),
-    ) ?? null;
-
-  const next =
-    occurrences.find((item) => item.startAt.getTime() > nowMs) ?? null;
+  const now = DateTime.utc();
+  const current = findCurrentOccurrence(occurrences, now);
+  const next = findNextOccurrence(occurrences, now);
 
   return {
     timezone: config.canonicalTimezone,
