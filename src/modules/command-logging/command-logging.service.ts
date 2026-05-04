@@ -87,20 +87,3 @@ export const createCommandErrorLog = async ({
     },
   });
 };
-
-export const getRecentCommandExecutions = async (take = 100) => {
-  return prisma.commandExecutionLog.findMany({
-    orderBy: { createdAt: 'desc' },
-    take,
-  });
-};
-
-export const getRecentCommandErrors = async (take = 10) => {
-  return prisma.commandErrorLog.findMany({
-    include: {
-      commandExecution: true,
-    },
-    orderBy: { createdAt: 'desc' },
-    take,
-  });
-};

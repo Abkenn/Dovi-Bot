@@ -1,5 +1,4 @@
 import type { DateTime } from 'luxon';
-import { z } from 'zod';
 import {
   type GuildConfig,
   MusicMode,
@@ -22,46 +21,6 @@ export const WEEKDAY_TO_LUXON: Record<Weekday, number> = {
 
 export const makeDateKey = (value: DateTime): string =>
   value.toFormat('yyyy-LL-dd');
-
-const timeSchema = z
-  .string()
-  .trim()
-  .refine(
-    (val) => {
-      const parts = val.split(':');
-      if (parts.length !== 2) return false;
-
-      const hoursStr = parts[0];
-      const minutesStr = parts[1];
-
-      if (!hoursStr || !minutesStr) return false;
-
-      const hours = Number.parseInt(hoursStr, 10);
-      const minutes = Number.parseInt(minutesStr, 10);
-
-      return (
-        !Number.isNaN(hours) &&
-        !Number.isNaN(minutes) &&
-        hours >= 0 &&
-        hours <= 23 &&
-        minutes >= 0 &&
-        minutes <= 59
-      );
-    },
-    { message: 'Time must be in HH:mm format' },
-  )
-  .transform((val) => {
-    const [hoursStr, minutesStr] = val.split(':');
-    return Number(hoursStr) * 60 + Number(minutesStr);
-  });
-
-export const parseTimeToMinutes = (value: string | undefined): number => {
-  if (!value) {
-    throw new Error('Time must be in HH:mm format');
-  }
-
-  return timeSchema.parse(value);
-};
 
 export const resolveTitle = (
   streamKind: StreamKind,

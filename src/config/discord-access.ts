@@ -1,5 +1,5 @@
 import { env } from '@zod-schemas/env.zod';
-import { PermissionFlagsBits, type PermissionsString } from 'discord.js';
+import { PermissionFlagsBits } from 'discord.js';
 
 export type BotGuildId = string & { readonly __brand: unique symbol };
 
@@ -30,16 +30,7 @@ export const COMMAND_GUILDS = {
   DAVI_STREAM_INFO: [BOT_GUILDS.STAGING_ENV],
 } as const satisfies Record<string, readonly BotGuildId[]>;
 
-const KNOWN_BOT_GUILD_IDS = new Set<BotGuildId>([
-  BOT_GUILDS.STAGING_ENV,
-  BOT_GUILDS.PROD_ENV,
-]);
-
 export const ADMIN_COMMAND_PERMISSION = PermissionFlagsBits.ManageGuild;
-export const ADMIN_COMMAND_PERMISSION_NAME: PermissionsString = 'ManageGuild';
-
-export const isKnownBotGuild = (guildId: string): guildId is BotGuildId =>
-  KNOWN_BOT_GUILD_IDS.has(guildId as BotGuildId);
 
 export const isAllowedGuildForCommand = <
   TAllowedGuildIds extends readonly BotGuildId[],
