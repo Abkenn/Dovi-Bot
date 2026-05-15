@@ -4,6 +4,7 @@ import type {
   StreamScheduleDefault,
   StreamScheduleOverride,
 } from '../../generated/prisma/client';
+import { StreamKind } from '../../generated/prisma/client';
 import { prisma } from '../../lib/prisma';
 import { resolveTargetStream } from './stream-info.target';
 import type {
@@ -105,6 +106,14 @@ const ensureGuildStreamConfig = async (guildId: string) => {
   return config;
 };
 
+const updateDefaultGameName = (guildId: string, gameName: string) =>
+  prisma.guildConfig.update({
+    where: { guildId },
+    data: {
+      defaultGameName: gameName,
+    },
+  });
+
 export const getStreamInfo = async (
   guildId: string,
 ): Promise<StreamInfoResult> => {
@@ -164,12 +173,7 @@ export const getStreamInfo = async (
 export const setDefaultGameName = async (guildId: string, gameName: string) => {
   await ensureGuildStreamConfig(guildId);
 
-  return prisma.guildConfig.update({
-    where: { guildId },
-    data: {
-      defaultGameName: gameName,
-    },
-  });
+  return updateDefaultGameName(guildId, gameName);
 };
 
 export const setStreamInfo = async (input: SetStreamInfoInput) => {
@@ -190,9 +194,14 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
   }
 
   const switchingToGameWithoutExplicitGame =
-    input.streamKind === 'GAME' &&
+    input.streamKind === StreamKind.GAME &&
     (input.gameName === null || input.gameName === undefined) &&
-    targetOccurrence.streamKind !== 'GAME';
+    targetOccurrence.streamKind !== StreamKind.GAME;
+  const effectiveStreamKind = input.streamKind ?? targetOccurrence.streamKind;
+  const shouldPersistGameName =
+    input.gameName !== null &&
+    input.gameName !== undefined &&
+    effectiveStreamKind === StreamKind.GAME;
 
   const updateData: {
     resolvedFromWeekday: typeof targetOccurrence.weekday;
@@ -216,13 +225,15 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     updateData.titleOverride = input.title;
   }
 
-  if (input.gameName !== null && input.gameName !== undefined) {
+  if (shouldPersistGameName) {
+    updateData.gameName = null;
+  } else if (input.gameName !== null && input.gameName !== undefined) {
     updateData.gameName = input.gameName;
   } else if (switchingToGameWithoutExplicitGame) {
     updateData.gameName = null;
   }
 
-  return prisma.streamScheduleOverride.upsert({
+  const overrideUpsert = prisma.streamScheduleOverride.upsert({
     where: {
       guildId_streamDateKey: {
         guildId: input.guildId,
@@ -238,9 +249,25 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
       streamKind: input.streamKind ?? null,
       musicMode: input.musicMode ?? null,
       titleOverride: input.title ?? null,
-      gameName: input.gameName ?? null,
+      gameName: shouldPersistGameName ? null : (input.gameName ?? null),
     },
   });
+
+  if (!shouldPersistGameName) {
+    return overrideUpsert;
+  }
+
+  const defaultGameName = input.gameName;
+  if (defaultGameName === null || defaultGameName === undefined) {
+    return overrideUpsert;
+  }
+
+  const [, override] = await prisma.$transaction([
+    updateDefaultGameName(input.guildId, defaultGameName),
+    overrideUpsert,
+  ]);
+
+  return override;
 };
 
 export const resetStreamTitle = async (guildId: string) => {
