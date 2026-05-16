@@ -28,6 +28,9 @@ export const COMMAND_GUILDS = {
   DAVI_RESET_TITLE: [BOT_GUILDS.STAGING_ENV],
   DAVI_RESET_STREAM_INFO: [BOT_GUILDS.STAGING_ENV],
   DAVI_STREAM_INFO: [BOT_GUILDS.STAGING_ENV],
+  DAVI_SYNC_BOSS_STATS: [BOT_GUILDS.STAGING_ENV],
+
+  SYNC_DAVI_BOSS_STATS: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
 } as const satisfies Record<string, readonly BotGuildId[]>;
 
 export const ADMIN_COMMAND_PERMISSION = PermissionFlagsBits.ManageGuild;

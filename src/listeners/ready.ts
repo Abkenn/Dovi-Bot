@@ -1,4 +1,5 @@
 import { Listener } from '@sapphire/framework';
+import { startDaviBossStatsSyncScheduler } from '../modules/boss-stats/davi-boss-stats-sync.scheduler';
 
 export class ReadyListener extends Listener {
   public constructor(
@@ -16,5 +17,6 @@ export class ReadyListener extends Listener {
     this.container.logger.info(
       `Logged in as ${this.container.client.user?.tag ?? 'unknown-user'}`,
     );
+    startDaviBossStatsSyncScheduler();
   }
 }

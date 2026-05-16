@@ -11,6 +11,8 @@ export const envSchema = z.object({
     .transform((value) => value === 'true'),
   DATABASE_URL: z.string().min(1),
   DIRECT_URL: z.string().min(1),
+  DAVI_BOSS_STATS_SPREADSHEET_URL: z.url().optional(),
+  DAVI_DISCORD_USER_ID: z.string().min(1).optional(),
   PORT: z.coerce.number().int().positive().default(8000),
 });
 

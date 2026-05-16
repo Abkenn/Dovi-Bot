@@ -105,6 +105,11 @@ enum CommandExecutionStatus {
   DENIED
 }
 
+enum BossEncounterSource {
+  DAVI_SPREADSHEET
+  USER_SUBMITTED
+}
+
 model CommandExecutionLog {
   id              String                 @id @default(cuid())
   guildId         String?
@@ -140,4 +145,52 @@ model CommandErrorLog {
   commandExecution   CommandExecutionLog @relation(fields: [commandExecutionId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+}
+
+model BossGame {
+  id             String   @id @default(cuid())
+  name           String
+  normalizedName String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  bosses Boss[]
+}
+
+model Boss {
+  id             String   @id @default(cuid())
+  gameId         String
+  name           String
+  normalizedName String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  game  BossGame            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  stats BossEncounterStat[]
+
+  @@unique([gameId, normalizedName])
+  @@index([gameId])
+}
+
+model BossEncounterStat {
+  id                       String              @id @default(cuid())
+  bossId                   String
+  playerDiscordUserId      String
+  source                   BossEncounterSource
+  deaths                   Int?
+  totalAttemptTimeSeconds  Int?
+  winningAttemptTimeSeconds Int?
+  difficultyCoefficient    Decimal?            @db.Decimal(10, 3)
+  rawTotalAttemptTime      String?
+  rawWinningAttemptTime    String?
+  rawDifficultyCoefficient String?
+  sourceRowNumber          Int?
+  syncedAt                 DateTime            @default(now())
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+
+  boss Boss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+
+  @@unique([bossId, playerDiscordUserId, source])
+  @@index([playerDiscordUserId, source])
 }
