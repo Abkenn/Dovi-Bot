@@ -13,6 +13,26 @@ import {
 } from '../modules/boss-stats/boss-trial.service';
 import { BOSS_TRIAL_VERDICT_LABELS } from '../modules/boss-stats/boss-trial.types';
 
+const getVoteConfirmationMessage = ({
+  voteAction,
+  verdictLabel,
+  previousVerdictLabel,
+}: {
+  voteAction: 'created' | 'changed' | 'unchanged';
+  verdictLabel: string;
+  previousVerdictLabel: string | null;
+}) => {
+  if (voteAction === 'unchanged') {
+    return `Your vote is already **${verdictLabel}**. Click another verdict if you want to change it.`;
+  }
+
+  if (voteAction === 'changed' && previousVerdictLabel) {
+    return `Changed your vote from **${previousVerdictLabel}** to **${verdictLabel}**.`;
+  }
+
+  return `Your **${verdictLabel}** vote was recorded. Click another verdict if you change your mind.`;
+};
+
 export class BossTrialButtonsListener extends Listener {
   public constructor(
     context: Listener.LoaderContext,
@@ -39,18 +59,30 @@ export class BossTrialButtonsListener extends Listener {
       if (action.type === 'vote') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        const trial = await recordBossTrialVote({
+        const voteResult = await recordBossTrialVote({
           trialId: action.trialId,
           userId: interaction.user.id,
           verdict: action.verdict,
         });
 
-        if (shouldShowBossTrialVotes(trial)) {
-          await refreshBossTrialMessage(this.container.client, trial);
+        if (
+          voteResult.voteAction !== 'unchanged' &&
+          shouldShowBossTrialVotes(voteResult.trial)
+        ) {
+          await refreshBossTrialMessage(
+            this.container.client,
+            voteResult.trial,
+          );
         }
 
         return interaction.editReply({
-          content: `Your **${BOSS_TRIAL_VERDICT_LABELS[action.verdict]}** vote was recorded.`,
+          content: getVoteConfirmationMessage({
+            voteAction: voteResult.voteAction,
+            verdictLabel: BOSS_TRIAL_VERDICT_LABELS[action.verdict],
+            previousVerdictLabel: voteResult.previousVerdict
+              ? BOSS_TRIAL_VERDICT_LABELS[voteResult.previousVerdict]
+              : null,
+          }),
         });
       }
 

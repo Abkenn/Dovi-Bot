@@ -92,6 +92,24 @@ export const recordBossTrialVote = async ({
     throw new Error('Unknown boss trial verdict.');
   }
 
+  const existingVote = await prisma.bossTrialVote.findUnique({
+    where: {
+      trialId_userId: {
+        trialId,
+        userId,
+      },
+    },
+    select: { verdict: true },
+  });
+
+  if (existingVote?.verdict === verdict) {
+    return {
+      trial: await getBossTrialView(trialId),
+      voteAction: 'unchanged' as const,
+      previousVerdict: existingVote.verdict,
+    };
+  }
+
   const now = new Date();
 
   await prisma.bossTrialVote.upsert({
@@ -113,7 +131,11 @@ export const recordBossTrialVote = async ({
     },
   });
 
-  return getBossTrialView(trialId);
+  return {
+    trial: await getBossTrialView(trialId),
+    voteAction: existingVote ? ('changed' as const) : ('created' as const),
+    previousVerdict: existingVote?.verdict ?? null,
+  };
 };
 
 export const markBossTrialLiveResultsPublished = async (trialId: string) =>
