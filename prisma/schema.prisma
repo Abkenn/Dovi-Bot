@@ -110,6 +110,18 @@ enum BossEncounterSource {
   USER_SUBMITTED
 }
 
+enum BossTrialStatus {
+  ACTIVE
+  RESULTS_PUBLISHED
+}
+
+enum BossTrialVoteVerdict {
+  PEAK
+  FAIR
+  MID
+  BULLSHIT
+}
+
 model CommandExecutionLog {
   id              String                 @id @default(cuid())
   guildId         String?
@@ -155,6 +167,7 @@ model BossGame {
   updatedAt      DateTime @updatedAt
 
   bosses Boss[]
+  trials BossTrial[]
 }
 
 model Boss {
@@ -166,7 +179,8 @@ model Boss {
   updatedAt      DateTime @updatedAt
 
   game  BossGame            @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  stats BossEncounterStat[]
+  stats  BossEncounterStat[]
+  trials BossTrial[]
 
   @@unique([gameId, normalizedName])
   @@index([gameId])
@@ -193,4 +207,46 @@ model BossEncounterStat {
 
   @@unique([bossId, playerDiscordUserId, source])
   @@index([playerDiscordUserId, source])
+}
+
+model BossTrial {
+  id                       String          @id @default(cuid())
+  guildId                  String
+  channelId                String
+  messageId                String?         @unique
+  requesterUserId          String
+  gameId                   String
+  bossId                   String
+  durationMinutes          Int
+  voteVisibilityHiddenUntil DateTime
+  endsAt                   DateTime
+  liveResultsPublishedAt   DateTime?
+  finalResultsPostedAt     DateTime?
+  status                   BossTrialStatus @default(ACTIVE)
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+
+  game  BossGame        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  boss  Boss            @relation(fields: [bossId], references: [id], onDelete: Cascade)
+  votes BossTrialVote[]
+
+  @@index([guildId, channelId])
+  @@index([status, endsAt])
+  @@index([voteVisibilityHiddenUntil])
+}
+
+model BossTrialVote {
+  id        String                @id @default(cuid())
+  trialId   String
+  userId    String
+  verdict   BossTrialVoteVerdict
+  votedAt   DateTime              @default(now())
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  trial BossTrial @relation(fields: [trialId], references: [id], onDelete: Cascade)
+
+  @@unique([trialId, userId])
+  @@index([trialId, votedAt])
+  @@index([userId, votedAt])
 }
