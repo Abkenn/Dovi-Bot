@@ -13,7 +13,7 @@ export class SyncBossStatsCommand extends Command {
     super(context, {
       ...options,
       name: 'syncbossstats',
-      description: 'Syncs Davi boss stats from the read-only spreadsheet.',
+      description: 'Syncs Davi boss stats from the Abramo Docs.',
     });
   }
 
