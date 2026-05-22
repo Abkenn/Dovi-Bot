@@ -221,6 +221,7 @@ model BossTrial {
   voteVisibilityHiddenUntil DateTime
   endsAt                   DateTime
   liveResultsPublishedAt   DateTime?
+  automaticBumpPostedAt    DateTime?
   finalResultsPostedAt     DateTime?
   status                   BossTrialStatus @default(ACTIVE)
   createdAt                DateTime        @default(now())
@@ -231,8 +232,11 @@ model BossTrial {
   votes BossTrialVote[]
 
   @@index([guildId, channelId])
+  @@index([guildId, createdAt])
+  @@index([guildId, requesterUserId, createdAt])
   @@index([status, endsAt])
   @@index([voteVisibilityHiddenUntil])
+  @@index([automaticBumpPostedAt])
 }
 
 model BossTrialVote {

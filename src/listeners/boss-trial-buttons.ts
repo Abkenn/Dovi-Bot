@@ -2,6 +2,7 @@ import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { parseBossTrialButtonAction } from '../modules/boss-stats/boss-trial.discord';
 import {
+  postBossTrialBumpMessage,
   postBossTrialResultsMessage,
   refreshBossTrialMessage,
 } from '../modules/boss-stats/boss-trial.lifecycle';
@@ -92,7 +93,31 @@ export class BossTrialButtonsListener extends Listener {
 
       if (interaction.user.id !== trial.requesterUserId) {
         return interaction.editReply({
-          content: 'Only the boss trial requester can publish results again.',
+          content: 'Only the boss trial requester can use these controls.',
+        });
+      }
+
+      if (action.type === 'bump') {
+        if (!trial.messageId) {
+          return interaction.editReply({
+            content: 'I could not bump this poll yet. Try again in a bit.',
+          });
+        }
+
+        if (Date.now() >= trial.endsAt.getTime()) {
+          return interaction.editReply({
+            content: 'This boss trial is already finished.',
+          });
+        }
+
+        await postBossTrialBumpMessage({
+          client: this.container.client,
+          trial,
+          isAutomatic: false,
+        });
+
+        return interaction.editReply({
+          content: 'Bumped the boss trial poll.',
         });
       }
 

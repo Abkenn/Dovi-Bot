@@ -6,6 +6,7 @@ import {
 import { prisma } from '../../lib/prisma';
 import { getBossStatsBossView } from './boss-stats.service';
 import {
+  BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
   BOSS_TRIAL_VERDICTS,
   getBossTrialDurationConfig,
 } from './boss-trial.types';
@@ -145,6 +146,13 @@ export const markBossTrialLiveResultsPublished = async (trialId: string) =>
     include: bossTrialViewInclude,
   });
 
+export const markBossTrialAutomaticBumpPosted = async (trialId: string) =>
+  prisma.bossTrial.update({
+    where: { id: trialId },
+    data: { automaticBumpPostedAt: new Date() },
+    include: bossTrialViewInclude,
+  });
+
 export const markBossTrialFinalResultsPosted = async (trialId: string) =>
   prisma.bossTrial.update({
     where: { id: trialId },
@@ -163,10 +171,20 @@ export const getBossTrialView = (trialId: string) =>
 
 export const getPendingBossTrialLifecycleEvents = async () => {
   const now = new Date();
+  const automaticBumpCreatedAtCutoff = DateTime.fromJSDate(now)
+    .minus({ minutes: BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES })
+    .toJSDate();
 
   return prisma.bossTrial.findMany({
     where: {
       OR: [
+        {
+          durationMinutes: 24 * 60,
+          automaticBumpPostedAt: null,
+          createdAt: { lte: automaticBumpCreatedAtCutoff },
+          endsAt: { gt: now },
+          messageId: { not: null },
+        },
         {
           liveResultsPublishedAt: null,
           voteVisibilityHiddenUntil: { lte: now },
@@ -198,12 +216,24 @@ export const getVoteBreakdown = (
 };
 
 export const getWinningVerdict = (trial: BossTrialView) => {
-  const breakdown = getVoteBreakdown(trial);
-  const [winningVerdict] = [...BOSS_TRIAL_VERDICTS].sort(
-    (left, right) => breakdown[right] - breakdown[left],
-  );
+  const [winningVerdict] = getWinningVerdicts(trial);
 
   return winningVerdict ?? BossTrialVoteVerdict.PEAK;
+};
+
+export const getWinningVerdicts = (trial: BossTrialView) => {
+  const breakdown = getVoteBreakdown(trial);
+  const highestVoteCount = Math.max(
+    ...BOSS_TRIAL_VERDICTS.map((verdict) => breakdown[verdict]),
+  );
+
+  if (highestVoteCount <= 0) {
+    return [];
+  }
+
+  return BOSS_TRIAL_VERDICTS.filter(
+    (verdict) => breakdown[verdict] === highestVoteCount,
+  );
 };
 
 export const shouldShowBossTrialVotes = (trial: BossTrialView) =>
@@ -214,6 +244,14 @@ export const shouldPostBossTrialFinalResults = (trial: BossTrialView) =>
 
 export const shouldPublishBossTrialLiveResults = (trial: BossTrialView) =>
   !trial.liveResultsPublishedAt && shouldShowBossTrialVotes(trial);
+
+export const shouldPostBossTrialAutomaticBump = (trial: BossTrialView) =>
+  trial.durationMinutes === 24 * 60 &&
+  !trial.automaticBumpPostedAt &&
+  Date.now() >=
+    trial.createdAt.getTime() +
+      BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES * 60 * 1000 &&
+  Date.now() < trial.endsAt.getTime();
 
 const bossTrialViewInclude = {
   game: true,

@@ -45,12 +45,15 @@ export const getDaviBossStatsText = (boss: BossWithDaviStats) => {
 export const addDaviBossStatsField = (
   embed: EmbedBuilder,
   boss: BossWithDaviStats,
+  options: { spoiler?: boolean } = {},
 ) => {
   const daviStats = getDaviBossStatsText(boss);
+  const fieldValue =
+    daviStats && options.spoiler ? `||${daviStats}||` : daviStats;
 
   embed.addFields({
     name: 'Davi stats',
-    value: daviStats ?? 'No Davi stats found for this boss yet.',
+    value: fieldValue ?? 'No Davi stats found for this boss yet.',
     inline: false,
   });
 

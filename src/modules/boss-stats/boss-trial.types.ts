@@ -1,6 +1,7 @@
 import { BossTrialVoteVerdict } from '../../generated/prisma/enums';
 
 export const BOSS_TRIAL_CUSTOM_ID_PREFIX = 'bosstrial';
+export const BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES = 12 * 60;
 
 export const BOSS_TRIAL_VERDICTS = [
   BossTrialVoteVerdict.PEAK,

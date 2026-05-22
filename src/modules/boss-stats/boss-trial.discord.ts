@@ -8,11 +8,14 @@ import {
   BossTrialStatus,
   BossTrialVoteVerdict,
 } from '../../generated/prisma/enums';
-import { addDaviBossStatsField } from './boss-stats.discord';
+import {
+  addDaviBossStatsField,
+  getDaviBossStatsText,
+} from './boss-stats.discord';
 import {
   type BossTrialView,
   getVoteBreakdown,
-  getWinningVerdict,
+  getWinningVerdicts,
   shouldShowBossTrialVotes,
 } from './boss-trial.service';
 import {
@@ -30,6 +33,10 @@ export type BossTrialButtonAction =
   | {
       type: 'publish';
       trialId: string;
+    }
+  | {
+      type: 'bump';
+      trialId: string;
     };
 
 const toTimestamp = (date: Date, style: 'f' | 'R' = 'R') =>
@@ -45,6 +52,30 @@ const formatDurationMinutes = (minutes: number) => {
   }
 
   return `${minutes} minutes`;
+};
+
+const formatVerdictLabels = (verdicts: readonly BossTrialVoteVerdict[]) => {
+  const labels = verdicts.map((verdict) => BOSS_TRIAL_VERDICT_LABELS[verdict]);
+
+  if (labels.length <= 2) {
+    return labels.join(' and ');
+  }
+
+  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
+};
+
+const getTrialMessageLink = (trial: BossTrialView) => {
+  if (!trial.messageId) {
+    throw new Error('Boss trial message link is not available yet.');
+  }
+
+  return `https://discord.com/channels/${trial.guildId}/${trial.channelId}/${trial.messageId}`;
+};
+
+const getSpoileredDaviStatsText = (trial: BossTrialView) => {
+  const daviStats = getDaviBossStatsText(trial.boss);
+
+  return daviStats ? `Davi stats: ||${daviStats}||` : null;
 };
 
 const getTrialStatusLabel = (trial: BossTrialView) => {
@@ -110,17 +141,24 @@ export const buildBossTrialEmbed = (trial: BossTrialView) => {
     )
     .setTimestamp(trial.createdAt);
 
-  return addDaviBossStatsField(embed, trial.boss);
+  return addDaviBossStatsField(embed, trial.boss, { spoiler: true });
 };
 
 export const buildBossTrialFinalResultsEmbed = (trial: BossTrialView) => {
   const breakdown = getVoteBreakdown(trial);
-  const winningVerdict = getWinningVerdict(trial);
+  const winningVerdicts = getWinningVerdicts(trial);
   const totalVoters = trial.votes.length;
-  const winnerText =
-    totalVoters > 0
-      ? BOSS_TRIAL_VERDICT_LABELS[winningVerdict]
-      : 'No votes yet';
+  const winnerText = (() => {
+    if (totalVoters === 0) {
+      return 'No votes yet';
+    }
+
+    if (winningVerdicts.length > 1) {
+      return `Tie between ${formatVerdictLabels(winningVerdicts)}`;
+    }
+
+    return formatVerdictLabels(winningVerdicts);
+  })();
 
   return new EmbedBuilder()
     .setTitle('Boss Trial Results')
@@ -173,10 +211,52 @@ export const buildBossTrialVoteButtons = (trialId: string) =>
 export const buildBossTrialRequesterControls = (trialId: string) =>
   new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
+      .setCustomId(`${BOSS_TRIAL_CUSTOM_ID_PREFIX}:bump:${trialId}`)
+      .setLabel('Bump Poll')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
       .setCustomId(`${BOSS_TRIAL_CUSTOM_ID_PREFIX}:publish:${trialId}`)
       .setLabel('Publish Results Again')
       .setStyle(ButtonStyle.Secondary),
   );
+
+export const buildBossTrialBumpMessageContent = ({
+  trial,
+  isAutomatic,
+}: {
+  trial: BossTrialView;
+  isAutomatic: boolean;
+}) => {
+  const daviStats = getSpoileredDaviStatsText(trial);
+
+  return [
+    `${isAutomatic ? 'Automatic poll bump' : 'Poll bump'} - ${getTrialMessageLink(
+      trial,
+    )}`,
+    `Bump! Dovilings, voting closes ${toTimestamp(
+      trial.endsAt,
+    )}. Share your opinion on **${trial.boss.name}** while the trial is still live.`,
+    daviStats,
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+};
+
+export const buildBossTrialVotesVisibleMessageContent = (
+  trial: BossTrialView,
+) => {
+  const daviStats = getSpoileredDaviStatsText(trial);
+
+  return [
+    `Boss trial votes are now public - ${getTrialMessageLink(trial)}`,
+    `Dovilings, live vote totals are visible now. You still have until ${toTimestamp(
+      trial.endsAt,
+    )} to share your opinion on **${trial.boss.name}**.`,
+    daviStats,
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+};
 
 export const parseBossTrialButtonAction = (
   customId: string,
@@ -189,6 +269,10 @@ export const parseBossTrialButtonAction = (
 
   if (action === 'publish') {
     return { type: 'publish', trialId };
+  }
+
+  if (action === 'bump') {
+    return { type: 'bump', trialId };
   }
 
   if (

@@ -4,16 +4,20 @@ import type {
   TextBasedChannel,
 } from 'discord.js';
 import {
+  buildBossTrialBumpMessageContent,
   buildBossTrialEmbed,
   buildBossTrialFinalResultsEmbed,
   buildBossTrialVoteButtons,
+  buildBossTrialVotesVisibleMessageContent,
 } from './boss-trial.discord';
 import {
   type BossTrialView,
   getPendingBossTrialLifecycleEvents,
   isBossTrialStorageReady,
+  markBossTrialAutomaticBumpPosted,
   markBossTrialFinalResultsPosted,
   markBossTrialLiveResultsPublished,
+  shouldPostBossTrialAutomaticBump,
   shouldPostBossTrialFinalResults,
   shouldPublishBossTrialLiveResults,
 } from './boss-trial.service';
@@ -85,6 +89,44 @@ export const postBossTrialResultsMessage = async ({
   });
 };
 
+export const postBossTrialBumpMessage = async ({
+  client,
+  trial,
+  isAutomatic,
+}: {
+  client: Client;
+  trial: BossTrialView;
+  isAutomatic: boolean;
+}) => {
+  const channel = await getTrialChannel(client, trial.channelId);
+
+  if (!channel) {
+    throw new Error('Boss trial channel could not be found.');
+  }
+
+  return sendChannelMessage(channel, {
+    content: buildBossTrialBumpMessageContent({ trial, isAutomatic }),
+  });
+};
+
+export const postBossTrialVotesVisibleMessage = async ({
+  client,
+  trial,
+}: {
+  client: Client;
+  trial: BossTrialView;
+}) => {
+  const channel = await getTrialChannel(client, trial.channelId);
+
+  if (!channel) {
+    throw new Error('Boss trial channel could not be found.');
+  }
+
+  return sendChannelMessage(channel, {
+    content: buildBossTrialVotesVisibleMessageContent(trial),
+  });
+};
+
 export const runBossTrialLifecycleTick = async (client: Client) => {
   if (!(await isBossTrialStorageReady())) {
     console.info('Boss trial lifecycle skipped: tables are missing.');
@@ -97,8 +139,21 @@ export const runBossTrialLifecycleTick = async (client: Client) => {
     try {
       let currentTrial = trial;
 
+      if (shouldPostBossTrialAutomaticBump(currentTrial)) {
+        await postBossTrialBumpMessage({
+          client,
+          trial: currentTrial,
+          isAutomatic: true,
+        });
+        currentTrial = await markBossTrialAutomaticBumpPosted(currentTrial.id);
+      }
+
       if (shouldPublishBossTrialLiveResults(currentTrial)) {
         await refreshBossTrialMessage(client, currentTrial);
+        await postBossTrialVotesVisibleMessage({
+          client,
+          trial: currentTrial,
+        });
         currentTrial = await markBossTrialLiveResultsPublished(currentTrial.id);
       }
 
