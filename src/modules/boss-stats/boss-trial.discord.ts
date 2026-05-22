@@ -218,7 +218,7 @@ export const buildBossTrialBumpMessageContent = ({
   trial: BossTrialView;
   isAutomatic: boolean;
 }) =>
-  `${isAutomatic ? 'Automatic poll bump' : 'Poll bump'} - ${getTrialMessageLink(
+  `${isAutomatic ? 'Automatic boss trial bump' : 'Boss trial bump'} - ${getTrialMessageLink(
     trial,
   )}\nBump! Dovilings, voting closes ${toTimestamp(
     trial.endsAt,

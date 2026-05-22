@@ -230,6 +230,7 @@ model BossTrial {
   game  BossGame        @relation(fields: [gameId], references: [id], onDelete: Cascade)
   boss  Boss            @relation(fields: [bossId], references: [id], onDelete: Cascade)
   votes BossTrialVote[]
+  bumpMessages BossTrialBumpMessage[]
 
   @@index([guildId, channelId])
   @@index([guildId, createdAt])
@@ -237,6 +238,17 @@ model BossTrial {
   @@index([status, endsAt])
   @@index([voteVisibilityHiddenUntil])
   @@index([automaticBumpPostedAt])
+}
+
+model BossTrialBumpMessage {
+  id        String   @id @default(cuid())
+  trialId   String
+  messageId String   @unique
+  createdAt DateTime @default(now())
+
+  trial BossTrial @relation(fields: [trialId], references: [id], onDelete: Cascade)
+
+  @@index([trialId, createdAt])
 }
 
 model BossTrialVote {

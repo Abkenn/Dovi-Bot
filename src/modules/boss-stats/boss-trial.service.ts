@@ -80,6 +80,19 @@ export const attachBossTrialMessage = async ({
     include: bossTrialViewInclude,
   });
 
+export const attachBossTrialBumpMessage = async ({
+  trialId,
+  messageId,
+}: {
+  trialId: string;
+  messageId: string;
+}) =>
+  prisma.bossTrialBumpMessage.upsert({
+    where: { messageId },
+    update: { trialId },
+    create: { trialId, messageId },
+  });
+
 export const recordBossTrialVote = async ({
   trialId,
   userId,
@@ -201,8 +214,16 @@ export const getPendingBossTrialLifecycleEvents = async () => {
   });
 };
 
+type BossTrialWithVotes = {
+  votes: { verdict: BossTrialVoteVerdict }[];
+};
+
+type BossTrialWithVoteVisibility = {
+  voteVisibilityHiddenUntil: Date;
+};
+
 export const getVoteBreakdown = (
-  trial: BossTrialView,
+  trial: BossTrialWithVotes,
 ): Record<BossTrialVoteVerdict, number> => {
   const breakdown = Object.fromEntries(
     BOSS_TRIAL_VERDICTS.map((verdict) => [verdict, 0]),
@@ -215,13 +236,13 @@ export const getVoteBreakdown = (
   return breakdown;
 };
 
-export const getWinningVerdict = (trial: BossTrialView) => {
+export const getWinningVerdict = (trial: BossTrialWithVotes) => {
   const [winningVerdict] = getWinningVerdicts(trial);
 
   return winningVerdict ?? BossTrialVoteVerdict.PEAK;
 };
 
-export const getWinningVerdicts = (trial: BossTrialView) => {
+export const getWinningVerdicts = (trial: BossTrialWithVotes) => {
   const breakdown = getVoteBreakdown(trial);
   const highestVoteCount = Math.max(
     ...BOSS_TRIAL_VERDICTS.map((verdict) => breakdown[verdict]),
@@ -236,7 +257,7 @@ export const getWinningVerdicts = (trial: BossTrialView) => {
   );
 };
 
-export const shouldShowBossTrialVotes = (trial: BossTrialView) =>
+export const shouldShowBossTrialVotes = (trial: BossTrialWithVoteVisibility) =>
   Date.now() >= trial.voteVisibilityHiddenUntil.getTime();
 
 export const shouldPostBossTrialFinalResults = (trial: BossTrialView) =>
@@ -264,6 +285,7 @@ const bossTrialViewInclude = {
     },
   },
   votes: true,
+  bumpMessages: true,
 } as const;
 
 export type BossTrialView = Awaited<ReturnType<typeof getBossTrialView>>;

@@ -11,6 +11,7 @@ import {
   buildBossTrialVotesVisibleMessageContent,
 } from './boss-trial.discord';
 import {
+  attachBossTrialBumpMessage,
   type BossTrialView,
   getPendingBossTrialLifecycleEvents,
   isBossTrialStorageReady,
@@ -47,7 +48,12 @@ export const refreshBossTrialMessage = async (
   client: Client,
   trial: BossTrialView,
 ) => {
-  if (!trial.messageId) {
+  const messageIds = [
+    trial.messageId,
+    ...trial.bumpMessages.map((message) => message.messageId),
+  ].filter((messageId) => messageId !== null);
+
+  if (messageIds.length === 0) {
     return;
   }
 
@@ -57,18 +63,20 @@ export const refreshBossTrialMessage = async (
     return;
   }
 
-  const message = await channel.messages
-    .fetch(trial.messageId)
-    .catch(() => null);
+  await Promise.all(
+    messageIds.map(async (messageId) => {
+      const message = await channel.messages.fetch(messageId).catch(() => null);
 
-  if (!message) {
-    return;
-  }
+      if (!message) {
+        return;
+      }
 
-  await message.edit({
-    embeds: [buildBossTrialEmbed(trial)],
-    components: [buildBossTrialVoteButtons(trial.id)],
-  });
+      await message.edit({
+        embeds: [buildBossTrialEmbed(trial)],
+        components: [buildBossTrialVoteButtons(trial.id)],
+      });
+    }),
+  );
 };
 
 export const postBossTrialResultsMessage = async ({
@@ -104,11 +112,18 @@ export const postBossTrialBumpMessage = async ({
     throw new Error('Boss trial channel could not be found.');
   }
 
-  return sendChannelMessage(channel, {
+  const message = await sendChannelMessage(channel, {
     content: buildBossTrialBumpMessageContent({ trial, isAutomatic }),
     embeds: [buildBossTrialEmbed(trial)],
     components: [buildBossTrialVoteButtons(trial.id)],
   });
+
+  await attachBossTrialBumpMessage({
+    trialId: trial.id,
+    messageId: message.id,
+  });
+
+  return message;
 };
 
 export const postBossTrialVotesVisibleMessage = async ({
@@ -124,11 +139,18 @@ export const postBossTrialVotesVisibleMessage = async ({
     throw new Error('Boss trial channel could not be found.');
   }
 
-  return sendChannelMessage(channel, {
+  const message = await sendChannelMessage(channel, {
     content: buildBossTrialVotesVisibleMessageContent(trial),
     embeds: [buildBossTrialEmbed(trial)],
     components: [buildBossTrialVoteButtons(trial.id)],
   });
+
+  await attachBossTrialBumpMessage({
+    trialId: trial.id,
+    messageId: message.id,
+  });
+
+  return message;
 };
 
 export const runBossTrialLifecycleTick = async (client: Client) => {
