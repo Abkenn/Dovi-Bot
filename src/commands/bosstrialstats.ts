@@ -1,7 +1,10 @@
 import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { buildBossTrialStatsEmbed } from '../modules/boss-stats/boss-trial-stats.discord';
+import {
+  addBossTrialStatsDisplayNames,
+  buildBossTrialStatsEmbed,
+} from '../modules/boss-stats/boss-trial-stats.discord';
 import { getBossTrialStats } from '../modules/boss-stats/boss-trial-stats.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
@@ -32,7 +35,11 @@ export class BossTrialStatsCommand extends Command {
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, COMMAND_GUILDS.BOSS_TRIAL_STATS),
       run: async ({ editReply, preflight: guildId }) => {
-        const stats = await getBossTrialStats(guildId);
+        const stats = await addBossTrialStatsDisplayNames({
+          client: this.container.client,
+          guildId,
+          stats: await getBossTrialStats(guildId),
+        });
 
         return editReply({
           embeds: [
