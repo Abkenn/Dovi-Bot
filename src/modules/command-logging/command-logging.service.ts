@@ -1,9 +1,12 @@
+import {
+  createCommandErrorLog as createCommandErrorLogRow,
+  createCommandExecutionLog as createCommandExecutionLogRow,
+} from '@data/queries/command-logging';
 import type { ChatInputCommandInteraction } from 'discord.js';
 import {
   type CommandExecutionStatus,
   Prisma,
 } from '../../generated/prisma/client';
-import { prisma } from '../../lib/prisma';
 
 const serializeOptions = (interaction: ChatInputCommandInteraction) => {
   try {
@@ -46,18 +49,16 @@ export const createCommandExecutionLog = async ({
   note?: string | null;
   durationMs?: number | null;
 }) => {
-  return prisma.commandExecutionLog.create({
-    data: {
-      guildId: interaction.guildId,
-      channelId: interaction.channelId,
-      userId: interaction.user.id,
-      username: interaction.user.tag,
-      commandName,
-      optionsJson: serializeOptions(interaction),
-      status,
-      note: note ?? null,
-      durationMs: durationMs ?? null,
-    },
+  return createCommandExecutionLogRow({
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+    userId: interaction.user.id,
+    username: interaction.user.tag,
+    commandName,
+    optionsJson: serializeOptions(interaction),
+    status,
+    note: note ?? null,
+    durationMs: durationMs ?? null,
   });
 };
 
@@ -75,15 +76,13 @@ export const createCommandErrorLog = async ({
     rawError?: unknown;
   };
 
-  return prisma.commandErrorLog.create({
-    data: {
-      commandExecutionId,
-      errorName: errorObject.name,
-      errorMessage: errorObject.message,
-      stack: errorObject.stack ?? null,
-      discordCode: typeof anyError?.code === 'number' ? anyError.code : null,
-      httpStatus: typeof anyError?.status === 'number' ? anyError.status : null,
-      rawJson: serializeRawError(anyError?.rawError),
-    },
+  return createCommandErrorLogRow({
+    commandExecutionId,
+    errorName: errorObject.name,
+    errorMessage: errorObject.message,
+    stack: errorObject.stack ?? null,
+    discordCode: typeof anyError?.code === 'number' ? anyError.code : null,
+    httpStatus: typeof anyError?.status === 'number' ? anyError.status : null,
+    rawJson: serializeRawError(anyError?.rawError),
   });
 };

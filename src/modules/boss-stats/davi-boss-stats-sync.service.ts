@@ -1,6 +1,6 @@
+import { areBossStatsTablesPresent } from '@data/queries/boss-stats';
+import { upsertDaviSpreadsheetBossEncounter } from '@data/transactions/davi-boss-stats-sync';
 import { env } from '@zod-schemas/env.zod';
-import { BossEncounterSource } from '../../generated/prisma/enums';
-import { prisma } from '../../lib/prisma';
 import {
   normalizeBossStatName,
   parseDaviBossStatsRow,
@@ -32,45 +32,11 @@ const getDaviBossStatsSyncConfig = () => {
 };
 
 const assertBossStatsStorageExists = async () => {
-  const tables = await prisma.$queryRaw<{ tableName: string | null }[]>`
-    select to_regclass('public."BossGame"')::text as "tableName"
-    union all
-    select to_regclass('public."Boss"')::text as "tableName"
-    union all
-    select to_regclass('public."BossEncounterStat"')::text as "tableName"
-  `;
-
-  if (tables.some((table) => !table.tableName)) {
+  if (!(await areBossStatsTablesPresent())) {
     throw new Error(
       'Boss stats tables do not exist yet. Apply the Prisma schema before running boss stats sync.',
     );
   }
-};
-
-const upsertBoss = async (row: DaviBossStatsSpreadsheetRow) => {
-  const game = await prisma.bossGame.upsert({
-    where: { normalizedName: normalizeBossStatName(row.game) },
-    update: { name: row.game },
-    create: {
-      name: row.game,
-      normalizedName: normalizeBossStatName(row.game),
-    },
-  });
-
-  return prisma.boss.upsert({
-    where: {
-      gameId_normalizedName: {
-        gameId: game.id,
-        normalizedName: normalizeBossStatName(row.boss),
-      },
-    },
-    update: { name: row.boss },
-    create: {
-      gameId: game.id,
-      name: row.boss,
-      normalizedName: normalizeBossStatName(row.boss),
-    },
-  });
 };
 
 const upsertDaviEncounterStat = async ({
@@ -80,42 +46,20 @@ const upsertDaviEncounterStat = async ({
   row: DaviBossStatsSpreadsheetRow;
   daviDiscordUserId: string;
 }) => {
-  const boss = await upsertBoss(row);
   const parsedRow = parseDaviBossStatsRow(row);
-  const statKey = {
-    bossId: boss.id,
-    playerDiscordUserId: daviDiscordUserId,
-    source: BossEncounterSource.DAVI_SPREADSHEET,
-  };
 
-  const existingStat = await prisma.bossEncounterStat.findUnique({
-    where: { bossId_playerDiscordUserId_source: statKey },
-    select: { id: true },
+  return upsertDaviSpreadsheetBossEncounter({
+    gameName: row.game,
+    normalizedGameName: normalizeBossStatName(row.game),
+    bossName: row.boss,
+    normalizedBossName: normalizeBossStatName(row.boss),
+    daviDiscordUserId,
+    parsedRow,
+    rawTotalAttemptTime: row.totalAttemptTime || null,
+    rawWinningAttemptTime: row.winningAttemptTime || null,
+    rawDifficultyCoefficient: row.difficultyCoefficient || null,
+    sourceRowNumber: row.rowNumber,
   });
-
-  await prisma.bossEncounterStat.upsert({
-    where: { bossId_playerDiscordUserId_source: statKey },
-    update: {
-      ...parsedRow,
-      rawTotalAttemptTime: row.totalAttemptTime || null,
-      rawWinningAttemptTime: row.winningAttemptTime || null,
-      rawDifficultyCoefficient: row.difficultyCoefficient || null,
-      sourceRowNumber: row.rowNumber,
-      syncedAt: new Date(),
-    },
-    create: {
-      bossId: boss.id,
-      playerDiscordUserId: daviDiscordUserId,
-      source: BossEncounterSource.DAVI_SPREADSHEET,
-      ...parsedRow,
-      rawTotalAttemptTime: row.totalAttemptTime || null,
-      rawWinningAttemptTime: row.winningAttemptTime || null,
-      rawDifficultyCoefficient: row.difficultyCoefficient || null,
-      sourceRowNumber: row.rowNumber,
-    },
-  });
-
-  return existingStat ? 'updated' : 'imported';
 };
 
 export const syncDaviBossStats = async ({

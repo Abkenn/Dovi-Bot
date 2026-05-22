@@ -1,3 +1,16 @@
+import {
+  deleteStreamScheduleOverrideForDate,
+  ensureGuildStreamConfig as ensureGuildStreamConfigRows,
+  findEnabledStreamScheduleDefaults,
+  findGuildStreamConfig,
+  findStreamScheduleOverridesInDateRange,
+  updateDefaultGameName as updateDefaultGameNameRow,
+  upsertStreamTitleResetOverride,
+} from '@data/queries/stream-info';
+import {
+  updateDefaultGameAndTargetStreamOverride,
+  upsertTargetStreamOverride,
+} from '@data/transactions/stream-info';
 import { DateTime } from 'luxon';
 import type {
   GuildConfig,
@@ -5,7 +18,6 @@ import type {
   StreamScheduleOverride,
 } from '../../generated/prisma/client';
 import { StreamKind } from '../../generated/prisma/client';
-import { prisma } from '../../lib/prisma';
 import { resolveTargetStream } from './stream-info.target';
 import type {
   SetStreamInfoInput,
@@ -75,44 +87,16 @@ const buildOccurrences = (
 };
 
 const ensureGuildStreamConfig = async (guildId: string) => {
-  const config = await prisma.guildConfig.upsert({
-    where: { guildId },
-    update: {},
-    create: {
-      guildId,
-      ...DEFAULT_GUILD_STREAM_CONFIG,
-    },
+  return ensureGuildStreamConfigRows({
+    guildId,
+    defaultConfig: DEFAULT_GUILD_STREAM_CONFIG,
+    defaultSchedule: DEFAULT_STREAM_SCHEDULE,
+    startTimeToMinutes,
   });
-
-  for (const rule of DEFAULT_STREAM_SCHEDULE) {
-    await prisma.streamScheduleDefault.upsert({
-      where: {
-        guildId_weekday: {
-          guildId,
-          weekday: rule.weekday,
-        },
-      },
-      update: {},
-      create: {
-        guildId,
-        weekday: rule.weekday,
-        startMinutes: startTimeToMinutes(rule.startTime),
-        durationMinutes: rule.durationMinutes,
-        isEnabled: rule.isEnabled,
-      },
-    });
-  }
-
-  return config;
 };
 
 const updateDefaultGameName = (guildId: string, gameName: string) =>
-  prisma.guildConfig.update({
-    where: { guildId },
-    data: {
-      defaultGameName: gameName,
-    },
-  });
+  updateDefaultGameNameRow(guildId, gameName);
 
 export const getStreamInfo = async (
   guildId: string,
@@ -123,15 +107,7 @@ export const getStreamInfo = async (
     throw new Error(`GuildConfig not found for guildId=${guildId}`);
   }
 
-  const defaults = await prisma.streamScheduleDefault.findMany({
-    where: {
-      guildId,
-      isEnabled: true,
-    },
-    orderBy: {
-      weekday: 'asc',
-    },
-  });
+  const defaults = await findEnabledStreamScheduleDefaults(guildId);
 
   const nowLocal = DateTime.utc().setZone(config.canonicalTimezone);
   const start = nowLocal
@@ -143,14 +119,10 @@ export const getStreamInfo = async (
     .endOf('day')
     .toFormat('yyyy-LL-dd');
 
-  const overrideRows = await prisma.streamScheduleOverride.findMany({
-    where: {
-      guildId,
-      streamDateKey: {
-        gte: start,
-        lte: end,
-      },
-    },
+  const overrideRows = await findStreamScheduleOverridesInDateRange({
+    guildId,
+    start,
+    end,
   });
 
   const overrides = new Map<string, StreamScheduleOverride>();
@@ -177,9 +149,7 @@ export const setDefaultGameName = async (guildId: string, gameName: string) => {
 };
 
 export const setStreamInfo = async (input: SetStreamInfoInput) => {
-  const config = await prisma.guildConfig.findUnique({
-    where: { guildId: input.guildId },
-  });
+  const config = await findGuildStreamConfig(input.guildId);
 
   if (!config) {
     throw new Error(`GuildConfig not found for guildId=${input.guildId}`);
@@ -233,62 +203,27 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     updateData.gameName = null;
   }
 
-  const overrideUpsert = prisma.streamScheduleOverride.upsert({
-    where: {
-      guildId_streamDateKey: {
-        guildId: input.guildId,
-        streamDateKey: targetOccurrence.dateKey,
-      },
-    },
-    update: updateData,
-    create: {
-      guildId: input.guildId,
-      streamDateKey: targetOccurrence.dateKey,
-      resolvedFromWeekday: targetOccurrence.weekday,
-      startAtUtc: targetOccurrence.startAt,
-      streamKind: input.streamKind ?? null,
-      musicMode: input.musicMode ?? null,
-      titleOverride: input.title ?? null,
-      gameName: shouldPersistGameName ? null : (input.gameName ?? null),
-    },
-  });
+  const overrideInput = {
+    guildId: input.guildId,
+    streamDateKey: targetOccurrence.dateKey,
+    startAtUtc: targetOccurrence.startAt,
+    ...updateData,
+    createGameName: shouldPersistGameName ? null : (input.gameName ?? null),
+  };
 
   if (!shouldPersistGameName) {
-    return overrideUpsert;
+    return upsertTargetStreamOverride(overrideInput);
   }
 
   const defaultGameName = input.gameName;
   if (defaultGameName === null || defaultGameName === undefined) {
-    return overrideUpsert;
+    return upsertTargetStreamOverride(overrideInput);
   }
 
-  const override = await prisma.$transaction(async (tx) => {
-    await tx.guildConfig.update({
-      where: { guildId: input.guildId },
-      data: {
-        defaultGameName,
-      },
-    });
-
-    return tx.streamScheduleOverride.upsert({
-      where: {
-        guildId_streamDateKey: {
-          guildId: input.guildId,
-          streamDateKey: targetOccurrence.dateKey,
-        },
-      },
-      update: updateData,
-      create: {
-        guildId: input.guildId,
-        streamDateKey: targetOccurrence.dateKey,
-        resolvedFromWeekday: targetOccurrence.weekday,
-        startAtUtc: targetOccurrence.startAt,
-        streamKind: input.streamKind ?? null,
-        musicMode: input.musicMode ?? null,
-        titleOverride: input.title ?? null,
-        gameName: null,
-      },
-    });
+  const override = await updateDefaultGameAndTargetStreamOverride({
+    guildId: input.guildId,
+    defaultGameName,
+    override: overrideInput,
   });
 
   return override;
@@ -303,24 +238,11 @@ export const resetStreamTitle = async (guildId: string) => {
     throw new Error('No target stream found');
   }
 
-  return prisma.streamScheduleOverride.upsert({
-    where: {
-      guildId_streamDateKey: {
-        guildId,
-        streamDateKey: targetOccurrence.dateKey,
-      },
-    },
-    update: {
-      titleOverride: null,
-      resolvedFromWeekday: targetOccurrence.weekday,
-    },
-    create: {
-      guildId,
-      streamDateKey: targetOccurrence.dateKey,
-      resolvedFromWeekday: targetOccurrence.weekday,
-      startAtUtc: targetOccurrence.startAt,
-      titleOverride: null,
-    },
+  return upsertStreamTitleResetOverride({
+    guildId,
+    streamDateKey: targetOccurrence.dateKey,
+    resolvedFromWeekday: targetOccurrence.weekday,
+    startAtUtc: targetOccurrence.startAt,
   });
 };
 
@@ -333,10 +255,8 @@ export const resetStreamInfo = async (guildId: string) => {
     throw new Error('No target stream found');
   }
 
-  return prisma.streamScheduleOverride.deleteMany({
-    where: {
-      guildId,
-      streamDateKey: targetOccurrence.dateKey,
-    },
+  return deleteStreamScheduleOverrideForDate({
+    guildId,
+    streamDateKey: targetOccurrence.dateKey,
   });
 };

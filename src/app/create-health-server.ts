@@ -1,5 +1,5 @@
+import { pingDatabase } from '@data/queries/database-health';
 import { Hono } from 'hono';
-import { prisma } from '../lib/prisma';
 import { getRuntimeHealth } from './runtime-health';
 
 const DATABASE_HEALTH_CACHE_MS = 60_000;
@@ -23,7 +23,7 @@ const getDatabaseHealth = async () => {
   }
 
   if (!pendingDatabaseHealthCheck) {
-    pendingDatabaseHealthCheck = prisma.$queryRaw`select 1`
+    pendingDatabaseHealthCheck = pingDatabase()
       .then(() => 'ok' as const)
       .catch(() => 'sleepy' as const)
       .then((status) => {
