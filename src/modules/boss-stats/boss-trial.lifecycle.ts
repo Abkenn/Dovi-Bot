@@ -106,6 +106,8 @@ export const postBossTrialBumpMessage = async ({
 
   return sendChannelMessage(channel, {
     content: buildBossTrialBumpMessageContent({ trial, isAutomatic }),
+    embeds: [buildBossTrialEmbed(trial)],
+    components: [buildBossTrialVoteButtons(trial.id)],
   });
 };
 
@@ -124,6 +126,8 @@ export const postBossTrialVotesVisibleMessage = async ({
 
   return sendChannelMessage(channel, {
     content: buildBossTrialVotesVisibleMessageContent(trial),
+    embeds: [buildBossTrialEmbed(trial)],
+    components: [buildBossTrialVoteButtons(trial.id)],
   });
 };
 

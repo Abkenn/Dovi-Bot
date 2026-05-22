@@ -8,10 +8,7 @@ import {
   BossTrialStatus,
   BossTrialVoteVerdict,
 } from '../../generated/prisma/enums';
-import {
-  addDaviBossStatsField,
-  getDaviBossStatsText,
-} from './boss-stats.discord';
+import { addDaviBossStatsField } from './boss-stats.discord';
 import {
   type BossTrialView,
   getVoteBreakdown,
@@ -70,12 +67,6 @@ const getTrialMessageLink = (trial: BossTrialView) => {
   }
 
   return `https://discord.com/channels/${trial.guildId}/${trial.channelId}/${trial.messageId}`;
-};
-
-const getSpoileredDaviStatsText = (trial: BossTrialView) => {
-  const daviStats = getDaviBossStatsText(trial.boss);
-
-  return daviStats ? `Davi stats: ||${daviStats}||` : null;
 };
 
 const getTrialStatusLabel = (trial: BossTrialView) => {
@@ -226,37 +217,21 @@ export const buildBossTrialBumpMessageContent = ({
 }: {
   trial: BossTrialView;
   isAutomatic: boolean;
-}) => {
-  const daviStats = getSpoileredDaviStatsText(trial);
-
-  return [
-    `${isAutomatic ? 'Automatic poll bump' : 'Poll bump'} - ${getTrialMessageLink(
-      trial,
-    )}`,
-    `Bump! Dovilings, voting closes ${toTimestamp(
-      trial.endsAt,
-    )}. Share your opinion on **${trial.boss.name}** while the trial is still live.`,
-    daviStats,
-  ]
-    .filter((line) => line !== null)
-    .join('\n');
-};
+}) =>
+  `${isAutomatic ? 'Automatic poll bump' : 'Poll bump'} - ${getTrialMessageLink(
+    trial,
+  )}\nBump! Dovilings, voting closes ${toTimestamp(
+    trial.endsAt,
+  )}. Share your opinion on **${trial.boss.name}** while the trial is still live.`;
 
 export const buildBossTrialVotesVisibleMessageContent = (
   trial: BossTrialView,
-) => {
-  const daviStats = getSpoileredDaviStatsText(trial);
-
-  return [
-    `Boss trial votes are now public - ${getTrialMessageLink(trial)}`,
-    `Dovilings, live vote totals are visible now. You still have until ${toTimestamp(
-      trial.endsAt,
-    )} to share your opinion on **${trial.boss.name}**.`,
-    daviStats,
-  ]
-    .filter((line) => line !== null)
-    .join('\n');
-};
+) =>
+  `Boss trial votes are now public - ${getTrialMessageLink(
+    trial,
+  )}\nDovilings, live vote totals are visible now. You still have until ${toTimestamp(
+    trial.endsAt,
+  )} to share your opinion on **${trial.boss.name}**.`;
 
 export const parseBossTrialButtonAction = (
   customId: string,
