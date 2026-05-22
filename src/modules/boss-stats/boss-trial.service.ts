@@ -1,9 +1,9 @@
-import { DateTime } from 'luxon';
 import {
   BossTrialStatus,
-  BossTrialVoteVerdict,
+  type BossTrialVoteVerdict,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import { DAY_MINUTES, MINUTE_MS } from '../../lib/time.constants';
 import { getBossStatsBossView } from './boss-stats.service';
 import {
   BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
@@ -11,10 +11,15 @@ import {
   getBossTrialDurationConfig,
 } from './boss-trial.types';
 
-const BOSS_TRIAL_STORAGE_MISSING_RECHECK_MS = 5 * 60 * 1000;
+const BOSS_TRIAL_STORAGE_MISSING_RECHECK_MS = 5 * MINUTE_MS;
 
 let bossTrialStorageReady: boolean | undefined;
 let bossTrialStorageLastCheckedAt = 0;
+
+const addMinutes = (date: Date, minutes: number) =>
+  new Date(date.getTime() + minutes * MINUTE_MS);
+
+type BossTrialMessageInput = { trialId: string; messageId: string };
 
 export const isBossTrialStorageReady = async () => {
   if (bossTrialStorageReady) {
@@ -69,7 +74,7 @@ export const createBossTrial = async ({
 
   const boss = await getBossStatsBossView({ gameName, bossName });
   const durationConfig = getBossTrialDurationConfig(duration);
-  const now = DateTime.utc();
+  const now = new Date();
 
   return prisma.bossTrial.create({
     data: {
@@ -79,10 +84,8 @@ export const createBossTrial = async ({
       gameId: boss.gameId,
       bossId: boss.id,
       durationMinutes: durationConfig.durationMinutes,
-      voteVisibilityHiddenUntil: now
-        .plus({ minutes: durationConfig.hiddenMinutes })
-        .toJSDate(),
-      endsAt: now.plus({ minutes: durationConfig.durationMinutes }).toJSDate(),
+      voteVisibilityHiddenUntil: addMinutes(now, durationConfig.hiddenMinutes),
+      endsAt: addMinutes(now, durationConfig.durationMinutes),
     },
     include: bossTrialViewInclude,
   });
@@ -91,10 +94,7 @@ export const createBossTrial = async ({
 export const attachBossTrialMessage = async ({
   trialId,
   messageId,
-}: {
-  trialId: string;
-  messageId: string;
-}) =>
+}: BossTrialMessageInput) =>
   prisma.bossTrial.update({
     where: { id: trialId },
     data: { messageId },
@@ -104,10 +104,7 @@ export const attachBossTrialMessage = async ({
 export const attachBossTrialBumpMessage = async ({
   trialId,
   messageId,
-}: {
-  trialId: string;
-  messageId: string;
-}) =>
+}: BossTrialMessageInput) =>
   prisma.bossTrialBumpMessage.upsert({
     where: { messageId },
     update: { trialId },
@@ -127,13 +124,15 @@ export const recordBossTrialVote = async ({
     throw new Error('Unknown boss trial verdict.');
   }
 
-  const existingVote = await prisma.bossTrialVote.findUnique({
-    where: {
-      trialId_userId: {
-        trialId,
-        userId,
-      },
+  const where = {
+    trialId_userId: {
+      trialId,
+      userId,
     },
+  };
+
+  const existingVote = await prisma.bossTrialVote.findUnique({
+    where,
     select: { verdict: true },
   });
 
@@ -145,24 +144,16 @@ export const recordBossTrialVote = async ({
     };
   }
 
-  const now = new Date();
+  const votedAt = new Date();
 
   await prisma.bossTrialVote.upsert({
-    where: {
-      trialId_userId: {
-        trialId,
-        userId,
-      },
-    },
-    update: {
-      verdict,
-      votedAt: now,
-    },
+    where,
+    update: { verdict, votedAt },
     create: {
       trialId,
       userId,
       verdict,
-      votedAt: now,
+      votedAt,
     },
   });
 
@@ -176,22 +167,22 @@ export const recordBossTrialVote = async ({
 type BossTrialUpdateManyInput = NonNullable<
   Parameters<typeof prisma.bossTrial.updateMany>[0]
 >;
+type BossTrialTimestampField =
+  | 'liveResultsPublishedAt'
+  | 'automaticBumpPostedAt'
+  | 'finalResultsPostedAt';
 
-const claimBossTrialLifecycleEvent = async ({
-  trialId,
-  where,
-  data,
-}: {
-  trialId: string;
-  where: NonNullable<BossTrialUpdateManyInput['where']>;
-  data: BossTrialUpdateManyInput['data'];
-}) => {
+const claimBossTrialTimestamp = async (
+  trialId: string,
+  field: BossTrialTimestampField,
+  data: BossTrialUpdateManyInput['data'] = {},
+) => {
   const result = await prisma.bossTrial.updateMany({
     where: {
-      ...where,
       id: trialId,
+      [field]: null,
     },
-    data,
+    data: { ...data, [field]: new Date() },
   });
 
   if (result.count === 0) {
@@ -202,33 +193,14 @@ const claimBossTrialLifecycleEvent = async ({
 };
 
 export const claimBossTrialLiveResults = (trialId: string) =>
-  claimBossTrialLifecycleEvent({
-    trialId,
-    where: {
-      liveResultsPublishedAt: null,
-    },
-    data: { liveResultsPublishedAt: new Date() },
-  });
+  claimBossTrialTimestamp(trialId, 'liveResultsPublishedAt');
 
 export const claimBossTrialAutomaticBump = (trialId: string) =>
-  claimBossTrialLifecycleEvent({
-    trialId,
-    where: {
-      automaticBumpPostedAt: null,
-    },
-    data: { automaticBumpPostedAt: new Date() },
-  });
+  claimBossTrialTimestamp(trialId, 'automaticBumpPostedAt');
 
 export const claimBossTrialFinalResults = (trialId: string) =>
-  claimBossTrialLifecycleEvent({
-    trialId,
-    where: {
-      finalResultsPostedAt: null,
-    },
-    data: {
-      status: BossTrialStatus.RESULTS_PUBLISHED,
-      finalResultsPostedAt: new Date(),
-    },
+  claimBossTrialTimestamp(trialId, 'finalResultsPostedAt', {
+    status: BossTrialStatus.RESULTS_PUBLISHED,
   });
 
 export const getBossTrialView = (trialId: string) =>
@@ -239,15 +211,16 @@ export const getBossTrialView = (trialId: string) =>
 
 export const getPendingBossTrialLifecycleEvents = async () => {
   const now = new Date();
-  const automaticBumpCreatedAtCutoff = DateTime.fromJSDate(now)
-    .minus({ minutes: BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES })
-    .toJSDate();
+  const automaticBumpCreatedAtCutoff = addMinutes(
+    now,
+    -BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
+  );
 
   return prisma.bossTrial.findMany({
     where: {
       OR: [
         {
-          durationMinutes: 24 * 60,
+          durationMinutes: DAY_MINUTES,
           automaticBumpPostedAt: null,
           createdAt: { lte: automaticBumpCreatedAtCutoff },
           endsAt: { gt: now },
@@ -269,13 +242,7 @@ export const getPendingBossTrialLifecycleEvents = async () => {
   });
 };
 
-type BossTrialWithVotes = {
-  votes: { verdict: BossTrialVoteVerdict }[];
-};
-
-type BossTrialWithVoteVisibility = {
-  voteVisibilityHiddenUntil: Date;
-};
+type BossTrialWithVotes = { votes: { verdict: BossTrialVoteVerdict }[] };
 
 export const getVoteBreakdown = (
   trial: BossTrialWithVotes,
@@ -289,12 +256,6 @@ export const getVoteBreakdown = (
   }
 
   return breakdown;
-};
-
-export const getWinningVerdict = (trial: BossTrialWithVotes) => {
-  const [winningVerdict] = getWinningVerdicts(trial);
-
-  return winningVerdict ?? BossTrialVoteVerdict.PEAK;
 };
 
 export const getWinningVerdicts = (trial: BossTrialWithVotes) => {
@@ -312,8 +273,9 @@ export const getWinningVerdicts = (trial: BossTrialWithVotes) => {
   );
 };
 
-export const shouldShowBossTrialVotes = (trial: BossTrialWithVoteVisibility) =>
-  Date.now() >= trial.voteVisibilityHiddenUntil.getTime();
+export const shouldShowBossTrialVotes = (trial: {
+  voteVisibilityHiddenUntil: Date;
+}) => Date.now() >= trial.voteVisibilityHiddenUntil.getTime();
 
 export const shouldPostBossTrialFinalResults = (trial: BossTrialView) =>
   !trial.finalResultsPostedAt && Date.now() >= trial.endsAt.getTime();
@@ -321,13 +283,19 @@ export const shouldPostBossTrialFinalResults = (trial: BossTrialView) =>
 export const shouldPublishBossTrialLiveResults = (trial: BossTrialView) =>
   !trial.liveResultsPublishedAt && shouldShowBossTrialVotes(trial);
 
-export const shouldPostBossTrialAutomaticBump = (trial: BossTrialView) =>
-  trial.durationMinutes === 24 * 60 &&
-  !trial.automaticBumpPostedAt &&
-  Date.now() >=
+export const shouldPostBossTrialAutomaticBump = (trial: BossTrialView) => {
+  const now = Date.now();
+  const bumpAt =
     trial.createdAt.getTime() +
-      BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES * 60 * 1000 &&
-  Date.now() < trial.endsAt.getTime();
+    BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES * MINUTE_MS;
+
+  return (
+    trial.durationMinutes === DAY_MINUTES &&
+    !trial.automaticBumpPostedAt &&
+    now >= bumpAt &&
+    now < trial.endsAt.getTime()
+  );
+};
 
 const bossTrialViewInclude = {
   game: true,

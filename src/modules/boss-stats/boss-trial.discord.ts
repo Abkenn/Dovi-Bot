@@ -8,6 +8,7 @@ import {
   BossTrialStatus,
   BossTrialVoteVerdict,
 } from '../../generated/prisma/enums';
+import { DAY_MINUTES, HOUR_MINUTES } from '../../lib/time.constants';
 import { addDaviBossStatsField } from './boss-stats.discord';
 import {
   type BossTrialView,
@@ -40,11 +41,11 @@ const toTimestamp = (date: Date, style: 'f' | 'R' = 'R') =>
   `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
 
 const formatDurationMinutes = (minutes: number) => {
-  if (minutes === 60) {
+  if (minutes === HOUR_MINUTES) {
     return '1 hour';
   }
 
-  if (minutes === 24 * 60) {
+  if (minutes === DAY_MINUTES) {
     return '1 day';
   }
 

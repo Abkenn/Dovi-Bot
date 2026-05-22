@@ -1,10 +1,10 @@
+import { DAY_MS } from '../../lib/time.constants';
 import {
   isDaviBossStatsSyncConfigured,
   syncDaviBossStats,
 } from './davi-boss-stats-sync.service';
 import { formatDaviBossStatsSyncSummary } from './davi-boss-stats-sync.types';
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SCHEDULED_SYNC_TIMEOUT_MS = 60_000;
 
 let interval: NodeJS.Timeout | undefined;
@@ -49,7 +49,7 @@ export const startDaviBossStatsSyncScheduler = () => {
 
   interval = setInterval(() => {
     void runScheduledSync();
-  }, ONE_DAY_MS);
+  }, DAY_MS);
 
   interval.unref();
 };

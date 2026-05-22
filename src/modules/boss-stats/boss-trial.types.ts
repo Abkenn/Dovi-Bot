@@ -1,7 +1,8 @@
 import { BossTrialVoteVerdict } from '../../generated/prisma/enums';
+import { DAY_MINUTES, HOUR_MINUTES } from '../../lib/time.constants';
 
 export const BOSS_TRIAL_CUSTOM_ID_PREFIX = 'bosstrial';
-export const BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES = 12 * 60;
+export const BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES = 12 * HOUR_MINUTES;
 
 export const BOSS_TRIAL_VERDICTS = [
   BossTrialVoteVerdict.PEAK,
@@ -21,13 +22,13 @@ export const BOSS_TRIAL_DURATION_OPTIONS = {
   ONE_HOUR: {
     value: '1_hour',
     label: '1 hour',
-    durationMinutes: 60,
+    durationMinutes: HOUR_MINUTES,
     hiddenMinutes: 10,
   },
   ONE_DAY: {
     value: '1_day',
     label: '1 day',
-    durationMinutes: 24 * 60,
+    durationMinutes: DAY_MINUTES,
     hiddenMinutes: 60,
   },
 } as const;

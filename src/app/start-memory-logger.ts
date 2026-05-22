@@ -1,6 +1,7 @@
 import { env } from '@zod-schemas/env.zod';
+import { MINUTE_MS } from '../lib/time.constants';
 
-const MEMORY_LOG_INTERVAL_MS = 5 * 60 * 1000;
+const MEMORY_LOG_INTERVAL_MS = 5 * MINUTE_MS;
 
 const toMegabytes = (bytes: number) => Math.round(bytes / 1024 / 1024);
 
