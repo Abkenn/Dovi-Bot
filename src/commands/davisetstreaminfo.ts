@@ -6,7 +6,10 @@ import {
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import {
+  EPHEMERAL_COMMAND_REPLY,
+  withCommandLogging,
+} from '../modules/command-logging/with-command-logging';
 import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
 import { setStreamInfo } from '../modules/stream-info/stream-info.service';
 
@@ -65,7 +68,7 @@ export class DaviSetStreamInfoCommand extends Command {
     return withCommandLogging({
       interaction,
       commandName: this.name,
-      ephemeral: true,
+      deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
         assertCommandGuildAccess(
           interaction,

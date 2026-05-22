@@ -262,10 +262,34 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     return overrideUpsert;
   }
 
-  const [, override] = await prisma.$transaction([
-    updateDefaultGameName(input.guildId, defaultGameName),
-    overrideUpsert,
-  ]);
+  const override = await prisma.$transaction(async (tx) => {
+    await tx.guildConfig.update({
+      where: { guildId: input.guildId },
+      data: {
+        defaultGameName,
+      },
+    });
+
+    return tx.streamScheduleOverride.upsert({
+      where: {
+        guildId_streamDateKey: {
+          guildId: input.guildId,
+          streamDateKey: targetOccurrence.dateKey,
+        },
+      },
+      update: updateData,
+      create: {
+        guildId: input.guildId,
+        streamDateKey: targetOccurrence.dateKey,
+        resolvedFromWeekday: targetOccurrence.weekday,
+        startAtUtc: targetOccurrence.startAt,
+        streamKind: input.streamKind ?? null,
+        musicMode: input.musicMode ?? null,
+        titleOverride: input.title ?? null,
+        gameName: null,
+      },
+    });
+  });
 
   return override;
 };

@@ -129,6 +129,10 @@ type CommandEditReplyOptions = Parameters<
   ChatInputCommandInteraction['editReply']
 >[0];
 
+type CommandDeferReplyOptions = Parameters<
+  ChatInputCommandInteraction['deferReply']
+>[0];
+
 type CommandEditReplyResult = Awaited<
   ReturnType<ChatInputCommandInteraction['editReply']>
 >;
@@ -151,7 +155,7 @@ type Awaitable<T> = T | Promise<T>;
 type WithCommandLoggingOptions<T, TPreflight = void> = {
   interaction: ChatInputCommandInteraction;
   commandName: string;
-  ephemeral?: boolean;
+  deferReplyOptions?: CommandDeferReplyOptions;
   timeoutMs?: number | null;
   timeoutMessage?: string;
   /**
@@ -162,10 +166,14 @@ type WithCommandLoggingOptions<T, TPreflight = void> = {
   run: (context: CommandRunContext & { preflight: TPreflight }) => Promise<T>;
 };
 
+export const EPHEMERAL_COMMAND_REPLY = {
+  flags: MessageFlags.Ephemeral,
+} as const satisfies CommandDeferReplyOptions;
+
 export const withCommandLogging = async <T, TPreflight = void>({
   interaction,
   commandName,
-  ephemeral = false,
+  deferReplyOptions,
   timeoutMs = COMMAND_TIMEOUT_MS,
   timeoutMessage,
   beforeDefer,
@@ -182,9 +190,7 @@ export const withCommandLogging = async <T, TPreflight = void>({
       : (undefined as TPreflight);
 
     if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferReply(
-        ephemeral ? { flags: MessageFlags.Ephemeral } : undefined,
-      );
+      await interaction.deferReply(deferReplyOptions);
     }
 
     const runPromise = run({

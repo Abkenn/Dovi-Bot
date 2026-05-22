@@ -4,7 +4,10 @@ import {
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import {
+  EPHEMERAL_COMMAND_REPLY,
+  withCommandLogging,
+} from '../modules/command-logging/with-command-logging';
 import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
 import { resetStreamTitle } from '../modules/stream-info/stream-info.service';
 
@@ -36,7 +39,7 @@ export class ResetTitleCommand extends Command {
     return withCommandLogging({
       interaction,
       commandName: this.name,
-      ephemeral: true,
+      deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, COMMAND_GUILDS.RESET_TITLE),
       run: async ({ editReply, preflight: guildId }) => {

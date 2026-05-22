@@ -6,7 +6,10 @@ import {
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { syncDaviBossStats } from '../modules/boss-stats/davi-boss-stats-sync.service';
 import { formatDaviBossStatsSyncSummary } from '../modules/boss-stats/davi-boss-stats-sync.types';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import {
+  EPHEMERAL_COMMAND_REPLY,
+  withCommandLogging,
+} from '../modules/command-logging/with-command-logging';
 
 export class SyncBossStatsCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -36,7 +39,7 @@ export class SyncBossStatsCommand extends Command {
     return withCommandLogging({
       interaction,
       commandName: this.name,
-      ephemeral: true,
+      deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       timeoutMs: 60_000,
       beforeDefer: () =>
         assertCommandGuildAccess(
