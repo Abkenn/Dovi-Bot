@@ -15,6 +15,9 @@ const prismaClientSingleton = () =>
   new PrismaClient({
     adapter: new PrismaPg({
       connectionString: databaseUrl,
+      max: 2,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
     }),
     log: ['warn', 'error'],
   });

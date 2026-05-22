@@ -11,14 +11,35 @@ import {
   getBossTrialDurationConfig,
 } from './boss-trial.types';
 
+const BOSS_TRIAL_STORAGE_MISSING_RECHECK_MS = 5 * 60 * 1000;
+
+let bossTrialStorageReady: boolean | undefined;
+let bossTrialStorageLastCheckedAt = 0;
+
 export const isBossTrialStorageReady = async () => {
+  if (bossTrialStorageReady) {
+    return true;
+  }
+
+  const now = Date.now();
+
+  if (
+    bossTrialStorageReady === false &&
+    now - bossTrialStorageLastCheckedAt < BOSS_TRIAL_STORAGE_MISSING_RECHECK_MS
+  ) {
+    return false;
+  }
+
   const tables = await prisma.$queryRaw<{ tableName: string | null }[]>`
     select to_regclass('public."BossTrial"')::text as "tableName"
     union all
     select to_regclass('public."BossTrialVote"')::text as "tableName"
   `;
 
-  return tables.every((table) => table.tableName !== null);
+  bossTrialStorageReady = tables.every((table) => table.tableName !== null);
+  bossTrialStorageLastCheckedAt = now;
+
+  return bossTrialStorageReady;
 };
 
 const assertBossTrialStorageReady = async () => {
