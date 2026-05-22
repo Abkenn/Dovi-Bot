@@ -152,28 +152,62 @@ export const recordBossTrialVote = async ({
   };
 };
 
-export const markBossTrialLiveResultsPublished = async (trialId: string) =>
-  prisma.bossTrial.update({
-    where: { id: trialId },
+type BossTrialUpdateManyInput = NonNullable<
+  Parameters<typeof prisma.bossTrial.updateMany>[0]
+>;
+
+const claimBossTrialLifecycleEvent = async ({
+  trialId,
+  where,
+  data,
+}: {
+  trialId: string;
+  where: NonNullable<BossTrialUpdateManyInput['where']>;
+  data: BossTrialUpdateManyInput['data'];
+}) => {
+  const result = await prisma.bossTrial.updateMany({
+    where: {
+      ...where,
+      id: trialId,
+    },
+    data,
+  });
+
+  if (result.count === 0) {
+    return null;
+  }
+
+  return getBossTrialView(trialId);
+};
+
+export const claimBossTrialLiveResults = (trialId: string) =>
+  claimBossTrialLifecycleEvent({
+    trialId,
+    where: {
+      liveResultsPublishedAt: null,
+    },
     data: { liveResultsPublishedAt: new Date() },
-    include: bossTrialViewInclude,
   });
 
-export const markBossTrialAutomaticBumpPosted = async (trialId: string) =>
-  prisma.bossTrial.update({
-    where: { id: trialId },
+export const claimBossTrialAutomaticBump = (trialId: string) =>
+  claimBossTrialLifecycleEvent({
+    trialId,
+    where: {
+      automaticBumpPostedAt: null,
+    },
     data: { automaticBumpPostedAt: new Date() },
-    include: bossTrialViewInclude,
   });
 
-export const markBossTrialFinalResultsPosted = async (trialId: string) =>
-  prisma.bossTrial.update({
-    where: { id: trialId },
+export const claimBossTrialFinalResults = (trialId: string) =>
+  claimBossTrialLifecycleEvent({
+    trialId,
+    where: {
+      finalResultsPostedAt: null,
+    },
     data: {
       status: BossTrialStatus.RESULTS_PUBLISHED,
       finalResultsPostedAt: new Date(),
     },
-    include: bossTrialViewInclude,
   });
 
 export const getBossTrialView = (trialId: string) =>

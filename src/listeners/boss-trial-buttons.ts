@@ -7,8 +7,8 @@ import {
   refreshBossTrialMessage,
 } from '../modules/boss-stats/boss-trial.lifecycle';
 import {
+  claimBossTrialFinalResults,
   getBossTrialView,
-  markBossTrialFinalResultsPosted,
   recordBossTrialVote,
   shouldShowBossTrialVotes,
 } from '../modules/boss-stats/boss-trial.service';
@@ -129,14 +129,22 @@ export class BossTrialButtonsListener extends Listener {
 
       let currentTrial = trial;
 
+      if (!currentTrial.finalResultsPostedAt) {
+        const claimedTrial = await claimBossTrialFinalResults(currentTrial.id);
+
+        if (!claimedTrial) {
+          return interaction.editReply({
+            content: 'Results were already published.',
+          });
+        }
+
+        currentTrial = claimedTrial;
+      }
+
       await postBossTrialResultsMessage({
         client: this.container.client,
         trial: currentTrial,
       });
-
-      if (!currentTrial.finalResultsPostedAt) {
-        currentTrial = await markBossTrialFinalResultsPosted(currentTrial.id);
-      }
 
       await refreshBossTrialMessage(this.container.client, currentTrial);
 

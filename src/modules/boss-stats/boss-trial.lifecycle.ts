@@ -13,11 +13,12 @@ import {
 import {
   attachBossTrialBumpMessage,
   type BossTrialView,
+  claimBossTrialAutomaticBump,
+  claimBossTrialFinalResults,
+  claimBossTrialLiveResults,
+  getBossTrialView,
   getPendingBossTrialLifecycleEvents,
   isBossTrialStorageReady,
-  markBossTrialAutomaticBumpPosted,
-  markBossTrialFinalResultsPosted,
-  markBossTrialLiveResultsPublished,
   shouldPostBossTrialAutomaticBump,
   shouldPostBossTrialFinalResults,
   shouldPublishBossTrialLiveResults,
@@ -166,27 +167,42 @@ export const runBossTrialLifecycleTick = async (client: Client) => {
       let currentTrial = trial;
 
       if (shouldPostBossTrialAutomaticBump(currentTrial)) {
-        await postBossTrialBumpMessage({
-          client,
-          trial: currentTrial,
-          isAutomatic: true,
-        });
-        currentTrial = await markBossTrialAutomaticBumpPosted(currentTrial.id);
+        const claimedTrial = await claimBossTrialAutomaticBump(currentTrial.id);
+        currentTrial =
+          claimedTrial ?? (await getBossTrialView(currentTrial.id));
+
+        if (claimedTrial) {
+          await postBossTrialBumpMessage({
+            client,
+            trial: currentTrial,
+            isAutomatic: true,
+          });
+        }
       }
 
       if (shouldPublishBossTrialLiveResults(currentTrial)) {
-        await refreshBossTrialMessage(client, currentTrial);
-        await postBossTrialVotesVisibleMessage({
-          client,
-          trial: currentTrial,
-        });
-        currentTrial = await markBossTrialLiveResultsPublished(currentTrial.id);
+        const claimedTrial = await claimBossTrialLiveResults(currentTrial.id);
+        currentTrial =
+          claimedTrial ?? (await getBossTrialView(currentTrial.id));
+
+        if (claimedTrial) {
+          await refreshBossTrialMessage(client, currentTrial);
+          await postBossTrialVotesVisibleMessage({
+            client,
+            trial: currentTrial,
+          });
+        }
       }
 
       if (shouldPostBossTrialFinalResults(currentTrial)) {
-        await postBossTrialResultsMessage({ client, trial: currentTrial });
-        currentTrial = await markBossTrialFinalResultsPosted(currentTrial.id);
-        await refreshBossTrialMessage(client, currentTrial);
+        const claimedTrial = await claimBossTrialFinalResults(currentTrial.id);
+        currentTrial =
+          claimedTrial ?? (await getBossTrialView(currentTrial.id));
+
+        if (claimedTrial) {
+          await postBossTrialResultsMessage({ client, trial: currentTrial });
+          await refreshBossTrialMessage(client, currentTrial);
+        }
       }
     } catch (error) {
       console.error(`Boss trial lifecycle failed for ${trial.id}`, error);

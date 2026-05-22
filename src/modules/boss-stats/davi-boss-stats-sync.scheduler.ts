@@ -5,6 +5,7 @@ import {
 import { formatDaviBossStatsSyncSummary } from './davi-boss-stats-sync.types';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const SCHEDULED_SYNC_TIMEOUT_MS = 60_000;
 
 let interval: NodeJS.Timeout | undefined;
 let activeSync: Promise<unknown> | undefined;
@@ -14,7 +15,12 @@ const runScheduledSync = async () => {
     return activeSync;
   }
 
-  activeSync = syncDaviBossStats()
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => {
+    abortController.abort();
+  }, SCHEDULED_SYNC_TIMEOUT_MS);
+
+  activeSync = syncDaviBossStats({ signal: abortController.signal })
     .then((result) => {
       console.info(formatDaviBossStatsSyncSummary(result));
     })
@@ -22,6 +28,7 @@ const runScheduledSync = async () => {
       console.error('Davi boss stats sync failed', error);
     })
     .finally(() => {
+      clearTimeout(timeout);
       activeSync = undefined;
     });
 
