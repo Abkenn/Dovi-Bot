@@ -4,8 +4,8 @@ import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import {
   addBossTrialStatsDisplayNames,
   buildBossTrialStatsEmbed,
-} from '../modules/boss-stats/boss-trial-stats.discord';
-import { getBossTrialStats } from '../modules/boss-stats/boss-trial-stats.service';
+} from '../modules/boss-stats/trials/stats/boss-trial-stats.discord';
+import { getBossTrialStats } from '../modules/boss-stats/trials/stats/boss-trial-stats.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
 export class BossTrialStatsCommand extends Command {

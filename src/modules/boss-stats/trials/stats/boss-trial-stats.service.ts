@@ -1,14 +1,14 @@
 import { getBossTrialStatsRows } from '@data/queries/boss-trial-stats';
-import { BossTrialStatus } from '../../generated/prisma/enums';
+import { BossTrialStatus } from '../../../../generated/prisma/enums';
+import {
+  BOSS_TRIAL_VERDICT_LABELS,
+  BOSS_TRIAL_VERDICTS,
+} from '../boss-trial.config';
 import {
   getVoteBreakdown,
   getWinningVerdicts,
   shouldShowBossTrialVotes,
-} from './boss-trial.service';
-import {
-  BOSS_TRIAL_VERDICT_LABELS,
-  BOSS_TRIAL_VERDICTS,
-} from './boss-trial.types';
+} from '../poll/boss-trial.service';
 
 export type BossTrialStatsTrial = Awaited<
   ReturnType<typeof getBossTrialStats>

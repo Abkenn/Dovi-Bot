@@ -1,5 +1,5 @@
-import { BossTrialVoteVerdict } from '../../generated/prisma/enums';
-import { DAY_MINUTES, HOUR_MINUTES } from '../../lib/time.constants';
+import { BossTrialVoteVerdict } from '../../../generated/prisma/enums';
+import { DAY_MINUTES, HOUR_MINUTES } from '../../../lib/time.constants';
 
 export const BOSS_TRIAL_CUSTOM_ID_PREFIX = 'bosstrial';
 export const BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES = 12 * HOUR_MINUTES;

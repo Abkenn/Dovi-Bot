@@ -7,35 +7,21 @@ import {
 import {
   BossTrialStatus,
   BossTrialVoteVerdict,
-} from '../../generated/prisma/enums';
-import { DAY_MINUTES, HOUR_MINUTES } from '../../lib/time.constants';
-import { addDaviBossStatsField } from './boss-stats.discord';
+} from '../../../../generated/prisma/enums';
+import { DAY_MINUTES, HOUR_MINUTES } from '../../../../lib/time.constants';
+import { addDaviBossStatsField } from '../../boss-stats.discord';
+import {
+  BOSS_TRIAL_CUSTOM_ID_PREFIX,
+  BOSS_TRIAL_VERDICT_LABELS,
+  BOSS_TRIAL_VERDICTS,
+} from '../boss-trial.config';
 import {
   type BossTrialView,
   getVoteBreakdown,
   getWinningVerdicts,
   shouldShowBossTrialVotes,
 } from './boss-trial.service';
-import {
-  BOSS_TRIAL_CUSTOM_ID_PREFIX,
-  BOSS_TRIAL_VERDICT_LABELS,
-  BOSS_TRIAL_VERDICTS,
-} from './boss-trial.types';
-
-export type BossTrialButtonAction =
-  | {
-      type: 'vote';
-      trialId: string;
-      verdict: BossTrialVoteVerdict;
-    }
-  | {
-      type: 'publish';
-      trialId: string;
-    }
-  | {
-      type: 'bump';
-      trialId: string;
-    };
+import type { BossTrialButtonAction } from './boss-trial.types';
 
 const toTimestamp = (date: Date, style: 'f' | 'R' = 'R') =>
   `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;

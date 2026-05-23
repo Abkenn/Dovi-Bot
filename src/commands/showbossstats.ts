@@ -1,8 +1,8 @@
 import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { buildShowBossStatsEmbed } from '../modules/boss-stats/boss-stats.discord';
 import { getBossStatsBossView } from '../modules/boss-stats/boss-stats.service';
+import { buildShowBossStatsEmbed } from '../modules/boss-stats/stats/boss-stats.discord';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
 export class ShowBossStatsCommand extends Command {

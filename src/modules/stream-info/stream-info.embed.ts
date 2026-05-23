@@ -1,5 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
+import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
@@ -53,3 +54,7 @@ export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
 
   return embed;
 };
+
+export const getStreamInfoEmbed = async (
+  guildId: string,
+): Promise<EmbedBuilder> => buildStreamInfoEmbed(await getStreamInfo(guildId));

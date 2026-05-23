@@ -7,7 +7,7 @@ import {
   type StreamScheduleOverride,
   type Weekday,
 } from '../../generated/prisma/client';
-import type { StreamOccurrence } from './stream-info.types';
+import type { StreamOccurrence, TargetStream } from './stream-info.types';
 
 export const WEEKDAY_TO_LUXON: Record<Weekday, number> = {
   MONDAY: 1,
@@ -50,6 +50,24 @@ export const findNextOccurrence = (
     occurrences.find((occurrence) => occurrence.startAt.getTime() > nowMs) ??
     null
   );
+};
+
+export const resolveTargetStream = (
+  now: DateTime,
+  current: StreamOccurrence | null,
+  next: StreamOccurrence | null,
+): { target: TargetStream; occurrence: StreamOccurrence | null } => {
+  if (current && isOngoingOccurrence(current, now)) {
+    return {
+      target: 'current',
+      occurrence: current,
+    };
+  }
+
+  return {
+    target: 'next',
+    occurrence: next,
+  };
 };
 
 export const resolveTitle = (

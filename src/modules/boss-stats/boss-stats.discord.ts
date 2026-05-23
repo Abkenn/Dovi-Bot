@@ -1,8 +1,12 @@
-import { EmbedBuilder } from 'discord.js';
-import type { BossStatsBossView } from './boss-stats.service';
+import type { EmbedBuilder } from 'discord.js';
 
 type BossWithDaviStats = {
-  stats: BossStatsBossView['stats'];
+  stats: {
+    deaths: number | null;
+    totalAttemptTimeSeconds: number | null;
+    winningAttemptTimeSeconds: number | null;
+    difficultyCoefficient: { toString(): string } | null;
+  }[];
 };
 
 const formatSeconds = (seconds: number | null) => {
@@ -59,15 +63,3 @@ export const addDaviBossStatsField = (
 
   return embed;
 };
-
-export const buildShowBossStatsEmbed = (boss: BossStatsBossView) =>
-  addDaviBossStatsField(
-    new EmbedBuilder()
-      .setTitle('Boss Stats')
-      .setColor(0xff3131)
-      .addFields(
-        { name: 'Game', value: boss.game.name, inline: true },
-        { name: 'Boss', value: boss.name, inline: true },
-      ),
-    boss,
-  );

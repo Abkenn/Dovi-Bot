@@ -3,7 +3,7 @@ import {
   findBossGamesForAutocomplete,
   findBossWithDaviSpreadsheetStats,
 } from '@data/queries/boss-stats';
-import { normalizeBossStatName } from './boss-stats-parsing';
+import { normalizeBossStatName } from './boss-stats.utils';
 
 export const getBossStatsGameAutocomplete = async (query: string) => {
   const normalizedQuery = normalizeBossStatName(query);

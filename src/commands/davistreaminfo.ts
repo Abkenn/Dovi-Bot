@@ -9,7 +9,7 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,
 } from '../modules/command-logging/with-command-logging';
-import { getStreamInfoEmbed } from '../modules/stream-info/get-stream-info-embed';
+import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
 
 export class DaviStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {

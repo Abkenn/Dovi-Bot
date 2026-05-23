@@ -1,6 +1,6 @@
 import { Listener } from '@sapphire/framework';
-import { startBossTrialLifecycleScheduler } from '../modules/boss-stats/boss-trial.scheduler';
-import { startDaviBossStatsSyncScheduler } from '../modules/boss-stats/davi-boss-stats-sync.scheduler';
+import { startDaviBossStatsSyncScheduler } from '../modules/boss-stats/sync/davi-boss-stats-sync.scheduler';
+import { startBossTrialLifecycleScheduler } from '../modules/boss-stats/trials/poll/boss-trial.scheduler';
 
 export class ReadyListener extends Listener {
   public constructor(

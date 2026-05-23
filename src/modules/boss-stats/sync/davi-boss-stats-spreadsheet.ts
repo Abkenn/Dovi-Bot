@@ -1,14 +1,6 @@
-const DATA_START_ROW_NUMBER = 3;
+import type { DaviBossStatsSpreadsheetRow } from './davi-boss-stats-sync.types';
 
-export type DaviBossStatsSpreadsheetRow = {
-  rowNumber: number;
-  game: string;
-  boss: string;
-  deaths: string;
-  totalAttemptTime: string;
-  winningAttemptTime: string;
-  difficultyCoefficient: string;
-};
+const DATA_START_ROW_NUMBER = 3;
 
 const getSpreadsheetCsvUrl = (spreadsheetUrl: string) => {
   const url = new URL(spreadsheetUrl);

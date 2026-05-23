@@ -1,9 +1,9 @@
-import { DAY_MS } from '../../lib/time.constants';
+import { DAY_MS } from '../../../lib/time.constants';
 import {
   isDaviBossStatsSyncConfigured,
   syncDaviBossStats,
 } from './davi-boss-stats-sync.service';
-import { formatDaviBossStatsSyncSummary } from './davi-boss-stats-sync.types';
+import { formatDaviBossStatsSyncSummary } from './davi-boss-stats-sync.utils';
 
 const SCHEDULED_SYNC_TIMEOUT_MS = 60_000;
 

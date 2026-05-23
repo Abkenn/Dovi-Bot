@@ -16,7 +16,6 @@ import type {
   StreamScheduleOverride,
 } from '../../generated/prisma/client';
 import { StreamKind } from '../../generated/prisma/client';
-import { resolveTargetStream } from './stream-info.target';
 import type {
   SetStreamInfoInput,
   StreamInfoResult,
@@ -27,6 +26,7 @@ import {
   buildDefaultOccurrence,
   findCurrentOccurrence,
   findNextOccurrence,
+  resolveTargetStream,
   WEEKDAY_TO_LUXON,
 } from './stream-info.utils';
 import {

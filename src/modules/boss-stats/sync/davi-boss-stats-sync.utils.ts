@@ -1,16 +1,25 @@
 import { Duration } from 'luxon';
 import { z } from 'zod';
-import type { DaviBossStatsSpreadsheetRow } from './davi-boss-stats-spreadsheet';
+import type {
+  DaviBossStatsSpreadsheetRow,
+  DaviBossStatsSyncResult,
+  ParsedDaviBossStatsRow,
+} from './davi-boss-stats-sync.types';
 
-export type ParsedDaviBossStatsRow = {
-  deaths: number | null;
-  totalAttemptTimeSeconds: number | null;
-  winningAttemptTimeSeconds: number | null;
-  difficultyCoefficient: string | null;
-};
+export const createEmptyDaviBossStatsSyncResult =
+  (): DaviBossStatsSyncResult => ({
+    rowsRead: 0,
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    invalidRows: [],
+  });
 
-export const normalizeBossStatName = (value: string) =>
-  value.trim().split(' ').filter(Boolean).join(' ').toLocaleLowerCase();
+export const formatDaviBossStatsSyncSummary = (
+  result: DaviBossStatsSyncResult,
+) =>
+  `Davi boss stats sync finished: ${result.rowsRead} rows read, ${result.imported} imported, ${result.updated} updated, ${result.skipped} skipped, ${result.failed} failed.`;
 
 const nonNegativeNumberSchema = z.coerce.number().nonnegative();
 

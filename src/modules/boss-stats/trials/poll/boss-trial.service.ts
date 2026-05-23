@@ -12,13 +12,17 @@ import {
   getPendingBossTrialLifecycleEvents as getPendingBossTrialLifecycleEventRows,
   upsertBossTrialVoteVerdict,
 } from '@data/queries/boss-trial';
-import type { BossTrialVoteVerdict } from '../../generated/prisma/enums';
-import { DAY_MINUTES, MINUTE_MS } from '../../lib/time.constants';
-import { getBossStatsBossView } from './boss-stats.service';
+import type { BossTrialVoteVerdict } from '../../../../generated/prisma/enums';
+import { DAY_MINUTES, MINUTE_MS } from '../../../../lib/time.constants';
+import { getBossStatsBossView } from '../../boss-stats.service';
 import {
   BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
   BOSS_TRIAL_VERDICTS,
   getBossTrialDurationConfig,
+} from '../boss-trial.config';
+import type {
+  BossTrialMessageInput,
+  BossTrialWithVotes,
 } from './boss-trial.types';
 
 const BOSS_TRIAL_STORAGE_MISSING_RECHECK_MS = 5 * MINUTE_MS;
@@ -28,8 +32,6 @@ let bossTrialStorageLastCheckedAt = 0;
 
 const addMinutes = (date: Date, minutes: number) =>
   new Date(date.getTime() + minutes * MINUTE_MS);
-
-type BossTrialMessageInput = { trialId: string; messageId: string };
 
 export const isBossTrialStorageReady = async () => {
   if (bossTrialStorageReady) {
@@ -164,8 +166,6 @@ export const getPendingBossTrialLifecycleEvents = async () => {
     automaticBumpCreatedAtCutoff,
   });
 };
-
-type BossTrialWithVotes = { votes: { verdict: BossTrialVoteVerdict }[] };
 
 export const getVoteBreakdown = (
   trial: BossTrialWithVotes,

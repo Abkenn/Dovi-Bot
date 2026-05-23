@@ -1,13 +1,13 @@
 import { areBossStatsTablesPresent } from '@data/queries/boss-stats';
 import { upsertDaviSpreadsheetBossEncounter } from '@data/transactions/davi-boss-stats-sync';
 import { env } from '@zod-schemas/env.zod';
-import {
-  normalizeBossStatName,
-  parseDaviBossStatsRow,
-} from './boss-stats-parsing';
-import type { DaviBossStatsSpreadsheetRow } from './davi-boss-stats-spreadsheet';
+import { normalizeBossStatName } from '../boss-stats.utils';
 import { fetchDaviBossStatsSpreadsheetRows } from './davi-boss-stats-spreadsheet';
-import { createEmptyDaviBossStatsSyncResult } from './davi-boss-stats-sync.types';
+import type { DaviBossStatsSpreadsheetRow } from './davi-boss-stats-sync.types';
+import {
+  createEmptyDaviBossStatsSyncResult,
+  parseDaviBossStatsRow,
+} from './davi-boss-stats-sync.utils';
 
 const assertNotAborted = (signal?: AbortSignal) => {
   if (signal?.aborted) {
