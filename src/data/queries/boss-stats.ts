@@ -1,6 +1,5 @@
 import { BossEncounterSource } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
-import { findUniqueBossGame } from '../entity-queries/boss-game';
 
 const AUTOCOMPLETE_LIMIT = 25;
 
@@ -33,7 +32,7 @@ export const findBossesForAutocomplete = async ({
   normalizedGameName: string;
   normalizedBossQuery: string;
 }) => {
-  const game = await findUniqueBossGame({
+  const game = await prisma.bossGame.findUnique({
     where: { normalizedName: normalizedGameName },
     select: { id: true },
   });

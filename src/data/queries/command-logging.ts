@@ -2,8 +2,7 @@ import type {
   CommandExecutionStatus,
   Prisma,
 } from '../../generated/prisma/client';
-import { createCommandErrorLog as createCommandErrorLogRow } from '../entity-queries/command-error-log';
-import { createCommandExecutionLog as createCommandExecutionLogRow } from '../entity-queries/command-execution-log';
+import { prisma } from '../../lib/prisma';
 
 type NullableJsonInput = Prisma.InputJsonValue | typeof Prisma.JsonNull;
 
@@ -28,7 +27,7 @@ export const createCommandExecutionLog = ({
   note: string | null;
   durationMs: number | null;
 }) =>
-  createCommandExecutionLogRow({
+  prisma.commandExecutionLog.create({
     data: {
       guildId,
       channelId,
@@ -59,7 +58,7 @@ export const createCommandErrorLog = ({
   httpStatus: number | null;
   rawJson: NullableJsonInput;
 }) =>
-  createCommandErrorLogRow({
+  prisma.commandErrorLog.create({
     data: {
       commandExecutionId,
       errorName,

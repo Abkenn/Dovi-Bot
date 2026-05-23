@@ -1,12 +1,11 @@
-import { BossEncounterSource } from '../../generated/prisma/enums';
+import type { Prisma } from '../../generated/prisma/client';
+import type { BossTrialVoteVerdict } from '../../generated/prisma/enums';
+import {
+  BossEncounterSource,
+  BossTrialStatus,
+} from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 import { DAY_MINUTES } from '../../lib/time.constants';
-import { createBossTrial as createBossTrialRow } from '../entity-queries/boss-trial';
-import { upsertBossTrialBumpMessage } from '../entity-queries/boss-trial-bump-message';
-import {
-  findUniqueBossTrialVote,
-  upsertBossTrialVote,
-} from '../entity-queries/boss-trial-vote';
 
 export const areBossTrialTablesPresent = async () => {
   const tables = await prisma.$queryRaw<{ tableName: string | null }[]>`
@@ -51,7 +50,7 @@ export const createBossTrialView = ({
   voteVisibilityHiddenUntil: Date;
   endsAt: Date;
 }) =>
-  createBossTrialRow({
+  prisma.bossTrial.create({
     data: {
       guildId,
       channelId,
@@ -85,7 +84,7 @@ export const attachBossTrialBumpMessage = ({
   trialId: string;
   messageId: string;
 }) =>
-  upsertBossTrialBumpMessage({
+  prisma.bossTrialBumpMessage.upsert({
     where: { messageId },
     update: { trialId },
     create: { trialId, messageId },
@@ -98,7 +97,7 @@ export const findBossTrialVoteVerdict = ({
   trialId: string;
   userId: string;
 }) =>
-  findUniqueBossTrialVote({
+  prisma.bossTrialVote.findUnique({
     where: {
       trialId_userId: {
         trialId,
@@ -116,10 +115,10 @@ export const upsertBossTrialVoteVerdict = ({
 }: {
   trialId: string;
   userId: string;
-  verdict: Parameters<typeof upsertBossTrialVote>[0]['create']['verdict'];
+  verdict: BossTrialVoteVerdict;
   votedAt: Date;
 }) =>
-  upsertBossTrialVote({
+  prisma.bossTrialVote.upsert({
     where: {
       trialId_userId: {
         trialId,
@@ -172,5 +171,44 @@ export const getPendingBossTrialLifecycleEvents = ({
     orderBy: { createdAt: 'asc' },
     include: bossTrialViewInclude,
   });
+
+type BossTrialUpdateManyInput = NonNullable<
+  Parameters<typeof prisma.bossTrial.updateMany>[0]
+>;
+type BossTrialTimestampField =
+  | 'liveResultsPublishedAt'
+  | 'automaticBumpPostedAt'
+  | 'finalResultsPostedAt';
+
+const claimBossTrialTimestamp = async (
+  trialId: string,
+  field: BossTrialTimestampField,
+  data: BossTrialUpdateManyInput['data'] = {},
+) => {
+  const result = await prisma.bossTrial.updateMany({
+    where: {
+      id: trialId,
+      [field]: null,
+    },
+    data: { ...data, [field]: new Date() },
+  });
+
+  if (result.count === 0) {
+    return null;
+  }
+
+  return getBossTrialView(trialId);
+};
+
+export const claimBossTrialLiveResults = (trialId: string) =>
+  claimBossTrialTimestamp(trialId, 'liveResultsPublishedAt');
+
+export const claimBossTrialAutomaticBump = (trialId: string) =>
+  claimBossTrialTimestamp(trialId, 'automaticBumpPostedAt');
+
+export const claimBossTrialFinalResults = (trialId: string) =>
+  claimBossTrialTimestamp(trialId, 'finalResultsPostedAt', {
+    status: BossTrialStatus.RESULTS_PUBLISHED,
+  } satisfies Prisma.BossTrialUpdateManyMutationInput);
 
 export type BossTrialView = Awaited<ReturnType<typeof getBossTrialView>>;

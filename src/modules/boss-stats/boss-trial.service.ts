@@ -3,17 +3,15 @@ import {
   attachBossTrialBumpMessage as attachBossTrialBumpMessageRow,
   attachBossTrialMessageAndGetView,
   type BossTrialView,
+  claimBossTrialAutomaticBump,
+  claimBossTrialFinalResults,
+  claimBossTrialLiveResults,
   createBossTrialView,
   findBossTrialVoteVerdict,
   getBossTrialView,
   getPendingBossTrialLifecycleEvents as getPendingBossTrialLifecycleEventRows,
   upsertBossTrialVoteVerdict,
 } from '@data/queries/boss-trial';
-import {
-  claimBossTrialAutomaticBump,
-  claimBossTrialFinalResults,
-  claimBossTrialLiveResults,
-} from '@data/transactions/boss-trial-lifecycle';
 import type { BossTrialVoteVerdict } from '../../generated/prisma/enums';
 import { DAY_MINUTES, MINUTE_MS } from '../../lib/time.constants';
 import { getBossStatsBossView } from './boss-stats.service';

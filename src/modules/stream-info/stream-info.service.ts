@@ -6,11 +6,9 @@ import {
   findStreamScheduleOverridesInDateRange,
   updateDefaultGameName as updateDefaultGameNameRow,
   upsertStreamTitleResetOverride,
-} from '@data/queries/stream-info';
-import {
-  updateDefaultGameAndTargetStreamOverride,
   upsertTargetStreamOverride,
-} from '@data/transactions/stream-info';
+} from '@data/queries/stream-info';
+import { updateDefaultGameAndTargetStreamOverride } from '@data/transactions/stream-info';
 import { DateTime } from 'luxon';
 import type {
   GuildConfig,
