@@ -30,64 +30,63 @@ export const upsertDaviSpreadsheetBossEncounter = async ({
   rawWinningAttemptTime: string | null;
   rawDifficultyCoefficient: string | null;
   sourceRowNumber: number;
-}) =>
-  prisma.$transaction(async (tx) => {
-    const game = await tx.bossGame.upsert({
-      where: { normalizedName: normalizedGameName },
-      update: { name: gameName },
-      create: {
-        name: gameName,
-        normalizedName: normalizedGameName,
-      },
-    });
+}) => {
+  const game = await prisma.bossGame.upsert({
+    where: { normalizedName: normalizedGameName },
+    update: { name: gameName },
+    create: {
+      name: gameName,
+      normalizedName: normalizedGameName,
+    },
+  });
 
-    const boss = await tx.boss.upsert({
-      where: {
-        gameId_normalizedName: {
-          gameId: game.id,
-          normalizedName: normalizedBossName,
-        },
-      },
-      update: { name: bossName },
-      create: {
+  const boss = await prisma.boss.upsert({
+    where: {
+      gameId_normalizedName: {
         gameId: game.id,
-        name: bossName,
         normalizedName: normalizedBossName,
       },
-    });
+    },
+    update: { name: bossName },
+    create: {
+      gameId: game.id,
+      name: bossName,
+      normalizedName: normalizedBossName,
+    },
+  });
 
-    const statKey = {
+  const statKey = {
+    bossId: boss.id,
+    playerDiscordUserId: daviDiscordUserId,
+    source: BossEncounterSource.DAVI_SPREADSHEET,
+  };
+
+  const existingStat = await prisma.bossEncounterStat.findUnique({
+    where: { bossId_playerDiscordUserId_source: statKey },
+    select: { id: true },
+  });
+
+  await prisma.bossEncounterStat.upsert({
+    where: { bossId_playerDiscordUserId_source: statKey },
+    update: {
+      ...parsedRow,
+      rawTotalAttemptTime,
+      rawWinningAttemptTime,
+      rawDifficultyCoefficient,
+      sourceRowNumber,
+      syncedAt: new Date(),
+    },
+    create: {
       bossId: boss.id,
       playerDiscordUserId: daviDiscordUserId,
       source: BossEncounterSource.DAVI_SPREADSHEET,
-    };
-
-    const existingStat = await tx.bossEncounterStat.findUnique({
-      where: { bossId_playerDiscordUserId_source: statKey },
-      select: { id: true },
-    });
-
-    await tx.bossEncounterStat.upsert({
-      where: { bossId_playerDiscordUserId_source: statKey },
-      update: {
-        ...parsedRow,
-        rawTotalAttemptTime,
-        rawWinningAttemptTime,
-        rawDifficultyCoefficient,
-        sourceRowNumber,
-        syncedAt: new Date(),
-      },
-      create: {
-        bossId: boss.id,
-        playerDiscordUserId: daviDiscordUserId,
-        source: BossEncounterSource.DAVI_SPREADSHEET,
-        ...parsedRow,
-        rawTotalAttemptTime,
-        rawWinningAttemptTime,
-        rawDifficultyCoefficient,
-        sourceRowNumber,
-      },
-    });
-
-    return existingStat ? 'updated' : 'imported';
+      ...parsedRow,
+      rawTotalAttemptTime,
+      rawWinningAttemptTime,
+      rawDifficultyCoefficient,
+      sourceRowNumber,
+    },
   });
+
+  return existingStat ? 'updated' : 'imported';
+};
