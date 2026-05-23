@@ -1,4 +1,4 @@
-import { type Client, EmbedBuilder, escapeMarkdown } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import { BossTrialStatus } from '../../../../generated/prisma/enums';
 import {
   type BossTrialStatsTrial,
@@ -12,12 +12,10 @@ type BossTrialStatsView = {
   creators: {
     userId: string;
     count: number;
-    displayName?: string;
   }[];
   participants: {
     userId: string;
     count: number;
-    displayName?: string;
   }[];
 };
 
@@ -25,7 +23,7 @@ const toTimestamp = (date: Date, style: 'f' | 'R' = 'R') =>
   `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
 
 const formatLeaderboard = (
-  rows: { userId: string; count: number; displayName?: string }[],
+  rows: { userId: string; count: number }[],
   unit: string,
 ) => {
   if (rows.length === 0) {
@@ -35,79 +33,11 @@ const formatLeaderboard = (
   return rows
     .map(
       (row, index) =>
-        `${index + 1}. ${row.displayName ?? `User ${row.userId}`} - ${
-          row.count
-        } ${unit}${row.count === 1 ? '' : 's'}`,
+        `${index + 1}. <@${row.userId}> - ${row.count} ${unit}${
+          row.count === 1 ? '' : 's'
+        }`,
     )
     .join('\n');
-};
-
-const sanitizeDisplayName = (displayName: string) =>
-  escapeMarkdown(displayName.replaceAll('@', '@ '));
-
-const fetchGuildDisplayName = async ({
-  client,
-  guildId,
-  userId,
-}: {
-  client: Client;
-  guildId: string;
-  userId: string;
-}) => {
-  const guild = await client.guilds.fetch(guildId).catch(() => null);
-  const member = await guild?.members.fetch(userId).catch(() => null);
-
-  if (member) {
-    return sanitizeDisplayName(member.displayName);
-  }
-
-  const user = await client.users.fetch(userId).catch(() => null);
-
-  if (user) {
-    return sanitizeDisplayName(user.displayName);
-  }
-
-  return `User ${userId}`;
-};
-
-export const addBossTrialStatsDisplayNames = async ({
-  client,
-  guildId,
-  stats,
-}: {
-  client: Client;
-  guildId: string;
-  stats: BossTrialStatsView;
-}): Promise<BossTrialStatsView> => {
-  const userIds = [
-    ...new Set([
-      ...stats.creators.map((row) => row.userId),
-      ...stats.participants.map((row) => row.userId),
-    ]),
-  ];
-  const displayNames = new Map<string, string>(
-    await Promise.all(
-      userIds.map(
-        async (userId) =>
-          [
-            userId,
-            await fetchGuildDisplayName({ client, guildId, userId }),
-          ] as const,
-      ),
-    ),
-  );
-
-  return {
-    ...stats,
-    creators: stats.creators.map((row) => ({
-      ...row,
-      displayName: displayNames.get(row.userId) ?? `User ${row.userId}`,
-    })),
-    participants: stats.participants.map((row) => ({
-      ...row,
-      displayName: displayNames.get(row.userId) ?? `User ${row.userId}`,
-    })),
-  };
 };
 
 const formatTrialLine = (trial: BossTrialStatsTrial) => {
