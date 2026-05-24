@@ -7,9 +7,9 @@ import type {
   AutocompleteInteraction,
 } from 'discord.js';
 import {
-  getBossStatsBossAutocomplete,
-  getBossStatsGameAutocomplete,
-} from '../modules/boss-stats/boss-stats.service';
+  getBossAutocomplete,
+  getBossGameAutocomplete,
+} from '../modules/bosses/bosses.service';
 
 const BOSS_STATS_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
@@ -52,16 +52,14 @@ export class BossTrialAutocompleteHandler extends InteractionHandler {
     { focusedOption }: InteractionHandler.ParseResult<this>,
   ) {
     if (focusedOption.name === 'game') {
-      const games = await getBossStatsGameAutocomplete(
-        String(focusedOption.value),
-      );
+      const games = await getBossGameAutocomplete(String(focusedOption.value));
 
       return interaction.respond(
         games.map((game) => ({ name: game.name, value: game.name })),
       );
     }
 
-    const bosses = await getBossStatsBossAutocomplete({
+    const bosses = await getBossAutocomplete({
       gameName: interaction.options.getString('game'),
       query: String(focusedOption.value),
     });

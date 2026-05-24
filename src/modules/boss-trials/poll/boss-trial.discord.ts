@@ -7,9 +7,9 @@ import {
 import {
   BossTrialStatus,
   BossTrialVoteVerdict,
-} from '../../../../generated/prisma/enums';
-import { DAY_MINUTES, HOUR_MINUTES } from '../../../../lib/time.constants';
-import { addDaviBossStatsField } from '../../boss-stats.discord';
+} from '../../../generated/prisma/enums';
+import { DAY_MINUTES, HOUR_MINUTES } from '../../../lib/time.constants';
+import { addDaviBossStatsField } from '../../bosses/bosses.discord';
 import {
   BOSS_TRIAL_CUSTOM_ID_PREFIX,
   BOSS_TRIAL_VERDICT_LABELS,

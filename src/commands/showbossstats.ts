@@ -1,8 +1,8 @@
 import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { getBossStatsBossView } from '../modules/boss-stats/boss-stats.service';
-import { buildShowBossStatsEmbed } from '../modules/boss-stats/stats/boss-stats.discord';
+import { buildShowBossStatsEmbed } from '../modules/boss-encounter-stats/boss/boss-encounter-stats.discord';
+import { getBossView } from '../modules/bosses/bosses.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
 export class ShowBossStatsCommand extends Command {
@@ -49,7 +49,7 @@ export class ShowBossStatsCommand extends Command {
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, COMMAND_GUILDS.SHOW_BOSS_STATS),
       run: async ({ editReply }) => {
-        const boss = await getBossStatsBossView({
+        const boss = await getBossView({
           gameName: interaction.options.getString('game', true),
           bossName: interaction.options.getString('boss', true),
         });

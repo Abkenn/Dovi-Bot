@@ -1,7 +1,7 @@
 import { areBossStatsTablesPresent } from '@data/queries/boss-stats';
 import { upsertDaviSpreadsheetBossEncounter } from '@data/transactions/davi-boss-stats-sync';
 import { env } from '@zod-schemas/env.zod';
-import { normalizeBossStatName } from '../boss-stats.utils';
+import { normalizeBossName } from '../../bosses/bosses.utils';
 import { fetchDaviBossStatsSpreadsheetRows } from './davi-boss-stats-spreadsheet';
 import type { DaviBossStatsSpreadsheetRow } from './davi-boss-stats-sync.types';
 import {
@@ -50,9 +50,9 @@ const upsertDaviEncounterStat = async ({
 
   return upsertDaviSpreadsheetBossEncounter({
     gameName: row.game,
-    normalizedGameName: normalizeBossStatName(row.game),
+    normalizedGameName: normalizeBossName(row.game),
     bossName: row.boss,
-    normalizedBossName: normalizeBossStatName(row.boss),
+    normalizedBossName: normalizeBossName(row.boss),
     daviDiscordUserId,
     parsedRow,
     rawTotalAttemptTime: row.totalAttemptTime || null,

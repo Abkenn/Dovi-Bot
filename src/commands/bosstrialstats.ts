@@ -1,8 +1,8 @@
 import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { buildBossTrialStatsEmbed } from '../modules/boss-stats/trials/stats/boss-trial-stats.discord';
-import { getBossTrialStats } from '../modules/boss-stats/trials/stats/boss-trial-stats.service';
+import { buildBossTrialStatsEmbed } from '../modules/boss-trials/stats/boss-trial-stats.discord';
+import { getBossTrialStats } from '../modules/boss-trials/stats/boss-trial-stats.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
 export class BossTrialStatsCommand extends Command {

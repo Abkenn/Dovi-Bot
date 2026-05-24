@@ -12,9 +12,9 @@ import {
   getPendingBossTrialLifecycleEvents as getPendingBossTrialLifecycleEventRows,
   upsertBossTrialVoteVerdict,
 } from '@data/queries/boss-trial';
-import type { BossTrialVoteVerdict } from '../../../../generated/prisma/enums';
-import { DAY_MINUTES, MINUTE_MS } from '../../../../lib/time.constants';
-import { getBossStatsBossView } from '../../boss-stats.service';
+import type { BossTrialVoteVerdict } from '../../../generated/prisma/enums';
+import { DAY_MINUTES, MINUTE_MS } from '../../../lib/time.constants';
+import { getBossView } from '../../bosses/bosses.service';
 import {
   BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
   BOSS_TRIAL_VERDICTS,
@@ -78,7 +78,7 @@ export const createBossTrial = async ({
 }) => {
   await assertBossTrialStorageReady();
 
-  const boss = await getBossStatsBossView({ gameName, bossName });
+  const boss = await getBossView({ gameName, bossName });
   const durationConfig = getBossTrialDurationConfig(duration);
   const now = new Date();
 

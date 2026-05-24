@@ -1,4 +1,4 @@
-import type { BossTrialVoteVerdict } from '../../../../generated/prisma/enums';
+import type { BossTrialVoteVerdict } from '../../../generated/prisma/enums';
 
 export type BossTrialButtonAction =
   | {

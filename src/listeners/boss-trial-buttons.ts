@@ -1,18 +1,18 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
-import { BOSS_TRIAL_VERDICT_LABELS } from '../modules/boss-stats/trials/boss-trial.config';
-import { parseBossTrialButtonAction } from '../modules/boss-stats/trials/poll/boss-trial.discord';
+import { BOSS_TRIAL_VERDICT_LABELS } from '../modules/boss-trials/boss-trial.config';
+import { parseBossTrialButtonAction } from '../modules/boss-trials/poll/boss-trial.discord';
 import {
   postBossTrialBumpMessage,
   postBossTrialResultsMessage,
   refreshBossTrialMessage,
-} from '../modules/boss-stats/trials/poll/boss-trial.lifecycle';
+} from '../modules/boss-trials/poll/boss-trial.lifecycle';
 import {
   claimBossTrialFinalResults,
   getBossTrialView,
   recordBossTrialVote,
   shouldShowBossTrialVotes,
-} from '../modules/boss-stats/trials/poll/boss-trial.service';
+} from '../modules/boss-trials/poll/boss-trial.service';
 
 const getVoteConfirmationMessage = ({
   voteAction,

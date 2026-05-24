@@ -2,7 +2,7 @@ import { Command } from '@sapphire/framework';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
-import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
+import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 
 export class StreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {

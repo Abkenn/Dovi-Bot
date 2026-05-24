@@ -8,7 +8,7 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,
 } from '../modules/command-logging/with-command-logging';
-import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.embed';
+import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { resetStreamTitle } from '../modules/stream-info/stream-info.service';
 
 export class ResetTitleCommand extends Command {

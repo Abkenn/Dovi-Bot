@@ -2,16 +2,16 @@ import { Command } from '@sapphire/framework';
 import { MessageFlags } from 'discord.js';
 import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { BOSS_TRIAL_DURATION_OPTIONS } from '../modules/boss-stats/trials/boss-trial.config';
+import { BOSS_TRIAL_DURATION_OPTIONS } from '../modules/boss-trials/boss-trial.config';
 import {
   buildBossTrialEmbed,
   buildBossTrialRequesterControls,
   buildBossTrialVoteButtons,
-} from '../modules/boss-stats/trials/poll/boss-trial.discord';
+} from '../modules/boss-trials/poll/boss-trial.discord';
 import {
   attachBossTrialMessage,
   createBossTrial,
-} from '../modules/boss-stats/trials/poll/boss-trial.service';
+} from '../modules/boss-trials/poll/boss-trial.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
 export class BossTrialCommand extends Command {

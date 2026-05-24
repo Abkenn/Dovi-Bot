@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { BossTrialStatus } from '../../../../generated/prisma/enums';
+import { BossTrialStatus } from '../../../generated/prisma/enums';
 import {
   type BossTrialStatsTrial,
   getBossTrialResultText,

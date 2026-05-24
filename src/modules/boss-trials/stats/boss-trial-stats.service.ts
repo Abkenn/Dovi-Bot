@@ -1,5 +1,5 @@
 import { getBossTrialStatsRows } from '@data/queries/boss-trial-stats';
-import { BossTrialStatus } from '../../../../generated/prisma/enums';
+import { BossTrialStatus } from '../../../generated/prisma/enums';
 import {
   BOSS_TRIAL_VERDICT_LABELS,
   BOSS_TRIAL_VERDICTS,

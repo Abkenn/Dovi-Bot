@@ -1,8 +1,8 @@
 import { EmbedBuilder } from 'discord.js';
-import { addDaviBossStatsField } from '../boss-stats.discord';
-import type { BossStatsBossView } from '../boss-stats.service';
+import { addDaviBossStatsField } from '../../bosses/bosses.discord';
+import type { BossView } from '../../bosses/bosses.service';
 
-export const buildShowBossStatsEmbed = (boss: BossStatsBossView) =>
+export const buildShowBossStatsEmbed = (boss: BossView) =>
   addDaviBossStatsField(
     new EmbedBuilder()
       .setTitle('Boss Stats')

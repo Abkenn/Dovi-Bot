@@ -4,8 +4,8 @@ import {
   COMMAND_GUILDS,
 } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
-import { syncDaviBossStats } from '../modules/boss-stats/sync/davi-boss-stats-sync.service';
-import { formatDaviBossStatsSyncSummary } from '../modules/boss-stats/sync/davi-boss-stats-sync.utils';
+import { syncDaviBossStats } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.service';
+import { formatDaviBossStatsSyncSummary } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.utils';
 import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,

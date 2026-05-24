@@ -3,15 +3,15 @@ import {
   findBossGamesForAutocomplete,
   findBossWithDaviSpreadsheetStats,
 } from '@data/queries/boss-stats';
-import { normalizeBossStatName } from './boss-stats.utils';
+import { normalizeBossName } from './bosses.utils';
 
-export const getBossStatsGameAutocomplete = async (query: string) => {
-  const normalizedQuery = normalizeBossStatName(query);
+export const getBossGameAutocomplete = async (query: string) => {
+  const normalizedQuery = normalizeBossName(query);
 
   return findBossGamesForAutocomplete(normalizedQuery);
 };
 
-export const getBossStatsBossAutocomplete = async ({
+export const getBossAutocomplete = async ({
   gameName,
   query,
 }: {
@@ -23,12 +23,12 @@ export const getBossStatsBossAutocomplete = async ({
   }
 
   return findBossesForAutocomplete({
-    normalizedGameName: normalizeBossStatName(gameName),
-    normalizedBossQuery: normalizeBossStatName(query),
+    normalizedGameName: normalizeBossName(gameName),
+    normalizedBossQuery: normalizeBossName(query),
   });
 };
 
-export const getBossStatsBossView = async ({
+export const getBossView = async ({
   gameName,
   bossName,
 }: {
@@ -36,8 +36,8 @@ export const getBossStatsBossView = async ({
   bossName: string;
 }) => {
   const boss = await findBossWithDaviSpreadsheetStats({
-    normalizedGameName: normalizeBossStatName(gameName),
-    normalizedBossName: normalizeBossStatName(bossName),
+    normalizedGameName: normalizeBossName(gameName),
+    normalizedBossName: normalizeBossName(bossName),
   });
 
   if (!boss) {
@@ -47,6 +47,4 @@ export const getBossStatsBossView = async ({
   return boss;
 };
 
-export type BossStatsBossView = Awaited<
-  ReturnType<typeof getBossStatsBossView>
->;
+export type BossView = Awaited<ReturnType<typeof getBossView>>;
