@@ -6,10 +6,11 @@ export const HELP_AUDIENCES = {
 } as const;
 
 export const HELP_CATEGORIES = {
+  HELP: 'Help',
   GENERAL: 'General',
   STREAM_INFO: 'Stream Info',
   BOSSES: 'Bosses',
-  OPERATOR: 'Operator',
+  STAGING: 'Staging',
 } as const;
 
 type CommandHelpAudience = (typeof HELP_AUDIENCES)[keyof typeof HELP_AUDIENCES];
@@ -30,7 +31,7 @@ export const COMMAND_METADATA = {
     description: 'Shows information and help for commands.',
     guildIds: COMMAND_GUILDS.HELP,
     helpAudience: HELP_AUDIENCES.PUBLIC,
-    helpCategory: HELP_CATEGORIES.GENERAL,
+    helpCategory: HELP_CATEGORIES.HELP,
   },
   HELLO: {
     name: 'hello',
@@ -109,49 +110,49 @@ export const COMMAND_METADATA = {
     description: 'Shows prod env stream information from staging.',
     guildIds: COMMAND_GUILDS.DAVI_STREAM_INFO,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
   DAVI_SET_GAME: {
     name: 'davisetgame',
     description: 'Sets the prod env default game from staging.',
     guildIds: COMMAND_GUILDS.DAVI_SET_GAME,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
   DAVI_SET_STREAM_INFO: {
     name: 'davisetstreaminfo',
     description: 'Updates the prod env current/next stream from staging.',
     guildIds: COMMAND_GUILDS.DAVI_SET_STREAM_INFO,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
   DAVI_RESET_TITLE: {
     name: 'daviresettitle',
     description: 'Resets title override for prod env current/next stream.',
     guildIds: COMMAND_GUILDS.DAVI_RESET_TITLE,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
   DAVI_RESET_STREAM_INFO: {
     name: 'daviresetstreaminfo',
     description: 'Resets all overrides for prod env current/next stream.',
     guildIds: COMMAND_GUILDS.DAVI_RESET_STREAM_INFO,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
   DAVI_BOSS_TRIAL_STATS: {
     name: 'davibosstrialstats',
     description: 'Shows prod env boss trial stats from staging.',
     guildIds: COMMAND_GUILDS.DAVI_BOSS_TRIAL_STATS,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
   DAVI_SYNC_BOSS_STATS: {
     name: 'davisyncbossstats',
     description: 'Syncs prod env boss stats from staging.',
     guildIds: COMMAND_GUILDS.DAVI_SYNC_BOSS_STATS,
     helpAudience: HELP_AUDIENCES.ADMIN,
-    helpCategory: HELP_CATEGORIES.OPERATOR,
+    helpCategory: HELP_CATEGORIES.STAGING,
   },
 } as const satisfies Record<string, CommandMetadata>;
 

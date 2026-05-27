@@ -8,7 +8,10 @@ import type {
 } from 'discord.js';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { getHelpTopicAutocomplete } from '../modules/help/help.discord';
+import {
+  getHelpTopicAutocomplete,
+  getVisibleHelpCommands,
+} from '../modules/help/help.discord';
 
 type HelpTopicAutocompleteParseData = {
   focusedOption: AutocompleteFocusedOption;
@@ -45,9 +48,14 @@ export class HelpTopicAutocompleteHandler extends InteractionHandler {
     interaction: AutocompleteInteraction,
     { focusedOption }: InteractionHandler.ParseResult<this>,
   ) {
+    const canManageGuild =
+      interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ?? false;
     const topics = getHelpTopicAutocomplete({
-      canManageGuild:
-        interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ?? false,
+      canManageGuild,
+      commands: getVisibleHelpCommands({
+        canManageGuild,
+        guildId: interaction.guildId,
+      }),
       query: String(focusedOption.value),
     });
 

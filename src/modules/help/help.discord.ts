@@ -16,22 +16,25 @@ import {
   HELP_CATEGORIES,
   HELP_COMMANDS,
 } from '../../config/discord-command-metadata';
+import { DISCORD_STYLE } from '../../config/discord-style';
 
 const COMMAND_CATEGORY_ORDER = [
-  HELP_CATEGORIES.GENERAL,
   HELP_CATEGORIES.STREAM_INFO,
   HELP_CATEGORIES.BOSSES,
-  HELP_CATEGORIES.OPERATOR,
+  HELP_CATEGORIES.STAGING,
+  HELP_CATEGORIES.GENERAL,
+  HELP_CATEGORIES.HELP,
 ] as const satisfies readonly CommandMetadata['helpCategory'][];
 
 export const HELP_TOPIC_SELECT_CUSTOM_ID = 'help:topic';
 
 export type HelpTopicValue =
   | 'all'
-  | 'general'
   | 'stream-info'
   | 'bosses'
-  | 'operator';
+  | 'staging'
+  | 'general'
+  | 'help';
 
 const HELP_TOPIC_OPTIONS = [
   {
@@ -39,13 +42,6 @@ const HELP_TOPIC_OPTIONS = [
     value: 'all',
     description: 'Show all available help topics',
     category: null,
-    adminOnly: false,
-  },
-  {
-    name: 'General',
-    value: 'general',
-    description: 'Basic commands',
-    category: HELP_CATEGORIES.GENERAL,
     adminOnly: false,
   },
   {
@@ -63,11 +59,25 @@ const HELP_TOPIC_OPTIONS = [
     adminOnly: false,
   },
   {
-    name: 'Operator',
-    value: 'operator',
-    description: 'Staging and operator commands',
-    category: HELP_CATEGORIES.OPERATOR,
+    name: 'Staging',
+    value: 'staging',
+    description: 'Staging-only command helpers',
+    category: HELP_CATEGORIES.STAGING,
     adminOnly: true,
+  },
+  {
+    name: 'General',
+    value: 'general',
+    description: 'Basic commands',
+    category: HELP_CATEGORIES.GENERAL,
+    adminOnly: false,
+  },
+  {
+    name: 'Help',
+    value: 'help',
+    description: 'Help command usage',
+    category: HELP_CATEGORIES.HELP,
+    adminOnly: false,
   },
 ] as const satisfies readonly {
   name: string;
@@ -81,8 +91,21 @@ const HELP_TOPIC_VALUES = new Set<string>(
   HELP_TOPIC_OPTIONS.map((topic) => topic.value),
 );
 
+const HELP_TOPIC_ACCENT_COLORS: Partial<Record<HelpTopicValue, number>> = {
+  'stream-info': DISCORD_STYLE.BOT_ACCENT_COLOR,
+  bosses: 0xf59e0b,
+  staging: 0x5865f2,
+  general: 0x57f287,
+  help: 0xfee75c,
+} as const;
+
 const formatCommand = (command: CommandMetadata): string =>
   `\`/${command.name}\` - ${command.description}`;
+
+const getGuildCommands = (guildId: string) =>
+  HELP_COMMANDS.filter((command) =>
+    command.guildIds.some((allowedGuildId) => allowedGuildId === guildId),
+  );
 
 const buildTextDisplay = (content: string): TextDisplayComponentData => ({
   type: ComponentType.TextDisplay,
@@ -95,15 +118,38 @@ const buildSeparator = (): ComponentInContainerData => ({
   spacing: SeparatorSpacingSize.Small,
 });
 
+const buildContainer = (
+  components: readonly ComponentInContainerData[],
+  topic: HelpTopicValue,
+): TopLevelComponentData => {
+  const accentColor = HELP_TOPIC_ACCENT_COLORS[topic];
+
+  if (accentColor === undefined) {
+    return {
+      type: ComponentType.Container,
+      components,
+    };
+  }
+
+  return {
+    type: ComponentType.Container,
+    accentColor,
+    components,
+  };
+};
+
 const buildTopicSelect = ({
   canManageGuild,
+  commands,
   selectedTopic,
 }: {
   canManageGuild: boolean;
+  commands: readonly CommandMetadata[];
   selectedTopic: HelpTopicValue;
 }): ComponentInContainerData => {
   const options: SelectMenuComponentOptionData[] = getHelpTopicAutocomplete({
     canManageGuild,
+    commands,
     query: '',
   }).map((topic) => ({
     label: topic.name,
@@ -136,15 +182,25 @@ export const isHelpTopicValue = (value: string): value is HelpTopicValue =>
 
 export const getHelpTopicAutocomplete = ({
   canManageGuild,
+  commands,
   query,
 }: {
   canManageGuild: boolean;
+  commands?: readonly CommandMetadata[];
   query: string;
 }) => {
   const normalizedQuery = query.trim().toLowerCase();
-  const availableTopics = HELP_TOPIC_OPTIONS.filter(
-    (topic) => canManageGuild || !topic.adminOnly,
-  );
+  const availableTopics = HELP_TOPIC_OPTIONS.filter((topic) => {
+    if (!canManageGuild && topic.adminOnly) {
+      return false;
+    }
+
+    if (!commands || topic.category === null) {
+      return true;
+    }
+
+    return commands.some((command) => command.helpCategory === topic.category);
+  });
 
   if (!normalizedQuery) {
     return availableTopics;
@@ -179,6 +235,14 @@ const addCommandBlocks = (
 const getTopicByValue = (topic: HelpTopicValue) =>
   HELP_TOPIC_OPTIONS.find((option) => option.value === topic);
 
+const getTopicTitle = (topicName: string): string => {
+  if (topicName === HELP_CATEGORIES.HELP) {
+    return 'Help';
+  }
+
+  return `${topicName} Help`;
+};
+
 const getVisibleCommands = ({
   canManageGuild,
   commands,
@@ -191,6 +255,21 @@ const getVisibleCommands = ({
       canManageGuild || command.helpAudience === HELP_AUDIENCES.PUBLIC,
   );
 
+export const getVisibleHelpCommands = ({
+  canManageGuild,
+  guildId,
+}: {
+  canManageGuild: boolean;
+  guildId: string | null;
+}) => {
+  const guildCommands = guildId ? getGuildCommands(guildId) : HELP_COMMANDS;
+
+  return getVisibleCommands({
+    canManageGuild,
+    commands: guildCommands,
+  });
+};
+
 export const buildHelpMessage = ({
   canManageGuild,
   guildId,
@@ -200,14 +279,21 @@ export const buildHelpMessage = ({
   guildId: BotGuildId;
   topic?: HelpTopicValue | null;
 }): MessageEditOptions => {
-  const guildCommands = HELP_COMMANDS.filter((command) =>
-    command.guildIds.includes(guildId),
-  );
-  const visibleCommands = getVisibleCommands({
+  const visibleCommands = getVisibleHelpCommands({
     canManageGuild,
-    commands: guildCommands,
+    guildId,
   });
-  const selectedTopic = topic ?? 'stream-info';
+  const requestedTopic = topic ?? 'stream-info';
+  const availableTopicValues = new Set(
+    getHelpTopicAutocomplete({
+      canManageGuild,
+      commands: visibleCommands,
+      query: '',
+    }).map((option) => option.value),
+  );
+  const selectedTopic = availableTopicValues.has(requestedTopic)
+    ? requestedTopic
+    : 'stream-info';
   const topicOption = getTopicByValue(selectedTopic);
 
   if (topicOption?.category) {
@@ -217,7 +303,7 @@ export const buildHelpMessage = ({
     );
     const components: ComponentInContainerData[] = [
       buildTextDisplay(
-        `# ${topicOption.name} Help\nUse the topic picker below to switch this help card without sending a new message.`,
+        `# ${getTopicTitle(topicOption.name)}\nUse the topic picker below to switch this help card without sending a new message.`,
       ),
       buildSeparator(),
     ];
@@ -234,26 +320,19 @@ export const buildHelpMessage = ({
 
     components.push(
       buildSeparator(),
-      buildTopicSelect({ canManageGuild, selectedTopic }),
+      buildTopicSelect({
+        canManageGuild,
+        commands: visibleCommands,
+        selectedTopic,
+      }),
     );
 
     return {
-      components: [
-        {
-          type: ComponentType.Container,
-          components,
-        },
-      ],
+      components: [buildContainer(components, selectedTopic)],
       flags: MessageFlags.IsComponentsV2,
     };
   }
 
-  const publicCommands = guildCommands.filter(
-    (command) => command.helpAudience === HELP_AUDIENCES.PUBLIC,
-  );
-  const adminCommands = guildCommands.filter(
-    (command) => command.helpAudience === HELP_AUDIENCES.ADMIN,
-  );
   const components: ComponentInContainerData[] = [
     buildTextDisplay(
       '# Help\nUse the topic picker below to switch this help card without sending a new message.',
@@ -261,27 +340,19 @@ export const buildHelpMessage = ({
     buildSeparator(),
   ];
 
-  addCommandBlocks(components, publicCommands);
-
-  if (canManageGuild) {
-    components.push(
-      buildSeparator(),
-      buildTextDisplay(
-        `## Admin Commands\n${adminCommands.map(formatCommand).join('\n')}`,
-      ),
-    );
-  }
+  addCommandBlocks(components, visibleCommands);
 
   components.push(
     buildSeparator(),
-    buildTopicSelect({ canManageGuild, selectedTopic: 'all' }),
+    buildTopicSelect({
+      canManageGuild,
+      commands: visibleCommands,
+      selectedTopic: 'all',
+    }),
   );
 
   const topLevelComponents: TopLevelComponentData[] = [
-    {
-      type: ComponentType.Container,
-      components,
-    },
+    buildContainer(components, 'all'),
   ];
 
   return {
