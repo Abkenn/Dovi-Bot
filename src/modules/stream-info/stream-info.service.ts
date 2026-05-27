@@ -161,15 +161,16 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     throw new Error('No target stream found');
   }
 
+  const explicitGameName = input.gameName;
+  const hasExplicitGameName =
+    explicitGameName !== null && explicitGameName !== undefined;
   const switchingToGameWithoutExplicitGame =
     input.streamKind === StreamKind.GAME &&
-    (input.gameName === null || input.gameName === undefined) &&
+    !hasExplicitGameName &&
     targetOccurrence.streamKind !== StreamKind.GAME;
   const effectiveStreamKind = input.streamKind ?? targetOccurrence.streamKind;
   const shouldPersistGameName =
-    input.gameName !== null &&
-    input.gameName !== undefined &&
-    effectiveStreamKind === StreamKind.GAME;
+    hasExplicitGameName && effectiveStreamKind === StreamKind.GAME;
 
   const updateData: {
     resolvedFromWeekday: typeof targetOccurrence.weekday;
@@ -195,8 +196,8 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
 
   if (shouldPersistGameName) {
     updateData.gameName = null;
-  } else if (input.gameName !== null && input.gameName !== undefined) {
-    updateData.gameName = input.gameName;
+  } else if (hasExplicitGameName) {
+    updateData.gameName = explicitGameName;
   } else if (switchingToGameWithoutExplicitGame) {
     updateData.gameName = null;
   }
@@ -206,14 +207,14 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     streamDateKey: targetOccurrence.dateKey,
     startAtUtc: targetOccurrence.startAt,
     ...updateData,
-    createGameName: shouldPersistGameName ? null : (input.gameName ?? null),
+    createGameName: shouldPersistGameName ? null : (explicitGameName ?? null),
   };
 
   if (!shouldPersistGameName) {
     return upsertTargetStreamOverride(overrideInput);
   }
 
-  const defaultGameName = input.gameName;
+  const defaultGameName = explicitGameName;
   if (defaultGameName === null || defaultGameName === undefined) {
     return upsertTargetStreamOverride(overrideInput);
   }
