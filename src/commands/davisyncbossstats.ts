@@ -6,8 +6,8 @@ import { syncDaviBossStats } from '../modules/boss-encounter-stats/sync/davi-bos
 import { formatDaviBossStatsSyncSummary } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.utils';
 import {
   EPHEMERAL_COMMAND_REPLY,
-  withCommandLogging,
-} from '../modules/command-logging/with-command-logging';
+  runCommand,
+} from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.DAVI_SYNC_BOSS_STATS;
 
@@ -36,7 +36,7 @@ export class DaviSyncBossStatsCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,

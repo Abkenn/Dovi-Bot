@@ -3,7 +3,7 @@ import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildShowBossStatsEmbed } from '../modules/boss-encounter-stats/boss/boss-encounter-stats.discord';
 import { getBossView } from '../modules/bosses/bosses.service';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import { runCommand } from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.SHOW_BOSS_STATS;
 
@@ -45,7 +45,7 @@ export class ShowBossStatsCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       beforeDefer: () =>

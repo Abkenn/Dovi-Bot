@@ -4,21 +4,22 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { ZodError } from 'zod';
+import { BOT_GUILDS } from '../../config/discord-access';
 import { CommandExecutionStatus } from '../../generated/prisma/enums';
-import {
-  buildComponentEmbedMessageFromEmbeds,
-  type ComponentEmbedSource,
-} from '../discord/component-embed';
-import { CommandDeniedError } from './command-denied';
+import { CommandDeniedError } from '../command-logging/command-denied';
 import {
   createCommandErrorLog,
   createCommandExecutionLog,
-} from './command-logging.service';
+} from '../command-logging/command-logging.service';
 import {
   COMMAND_TIMEOUT_MESSAGE,
   COMMAND_TIMEOUT_MS,
   CommandTimeoutError,
-} from './command-timeout';
+} from '../command-logging/command-timeout';
+import {
+  buildComponentEmbedMessageFromEmbeds,
+  type ComponentEmbedSource,
+} from '../discord/component-embed';
 
 const getUserFacingErrorMessage = (error: unknown): string => {
   if (error instanceof CommandDeniedError) {
@@ -133,7 +134,7 @@ const replyOrEditCommandError = async (
   }
 };
 
-type CommandEditReplyOptions = MessageEditOptions & {
+export type CommandEditReplyOptions = MessageEditOptions & {
   componentEmbeds?: readonly ComponentEmbedSource[];
   componentMessage?: MessageEditOptions;
 };
@@ -193,34 +194,66 @@ const normalizeEditReplyOptions = (
 };
 
 type Awaitable<T> = T | Promise<T>;
+type CommandRun<T, TPreflight> = (
+  context: CommandRunContext & { preflight: TPreflight },
+) => Promise<T>;
+type CommandRunByEnvironment<T, TPreflight> = {
+  staging: CommandRun<T, TPreflight>;
+  prod: CommandRun<T, TPreflight>;
+};
+type CommandRunOption<T, TPreflight> =
+  | CommandRun<T, TPreflight>
+  | CommandRunByEnvironment<T, TPreflight>;
 
-type WithCommandLoggingOptions<T, TPreflight = void> = {
+const isCommandRun = <T, TPreflight>(
+  run: CommandRunOption<T, TPreflight>,
+): run is CommandRun<T, TPreflight> => typeof run === 'function';
+
+const getCommandRunForInteraction = <T, TPreflight>({
+  interaction,
+  run,
+}: {
+  interaction: ChatInputCommandInteraction;
+  run: CommandRunOption<T, TPreflight>;
+}): CommandRun<T, TPreflight> => {
+  if (isCommandRun(run)) {
+    return run;
+  }
+
+  return interaction.guildId === BOT_GUILDS.STAGING_ENV
+    ? run.staging
+    : run.prod;
+};
+
+type RunCommandOptions<T, TPreflight = void> = {
   interaction: ChatInputCommandInteraction;
   commandName: string;
   deferReplyOptions?: CommandDeferReplyOptions;
   timeoutMs?: number | null;
   timeoutMessage?: string;
+  withCommandLogging?: boolean;
   /**
    * Runs before deferReply, so keep this to fast local checks only.
    * Do not put DB or network calls here.
    */
   beforeDefer?: () => Awaitable<TPreflight>;
-  run: (context: CommandRunContext & { preflight: TPreflight }) => Promise<T>;
+  run: CommandRunOption<T, TPreflight>;
 };
 
 export const EPHEMERAL_COMMAND_REPLY = {
   flags: MessageFlags.Ephemeral,
 } as const satisfies CommandDeferReplyOptions;
 
-export const withCommandLogging = async <T, TPreflight = void>({
+export const runCommand = async <T, TPreflight = void>({
   interaction,
   commandName,
   deferReplyOptions,
   timeoutMs = COMMAND_TIMEOUT_MS,
   timeoutMessage,
+  withCommandLogging = true,
   beforeDefer,
   run,
-}: WithCommandLoggingOptions<T, TPreflight>) => {
+}: RunCommandOptions<T, TPreflight>) => {
   const startedAt = Date.now();
   const abortController = new AbortController();
   let timeoutId: NodeJS.Timeout | undefined;
@@ -235,7 +268,11 @@ export const withCommandLogging = async <T, TPreflight = void>({
       await interaction.deferReply(deferReplyOptions);
     }
 
-    const runPromise = run({
+    const runCommandImplementation = getCommandRunForInteraction({
+      interaction,
+      run,
+    });
+    const runPromise = runCommandImplementation({
       preflight,
       signal: abortController.signal,
       hasTimedOut: () => abortController.signal.aborted,
@@ -271,15 +308,17 @@ export const withCommandLogging = async <T, TPreflight = void>({
       timeoutId = undefined;
     }
 
-    await logCommandExecutionSafely({
-      interaction,
-      commandName,
-      status: CommandExecutionStatus.SUCCESS,
-      durationMs: Date.now() - startedAt,
-      note: hasSentCommandResponse
-        ? null
-        : 'Command completed without sending a response',
-    });
+    if (withCommandLogging) {
+      await logCommandExecutionSafely({
+        interaction,
+        commandName,
+        status: CommandExecutionStatus.SUCCESS,
+        durationMs: Date.now() - startedAt,
+        note: hasSentCommandResponse
+          ? null
+          : 'Command completed without sending a response',
+      });
+    }
 
     return result;
   } catch (error) {
@@ -297,15 +336,17 @@ export const withCommandLogging = async <T, TPreflight = void>({
       ? await replyOrEditCommandError(interaction, message)
       : undefined;
 
-    await logCommandErrorSafely({
-      interaction,
-      commandName,
-      status: getLogStatus(error),
-      durationMs: Date.now() - startedAt,
-      note,
-      error,
-      skipErrorLog: !shouldCreateErrorLog(error),
-    });
+    if (withCommandLogging) {
+      await logCommandErrorSafely({
+        interaction,
+        commandName,
+        status: getLogStatus(error),
+        durationMs: Date.now() - startedAt,
+        note,
+        error,
+        skipErrorLog: !shouldCreateErrorLog(error),
+      });
+    }
 
     return response;
   } finally {

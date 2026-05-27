@@ -12,7 +12,7 @@ import {
   attachBossTrialMessage,
   createBossTrial,
 } from '../modules/boss-trials/poll/boss-trial.service';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import { runCommand } from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.BOSS_TRIAL;
 
@@ -77,7 +77,7 @@ export class BossTrialCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       beforeDefer: () =>

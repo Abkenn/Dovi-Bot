@@ -4,8 +4,8 @@ import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
-  withCommandLogging,
-} from '../modules/command-logging/with-command-logging';
+  runCommand,
+} from '../modules/command-runner/run-command';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { resetStreamInfo } from '../modules/stream-info/stream-info.service';
 
@@ -36,7 +36,7 @@ export class DaviResetStreamInfoCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,

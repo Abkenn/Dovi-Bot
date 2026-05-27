@@ -4,8 +4,8 @@ import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
-  withCommandLogging,
-} from '../modules/command-logging/with-command-logging';
+  runCommand,
+} from '../modules/command-runner/run-command';
 import {
   buildHelpMessage,
   isHelpTopicValue,
@@ -43,7 +43,7 @@ export class HelpCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,

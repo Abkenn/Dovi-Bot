@@ -4,7 +4,7 @@ import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildBossTrialStatsEmbed } from '../modules/boss-trials/stats/boss-trial-stats.discord';
 import { getBossTrialStats } from '../modules/boss-trials/stats/boss-trial-stats.service';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import { runCommand } from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.DAVI_BOSS_TRIAL_STATS;
 
@@ -29,7 +29,7 @@ export class DaviBossTrialStatsCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       beforeDefer: () =>

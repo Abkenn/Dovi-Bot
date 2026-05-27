@@ -1,10 +1,39 @@
 import { Command } from '@sapphire/framework';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import {
+  type CommandRunContext,
+  runCommand,
+} from '../modules/command-runner/run-command';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 
 const METADATA = COMMAND_METADATA.STREAM_INFO;
+
+type StreamInfoRunContext = CommandRunContext & {
+  preflight: (typeof METADATA.guildIds)[number];
+};
+
+const runStreamInfoLts = async ({
+  editReply,
+  preflight: guildId,
+}: StreamInfoRunContext) => {
+  const embed = await getStreamInfoEmbed(guildId);
+
+  return editReply({
+    embeds: [embed],
+  });
+};
+
+const runStreamInfoLatest = async ({
+  editReply,
+  preflight: guildId,
+}: StreamInfoRunContext) => {
+  const embed = await getStreamInfoEmbed(guildId);
+
+  return editReply({
+    componentEmbeds: [embed],
+  });
+};
 
 export class StreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -27,15 +56,14 @@ export class StreamInfoCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
-      run: async ({ editReply, preflight: guildId }) => {
-        return editReply({
-          embeds: [await getStreamInfoEmbed(guildId)],
-        });
+      run: {
+        staging: runStreamInfoLatest,
+        prod: runStreamInfoLts,
       },
     });
   }

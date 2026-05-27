@@ -2,7 +2,7 @@ import { HELLO_GREETINGS } from '@data/hello-greetings';
 import { Command } from '@sapphire/framework';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+import { runCommand } from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.HELLO;
 
@@ -27,7 +27,7 @@ export class HelloCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    return withCommandLogging({
+    return runCommand({
       interaction,
       commandName: this.name,
       beforeDefer: () =>
