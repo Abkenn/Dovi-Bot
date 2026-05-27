@@ -46,13 +46,20 @@ export class HelpTopicSelectListener extends Listener {
       });
     }
 
-    return interaction.update(
-      buildHelpMessage({
-        canManageGuild:
-          interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ?? false,
-        guildId,
-        topic,
-      }),
-    );
+    const helpMessage = buildHelpMessage({
+      canManageGuild:
+        interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ?? false,
+      guildId,
+      topic,
+    });
+
+    if (interaction.message.flags.has(MessageFlags.Ephemeral)) {
+      return interaction.update(helpMessage);
+    }
+
+    return interaction.reply({
+      components: helpMessage.components ?? [],
+      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+    });
   }
 }
