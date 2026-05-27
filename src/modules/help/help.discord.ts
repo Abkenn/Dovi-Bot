@@ -112,6 +112,31 @@ const HELP_TOPIC_ACCENT_COLORS: Partial<Record<HelpTopicValue, number>> = {
 const formatCommand = (command: CommandMetadata): string =>
   `\`/${command.name}\` - ${command.description}`;
 
+const buildCommandList = (commands: readonly CommandMetadata[]): string =>
+  commands.map(formatCommand).join('\n');
+
+const buildCommandGroupContent = (
+  commands: readonly CommandMetadata[],
+): string => {
+  const publicCommands = commands.filter(
+    (command) => command.helpAudience === HELP_AUDIENCES.PUBLIC,
+  );
+  const adminCommands = commands.filter(
+    (command) => command.helpAudience === HELP_AUDIENCES.ADMIN,
+  );
+  const sections: string[] = [];
+
+  if (publicCommands.length > 0) {
+    sections.push(buildCommandList(publicCommands));
+  }
+
+  if (adminCommands.length > 0) {
+    sections.push(`**Admin commands**\n${buildCommandList(adminCommands)}`);
+  }
+
+  return sections.join('\n\n');
+};
+
 const getGuildCommands = (guildId: string) =>
   HELP_COMMANDS.filter((command) =>
     command.guildIds.some((allowedGuildId) => allowedGuildId === guildId),
@@ -236,7 +261,7 @@ const addCommandBlocks = (
 
     components.push(
       buildTextDisplay(
-        `### ${category}\n${categoryCommands.map(formatCommand).join('\n')}`,
+        `### ${category}\n${buildCommandGroupContent(categoryCommands)}`,
       ),
     );
   }
@@ -318,7 +343,7 @@ export const buildHelpMessage = ({
 
     if (topicCommands.length > 0) {
       components.push(
-        buildTextDisplay(topicCommands.map(formatCommand).join('\n')),
+        buildTextDisplay(buildCommandGroupContent(topicCommands)),
       );
     } else {
       components.push(
