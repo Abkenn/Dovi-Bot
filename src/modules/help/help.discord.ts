@@ -22,6 +22,7 @@ const COMMAND_CATEGORY_ORDER = [
   HELP_CATEGORIES.GENERAL,
   HELP_CATEGORIES.STREAM_INFO,
   HELP_CATEGORIES.BOSSES,
+  HELP_CATEGORIES.BOSS_TRIALS,
   HELP_CATEGORIES.STAGING,
   HELP_CATEGORIES.HELP,
 ] as const satisfies readonly CommandMetadata['helpCategory'][];
@@ -32,6 +33,7 @@ export type HelpTopicValue =
   | 'all'
   | 'stream-info'
   | 'bosses'
+  | 'boss-trials'
   | 'staging'
   | 'general'
   | 'help';
@@ -61,8 +63,15 @@ const HELP_TOPIC_OPTIONS = [
   {
     name: 'Bosses',
     value: 'bosses',
-    description: 'Boss stats and boss trial commands',
+    description: 'Boss stats commands',
     category: HELP_CATEGORIES.BOSSES,
+    adminOnly: false,
+  },
+  {
+    name: 'Boss Trials',
+    value: 'boss-trials',
+    description: 'Boss trial poll and stats commands',
+    category: HELP_CATEGORIES.BOSS_TRIALS,
     adminOnly: false,
   },
   {
@@ -94,6 +103,7 @@ const HELP_TOPIC_VALUES = new Set<string>(
 const HELP_TOPIC_ACCENT_COLORS: Partial<Record<HelpTopicValue, number>> = {
   'stream-info': DISCORD_STYLE.BOT_ACCENT_COLOR,
   bosses: 0xf59e0b,
+  'boss-trials': 0xc026d3,
   staging: 0x5865f2,
   general: 0x57f287,
   help: 0xfee75c,

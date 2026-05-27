@@ -10,6 +10,7 @@ export const HELP_CATEGORIES = {
   GENERAL: 'General',
   STREAM_INFO: 'Stream Info',
   BOSSES: 'Bosses',
+  BOSS_TRIALS: 'Boss Trials',
   STAGING: 'Staging',
 } as const;
 
@@ -59,14 +60,14 @@ export const COMMAND_METADATA = {
     description: 'Starts a community verdict vote for a boss.',
     guildIds: COMMAND_GUILDS.BOSS_TRIAL,
     helpAudience: HELP_AUDIENCES.PUBLIC,
-    helpCategory: HELP_CATEGORIES.BOSSES,
+    helpCategory: HELP_CATEGORIES.BOSS_TRIALS,
   },
   BOSS_TRIAL_STATS: {
     name: 'bosstrialstats',
     description: 'Shows boss trial history and leaderboards for this server.',
     guildIds: COMMAND_GUILDS.BOSS_TRIAL_STATS,
     helpAudience: HELP_AUDIENCES.PUBLIC,
-    helpCategory: HELP_CATEGORIES.BOSSES,
+    helpCategory: HELP_CATEGORIES.BOSS_TRIALS,
   },
   SET_GAME: {
     name: 'setgame',
