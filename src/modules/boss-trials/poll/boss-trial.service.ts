@@ -62,7 +62,7 @@ export const isBossTrialStorageReady = async () => {
 const assertBossTrialStorageReady = async () => {
   if (!(await isBossTrialStorageReady())) {
     throw new Error(
-      'Boss trial tables do not exist yet. Apply the Prisma schema before using boss trials.',
+      'Boss trial schema is not ready yet. Apply the Prisma schema before using boss trials.',
     );
   }
 };

@@ -170,7 +170,7 @@ export const postBossTrialVotesVisibleMessage = async ({
 
 export const runBossTrialLifecycleTick = async (client: Client) => {
   if (!(await isBossTrialStorageReady())) {
-    console.info('Boss trial lifecycle skipped: tables are missing.');
+    console.info('Boss trial lifecycle skipped: schema is not ready.');
     return;
   }
 

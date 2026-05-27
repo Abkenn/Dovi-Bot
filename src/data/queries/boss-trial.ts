@@ -12,13 +12,24 @@ import { prisma } from '../../lib/prisma';
 import { DAY_MINUTES } from '../../lib/time.constants';
 
 export const areBossTrialTablesPresent = async () => {
-  const tables = await prisma.$queryRaw<{ tableName: string | null }[]>`
-    select to_regclass('public."BossTrial"')::text as "tableName"
+  const schemaObjects = await prisma.$queryRaw<{ objectName: string | null }[]>`
+    select to_regclass('public."BossTrial"')::text as "objectName"
     union all
-    select to_regclass('public."BossTrialVote"')::text as "tableName"
+    select to_regclass('public."BossTrialVote"')::text as "objectName"
+    union all
+    select to_regclass('public."BossTrialBumpMessage"')::text as "objectName"
+    union all
+    select "column_name" as "objectName"
+    from information_schema.columns
+    where "table_schema" = 'public'
+      and "table_name" = 'BossTrial'
+      and "column_name" = 'bumpMode'
   `;
 
-  return tables.every((table) => table.tableName !== null);
+  return (
+    schemaObjects.length === 4 &&
+    schemaObjects.every((object) => object.objectName !== null)
+  );
 };
 
 const bossTrialViewInclude = {
