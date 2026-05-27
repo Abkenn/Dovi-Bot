@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from 'discord.js';
+import { DISCORD_STYLE } from '../../../config/discord-style';
 import {
   BossTrialStatus,
   BossTrialVoteVerdict,
@@ -95,7 +96,7 @@ const getVoteBreakdownText = (trial: BossTrialView) => {
 export const buildBossTrialEmbed = (trial: BossTrialView) => {
   const embed = new EmbedBuilder()
     .setTitle('Boss Trial')
-    .setColor(0xff3131)
+    .setColor(DISCORD_STYLE.BOT_ACCENT_COLOR)
     .addFields(
       { name: 'Game', value: trial.game.name, inline: true },
       { name: 'Boss', value: trial.boss.name, inline: true },
@@ -140,7 +141,7 @@ export const buildBossTrialFinalResultsEmbed = (trial: BossTrialView) => {
 
   return new EmbedBuilder()
     .setTitle('Boss Trial Results')
-    .setColor(0xff3131)
+    .setColor(DISCORD_STYLE.BOT_ACCENT_COLOR)
     .addFields(
       { name: 'Game', value: trial.game.name, inline: true },
       { name: 'Boss', value: trial.boss.name, inline: true },

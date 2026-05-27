@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { DISCORD_STYLE } from '../../config/discord-style';
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
@@ -38,7 +39,9 @@ const buildOccurrenceValue = (
 };
 
 export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
-  const embed = new EmbedBuilder().setTitle('Stream Info').setColor(0xff3131);
+  const embed = new EmbedBuilder()
+    .setTitle('Stream Info')
+    .setColor(DISCORD_STYLE.BOT_ACCENT_COLOR);
 
   if (data.current) {
     embed.addFields({

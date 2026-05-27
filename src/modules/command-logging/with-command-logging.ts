@@ -1,6 +1,14 @@
-import { type ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import {
+  type ChatInputCommandInteraction,
+  type MessageEditOptions,
+  MessageFlags,
+} from 'discord.js';
 import { ZodError } from 'zod';
 import { CommandExecutionStatus } from '../../generated/prisma/enums';
+import {
+  buildComponentEmbedMessageFromEmbeds,
+  type ComponentEmbedSource,
+} from '../discord/component-embed';
 import { CommandDeniedError } from './command-denied';
 import {
   createCommandErrorLog,
@@ -125,9 +133,11 @@ const replyOrEditCommandError = async (
   }
 };
 
-type CommandEditReplyOptions = Parameters<
-  ChatInputCommandInteraction['editReply']
->[0];
+type CommandEditReplyOptions = MessageEditOptions;
+
+type DoviCommandEditReplyOptions = CommandEditReplyOptions & {
+  componentEmbeds?: readonly ComponentEmbedSource[];
+};
 
 type CommandDeferReplyOptions = Parameters<
   ChatInputCommandInteraction['deferReply']
@@ -146,8 +156,32 @@ export type CommandRunContext = {
   signal: AbortSignal;
   hasTimedOut: () => boolean;
   editReply: (
-    options: CommandEditReplyOptions,
+    options: DoviCommandEditReplyOptions,
   ) => Promise<CommandEditReplyResult | undefined>;
+};
+
+const normalizeEditReplyOptions = (
+  options: DoviCommandEditReplyOptions,
+): CommandEditReplyOptions => {
+  if (!options.componentEmbeds) {
+    return options;
+  }
+
+  const { componentEmbeds, ...replyOptions } = options;
+  const componentEmbedOptions =
+    buildComponentEmbedMessageFromEmbeds(componentEmbeds);
+
+  const normalizedOptions: CommandEditReplyOptions = {
+    ...replyOptions,
+    embeds: [],
+    flags: MessageFlags.IsComponentsV2,
+  };
+
+  if (componentEmbedOptions.components) {
+    normalizedOptions.components = componentEmbedOptions.components;
+  }
+
+  return normalizedOptions;
 };
 
 type Awaitable<T> = T | Promise<T>;
@@ -202,7 +236,9 @@ export const withCommandLogging = async <T, TPreflight = void>({
           return;
         }
 
-        const response = await interaction.editReply(options);
+        const response = await interaction.editReply(
+          normalizeEditReplyOptions(options),
+        );
         hasSentCommandResponse = true;
 
         return response;

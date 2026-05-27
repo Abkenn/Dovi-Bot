@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { DISCORD_STYLE } from '../../../config/discord-style';
 import { BossTrialStatus } from '../../../generated/prisma/enums';
 import {
   type BossTrialStatsTrial,
@@ -68,7 +69,7 @@ export const buildBossTrialStatsEmbed = ({
 }) =>
   new EmbedBuilder()
     .setTitle(title)
-    .setColor(0xff3131)
+    .setColor(DISCORD_STYLE.BOT_ACCENT_COLOR)
     .addFields(
       {
         name: 'Totals',
