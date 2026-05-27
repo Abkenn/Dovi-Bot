@@ -1,16 +1,18 @@
 import { Command } from '@sapphire/framework';
-import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildShowBossStatsEmbed } from '../modules/boss-encounter-stats/boss/boss-encounter-stats.discord';
 import { getBossView } from '../modules/bosses/bosses.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+
+const METADATA = COMMAND_METADATA.SHOW_BOSS_STATS;
 
 export class ShowBossStatsCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'showbossstats',
-      description: "Shows Davi's stored stats for a boss.",
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -35,7 +37,7 @@ export class ShowBossStatsCommand extends Command {
               .setAutocomplete(true),
           ),
       {
-        guildIds: [...COMMAND_GUILDS.SHOW_BOSS_STATS],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -47,7 +49,7 @@ export class ShowBossStatsCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () =>
-        assertCommandGuildAccess(interaction, COMMAND_GUILDS.SHOW_BOSS_STATS),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         const boss = await getBossView({
           gameName: interaction.options.getString('game', true),

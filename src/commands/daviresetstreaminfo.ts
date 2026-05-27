@@ -1,10 +1,7 @@
 import { Command } from '@sapphire/framework';
-import {
-  ADMIN_COMMAND_PERMISSION,
-  BOT_GUILDS,
-  COMMAND_GUILDS,
-} from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION, BOT_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,
@@ -12,12 +9,14 @@ import {
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { resetStreamInfo } from '../modules/stream-info/stream-info.service';
 
+const METADATA = COMMAND_METADATA.DAVI_RESET_STREAM_INFO;
+
 export class DaviResetStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'daviresetstreaminfo',
-      description: 'Resets all overrides for prod env current/next stream.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -29,7 +28,7 @@ export class DaviResetStreamInfoCommand extends Command {
           .setDescription(this.description)
           .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION),
       {
-        guildIds: [...COMMAND_GUILDS.DAVI_RESET_STREAM_INFO],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -42,10 +41,7 @@ export class DaviResetStreamInfoCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
-        assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.DAVI_RESET_STREAM_INFO,
-        ),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 

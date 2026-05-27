@@ -1,9 +1,7 @@
 import { Command } from '@sapphire/framework';
-import {
-  ADMIN_COMMAND_PERMISSION,
-  COMMAND_GUILDS,
-} from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
 import {
   EPHEMERAL_COMMAND_REPLY,
@@ -12,13 +10,14 @@ import {
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { setStreamInfo } from '../modules/stream-info/stream-info.service';
 
+const METADATA = COMMAND_METADATA.SET_STREAM_INFO;
+
 export class SetStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'setstreaminfo',
-      description:
-        'Updates the current stream if ongoing, otherwise the next stream.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -57,7 +56,7 @@ export class SetStreamInfoCommand extends Command {
             option.setName('title').setDescription('Optional title override'),
           ),
       {
-        guildIds: [...COMMAND_GUILDS.SET_STREAM_INFO],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -70,7 +69,7 @@ export class SetStreamInfoCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
-        assertCommandGuildAccess(interaction, COMMAND_GUILDS.SET_STREAM_INFO),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) => {
         await setStreamInfo({
           guildId,

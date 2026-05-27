@@ -1,22 +1,21 @@
 import { Command } from '@sapphire/framework';
-import {
-  ADMIN_COMMAND_PERMISSION,
-  BOT_GUILDS,
-  COMMAND_GUILDS,
-} from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION, BOT_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,
 } from '../modules/command-logging/with-command-logging';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 
+const METADATA = COMMAND_METADATA.DAVI_STREAM_INFO;
+
 export class DaviStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'davistreaminfo',
-      description: 'Shows prod env stream information from staging.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -28,7 +27,7 @@ export class DaviStreamInfoCommand extends Command {
           .setDescription(this.description)
           .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION),
       {
-        guildIds: [...COMMAND_GUILDS.DAVI_STREAM_INFO],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -41,7 +40,7 @@ export class DaviStreamInfoCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
-        assertCommandGuildAccess(interaction, COMMAND_GUILDS.DAVI_STREAM_INFO),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         return editReply({
           embeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],

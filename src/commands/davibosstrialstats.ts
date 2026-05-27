@@ -1,16 +1,19 @@
 import { Command } from '@sapphire/framework';
-import { BOT_GUILDS, COMMAND_GUILDS } from '../config/discord-access';
+import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildBossTrialStatsEmbed } from '../modules/boss-trials/stats/boss-trial-stats.discord';
 import { getBossTrialStats } from '../modules/boss-trials/stats/boss-trial-stats.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+
+const METADATA = COMMAND_METADATA.DAVI_BOSS_TRIAL_STATS;
 
 export class DaviBossTrialStatsCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'davibosstrialstats',
-      description: 'Shows prod env boss trial stats from staging.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -18,7 +21,7 @@ export class DaviBossTrialStatsCommand extends Command {
     registry.registerChatInputCommand(
       (builder) => builder.setName(this.name).setDescription(this.description),
       {
-        guildIds: [...COMMAND_GUILDS.DAVI_BOSS_TRIAL_STATS],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -30,10 +33,7 @@ export class DaviBossTrialStatsCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () =>
-        assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.DAVI_BOSS_TRIAL_STATS,
-        ),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         const stats = await getBossTrialStats(BOT_GUILDS.PROD_ENV);
 

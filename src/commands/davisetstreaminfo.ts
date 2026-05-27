@@ -1,10 +1,7 @@
 import { Command } from '@sapphire/framework';
-import {
-  ADMIN_COMMAND_PERMISSION,
-  BOT_GUILDS,
-  COMMAND_GUILDS,
-} from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION, BOT_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { MusicMode, StreamKind } from '../generated/prisma/client';
 import {
   EPHEMERAL_COMMAND_REPLY,
@@ -13,12 +10,14 @@ import {
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { setStreamInfo } from '../modules/stream-info/stream-info.service';
 
+const METADATA = COMMAND_METADATA.DAVI_SET_STREAM_INFO;
+
 export class DaviSetStreamInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'davisetstreaminfo',
-      description: 'Updates the prod env current/next stream from staging.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -57,7 +56,7 @@ export class DaviSetStreamInfoCommand extends Command {
             option.setName('title').setDescription('Optional title override'),
           ),
       {
-        guildIds: [...COMMAND_GUILDS.DAVI_SET_STREAM_INFO],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -70,10 +69,7 @@ export class DaviSetStreamInfoCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
-        assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.DAVI_SET_STREAM_INFO,
-        ),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 

@@ -1,7 +1,7 @@
 import { Command } from '@sapphire/framework';
 import { MessageFlags } from 'discord.js';
-import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { BOSS_TRIAL_DURATION_OPTIONS } from '../modules/boss-trials/boss-trial.config';
 import {
   buildBossTrialEmbed,
@@ -14,12 +14,14 @@ import {
 } from '../modules/boss-trials/poll/boss-trial.service';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
 
+const METADATA = COMMAND_METADATA.BOSS_TRIAL;
+
 export class BossTrialCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'bosstrial',
-      description: 'Starts a community verdict vote for a boss.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -67,7 +69,7 @@ export class BossTrialCommand extends Command {
               .setAutocomplete(true),
           ),
       {
-        guildIds: [...COMMAND_GUILDS.BOSS_TRIAL],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -79,7 +81,7 @@ export class BossTrialCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () =>
-        assertCommandGuildAccess(interaction, COMMAND_GUILDS.BOSS_TRIAL),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) => {
         const channelId = interaction.channelId;
         const gameName = interaction.options.getString('game', true);

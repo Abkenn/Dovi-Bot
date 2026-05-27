@@ -1,17 +1,19 @@
 import { Command } from '@sapphire/framework';
-import { ADMIN_COMMAND_PERMISSION, BOT_GUILDS } from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,
 } from '../modules/command-logging/with-command-logging';
-import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
-import { resetStreamTitle } from '../modules/stream-info/stream-info.service';
+import {
+  buildHelpMessage,
+  isHelpTopicValue,
+} from '../modules/help/help.discord';
 
-const METADATA = COMMAND_METADATA.DAVI_RESET_TITLE;
+const METADATA = COMMAND_METADATA.HELP;
 
-export class DaviResetTitleCommand extends Command {
+export class HelpCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -26,7 +28,12 @@ export class DaviResetTitleCommand extends Command {
         builder
           .setName(this.name)
           .setDescription(this.description)
-          .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION),
+          .addStringOption((option) =>
+            option
+              .setName('topic')
+              .setDescription('Browse help topics')
+              .setAutocomplete(true),
+          ),
       {
         guildIds: [...METADATA.guildIds],
       },
@@ -42,15 +49,18 @@ export class DaviResetTitleCommand extends Command {
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
-      run: async ({ editReply }) => {
-        const targetGuildId = BOT_GUILDS.PROD_ENV;
+      run: async ({ editReply, preflight: guildId }) => {
+        const topic = interaction.options.getString('topic');
 
-        await resetStreamTitle(targetGuildId);
-
-        return editReply({
-          content: 'Prod env title reset.',
-          embeds: [await getStreamInfoEmbed(targetGuildId)],
-        });
+        return editReply(
+          buildHelpMessage({
+            canManageGuild:
+              interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ??
+              false,
+            guildId,
+            topic: topic && isHelpTopicValue(topic) ? topic : null,
+          }),
+        );
       },
     });
   }

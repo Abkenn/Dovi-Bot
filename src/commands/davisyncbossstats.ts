@@ -1,9 +1,7 @@
 import { Command } from '@sapphire/framework';
-import {
-  ADMIN_COMMAND_PERMISSION,
-  COMMAND_GUILDS,
-} from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { syncDaviBossStats } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.service';
 import { formatDaviBossStatsSyncSummary } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.utils';
 import {
@@ -11,12 +9,14 @@ import {
   withCommandLogging,
 } from '../modules/command-logging/with-command-logging';
 
+const METADATA = COMMAND_METADATA.DAVI_SYNC_BOSS_STATS;
+
 export class DaviSyncBossStatsCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'davisyncbossstats',
-      description: 'Syncs prod env boss stats from staging.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -28,7 +28,7 @@ export class DaviSyncBossStatsCommand extends Command {
           .setDescription(this.description)
           .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION),
       {
-        guildIds: [...COMMAND_GUILDS.DAVI_SYNC_BOSS_STATS],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -42,10 +42,7 @@ export class DaviSyncBossStatsCommand extends Command {
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       timeoutMs: 60_000,
       beforeDefer: () =>
-        assertCommandGuildAccess(
-          interaction,
-          COMMAND_GUILDS.DAVI_SYNC_BOSS_STATS,
-        ),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, signal }) => {
         const result = await syncDaviBossStats({ signal });
         const invalidRows = result.invalidRows.slice(0, 5);

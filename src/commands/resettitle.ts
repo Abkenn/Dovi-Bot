@@ -1,9 +1,7 @@
 import { Command } from '@sapphire/framework';
-import {
-  ADMIN_COMMAND_PERMISSION,
-  COMMAND_GUILDS,
-} from '../config/discord-access';
+import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
   withCommandLogging,
@@ -11,12 +9,14 @@ import {
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { resetStreamTitle } from '../modules/stream-info/stream-info.service';
 
+const METADATA = COMMAND_METADATA.RESET_TITLE;
+
 export class ResetTitleCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'resettitle',
-      description: 'Resets custom title override for current/next stream.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -28,7 +28,7 @@ export class ResetTitleCommand extends Command {
           .setDescription(this.description)
           .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION),
       {
-        guildIds: [...COMMAND_GUILDS.RESET_TITLE],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -41,7 +41,7 @@ export class ResetTitleCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
-        assertCommandGuildAccess(interaction, COMMAND_GUILDS.RESET_TITLE),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) => {
         await resetStreamTitle(guildId);
 

@@ -1,15 +1,17 @@
 import { HELLO_GREETINGS } from '@data/hello-greetings';
 import { Command } from '@sapphire/framework';
-import { COMMAND_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { withCommandLogging } from '../modules/command-logging/with-command-logging';
+
+const METADATA = COMMAND_METADATA.HELLO;
 
 export class HelloCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'hello',
-      description: 'Replies with a greeting.',
+      name: METADATA.name,
+      description: METADATA.description,
     });
   }
 
@@ -17,7 +19,7 @@ export class HelloCommand extends Command {
     registry.registerChatInputCommand(
       (builder) => builder.setName(this.name).setDescription(this.description),
       {
-        guildIds: [...COMMAND_GUILDS.HELLO],
+        guildIds: [...METADATA.guildIds],
       },
     );
   }
@@ -29,7 +31,7 @@ export class HelloCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () =>
-        assertCommandGuildAccess(interaction, COMMAND_GUILDS.HELLO),
+        assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         const greeting =
           HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??
