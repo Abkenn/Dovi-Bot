@@ -13,11 +13,13 @@ import {
   upsertBossTrialVoteVerdict,
 } from '@data/queries/boss-trial';
 import type { BossTrialVoteVerdict } from '../../../generated/prisma/enums';
+import { BossTrialBumpMode } from '../../../generated/prisma/enums';
 import { DAY_MINUTES, MINUTE_MS } from '../../../lib/time.constants';
 import { getBossView } from '../../bosses/bosses.service';
 import {
   BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
   BOSS_TRIAL_VERDICTS,
+  getBossTrialBumpMode,
   getBossTrialDurationConfig,
 } from '../boss-trial.config';
 import type {
@@ -26,6 +28,10 @@ import type {
 } from './boss-trial.types';
 
 const BOSS_TRIAL_STORAGE_MISSING_RECHECK_MS = 5 * MINUTE_MS;
+const AUTOMATIC_BUMP_MODES: readonly BossTrialBumpMode[] = [
+  BossTrialBumpMode.DEFAULT,
+  BossTrialBumpMode.MID_POLL_ONLY,
+];
 
 let bossTrialStorageReady: boolean | undefined;
 let bossTrialStorageLastCheckedAt = 0;
@@ -68,6 +74,7 @@ export const createBossTrial = async ({
   gameName,
   bossName,
   duration,
+  bump,
 }: {
   guildId: string;
   channelId: string;
@@ -75,11 +82,17 @@ export const createBossTrial = async ({
   gameName: string;
   bossName: string;
   duration: string | null;
+  bump: string | null;
 }) => {
   await assertBossTrialStorageReady();
 
   const boss = await getBossView({ gameName, bossName });
   const durationConfig = getBossTrialDurationConfig(duration);
+  const requestedBumpMode = getBossTrialBumpMode(bump);
+  const bumpMode =
+    durationConfig.durationMinutes === DAY_MINUTES
+      ? requestedBumpMode
+      : BossTrialBumpMode.DEFAULT;
   const now = new Date();
 
   return createBossTrialView({
@@ -91,6 +104,7 @@ export const createBossTrial = async ({
     durationMinutes: durationConfig.durationMinutes,
     voteVisibilityHiddenUntil: addMinutes(now, durationConfig.hiddenMinutes),
     endsAt: addMinutes(now, durationConfig.durationMinutes),
+    bumpMode,
   });
 };
 
@@ -206,14 +220,20 @@ export const shouldPostBossTrialFinalResults = (trial: BossTrialView) =>
 export const shouldPublishBossTrialLiveResults = (trial: BossTrialView) =>
   !trial.liveResultsPublishedAt && shouldShowBossTrialVotes(trial);
 
+export const shouldPostBossTrialVotesVisibleBump = (trial: BossTrialView) =>
+  trial.durationMinutes === DAY_MINUTES &&
+  trial.bumpMode === BossTrialBumpMode.DEFAULT;
+
 export const shouldPostBossTrialAutomaticBump = (trial: BossTrialView) => {
   const now = Date.now();
   const bumpAt =
     trial.createdAt.getTime() +
     BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES * MINUTE_MS;
+  const isAutomaticBumpMode = AUTOMATIC_BUMP_MODES.includes(trial.bumpMode);
 
   return (
     trial.durationMinutes === DAY_MINUTES &&
+    isAutomaticBumpMode &&
     !trial.automaticBumpPostedAt &&
     now >= bumpAt &&
     now < trial.endsAt.getTime()

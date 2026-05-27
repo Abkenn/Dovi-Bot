@@ -7,6 +7,10 @@ import type {
   AutocompleteInteraction,
 } from 'discord.js';
 import {
+  BOSS_TRIAL_BUMP_OPTIONS,
+  BOSS_TRIAL_DURATION_OPTIONS,
+} from '../modules/boss-trials/boss-trial.config';
+import {
   getBossAutocomplete,
   getBossGameAutocomplete,
 } from '../modules/bosses/bosses.service';
@@ -38,7 +42,11 @@ export class BossTrialAutocompleteHandler extends InteractionHandler {
 
     const focusedOption = interaction.options.getFocused(true);
 
-    if (focusedOption.name !== 'game' && focusedOption.name !== 'boss') {
+    if (
+      focusedOption.name !== 'game' &&
+      focusedOption.name !== 'boss' &&
+      focusedOption.name !== 'bump'
+    ) {
       return this.none();
     }
 
@@ -56,6 +64,24 @@ export class BossTrialAutocompleteHandler extends InteractionHandler {
 
       return interaction.respond(
         games.map((game) => ({ name: game.name, value: game.name })),
+      );
+    }
+
+    if (focusedOption.name === 'bump') {
+      const duration = interaction.options.getString('duration');
+      const bumpOptions = [
+        BOSS_TRIAL_BUMP_OPTIONS.DEFAULT,
+        ...(duration === BOSS_TRIAL_DURATION_OPTIONS.ONE_DAY.value
+          ? [BOSS_TRIAL_BUMP_OPTIONS.MID_POLL_ONLY]
+          : []),
+        BOSS_TRIAL_BUMP_OPTIONS.NONE,
+      ];
+
+      return interaction.respond(
+        bumpOptions.map((option) => ({
+          name: option.label,
+          value: option.value,
+        })),
       );
     }
 

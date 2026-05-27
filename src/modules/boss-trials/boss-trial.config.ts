@@ -1,4 +1,7 @@
-import { BossTrialVoteVerdict } from '../../generated/prisma/enums';
+import {
+  BossTrialBumpMode,
+  BossTrialVoteVerdict,
+} from '../../generated/prisma/enums';
 import { DAY_MINUTES, HOUR_MINUTES } from '../../lib/time.constants';
 
 export const BOSS_TRIAL_CUSTOM_ID_PREFIX = 'bosstrial';
@@ -33,8 +36,29 @@ export const BOSS_TRIAL_DURATION_OPTIONS = {
   },
 } as const;
 
+export const BOSS_TRIAL_BUMP_OPTIONS = {
+  DEFAULT: {
+    value: 'default',
+    label: 'Default bumps',
+    mode: BossTrialBumpMode.DEFAULT,
+  },
+  MID_POLL_ONLY: {
+    value: 'mid_poll_only',
+    label: 'Mid-poll bump only',
+    mode: BossTrialBumpMode.MID_POLL_ONLY,
+  },
+  NONE: {
+    value: 'none',
+    label: 'No automatic bumps',
+    mode: BossTrialBumpMode.NONE,
+  },
+} as const;
+
 export type BossTrialDurationValue =
   (typeof BOSS_TRIAL_DURATION_OPTIONS)[keyof typeof BOSS_TRIAL_DURATION_OPTIONS]['value'];
+
+export type BossTrialBumpValue =
+  (typeof BOSS_TRIAL_BUMP_OPTIONS)[keyof typeof BOSS_TRIAL_BUMP_OPTIONS]['value'];
 
 export const getBossTrialDurationConfig = (
   value: string | null,
@@ -44,5 +68,14 @@ export const getBossTrialDurationConfig = (
   return (
     options.find((option) => option.value === value) ??
     BOSS_TRIAL_DURATION_OPTIONS.ONE_HOUR
+  );
+};
+
+export const getBossTrialBumpMode = (value: string | null) => {
+  const options = Object.values(BOSS_TRIAL_BUMP_OPTIONS);
+
+  return (
+    options.find((option) => option.value === value)?.mode ??
+    BOSS_TRIAL_BUMP_OPTIONS.DEFAULT.mode
   );
 };

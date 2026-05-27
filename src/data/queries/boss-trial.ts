@@ -1,7 +1,11 @@
 import type { Prisma } from '../../generated/prisma/client';
-import type { BossTrialVoteVerdict } from '../../generated/prisma/enums';
+import type {
+  BossTrialBumpMode,
+  BossTrialVoteVerdict,
+} from '../../generated/prisma/enums';
 import {
   BossEncounterSource,
+  BossTrialBumpMode as BossTrialBumpModeEnum,
   BossTrialStatus,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
@@ -40,6 +44,7 @@ export const createBossTrialView = ({
   durationMinutes,
   voteVisibilityHiddenUntil,
   endsAt,
+  bumpMode,
 }: {
   guildId: string;
   channelId: string;
@@ -49,6 +54,7 @@ export const createBossTrialView = ({
   durationMinutes: number;
   voteVisibilityHiddenUntil: Date;
   endsAt: Date;
+  bumpMode: BossTrialBumpMode;
 }) =>
   prisma.bossTrial.create({
     data: {
@@ -60,6 +66,7 @@ export const createBossTrialView = ({
       durationMinutes,
       voteVisibilityHiddenUntil,
       endsAt,
+      bumpMode,
     },
     include: bossTrialViewInclude,
   });
@@ -152,6 +159,12 @@ export const getPendingBossTrialLifecycleEvents = ({
       OR: [
         {
           durationMinutes: DAY_MINUTES,
+          bumpMode: {
+            in: [
+              BossTrialBumpModeEnum.DEFAULT,
+              BossTrialBumpModeEnum.MID_POLL_ONLY,
+            ],
+          },
           automaticBumpPostedAt: null,
           createdAt: { lte: automaticBumpCreatedAtCutoff },
           endsAt: { gt: now },

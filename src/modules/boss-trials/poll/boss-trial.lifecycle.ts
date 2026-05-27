@@ -21,6 +21,7 @@ import {
   isBossTrialStorageReady,
   shouldPostBossTrialAutomaticBump,
   shouldPostBossTrialFinalResults,
+  shouldPostBossTrialVotesVisibleBump,
   shouldPublishBossTrialLiveResults,
 } from './boss-trial.service';
 
@@ -44,6 +45,16 @@ const sendChannelMessage = (
 
   return channel.send(options);
 };
+
+const getBossTrialReplyOptions = (trial: BossTrialView) =>
+  trial.messageId
+    ? ({
+        reply: {
+          messageReference: trial.messageId,
+          failIfNotExists: false,
+        },
+      } satisfies MessageCreateOptions)
+    : {};
 
 export const refreshBossTrialMessage = async (
   client: Client,
@@ -94,6 +105,7 @@ export const postBossTrialResultsMessage = async ({
   }
 
   return sendChannelMessage(channel, {
+    ...getBossTrialReplyOptions(trial),
     embeds: [buildBossTrialFinalResultsEmbed(trial)],
   });
 };
@@ -114,6 +126,7 @@ export const postBossTrialBumpMessage = async ({
   }
 
   const message = await sendChannelMessage(channel, {
+    ...getBossTrialReplyOptions(trial),
     content: buildBossTrialBumpMessageContent({ trial, isAutomatic }),
     embeds: [buildBossTrialEmbed(trial)],
     components: [buildBossTrialVoteButtons(trial.id)],
@@ -141,6 +154,7 @@ export const postBossTrialVotesVisibleMessage = async ({
   }
 
   const message = await sendChannelMessage(channel, {
+    ...getBossTrialReplyOptions(trial),
     content: buildBossTrialVotesVisibleMessageContent(trial),
     embeds: [buildBossTrialEmbed(trial)],
     components: [buildBossTrialVoteButtons(trial.id)],
@@ -187,10 +201,12 @@ export const runBossTrialLifecycleTick = async (client: Client) => {
 
         if (claimedTrial) {
           await refreshBossTrialMessage(client, currentTrial);
-          await postBossTrialVotesVisibleMessage({
-            client,
-            trial: currentTrial,
-          });
+          if (shouldPostBossTrialVotesVisibleBump(currentTrial)) {
+            await postBossTrialVotesVisibleMessage({
+              client,
+              trial: currentTrial,
+            });
+          }
         }
       }
 

@@ -58,6 +58,13 @@ export class BossTrialCommand extends Command {
                   value: BOSS_TRIAL_DURATION_OPTIONS.ONE_DAY.value,
                 },
               ),
+          )
+          .addStringOption((option) =>
+            option
+              .setName('bump')
+              .setDescription('Automatic bump behavior')
+              .setRequired(false)
+              .setAutocomplete(true),
           ),
       {
         guildIds: [...COMMAND_GUILDS.BOSS_TRIAL],
@@ -78,6 +85,7 @@ export class BossTrialCommand extends Command {
         const gameName = interaction.options.getString('game', true);
         const bossName = interaction.options.getString('boss', true);
         const duration = interaction.options.getString('duration');
+        const bump = interaction.options.getString('bump');
         const trial = await createBossTrial({
           guildId,
           channelId,
@@ -85,6 +93,7 @@ export class BossTrialCommand extends Command {
           gameName,
           bossName,
           duration,
+          bump,
         });
 
         const message = await editReply({

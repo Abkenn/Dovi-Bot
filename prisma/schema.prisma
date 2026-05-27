@@ -122,6 +122,12 @@ enum BossTrialVoteVerdict {
   BULLSHIT
 }
 
+enum BossTrialBumpMode {
+  DEFAULT
+  MID_POLL_ONLY
+  NONE
+}
+
 model CommandExecutionLog {
   id              String                 @id @default(cuid())
   guildId         String?
@@ -220,6 +226,7 @@ model BossTrial {
   durationMinutes          Int
   voteVisibilityHiddenUntil DateTime
   endsAt                   DateTime
+  bumpMode                 BossTrialBumpMode @default(DEFAULT)
   liveResultsPublishedAt   DateTime?
   automaticBumpPostedAt    DateTime?
   finalResultsPostedAt     DateTime?
