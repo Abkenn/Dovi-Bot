@@ -2,11 +2,17 @@ import {
   createCommandErrorLog as createCommandErrorLogRow,
   createCommandExecutionLog as createCommandExecutionLogRow,
 } from '@data/queries/command-logging';
-import type { ChatInputCommandInteraction } from 'discord.js';
+import type { ChatInputCommandInteraction, User } from 'discord.js';
 import {
   type CommandExecutionStatus,
   Prisma,
 } from '../../generated/prisma/client';
+
+type CommandExecutionLogInteraction = {
+  guildId: string | null;
+  channelId: string | null;
+  user: Pick<User, 'id' | 'tag'>;
+};
 
 const serializeOptions = (interaction: ChatInputCommandInteraction) => {
   try {
@@ -56,6 +62,34 @@ export const createCommandExecutionLog = async ({
     username: interaction.user.tag,
     commandName,
     optionsJson: serializeOptions(interaction),
+    status,
+    note: note ?? null,
+    durationMs: durationMs ?? null,
+  });
+};
+
+export const createInteractionExecutionLog = async ({
+  interaction,
+  commandName,
+  optionsJson,
+  status,
+  note,
+  durationMs,
+}: {
+  interaction: CommandExecutionLogInteraction;
+  commandName: string;
+  optionsJson: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+  status: CommandExecutionStatus;
+  note?: string | null;
+  durationMs?: number | null;
+}) => {
+  return createCommandExecutionLogRow({
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+    userId: interaction.user.id,
+    username: interaction.user.tag,
+    commandName,
+    optionsJson,
     status,
     note: note ?? null,
     durationMs: durationMs ?? null,
