@@ -52,15 +52,15 @@ export class HelpCommand extends Command {
       run: async ({ editReply, preflight: guildId }) => {
         const topic = interaction.options.getString('topic');
 
-        return editReply(
-          buildHelpMessage({
+        return editReply({
+          componentMessage: buildHelpMessage({
             canManageGuild:
               interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ??
               false,
             guildId,
             topic: topic && isHelpTopicValue(topic) ? topic : null,
           }),
-        );
+        });
       },
     });
   }

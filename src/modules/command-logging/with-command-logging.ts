@@ -133,10 +133,9 @@ const replyOrEditCommandError = async (
   }
 };
 
-type CommandEditReplyOptions = MessageEditOptions;
-
-type DoviCommandEditReplyOptions = CommandEditReplyOptions & {
+type CommandEditReplyOptions = MessageEditOptions & {
   componentEmbeds?: readonly ComponentEmbedSource[];
+  componentMessage?: MessageEditOptions;
 };
 
 type CommandDeferReplyOptions = Parameters<
@@ -156,13 +155,22 @@ export type CommandRunContext = {
   signal: AbortSignal;
   hasTimedOut: () => boolean;
   editReply: (
-    options: DoviCommandEditReplyOptions,
+    options: CommandEditReplyOptions,
   ) => Promise<CommandEditReplyResult | undefined>;
 };
 
 const normalizeEditReplyOptions = (
-  options: DoviCommandEditReplyOptions,
-): CommandEditReplyOptions => {
+  options: CommandEditReplyOptions,
+): MessageEditOptions => {
+  if (options.componentMessage) {
+    const { componentMessage, ...replyOptions } = options;
+
+    return {
+      ...replyOptions,
+      ...componentMessage,
+    };
+  }
+
   if (!options.componentEmbeds) {
     return options;
   }
@@ -171,7 +179,7 @@ const normalizeEditReplyOptions = (
   const componentEmbedOptions =
     buildComponentEmbedMessageFromEmbeds(componentEmbeds);
 
-  const normalizedOptions: CommandEditReplyOptions = {
+  const normalizedOptions: MessageEditOptions = {
     ...replyOptions,
     embeds: [],
     flags: MessageFlags.IsComponentsV2,
