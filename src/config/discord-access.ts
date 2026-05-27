@@ -15,7 +15,7 @@ export const BOT_GUILDS = {
 } as const;
 
 export const COMMAND_GUILDS = {
-  HELP: [BOT_GUILDS.STAGING_ENV],
+  HELP: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   STREAM_INFO: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   HELLO: [BOT_GUILDS.STAGING_ENV],
 

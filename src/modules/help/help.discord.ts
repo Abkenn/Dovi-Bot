@@ -19,10 +19,10 @@ import {
 import { DISCORD_STYLE } from '../../config/discord-style';
 
 const COMMAND_CATEGORY_ORDER = [
+  HELP_CATEGORIES.GENERAL,
   HELP_CATEGORIES.STREAM_INFO,
   HELP_CATEGORIES.BOSSES,
   HELP_CATEGORIES.STAGING,
-  HELP_CATEGORIES.GENERAL,
   HELP_CATEGORIES.HELP,
 ] as const satisfies readonly CommandMetadata['helpCategory'][];
 
@@ -45,6 +45,13 @@ const HELP_TOPIC_OPTIONS = [
     adminOnly: false,
   },
   {
+    name: 'General',
+    value: 'general',
+    description: 'Basic commands',
+    category: HELP_CATEGORIES.GENERAL,
+    adminOnly: false,
+  },
+  {
     name: 'Stream Info',
     value: 'stream-info',
     description: 'Stream schedule and stream metadata commands',
@@ -64,13 +71,6 @@ const HELP_TOPIC_OPTIONS = [
     description: 'Staging-only command helpers',
     category: HELP_CATEGORIES.STAGING,
     adminOnly: true,
-  },
-  {
-    name: 'General',
-    value: 'general',
-    description: 'Basic commands',
-    category: HELP_CATEGORIES.GENERAL,
-    adminOnly: false,
   },
   {
     name: 'Help',
@@ -302,9 +302,7 @@ export const buildHelpMessage = ({
       topicOption.category,
     );
     const components: ComponentInContainerData[] = [
-      buildTextDisplay(
-        `# ${getTopicTitle(topicOption.name)}\nUse the topic picker below to switch this help card without sending a new message.`,
-      ),
+      buildTextDisplay(`# ${getTopicTitle(topicOption.name)}`),
       buildSeparator(),
     ];
 
@@ -320,6 +318,7 @@ export const buildHelpMessage = ({
 
     components.push(
       buildSeparator(),
+      buildTextDisplay('Browse other topics.'),
       buildTopicSelect({
         canManageGuild,
         commands: visibleCommands,
@@ -334,9 +333,7 @@ export const buildHelpMessage = ({
   }
 
   const components: ComponentInContainerData[] = [
-    buildTextDisplay(
-      '# Help\nUse the topic picker below to switch this help card without sending a new message.',
-    ),
+    buildTextDisplay('# Help'),
     buildSeparator(),
   ];
 
@@ -344,6 +341,7 @@ export const buildHelpMessage = ({
 
   components.push(
     buildSeparator(),
+    buildTextDisplay('Browse other topics.'),
     buildTopicSelect({
       canManageGuild,
       commands: visibleCommands,
