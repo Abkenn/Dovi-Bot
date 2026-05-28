@@ -2,7 +2,11 @@ import { Command } from '@sapphire/framework';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { MusicMode, StreamKind } from '../generated/prisma/client';
+import {
+  MusicMode,
+  StreamKind,
+  type Weekday,
+} from '../generated/prisma/client';
 import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
@@ -50,6 +54,12 @@ export class SetStreamInfoCommand extends Command {
               ),
           )
           .addStringOption((option) =>
+            option
+              .setName('day')
+              .setDescription('Optional earlier day to move the target stream')
+              .setAutocomplete(true),
+          )
+          .addStringOption((option) =>
             option.setName('game').setDescription('Optional game name'),
           )
           .addStringOption((option) =>
@@ -73,6 +83,7 @@ export class SetStreamInfoCommand extends Command {
       run: async ({ editReply, preflight: guildId }) => {
         await setStreamInfo({
           guildId,
+          targetWeekday: interaction.options.getString('day') as Weekday | null,
           streamKind: interaction.options.getString(
             'type',
           ) as StreamKind | null,

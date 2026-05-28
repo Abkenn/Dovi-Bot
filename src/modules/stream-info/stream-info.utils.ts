@@ -19,6 +19,16 @@ export const WEEKDAY_TO_LUXON: Record<Weekday, number> = {
   SUNDAY: 7,
 };
 
+export const LUXON_WEEKDAY_TO_WEEKDAY: Record<number, Weekday> = {
+  1: 'MONDAY',
+  2: 'TUESDAY',
+  3: 'WEDNESDAY',
+  4: 'THURSDAY',
+  5: 'FRIDAY',
+  6: 'SATURDAY',
+  7: 'SUNDAY',
+};
+
 export const makeDateKey = (value: DateTime): string =>
   value.toFormat('yyyy-LL-dd');
 

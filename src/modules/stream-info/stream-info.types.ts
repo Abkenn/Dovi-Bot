@@ -24,10 +24,16 @@ export type StreamInfoResult = {
 
 export type SetStreamInfoInput = {
   guildId: string;
+  targetWeekday?: Weekday | null;
   streamKind?: StreamKind | null;
   musicMode?: MusicMode | null;
   title?: string | null;
   gameName?: string | null;
+};
+
+export type SkipStreamInput = {
+  guildId: string;
+  targetWeekday?: Weekday | null;
 };
 
 export type TargetStream = 'current' | 'next';

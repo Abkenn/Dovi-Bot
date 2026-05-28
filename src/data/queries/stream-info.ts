@@ -1,5 +1,6 @@
 import type {
   MusicMode,
+  ScheduleStatus,
   StreamKind,
   Weekday,
 } from '../../generated/prisma/client';
@@ -17,6 +18,7 @@ export type TargetStreamOverrideInput = {
   streamDateKey: string;
   resolvedFromWeekday: Weekday | null;
   startAtUtc: Date;
+  status?: ScheduleStatus;
   streamKind?: StreamKind | null;
   musicMode?: MusicMode | null;
   titleOverride?: string | null;
@@ -29,6 +31,7 @@ export const buildTargetStreamOverrideUpsertArgs = ({
   streamDateKey,
   resolvedFromWeekday,
   startAtUtc,
+  status,
   streamKind,
   musicMode,
   titleOverride,
@@ -43,6 +46,7 @@ export const buildTargetStreamOverrideUpsertArgs = ({
   },
   update: {
     resolvedFromWeekday,
+    ...(status !== undefined ? { status } : {}),
     ...(streamKind !== undefined ? { streamKind } : {}),
     ...(musicMode !== undefined ? { musicMode } : {}),
     ...(titleOverride !== undefined ? { titleOverride } : {}),
@@ -53,6 +57,7 @@ export const buildTargetStreamOverrideUpsertArgs = ({
     streamDateKey,
     resolvedFromWeekday,
     startAtUtc,
+    ...(status !== undefined ? { status } : {}),
     streamKind: streamKind ?? null,
     musicMode: musicMode ?? null,
     titleOverride: titleOverride ?? null,

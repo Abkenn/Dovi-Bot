@@ -99,6 +99,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.ADMIN,
     helpCategory: HELP_CATEGORIES.STREAM_INFO,
   },
+  SKIP_STREAM: {
+    name: 'skipstream',
+    description: 'Skips the current/next scheduled stream.',
+    guildIds: COMMAND_GUILDS.SKIP_STREAM,
+    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpCategory: HELP_CATEGORIES.STREAM_INFO,
+  },
   SYNC_DAVI_BOSS_STATS: {
     name: 'syncbossstats',
     description: 'Syncs Davi boss stats from the Abramo Docs.',
@@ -138,6 +145,13 @@ export const COMMAND_METADATA = {
     name: 'daviresetstreaminfo',
     description: 'Resets all overrides for prod env current/next stream.',
     guildIds: COMMAND_GUILDS.DAVI_RESET_STREAM_INFO,
+    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpCategory: HELP_CATEGORIES.STAGING,
+  },
+  DAVI_SKIP_STREAM: {
+    name: 'daviskipstream',
+    description: 'Skips the prod env current/next stream from staging.',
+    guildIds: COMMAND_GUILDS.DAVI_SKIP_STREAM,
     helpAudience: HELP_AUDIENCES.ADMIN,
     helpCategory: HELP_CATEGORIES.STAGING,
   },

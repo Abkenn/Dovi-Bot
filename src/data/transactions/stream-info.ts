@@ -29,3 +29,44 @@ export const updateDefaultGameAndTargetStreamOverride = async ({
       }),
     );
   });
+
+export const upsertMovedTargetStreamOverride = async ({
+  guildId,
+  defaultGameName,
+  override,
+  cancelledOverride,
+}: {
+  guildId: string;
+  defaultGameName?: string;
+  override: TargetStreamOverrideInput;
+  cancelledOverride: TargetStreamOverrideInput;
+}) =>
+  prisma.$transaction(async (tx) => {
+    if (defaultGameName !== undefined) {
+      await tx.guildConfig.update({
+        where: { guildId },
+        data: {
+          defaultGameName,
+        },
+      });
+    }
+
+    const movedOverrideInput =
+      defaultGameName !== undefined
+        ? {
+            ...override,
+            gameName: null,
+            createGameName: null,
+          }
+        : override;
+
+    const movedOverride = await tx.streamScheduleOverride.upsert(
+      buildTargetStreamOverrideUpsertArgs(movedOverrideInput),
+    );
+
+    await tx.streamScheduleOverride.upsert(
+      buildTargetStreamOverrideUpsertArgs(cancelledOverride),
+    );
+
+    return movedOverride;
+  });
