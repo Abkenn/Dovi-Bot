@@ -15,8 +15,16 @@ type GitHubCompareResponse = {
   commits?: GitHubCommit[];
 };
 
+type DiscordDmChannelResponse = {
+  id?: string;
+};
+
 const DISCORD_MESSAGE_LIMIT = 2000;
-const CHANGELOG_HEADER = 'Changelog:';
+const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
+
+let hasSentDeploymentStarted = false;
+let hasSentDeploymentFailed = false;
+let commitTitlesPromise: Promise<string[]> | null = null;
 
 const getGitHubHeaders = () => {
   const headers: Record<string, string> = {
@@ -105,12 +113,24 @@ const fetchDeploymentCommitTitles = async () => {
   return titles?.length ? titles : getFallbackCommitTitles();
 };
 
-const buildChangelogLines = (commitTitles: string[]) => {
+const getDeploymentCommitTitles = () => {
+  commitTitlesPromise ??= fetchDeploymentCommitTitles();
+
+  return commitTitlesPromise;
+};
+
+const buildChangelogText = (commitTitles: string[]) => {
   if (!commitTitles.length) {
-    return ['- No commit message available.'];
+    return 'Changelog: No commit message available.';
   }
 
-  return commitTitles.map((title) => `- ${title}`);
+  if (commitTitles.length === 1) {
+    return `Changelog: ${commitTitles[0]}`;
+  }
+
+  return ['Changelog:', ...commitTitles.map((title) => `- ${title}`)].join(
+    '\n',
+  );
 };
 
 const trimMessageToDiscordLimit = (message: string) => {
@@ -123,21 +143,121 @@ const trimMessageToDiscordLimit = (message: string) => {
   return `${prefix}\n- Changelog truncated.`;
 };
 
-const buildDeploymentMessage = (commitTitles: string[]) => {
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+};
+
+const buildDeploymentStartedMessage = (commitTitles: string[]) => {
   const lines = [
-    'Dovi deployment finished.',
-    'Status: Discord ready',
-    env.KOYEB_GIT_BRANCH ? `Branch: ${env.KOYEB_GIT_BRANCH}` : null,
-    env.KOYEB_GIT_REPOSITORY ? `Repository: ${env.KOYEB_GIT_REPOSITORY}` : null,
-    env.KOYEB_GIT_COMMIT_AUTHOR
-      ? `Author: ${env.KOYEB_GIT_COMMIT_AUTHOR}`
-      : null,
-    '',
-    CHANGELOG_HEADER,
-    ...buildChangelogLines(commitTitles),
-  ].filter((line): line is string => line !== null);
+    'Dovi Bot deployment started:',
+    'Status: pending',
+    buildChangelogText(commitTitles),
+  ];
 
   return trimMessageToDiscordLimit(lines.join('\n'));
+};
+
+const buildDeploymentFinishedMessage = (commitTitles: string[]) => {
+  const lines = [
+    'Dovi Bot deployment finished',
+    'Status: Successful',
+    buildChangelogText(commitTitles),
+  ];
+
+  return trimMessageToDiscordLimit(lines.join('\n'));
+};
+
+const buildDeploymentFailedMessage = ({
+  commitTitles,
+  error,
+}: {
+  commitTitles: string[];
+  error: unknown;
+}) => {
+  const lines = [
+    'Dovi Bot deployment finished',
+    'Status: Unsuccessful',
+    `- Error: ${getErrorMessage(error)}`,
+    buildChangelogText(commitTitles),
+  ];
+
+  return trimMessageToDiscordLimit(lines.join('\n'));
+};
+
+const sendDeploymentDmWithToken = async (content: string) => {
+  if (!env.DEPLOYMENT_NOTIFY_USER_ID) {
+    return;
+  }
+
+  const channelResponse = await fetch(
+    `${DISCORD_API_BASE_URL}/users/@me/channels`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${env.DISCORD_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipient_id: env.DEPLOYMENT_NOTIFY_USER_ID }),
+    },
+  );
+
+  if (!channelResponse.ok) {
+    throw new Error(
+      `Failed to open deployment DM channel: ${channelResponse.status} ${channelResponse.statusText}`,
+    );
+  }
+
+  const channel = (await channelResponse.json()) as DiscordDmChannelResponse;
+
+  if (!channel.id) {
+    throw new Error('Discord did not return a deployment DM channel id.');
+  }
+
+  const messageResponse = await fetch(
+    `${DISCORD_API_BASE_URL}/channels/${channel.id}/messages`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${env.DISCORD_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    },
+  );
+
+  if (!messageResponse.ok) {
+    throw new Error(
+      `Failed to send deployment DM: ${messageResponse.status} ${messageResponse.statusText}`,
+    );
+  }
+};
+
+export const notifyDeploymentStarted = async () => {
+  if (!env.DEPLOYMENT_NOTIFY_USER_ID || hasSentDeploymentStarted) {
+    return;
+  }
+
+  hasSentDeploymentStarted = true;
+  const commitTitles = await getDeploymentCommitTitles();
+
+  await sendDeploymentDmWithToken(buildDeploymentStartedMessage(commitTitles));
+};
+
+export const notifyDeploymentFailed = async (error: unknown) => {
+  if (!env.DEPLOYMENT_NOTIFY_USER_ID || hasSentDeploymentFailed) {
+    return;
+  }
+
+  hasSentDeploymentFailed = true;
+  const commitTitles = await getDeploymentCommitTitles();
+
+  await sendDeploymentDmWithToken(
+    buildDeploymentFailedMessage({ commitTitles, error }),
+  );
 };
 
 export const notifyDeploymentReady = async (client: SapphireClient) => {
@@ -145,8 +265,8 @@ export const notifyDeploymentReady = async (client: SapphireClient) => {
     return;
   }
 
-  const commitTitles = await fetchDeploymentCommitTitles();
+  const commitTitles = await getDeploymentCommitTitles();
   const user = await client.users.fetch(env.DEPLOYMENT_NOTIFY_USER_ID);
 
-  await user.send(buildDeploymentMessage(commitTitles));
+  await user.send(buildDeploymentFinishedMessage(commitTitles));
 };

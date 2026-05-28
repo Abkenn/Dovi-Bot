@@ -2,6 +2,10 @@ import type { SapphireClient } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
 import { createBot } from './create-bot';
 import {
+  notifyDeploymentFailed,
+  notifyDeploymentStarted,
+} from './deployment-notifications';
+import {
   markDiscordLoginFailed,
   markDiscordReady,
   markDiscordStarting,
@@ -25,6 +29,12 @@ const scheduleDiscordLogin = (bot: SapphireClient) => {
     .catch((error) => {
       markDiscordLoginFailed(error);
       console.error('Discord login failed. Retrying soon.', error);
+      void notifyDeploymentFailed(error).catch((notificationError) => {
+        console.error(
+          'Failed to send deployment failure DM.',
+          notificationError,
+        );
+      });
 
       const retry = setTimeout(() => {
         scheduleDiscordLogin(bot);
@@ -38,6 +48,10 @@ export function startBot(options: StartBotOptions = {}) {
   const bot = createBot();
 
   options.shutdownHandler?.(bot);
+
+  void notifyDeploymentStarted().catch((error) => {
+    console.error('Failed to send deployment start DM.', error);
+  });
 
   scheduleDiscordLogin(bot);
 
