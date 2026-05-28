@@ -17,6 +17,13 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  DEPLOYMENT_NOTIFY_USER_ID: z.string().min(1).optional(),
+  DEPLOYMENT_CHANGELOG_GITHUB_TOKEN: z.string().min(1).optional(),
+  KOYEB_GIT_SHA: z.string().min(1).optional(),
+  KOYEB_GIT_BRANCH: z.string().min(1).optional(),
+  KOYEB_GIT_REPOSITORY: z.string().min(1).optional(),
+  KOYEB_GIT_COMMIT_MESSAGE: z.string().min(1).optional(),
+  KOYEB_GIT_COMMIT_AUTHOR: z.string().min(1).optional(),
   PORT: z.coerce.number().int().positive().default(8000),
 });
 
