@@ -36,7 +36,7 @@ export const COMMAND_METADATA = {
   },
   BOT_STATUS: {
     name: 'botstatus',
-    description: 'Shows a safe uptime summary for Dovi Bot.',
+    description: 'Shows bot status.',
     guildIds: COMMAND_GUILDS.BOT_STATUS,
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: HELP_CATEGORIES.GENERAL,
