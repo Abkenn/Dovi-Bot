@@ -39,7 +39,7 @@ export const COMMAND_METADATA = {
     description: 'Shows bot status.',
     guildIds: COMMAND_GUILDS.BOT_STATUS,
     helpAudience: HELP_AUDIENCES.PUBLIC,
-    helpCategory: HELP_CATEGORIES.GENERAL,
+    helpCategory: HELP_CATEGORIES.HELP,
   },
   STREAM_INFO: {
     name: 'streaminfo',
