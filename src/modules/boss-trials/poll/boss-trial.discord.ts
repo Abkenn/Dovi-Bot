@@ -4,7 +4,10 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from 'discord.js';
-import { DISCORD_STYLE } from '../../../config/discord-style';
+import {
+  getCommandCategoryAccentColor,
+  HELP_CATEGORIES,
+} from '../../../config/discord-command-categories';
 import {
   BossTrialStatus,
   BossTrialVoteVerdict,
@@ -93,10 +96,14 @@ const getVoteBreakdownText = (trial: BossTrialView) => {
   ).join('\n');
 };
 
+const BOSS_TRIAL_ACCENT_COLOR = getCommandCategoryAccentColor(
+  HELP_CATEGORIES.BOSS_TRIALS,
+);
+
 export const buildBossTrialEmbed = (trial: BossTrialView) => {
   const embed = new EmbedBuilder()
     .setTitle('Boss Trial')
-    .setColor(DISCORD_STYLE.BOT_ACCENT_COLOR)
+    .setColor(BOSS_TRIAL_ACCENT_COLOR)
     .addFields(
       { name: 'Game', value: trial.game.name, inline: true },
       { name: 'Boss', value: trial.boss.name, inline: true },
@@ -141,7 +148,7 @@ export const buildBossTrialFinalResultsEmbed = (trial: BossTrialView) => {
 
   return new EmbedBuilder()
     .setTitle('Boss Trial Results')
-    .setColor(DISCORD_STYLE.BOT_ACCENT_COLOR)
+    .setColor(BOSS_TRIAL_ACCENT_COLOR)
     .addFields(
       { name: 'Game', value: trial.game.name, inline: true },
       { name: 'Boss', value: trial.boss.name, inline: true },

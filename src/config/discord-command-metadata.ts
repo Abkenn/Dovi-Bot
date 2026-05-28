@@ -1,22 +1,15 @@
 import { type BotGuildId, COMMAND_GUILDS } from './discord-access';
+import {
+  type CommandHelpCategory,
+  HELP_CATEGORIES,
+} from './discord-command-categories';
 
 export const HELP_AUDIENCES = {
   PUBLIC: 'public',
   ADMIN: 'admin',
 } as const;
 
-export const HELP_CATEGORIES = {
-  HELP: 'Help',
-  GENERAL: 'General',
-  STREAM_INFO: 'Stream Info',
-  BOSSES: 'Bosses',
-  BOSS_TRIALS: 'Boss Trials',
-  STAGING: 'Staging',
-} as const;
-
 type CommandHelpAudience = (typeof HELP_AUDIENCES)[keyof typeof HELP_AUDIENCES];
-type CommandHelpCategory =
-  (typeof HELP_CATEGORIES)[keyof typeof HELP_CATEGORIES];
 
 export type CommandMetadata = {
   name: string;
@@ -172,3 +165,5 @@ export const COMMAND_METADATA = {
 } as const satisfies Record<string, CommandMetadata>;
 
 export const HELP_COMMANDS = Object.values(COMMAND_METADATA);
+
+export { HELP_CATEGORIES } from './discord-command-categories';

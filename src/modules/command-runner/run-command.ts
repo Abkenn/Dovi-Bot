@@ -5,6 +5,11 @@ import {
 } from 'discord.js';
 import { ZodError } from 'zod';
 import { BOT_GUILDS } from '../../config/discord-access';
+import {
+  type CommandHelpCategory,
+  getCommandCategoryAccentColor,
+} from '../../config/discord-command-categories';
+import { HELP_COMMANDS } from '../../config/discord-command-metadata';
 import { CommandExecutionStatus } from '../../generated/prisma/enums';
 import { CommandDeniedError } from '../command-logging/command-denied';
 import {
@@ -160,8 +165,16 @@ export type CommandRunContext = {
   ) => Promise<CommandEditReplyResult | undefined>;
 };
 
+const getCommandCategory = (commandName: string): CommandHelpCategory | null =>
+  HELP_COMMANDS.find((command) => command.name === commandName)?.helpCategory ??
+  null;
+
 const normalizeEditReplyOptions = (
   options: CommandEditReplyOptions,
+  context: {
+    commandName: string;
+    shouldConvertEmbedsToComponentsV2: boolean;
+  },
 ): MessageEditOptions => {
   if (options.componentMessage) {
     const { componentMessage, ...replyOptions } = options;
@@ -172,13 +185,21 @@ const normalizeEditReplyOptions = (
     };
   }
 
-  if (!options.componentEmbeds) {
+  const embeds = options.componentEmbeds ?? options.embeds;
+  const shouldConvertEmbedsToComponentsV2 =
+    options.componentEmbeds !== undefined ||
+    context.shouldConvertEmbedsToComponentsV2;
+
+  if (!embeds || !shouldConvertEmbedsToComponentsV2) {
     return options;
   }
 
-  const { componentEmbeds, ...replyOptions } = options;
-  const componentEmbedOptions =
-    buildComponentEmbedMessageFromEmbeds(componentEmbeds);
+  const { componentEmbeds, embeds: _embeds, ...replyOptions } = options;
+  const category = getCommandCategory(context.commandName);
+  const componentEmbedOptions = buildComponentEmbedMessageFromEmbeds(
+    embeds,
+    category ? { accentColor: getCommandCategoryAccentColor(category) } : {},
+  );
 
   const normalizedOptions: MessageEditOptions = {
     ...replyOptions,
@@ -282,7 +303,11 @@ export const runCommand = async <T, TPreflight = void>({
         }
 
         const response = await interaction.editReply(
-          normalizeEditReplyOptions(options),
+          normalizeEditReplyOptions(options, {
+            commandName,
+            shouldConvertEmbedsToComponentsV2:
+              interaction.guildId === BOT_GUILDS.STAGING_ENV,
+          }),
         );
         hasSentCommandResponse = true;
 

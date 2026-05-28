@@ -3,6 +3,7 @@ import {
   type ComponentInContainerData,
   ComponentType,
   type EmbedBuilder,
+  type JSONEncodable,
   type MessageEditOptions,
   MessageFlags,
   SeparatorSpacingSize,
@@ -22,7 +23,10 @@ export type ComponentEmbedInput = {
   fields?: readonly ComponentEmbedField[] | undefined;
 };
 
-export type ComponentEmbedSource = EmbedBuilder | APIEmbed;
+export type ComponentEmbedSource =
+  | EmbedBuilder
+  | APIEmbed
+  | JSONEncodable<APIEmbed>;
 
 const buildTextDisplay = (content: string): TextDisplayComponentData => ({
   type: ComponentType.TextDisplay,
@@ -95,6 +99,7 @@ const getComponentEmbedSourceData = (embed: ComponentEmbedSource): APIEmbed => {
 
 export const buildComponentEmbedMessageFromEmbeds = (
   embeds: readonly ComponentEmbedSource[],
+  options: { accentColor?: number } = {},
 ): MessageEditOptions => {
   const components = embeds.map((embed) => {
     const data = getComponentEmbedSourceData(embed);
@@ -102,7 +107,7 @@ export const buildComponentEmbedMessageFromEmbeds = (
     return buildComponentEmbedMessage({
       title: data.title ?? 'Info',
       description: data.description,
-      accentColor: data.color,
+      accentColor: options.accentColor ?? data.color,
       fields: data.fields?.map((field) => ({
         name: field.name,
         value: field.value,

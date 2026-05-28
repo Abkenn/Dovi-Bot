@@ -10,13 +10,13 @@ import {
   type TopLevelComponentData,
 } from 'discord.js';
 import type { BotGuildId } from '../../config/discord-access';
+import { COMMAND_CATEGORY_METADATA } from '../../config/discord-command-categories';
 import {
   type CommandMetadata,
   HELP_AUDIENCES,
   HELP_CATEGORIES,
   HELP_COMMANDS,
 } from '../../config/discord-command-metadata';
-import { DISCORD_STYLE } from '../../config/discord-style';
 
 const COMMAND_CATEGORY_ORDER = [
   HELP_CATEGORIES.GENERAL,
@@ -100,15 +100,6 @@ const HELP_TOPIC_VALUES = new Set<string>(
   HELP_TOPIC_OPTIONS.map((topic) => topic.value),
 );
 
-const HELP_TOPIC_ACCENT_COLORS: Partial<Record<HelpTopicValue, number>> = {
-  'stream-info': DISCORD_STYLE.BOT_ACCENT_COLOR,
-  bosses: 0xf59e0b,
-  'boss-trials': 0xc026d3,
-  staging: 0x5865f2,
-  general: 0x57f287,
-  help: 0xfee75c,
-} as const;
-
 const formatCommand = (command: CommandMetadata): string =>
   `\`/${command.name}\` - ${command.description}`;
 
@@ -157,7 +148,10 @@ const buildContainer = (
   components: readonly ComponentInContainerData[],
   topic: HelpTopicValue,
 ): TopLevelComponentData => {
-  const accentColor = HELP_TOPIC_ACCENT_COLORS[topic];
+  const topicOption = getTopicByValue(topic);
+  const accentColor = topicOption?.category
+    ? COMMAND_CATEGORY_METADATA[topicOption.category].accentColor
+    : undefined;
 
   if (accentColor === undefined) {
     return {
