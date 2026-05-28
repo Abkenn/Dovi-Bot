@@ -22,7 +22,6 @@ type DiscordDmChannelResponse = {
 const DISCORD_MESSAGE_LIMIT = 2000;
 const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
 
-let hasSentDeploymentStarted = false;
 let hasSentDeploymentFailed = false;
 let commitTitlesPromise: Promise<string[]> | null = null;
 
@@ -151,16 +150,6 @@ const getErrorMessage = (error: unknown) => {
   return String(error);
 };
 
-const buildDeploymentStartedMessage = (commitTitles: string[]) => {
-  const lines = [
-    'Dovi Bot deployment started:',
-    'Status: pending',
-    buildChangelogText(commitTitles),
-  ];
-
-  return trimMessageToDiscordLimit(lines.join('\n'));
-};
-
 const buildDeploymentFinishedMessage = (commitTitles: string[]) => {
   const lines = [
     'Dovi Bot deployment finished',
@@ -234,17 +223,6 @@ const sendDeploymentDmWithToken = async (content: string) => {
       `Failed to send deployment DM: ${messageResponse.status} ${messageResponse.statusText}`,
     );
   }
-};
-
-export const notifyDeploymentStarted = async () => {
-  if (!env.DEPLOYMENT_NOTIFY_USER_ID || hasSentDeploymentStarted) {
-    return;
-  }
-
-  hasSentDeploymentStarted = true;
-  const commitTitles = await getDeploymentCommitTitles();
-
-  await sendDeploymentDmWithToken(buildDeploymentStartedMessage(commitTitles));
 };
 
 export const notifyDeploymentFailed = async (error: unknown) => {
