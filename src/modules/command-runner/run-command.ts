@@ -194,7 +194,12 @@ const normalizeEditReplyOptions = (
     return options;
   }
 
-  const { componentEmbeds, embeds: _embeds, ...replyOptions } = options;
+  const {
+    componentEmbeds,
+    embeds: _embeds,
+    content: _content,
+    ...replyOptions
+  } = options;
   const category = getCommandCategory(context.commandName);
   const componentEmbedOptions = buildComponentEmbedMessageFromEmbeds(
     embeds,
