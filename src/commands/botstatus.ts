@@ -1,4 +1,5 @@
 import { Command } from '@sapphire/framework';
+import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildBotStatusMessage } from '../modules/bot-status/bot-status.discord';
@@ -33,8 +34,11 @@ export class BotStatusCommand extends Command {
       commandName: this.name,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
-      run: async ({ editReply, signal }) => {
-        const status = await fetchBotStatus(signal);
+      run: async ({ editReply, preflight: guildId, signal }) => {
+        const status = await fetchBotStatus({
+          includeDatabase: guildId === BOT_GUILDS.STAGING_ENV,
+          signal,
+        });
 
         return editReply({
           componentMessage: buildBotStatusMessage(status),

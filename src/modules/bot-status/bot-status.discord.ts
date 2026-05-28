@@ -1,48 +1,19 @@
 import {
+  ButtonStyle,
+  type ComponentInContainerData,
   ComponentType,
   type MessageEditOptions,
   MessageFlags,
-  SeparatorSpacingSize,
   type TopLevelComponentData,
 } from 'discord.js';
-import {
-  getCommandCategoryAccentColor,
-  HELP_CATEGORIES,
-} from '../../config/discord-command-categories';
-import type { BotStatus, BotStatusDay } from './bot-status.service';
+import type { BotStatus } from './bot-status.service';
 
-const MAX_UPTIME_DAYS = 60;
-
-const formatTimestamp = (date: Date) =>
-  `<t:${Math.floor(date.getTime() / 1000)}:R>`;
-
-const formatResponseTime = (value: number | null) =>
-  value === null ? 'Unknown' : `${value}ms`;
-
-const getDayMarker = (day: BotStatusDay) => {
-  if (day.status === 'up') {
-    return '🟩';
-  }
-
-  if (day.status === 'degraded') {
-    return '🟧';
-  }
-
-  return '🟥';
-};
-
-const formatUptimeStrip = (days: BotStatusDay[]) => {
-  const visibleDays = days.slice(-MAX_UPTIME_DAYS);
-
-  if (visibleDays.length === 0) {
-    return 'No uptime history yet.';
-  }
-
-  return visibleDays.map(getDayMarker).join('');
-};
+export const BOT_STATUS_REFRESH_CUSTOM_ID = 'bot-status:refresh';
 
 const formatStatusLine = (status: BotStatus) =>
-  status.isOperational ? '🟢 **Operational**' : '🟠 **Needs attention**';
+  status.isOperational
+    ? '\u{1F7E2} **Operational**'
+    : '\u{1F7E0} **Needs attention**';
 
 const formatDatabaseStatus = (status: BotStatus['database']) => {
   if (status === 'healthy') {
@@ -59,50 +30,37 @@ const formatDatabaseStatus = (status: BotStatus['database']) => {
 export const buildBotStatusMessage = (
   status: BotStatus,
 ): MessageEditOptions => {
+  const lines = ['# Dovi Bot Status', formatStatusLine(status)];
+
+  if (status.database) {
+    lines.push(`Database: ${formatDatabaseStatus(status.database)}`);
+  }
+
+  const components: ComponentInContainerData[] = [
+    {
+      type: ComponentType.TextDisplay,
+      content: lines.join('\n'),
+    },
+  ];
+
+  if (!status.isOperational) {
+    components.push({
+      type: ComponentType.ActionRow,
+      components: [
+        {
+          type: ComponentType.Button,
+          customId: BOT_STATUS_REFRESH_CUSTOM_ID,
+          label: 'Check again',
+          style: ButtonStyle.Secondary,
+        },
+      ],
+    });
+  }
+
   const container: TopLevelComponentData = {
     type: ComponentType.Container,
-    accentColor: status.isOperational
-      ? 0x57f287
-      : getCommandCategoryAccentColor(HELP_CATEGORIES.BOSSES),
-    components: [
-      {
-        type: ComponentType.TextDisplay,
-        content: [
-          '# Dovi Bot Status',
-          formatStatusLine(status),
-          `Database: ${formatDatabaseStatus(status.database)}`,
-          status.checkInterval,
-          `Updated ${formatTimestamp(status.checkedAt)}`,
-        ].join('\n'),
-      },
-      {
-        type: ComponentType.Separator,
-        divider: true,
-        spacing: SeparatorSpacingSize.Small,
-      },
-      {
-        type: ComponentType.TextDisplay,
-        content: [
-          '### Uptime',
-          formatUptimeStrip(status.days),
-          '',
-          `**24h** ${status.uptime.last24Hours}   **7d** ${status.uptime.last7Days}`,
-          `**30d** ${status.uptime.last30Days}   **90d** ${status.uptime.last90Days}`,
-        ].join('\n'),
-      },
-      {
-        type: ComponentType.Separator,
-        divider: true,
-        spacing: SeparatorSpacingSize.Small,
-      },
-      {
-        type: ComponentType.TextDisplay,
-        content: [
-          '### Response Time',
-          `**Avg** ${formatResponseTime(status.responseTime.averageMs)}   **Max** ${formatResponseTime(status.responseTime.maximumMs)}   **Min** ${formatResponseTime(status.responseTime.minimumMs)}`,
-        ].join('\n'),
-      },
-    ],
+    accentColor: status.isOperational ? 0x57f287 : 0xf59e0b,
+    components,
   };
 
   return {
