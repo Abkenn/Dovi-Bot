@@ -19,6 +19,18 @@ export const envSchema = z.object({
     .transform((value) => value === 'true'),
   DEPLOYMENT_NOTIFY_USER_ID: z.string().min(1).optional(),
   DEPLOYMENT_CHANGELOG_GITHUB_TOKEN: z.string().min(1).optional(),
+  UPTIME_STATUS_MONITOR_URL: z.url().optional(),
+  UPTIME_STATUS_MONITOR_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(300_000),
+  HEALTH_CHECK_MONITOR_URL: z.url().optional(),
+  HEALTH_CHECK_MONITOR_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(86_400_000),
   KOYEB_GIT_SHA: z.string().min(1).optional(),
   KOYEB_GIT_BRANCH: z.string().min(1).optional(),
   KOYEB_GIT_REPOSITORY: z.string().min(1).optional(),

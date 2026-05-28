@@ -1,5 +1,9 @@
 import { Listener } from '@sapphire/framework';
 import { notifyDeploymentReady } from '../app/deployment-notifications';
+import {
+  startHealthCheckMonitor,
+  startUptimeStatusMonitor,
+} from '../app/uptime-status-monitor';
 import { startDaviBossStatsSyncScheduler } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.scheduler';
 import { startBossTrialLifecycleScheduler } from '../modules/boss-trials/poll/boss-trial.scheduler';
 
@@ -21,6 +25,8 @@ export class ReadyListener extends Listener {
     );
     startDaviBossStatsSyncScheduler();
     startBossTrialLifecycleScheduler(this.container.client);
+    startUptimeStatusMonitor(this.container.client);
+    startHealthCheckMonitor(this.container.client);
     void notifyDeploymentReady(this.container.client).catch((error) => {
       this.container.logger.error('Failed to send deployment DM.', error);
     });

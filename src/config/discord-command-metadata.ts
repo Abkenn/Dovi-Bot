@@ -34,6 +34,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: HELP_CATEGORIES.GENERAL,
   },
+  BOT_STATUS: {
+    name: 'botstatus',
+    description: 'Shows a safe uptime summary for Dovi Bot.',
+    guildIds: COMMAND_GUILDS.BOT_STATUS,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: HELP_CATEGORIES.GENERAL,
+  },
   STREAM_INFO: {
     name: 'streaminfo',
     description: 'Shows current and next stream information.',
