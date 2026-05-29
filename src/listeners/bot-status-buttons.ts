@@ -1,9 +1,6 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
-import {
-  BOT_GUILDS,
-  isAllowedGuildForCommand,
-} from '../config/discord-access';
+import { BOT_GUILDS, isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   BOT_STATUS_REFRESH_CUSTOM_ID,

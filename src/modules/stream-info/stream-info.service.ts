@@ -41,6 +41,7 @@ import {
   resolveTitle,
   WEEKDAY_TO_LUXON,
 } from './stream-info.utils';
+import { getYouTubeCurrentOccurrence } from './stream-info.youtube';
 import {
   DEFAULT_GUILD_STREAM_CONFIG,
   DEFAULT_STREAM_SCHEDULE,
@@ -55,7 +56,7 @@ const getCandidateDates = (
   const targetWeekday = WEEKDAY_TO_LUXON[rule.weekday];
   const dates: DateTime[] = [];
 
-  for (let i = 0; i <= lookaheadDays; i += 1) {
+  for (let i = -1; i <= lookaheadDays; i += 1) {
     const candidate = nowLocal.plus({ days: i }).startOf('day');
 
     if (candidate.weekday === targetWeekday) {
@@ -473,8 +474,20 @@ export const getStreamInfo = async (
 
   const occurrences = buildOccurrences(config, defaults, overrides);
   const now = DateTime.utc();
-  const current = findCurrentOccurrence(occurrences, now);
-  const next = findNextOccurrence(occurrences, now);
+  const scheduledCurrent = findCurrentOccurrence(occurrences, now);
+  const youtubeCurrent = await getYouTubeCurrentOccurrence({
+    occurrences,
+    now,
+  });
+  const current = youtubeCurrent ?? scheduledCurrent;
+  const next = findNextOccurrence(
+    current
+      ? occurrences.filter(
+          (occurrence) => occurrence.dateKey !== current.dateKey,
+        )
+      : occurrences,
+    now,
+  );
 
   return {
     timezone: config.canonicalTimezone,

@@ -13,6 +13,7 @@ export type StreamOccurrence = {
   musicMode: MusicMode | null;
   title: string | null;
   gameName: string | null;
+  streamUrl?: string | undefined;
   isOverride: boolean;
 };
 

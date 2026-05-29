@@ -13,6 +13,8 @@ export const envSchema = z.object({
   DIRECT_URL: z.string().min(1),
   DAVI_BOSS_STATS_SPREADSHEET_URL: z.url().optional(),
   DAVI_DISCORD_USER_ID: z.string().min(1).optional(),
+  YOUTUBE_API_KEY: z.string().min(1).optional(),
+  YOUTUBE_CHANNEL_HANDLES: z.string().min(1).optional(),
   ENABLE_MEMORY_LOGGING: z
     .enum(['true', 'false'])
     .default('false')
