@@ -209,7 +209,6 @@ const normalizeEditReplyOptions = (
 
   const normalizedOptions: MessageEditOptions = {
     ...replyOptions,
-    embeds: [],
     flags: MessageFlags.IsComponentsV2,
   };
 

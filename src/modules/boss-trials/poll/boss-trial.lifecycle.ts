@@ -4,11 +4,10 @@ import type {
   TextBasedChannel,
 } from 'discord.js';
 import {
-  buildBossTrialBumpMessageContent,
-  buildBossTrialEmbed,
-  buildBossTrialFinalResultsEmbed,
-  buildBossTrialVoteButtons,
-  buildBossTrialVotesVisibleMessageContent,
+  buildBossTrialBumpMessage,
+  buildBossTrialFinalResultsMessage,
+  buildBossTrialPollMessage,
+  buildBossTrialVotesVisibleMessage,
 } from './boss-trial.discord';
 import {
   attachBossTrialBumpMessage,
@@ -83,10 +82,7 @@ export const refreshBossTrialMessage = async (
         return;
       }
 
-      await message.edit({
-        embeds: [buildBossTrialEmbed(trial)],
-        components: [buildBossTrialVoteButtons(trial.id)],
-      });
+      await message.edit(buildBossTrialPollMessage(trial));
     }),
   );
 };
@@ -106,7 +102,7 @@ export const postBossTrialResultsMessage = async ({
 
   return sendChannelMessage(channel, {
     ...getBossTrialReplyOptions(trial),
-    embeds: [buildBossTrialFinalResultsEmbed(trial)],
+    ...buildBossTrialFinalResultsMessage(trial),
   });
 };
 
@@ -127,9 +123,7 @@ export const postBossTrialBumpMessage = async ({
 
   const message = await sendChannelMessage(channel, {
     ...getBossTrialReplyOptions(trial),
-    content: buildBossTrialBumpMessageContent({ trial, isAutomatic }),
-    embeds: [buildBossTrialEmbed(trial)],
-    components: [buildBossTrialVoteButtons(trial.id)],
+    ...buildBossTrialBumpMessage({ trial, isAutomatic }),
   });
 
   await attachBossTrialBumpMessage({
@@ -155,9 +149,7 @@ export const postBossTrialVotesVisibleMessage = async ({
 
   const message = await sendChannelMessage(channel, {
     ...getBossTrialReplyOptions(trial),
-    content: buildBossTrialVotesVisibleMessageContent(trial),
-    embeds: [buildBossTrialEmbed(trial)],
-    components: [buildBossTrialVoteButtons(trial.id)],
+    ...buildBossTrialVotesVisibleMessage(trial),
   });
 
   await attachBossTrialBumpMessage({

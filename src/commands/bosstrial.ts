@@ -4,9 +4,8 @@ import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { BOSS_TRIAL_DURATION_OPTIONS } from '../modules/boss-trials/boss-trial.config';
 import {
-  buildBossTrialEmbed,
+  buildBossTrialPollMessage,
   buildBossTrialRequesterControls,
-  buildBossTrialVoteButtons,
 } from '../modules/boss-trials/poll/boss-trial.discord';
 import {
   attachBossTrialMessage,
@@ -99,8 +98,7 @@ export class BossTrialCommand extends Command {
         });
 
         const message = await editReply({
-          embeds: [buildBossTrialEmbed(trial)],
-          components: [buildBossTrialVoteButtons(trial.id)],
+          componentMessage: buildBossTrialPollMessage(trial),
         });
 
         if (message) {

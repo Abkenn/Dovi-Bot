@@ -2,7 +2,11 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ComponentType,
   EmbedBuilder,
+  type MessageEditOptions,
+  MessageFlags,
+  type TopLevelComponentData,
 } from 'discord.js';
 import {
   getCommandCategoryAccentColor,
@@ -14,6 +18,7 @@ import {
 } from '../../../generated/prisma/enums';
 import { DAY_MINUTES, HOUR_MINUTES } from '../../../lib/time.constants';
 import { addDaviBossStatsField } from '../../bosses/bosses.discord';
+import { buildComponentEmbedMessageFromEmbeds } from '../../discord/component-embed';
 import {
   BOSS_TRIAL_CUSTOM_ID_PREFIX,
   BOSS_TRIAL_VERDICT_LABELS,
@@ -26,6 +31,11 @@ import {
   shouldShowBossTrialVotes,
 } from './boss-trial.service';
 import type { BossTrialButtonAction } from './boss-trial.types';
+
+type BossTrialComponentMessage = {
+  components: NonNullable<MessageEditOptions['components']>;
+  flags: MessageFlags.IsComponentsV2;
+};
 
 const toTimestamp = (date: Date, style: 'f' | 'R' = 'R') =>
   `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
@@ -130,6 +140,60 @@ export const buildBossTrialEmbed = (trial: BossTrialView) => {
   return addDaviBossStatsField(embed, trial.boss, { spoiler: true });
 };
 
+const buildTextDisplayComponent = (content: string): TopLevelComponentData => ({
+  type: ComponentType.TextDisplay,
+  content,
+});
+
+const buildBossTrialComponentMessage = ({
+  content,
+  embed,
+  components = [],
+}: {
+  content?: string;
+  embed: EmbedBuilder;
+  components?: MessageEditOptions['components'];
+}): BossTrialComponentMessage => {
+  const componentEmbedMessage = buildComponentEmbedMessageFromEmbeds([embed], {
+    accentColor: BOSS_TRIAL_ACCENT_COLOR,
+  });
+
+  return {
+    components: [
+      ...(content ? [buildTextDisplayComponent(content)] : []),
+      ...(componentEmbedMessage.components ?? []),
+      ...(components ?? []),
+    ],
+    flags: MessageFlags.IsComponentsV2,
+  };
+};
+
+export const buildBossTrialPollMessage = (trial: BossTrialView) =>
+  buildBossTrialComponentMessage({
+    embed: buildBossTrialEmbed(trial),
+    components: [buildBossTrialVoteButtons(trial.id)],
+  });
+
+export const buildBossTrialBumpMessage = ({
+  trial,
+  isAutomatic,
+}: {
+  trial: BossTrialView;
+  isAutomatic: boolean;
+}) =>
+  buildBossTrialComponentMessage({
+    content: buildBossTrialBumpMessageContent({ trial, isAutomatic }),
+    embed: buildBossTrialEmbed(trial),
+    components: [buildBossTrialVoteButtons(trial.id)],
+  });
+
+export const buildBossTrialVotesVisibleMessage = (trial: BossTrialView) =>
+  buildBossTrialComponentMessage({
+    content: buildBossTrialVotesVisibleMessageContent(trial),
+    embed: buildBossTrialEmbed(trial),
+    components: [buildBossTrialVoteButtons(trial.id)],
+  });
+
 export const buildBossTrialFinalResultsEmbed = (trial: BossTrialView) => {
   const breakdown = getVoteBreakdown(trial);
   const winningVerdicts = getWinningVerdicts(trial);
@@ -165,6 +229,11 @@ export const buildBossTrialFinalResultsEmbed = (trial: BossTrialView) => {
     )
     .setTimestamp(new Date());
 };
+
+export const buildBossTrialFinalResultsMessage = (trial: BossTrialView) =>
+  buildBossTrialComponentMessage({
+    embed: buildBossTrialFinalResultsEmbed(trial),
+  });
 
 export const buildBossTrialVoteButtons = (trialId: string) =>
   new ActionRowBuilder<ButtonBuilder>().addComponents(
