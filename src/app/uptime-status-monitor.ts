@@ -36,6 +36,8 @@ let activeUptimeStatusCheck: Promise<void> | undefined;
 let activeHealthCheck: Promise<void> | undefined;
 let lastUptimeState: UptimeStatusState | undefined;
 let lastHealthCheckState: HealthCheckState | undefined;
+let hasSentUptimeAlert = false;
+let hasSentHealthCheckAlert = false;
 
 const getUptimeRobotApiUrl = (statusPageUrl: string) => {
   const url = new URL(statusPageUrl);
@@ -173,10 +175,13 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
     lastUptimeState = currentState;
 
     if (currentState === 'not_operational') {
+      hasSentUptimeAlert = true;
       await sendUptimeStatusDm(
         client,
         [
-          'Dovi Bot uptime status is not operational.',
+          '---',
+          '**Dovi Bot uptime alert**',
+          'Status: not operational',
           formatStatusDetail(status),
           `Page: ${env.UPTIME_STATUS_MONITOR_URL}`,
         ].join('\n'),
@@ -184,11 +189,17 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
       return;
     }
 
+    if (!hasSentUptimeAlert) {
+      return;
+    }
+
+    hasSentUptimeAlert = false;
     await sendUptimeStatusDm(
       client,
       [
-        'Dovi Bot uptime status recovered.',
-        'Status: Operational',
+        '---',
+        '**Dovi Bot uptime recovered**',
+        'Status: operational',
         `Page: ${env.UPTIME_STATUS_MONITOR_URL}`,
       ].join('\n'),
     );
@@ -198,10 +209,12 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
     }
 
     lastUptimeState = 'not_operational';
+    hasSentUptimeAlert = true;
     await sendUptimeStatusDm(
       client,
       [
-        'Dovi Bot uptime status could not be checked.',
+        '---',
+        '**Dovi Bot uptime check failed**',
         `- Error: ${error instanceof Error ? error.message : String(error)}`,
         `Page: ${env.UPTIME_STATUS_MONITOR_URL}`,
       ].join('\n'),
@@ -234,6 +247,18 @@ const runHealthCheck = async (client: SapphireClient) => {
 
     if (currentState === 'ok') {
       lastHealthCheckState = currentState;
+      if (hasSentHealthCheckAlert) {
+        hasSentHealthCheckAlert = false;
+        await sendUptimeStatusDm(
+          client,
+          [
+            '---',
+            '**Dovi Bot health recovered**',
+            'Status: ok',
+            `Page: ${env.HEALTH_CHECK_MONITOR_URL}`,
+          ].join('\n'),
+        );
+      }
       return;
     }
 
@@ -242,10 +267,12 @@ const runHealthCheck = async (client: SapphireClient) => {
     }
 
     lastHealthCheckState = currentState;
+    hasSentHealthCheckAlert = true;
     await sendUptimeStatusDm(
       client,
       [
-        'Dovi Bot health check is not okay.',
+        '---',
+        '**Dovi Bot health alert**',
         formatHealthCheckDetail(healthCheck),
         `Page: ${env.HEALTH_CHECK_MONITOR_URL}`,
       ].join('\n'),
@@ -256,10 +283,12 @@ const runHealthCheck = async (client: SapphireClient) => {
     }
 
     lastHealthCheckState = 'not_ok';
+    hasSentHealthCheckAlert = true;
     await sendUptimeStatusDm(
       client,
       [
-        'Dovi Bot health check could not be checked.',
+        '---',
+        '**Dovi Bot health check failed**',
         `- Error: ${error instanceof Error ? error.message : String(error)}`,
         `Page: ${env.HEALTH_CHECK_MONITOR_URL}`,
       ].join('\n'),

@@ -152,8 +152,9 @@ const getErrorMessage = (error: unknown) => {
 
 const buildDeploymentFinishedMessage = (commitTitles: string[]) => {
   const lines = [
-    'Dovi Bot deployment finished',
-    'Status: Successful',
+    '---',
+    '**Dovi Bot deployment finished**',
+    'Status: successful',
     buildChangelogText(commitTitles),
   ];
 
@@ -168,8 +169,9 @@ const buildDeploymentFailedMessage = ({
   error: unknown;
 }) => {
   const lines = [
-    'Dovi Bot deployment finished',
-    'Status: Unsuccessful',
+    '---',
+    '**Dovi Bot deployment failed**',
+    'Status: unsuccessful',
     `- Error: ${getErrorMessage(error)}`,
     buildChangelogText(commitTitles),
   ];
