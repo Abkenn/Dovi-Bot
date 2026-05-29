@@ -313,8 +313,7 @@ export const runCommand = async <T, TPreflight = void>({
         const response = await interaction.editReply(
           normalizeEditReplyOptions(options, {
             commandName,
-            shouldConvertEmbedsToComponentsV2:
-              interaction.guildId === BOT_GUILDS.STAGING_ENV,
+            shouldConvertEmbedsToComponentsV2: true,
           }),
         );
         hasSentCommandResponse = true;
