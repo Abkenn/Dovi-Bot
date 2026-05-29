@@ -43,7 +43,7 @@ export class DaviStreamInfoCommand extends Command {
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         return editReply({
-          componentEmbeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],
+          embeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],
         });
       },
     });

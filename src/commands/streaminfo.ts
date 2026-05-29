@@ -33,7 +33,7 @@ export class StreamInfoCommand extends Command {
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) =>
-        editReply({ componentEmbeds: [await getStreamInfoEmbed(guildId)] }),
+        editReply({ embeds: [await getStreamInfoEmbed(guildId)] }),
     });
   }
 }

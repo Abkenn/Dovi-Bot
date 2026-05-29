@@ -21,10 +21,7 @@ import {
   COMMAND_TIMEOUT_MS,
   CommandTimeoutError,
 } from '../command-logging/command-timeout';
-import {
-  buildComponentEmbedMessageFromEmbeds,
-  type ComponentEmbedSource,
-} from '../discord/component-embed';
+import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
 
 const getUserFacingErrorMessage = (error: unknown): string => {
   if (error instanceof CommandDeniedError) {
@@ -140,7 +137,6 @@ const replyOrEditCommandError = async (
 };
 
 export type CommandEditReplyOptions = MessageEditOptions & {
-  componentEmbeds?: readonly ComponentEmbedSource[];
   componentMessage?: MessageEditOptions;
 };
 
@@ -173,7 +169,6 @@ const normalizeEditReplyOptions = (
   options: CommandEditReplyOptions,
   context: {
     commandName: string;
-    shouldConvertEmbedsToComponentsV2: boolean;
   },
 ): MessageEditOptions => {
   if (options.componentMessage) {
@@ -185,17 +180,13 @@ const normalizeEditReplyOptions = (
     };
   }
 
-  const embeds = options.componentEmbeds ?? options.embeds;
-  const shouldConvertEmbedsToComponentsV2 =
-    options.componentEmbeds !== undefined ||
-    context.shouldConvertEmbedsToComponentsV2;
+  const { embeds } = options;
 
-  if (!embeds || !shouldConvertEmbedsToComponentsV2) {
+  if (!embeds) {
     return options;
   }
 
   const {
-    componentEmbeds,
     embeds: _embeds,
     content: _content,
     components: existingComponents,
@@ -313,7 +304,6 @@ export const runCommand = async <T, TPreflight = void>({
         const response = await interaction.editReply(
           normalizeEditReplyOptions(options, {
             commandName,
-            shouldConvertEmbedsToComponentsV2: true,
           }),
         );
         hasSentCommandResponse = true;
