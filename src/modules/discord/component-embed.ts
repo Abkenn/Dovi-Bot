@@ -45,14 +45,14 @@ const buildTitleContent = ({
   description,
 }: Pick<ComponentEmbedInput, 'title' | 'description'>): string => {
   if (!description) {
-    return `**${title}**`;
+    return `# ${title}`;
   }
 
-  return `**${title}**\n${description}`;
+  return `# ${title}\n${description}`;
 };
 
 const buildFieldContent = (field: ComponentEmbedField): string =>
-  `**${field.name}**\n${field.value}`;
+  `### ${field.name}\n${field.value}`;
 
 const buildInlineFieldContent = (
   fields: readonly ComponentEmbedField[],
