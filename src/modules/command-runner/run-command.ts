@@ -198,6 +198,7 @@ const normalizeEditReplyOptions = (
     componentEmbeds,
     embeds: _embeds,
     content: _content,
+    components: existingComponents,
     ...replyOptions
   } = options;
   const category = getCommandCategory(context.commandName);
@@ -213,7 +214,10 @@ const normalizeEditReplyOptions = (
   };
 
   if (componentEmbedOptions.components) {
-    normalizedOptions.components = componentEmbedOptions.components;
+    normalizedOptions.components = [
+      ...componentEmbedOptions.components,
+      ...(existingComponents ?? []),
+    ];
   }
 
   return normalizedOptions;

@@ -14,6 +14,7 @@ import {
 export type ComponentEmbedField = {
   name: string;
   value: string;
+  inline?: boolean | undefined;
 };
 
 export type ComponentEmbedInput = {
@@ -44,10 +45,55 @@ const buildTitleContent = ({
   description,
 }: Pick<ComponentEmbedInput, 'title' | 'description'>): string => {
   if (!description) {
-    return `# ${title}`;
+    return `**${title}**`;
   }
 
-  return `# ${title}\n${description}`;
+  return `**${title}**\n${description}`;
+};
+
+const buildFieldContent = (field: ComponentEmbedField): string =>
+  `**${field.name}**\n${field.value}`;
+
+const buildInlineFieldContent = (
+  fields: readonly ComponentEmbedField[],
+): string =>
+  fields
+    .map((field) => `**${field.name}:** ${field.value.replaceAll('\n', ' ')}`)
+    .join('\n');
+
+const buildFieldComponents = (
+  fields: readonly ComponentEmbedField[],
+): ComponentInContainerData[] => {
+  const components: ComponentInContainerData[] = [];
+  let inlineFields: ComponentEmbedField[] = [];
+
+  const flushInlineFields = () => {
+    if (inlineFields.length === 0) {
+      return;
+    }
+
+    components.push(buildTextDisplay(buildInlineFieldContent(inlineFields)));
+    inlineFields = [];
+  };
+
+  for (const field of fields) {
+    if (field.inline) {
+      inlineFields.push(field);
+
+      if (inlineFields.length === 3) {
+        flushInlineFields();
+      }
+
+      continue;
+    }
+
+    flushInlineFields();
+    components.push(buildTextDisplay(buildFieldContent(field)));
+  }
+
+  flushInlineFields();
+
+  return components;
 };
 
 export const buildComponentEmbedMessage = ({
@@ -64,13 +110,7 @@ export const buildComponentEmbedMessage = ({
     components.push(buildSeparator());
   }
 
-  for (const [index, field] of fields.entries()) {
-    components.push(buildTextDisplay(`### ${field.name}\n${field.value}`));
-
-    if (index < fields.length - 1) {
-      components.push(buildSeparator());
-    }
-  }
+  components.push(...buildFieldComponents(fields));
 
   const container: TopLevelComponentData = {
     type: ComponentType.Container,
@@ -111,6 +151,7 @@ export const buildComponentEmbedMessageFromEmbeds = (
       fields: data.fields?.map((field) => ({
         name: field.name,
         value: field.value,
+        inline: field.inline,
       })),
     }).components?.[0];
   });
