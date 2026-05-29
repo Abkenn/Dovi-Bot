@@ -31,7 +31,12 @@ const buildOccurrenceValue = (
 
   const lines = [
     occurrence.title ?? 'Stream',
-    `${discordTs(occurrence.startAt, 'F')} (${discordTs(occurrence.startAt, 'R')})`,
+    label === 'Current'
+      ? `${discordTs(occurrence.startAt, 'F')} (started ${discordTs(
+          occurrence.startAt,
+          'R',
+        )})`
+      : `${discordTs(occurrence.startAt, 'F')} (${discordTs(occurrence.startAt, 'R')})`,
   ];
 
   if (shouldShowGame(occurrence) && occurrence.gameName?.trim()) {
