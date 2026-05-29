@@ -4,6 +4,7 @@ import {
   ComponentType,
   type MessageEditOptions,
   MessageFlags,
+  SeparatorSpacingSize,
   type TopLevelComponentData,
 } from 'discord.js';
 import type { BotStatus } from './bot-status.service';
@@ -30,13 +31,22 @@ const formatDatabaseStatus = (status: BotStatus['database']) => {
 export const buildBotStatusMessage = (
   status: BotStatus,
 ): MessageEditOptions => {
-  const lines = ['# Dovi Bot Status', formatStatusLine(status)];
+  const lines = [formatStatusLine(status)];
 
   if (status.database) {
     lines.push(`Database: ${formatDatabaseStatus(status.database)}`);
   }
 
   const components: ComponentInContainerData[] = [
+    {
+      type: ComponentType.TextDisplay,
+      content: '# Dovi Bot Status',
+    },
+    {
+      type: ComponentType.Separator,
+      divider: true,
+      spacing: SeparatorSpacingSize.Small,
+    },
     {
       type: ComponentType.TextDisplay,
       content: lines.join('\n'),

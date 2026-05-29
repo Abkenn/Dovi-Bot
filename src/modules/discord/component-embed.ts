@@ -56,10 +56,7 @@ const buildFieldContent = (field: ComponentEmbedField): string =>
 
 const buildInlineFieldContent = (
   fields: readonly ComponentEmbedField[],
-): string =>
-  fields
-    .map((field) => `**${field.name}:** ${field.value.replaceAll('\n', ' ')}`)
-    .join('\n');
+): string => fields.map(buildFieldContent).join('\n');
 
 const buildFieldComponents = (
   fields: readonly ComponentEmbedField[],
