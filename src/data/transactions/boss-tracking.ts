@@ -331,6 +331,14 @@ export const updateBossTrackingInfo = async ({
             orderBy: { focusedAt: 'desc' },
           })
         : null;
+    const latestSession =
+      normalizedBossName === undefined && !activeSession
+        ? await tx.bossTrackingSession.findFirst({
+            where: { guildId },
+            include: activeSessionInclude,
+            orderBy: { focusedAt: 'desc' },
+          })
+        : null;
 
     const applyUpdate = async (boss: {
       id: string;
@@ -394,6 +402,10 @@ export const updateBossTrackingInfo = async ({
 
     if (activeSession) {
       return applyUpdate(activeSession.boss);
+    }
+
+    if (latestSession) {
+      return applyUpdate(latestSession.boss);
     }
 
     if (normalizedBossName === undefined) {

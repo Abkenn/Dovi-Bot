@@ -1,4 +1,7 @@
-import { findActiveBossTrackingSession } from '../../data/queries/boss-tracking';
+import {
+  findActiveBossTrackingSession,
+  findLatestBossTrackingSession,
+} from '../../data/queries/boss-tracking';
 import { findGuildStreamConfig } from '../../data/queries/stream-info';
 import {
   cancelBossTrackingSession,
@@ -252,10 +255,12 @@ export const resumeLiveBossTracking = async ({
 };
 
 export const getLiveBossTrackingStatus = async (guildId: string) => {
-  const session = await findActiveBossTrackingSession(guildId);
+  const session =
+    (await findActiveBossTrackingSession(guildId)) ??
+    (await findLatestBossTrackingSession(guildId));
 
   if (!session) {
-    throw new Error('No boss tracking session is active right now.');
+    throw new Error('No boss tracking session has been recorded yet.');
   }
 
   return session;

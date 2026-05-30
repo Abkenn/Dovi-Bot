@@ -502,6 +502,12 @@ export const setDefaultGameName = async (guildId: string, gameName: string) => {
   return updateDefaultGameName(guildId, gameName);
 };
 
+export const getDefaultStreamGameName = async (guildId: string) => {
+  const config = await findGuildStreamConfig(guildId);
+
+  return config?.defaultGameName ?? null;
+};
+
 export const setStreamInfo = async (input: SetStreamInfoInput) => {
   const config = await findGuildStreamConfig(input.guildId);
 

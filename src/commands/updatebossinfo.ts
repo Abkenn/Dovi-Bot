@@ -23,6 +23,13 @@ export class UpdateBossInfoCommand extends Command {
           .setDescription(this.description)
           .addStringOption((option) =>
             option
+              .setName('boss')
+              .setDescription('Boss to update, defaults to latest tracked boss')
+              .setRequired(false)
+              .setAutocomplete(true),
+          )
+          .addStringOption((option) =>
+            option
               .setName('name')
               .setDescription('Display name for the boss')
               .setRequired(false),
@@ -40,13 +47,6 @@ export class UpdateBossInfoCommand extends Command {
                 'Context words like area/game shorthand, comma-separated',
               )
               .setRequired(false),
-          )
-          .addStringOption((option) =>
-            option
-              .setName('boss')
-              .setDescription('Boss to tag, defaults to current tracked boss')
-              .setRequired(false)
-              .setAutocomplete(true),
           )
           .addStringOption((option) =>
             option

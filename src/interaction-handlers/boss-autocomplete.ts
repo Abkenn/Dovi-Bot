@@ -14,6 +14,7 @@ import {
   getBossAutocomplete,
   getBossGameAutocomplete,
 } from '../modules/bosses/bosses.service';
+import { getDefaultStreamGameName } from '../modules/stream-info/stream-info.service';
 
 const BOSS_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
@@ -23,9 +24,33 @@ const BOSS_AUTOCOMPLETE_COMMANDS = new Set([
   'trackbossstart',
   'updatebossinfo',
 ]);
+const COMMANDS_WITH_DEFAULT_STREAM_GAME = new Set([
+  'trackbossresume',
+  'trackbossstart',
+  'updatebossinfo',
+]);
 
 type BossAutocompleteParseData = {
   focusedOption: AutocompleteFocusedOption;
+};
+
+const getAutocompleteGameName = async (
+  interaction: AutocompleteInteraction,
+) => {
+  const gameName = interaction.options.getString('game');
+
+  if (gameName) {
+    return gameName;
+  }
+
+  if (
+    !interaction.guildId ||
+    !COMMANDS_WITH_DEFAULT_STREAM_GAME.has(interaction.commandName)
+  ) {
+    return null;
+  }
+
+  return getDefaultStreamGameName(interaction.guildId);
 };
 
 export class BossAutocompleteHandler extends InteractionHandler {
@@ -90,7 +115,7 @@ export class BossAutocompleteHandler extends InteractionHandler {
     }
 
     const bosses = await getBossAutocomplete({
-      gameName: interaction.options.getString('game'),
+      gameName: await getAutocompleteGameName(interaction),
       query: String(focusedOption.value),
     });
 

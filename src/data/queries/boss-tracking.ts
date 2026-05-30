@@ -29,3 +29,10 @@ export const findActiveBossTrackingSession = (guildId: string) =>
     include: bossTrackingSessionInclude,
     orderBy: { focusedAt: 'desc' },
   });
+
+export const findLatestBossTrackingSession = (guildId: string) =>
+  prisma.bossTrackingSession.findFirst({
+    where: { guildId },
+    include: bossTrackingSessionInclude,
+    orderBy: { focusedAt: 'desc' },
+  });
