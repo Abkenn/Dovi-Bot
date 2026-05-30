@@ -76,7 +76,8 @@ const normalizeForMatch = (value: string) =>
     .trim()
     .replace(/\s+/g, ' ');
 
-const toEntityKey = (value: string) => normalizeForMatch(value);
+export const toCommunityTopicEntityKey = (value: string) =>
+  normalizeForMatch(value);
 
 const toMatchTerm = (value: string): MatchTerm | null => {
   const normalized = normalizeForMatch(value);
@@ -187,7 +188,7 @@ const createMatcher = (seedPath = DEFAULT_SEED_PATH): CommunityTopicMatcher => {
       return [
         {
           topicKind: COMMUNITY_TOPIC_KINDS.GAME,
-          entityKey: toEntityKey(game.canonicalName),
+          entityKey: toCommunityTopicEntityKey(game.canonicalName),
           entityName: game.canonicalName,
           gameName: null,
           matchedAliases: matchedAliases.map((match) => match.raw),
@@ -255,7 +256,7 @@ const createMatcher = (seedPath = DEFAULT_SEED_PATH): CommunityTopicMatcher => {
       return [
         {
           topicKind: COMMUNITY_TOPIC_KINDS.BOSS,
-          entityKey: `${toEntityKey(boss.game)}:${toEntityKey(
+          entityKey: `${toCommunityTopicEntityKey(boss.game)}:${toCommunityTopicEntityKey(
             boss.canonicalName,
           )}`,
           entityName: boss.canonicalName,

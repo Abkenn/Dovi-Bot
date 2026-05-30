@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import {
+  COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
-  HELP_CATEGORIES,
 } from '../../../config/discord-command-categories';
 import { BossTrialStatus } from '../../../generated/prisma/enums';
 import {
@@ -72,7 +72,7 @@ export const buildBossTrialStatsEmbed = ({
 }) =>
   new EmbedBuilder()
     .setTitle(title)
-    .setColor(getCommandCategoryAccentColor(HELP_CATEGORIES.BOSS_TRIALS))
+    .setColor(getCommandCategoryAccentColor(COMMAND_CATEGORIES.BOSS_TRIALS))
     .addFields(
       {
         name: 'Totals',

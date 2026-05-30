@@ -6,9 +6,9 @@ import { runCommand } from '../modules/command-runner/run-command';
 import { buildCommunityTopicStatsEmbed } from '../modules/community-topics/community-topic.discord';
 import { getCommunityTopicStats } from '../modules/community-topics/community-topic.service';
 
-const METADATA = COMMAND_METADATA.COMMUNITY_TOPIC_STATS;
+const METADATA = COMMAND_METADATA.DAVI_COMMUNITY_TOPIC_STATS;
 
-export class ShowBossStatsMlCommand extends Command {
+export class DaviBossDiscussionStatsCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,

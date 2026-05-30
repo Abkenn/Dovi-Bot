@@ -17,6 +17,7 @@ import {
 
 const BOSS_STATS_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
+  'gamediscussionstats',
   'showbossstats',
 ]);
 

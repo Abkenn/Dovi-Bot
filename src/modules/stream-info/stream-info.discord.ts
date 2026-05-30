@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import {
+  COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
-  HELP_CATEGORIES,
 } from '../../config/discord-command-categories';
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import { getStreamInfo } from './stream-info.service';
@@ -60,7 +60,7 @@ const getOccurrenceFieldName = (
 export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
   const embed = new EmbedBuilder()
     .setTitle('Stream Info')
-    .setColor(getCommandCategoryAccentColor(HELP_CATEGORIES.STREAM_INFO));
+    .setColor(getCommandCategoryAccentColor(COMMAND_CATEGORIES.STREAM_INFO));
 
   if (data.current) {
     embed.addFields({

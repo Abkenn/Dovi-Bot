@@ -9,8 +9,8 @@ import {
   type TopLevelComponentData,
 } from 'discord.js';
 import {
+  COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
-  HELP_CATEGORIES,
 } from '../../../config/discord-command-categories';
 import {
   BossTrialStatus,
@@ -107,7 +107,7 @@ const getVoteBreakdownText = (trial: BossTrialView) => {
 };
 
 const BOSS_TRIAL_ACCENT_COLOR = getCommandCategoryAccentColor(
-  HELP_CATEGORIES.BOSS_TRIALS,
+  COMMAND_CATEGORIES.BOSS_TRIALS,
 );
 
 export const buildBossTrialEmbed = (trial: BossTrialView) => {

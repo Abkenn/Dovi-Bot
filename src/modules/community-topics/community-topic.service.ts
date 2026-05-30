@@ -1,10 +1,15 @@
 import {
   areCommunityTopicTablesPresent,
+  getCommunityTopicBossUserShares,
+  getCommunityTopicGameBossStats,
   getCommunityTopicSignalStats,
 } from '../../data/queries/community-topic-signals';
 import { upsertCommunityTopicMessageSignals } from '../../data/transactions/community-topic-signals';
 import type { CommunityTopicMessageInput } from './community-topic.types';
-import { getCommunityTopicMatcher } from './community-topic-matcher';
+import {
+  getCommunityTopicMatcher,
+  toCommunityTopicEntityKey,
+} from './community-topic-matcher';
 
 export const recordCommunityTopicMessage = async (
   input: CommunityTopicMessageInput,
@@ -40,4 +45,61 @@ export const getCommunityTopicStats = async (guildId: string) => {
   }
 
   return getCommunityTopicSignalStats(guildId);
+};
+
+export const getCommunityTopicBossDiscussionStats = async ({
+  guildId,
+  gameName,
+  bossName,
+}: {
+  guildId: string;
+  gameName: string;
+  bossName: string;
+}) => {
+  const tablesPresent = await areCommunityTopicTablesPresent();
+
+  if (!tablesPresent) {
+    return null;
+  }
+
+  const entityKey = `${toCommunityTopicEntityKey(
+    gameName,
+  )}:${toCommunityTopicEntityKey(bossName)}`;
+  const users = await getCommunityTopicBossUserShares({
+    guildId,
+    entityKey,
+  });
+  const totalCount = users.reduce((sum, user) => sum + user.count, 0);
+  const totalIntensity = users.reduce((sum, user) => sum + user.intensity, 0);
+
+  return {
+    gameName,
+    bossName,
+    entityKey,
+    totalCount,
+    totalIntensity,
+    users,
+  };
+};
+
+export const getCommunityTopicGameDiscussionStats = async ({
+  guildId,
+  gameName,
+}: {
+  guildId: string;
+  gameName: string;
+}) => {
+  const tablesPresent = await areCommunityTopicTablesPresent();
+
+  if (!tablesPresent) {
+    return null;
+  }
+
+  return {
+    gameName,
+    bosses: await getCommunityTopicGameBossStats({
+      guildId,
+      gameName,
+    }),
+  };
 };

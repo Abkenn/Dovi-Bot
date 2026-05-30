@@ -10,21 +10,24 @@ import {
   type TopLevelComponentData,
 } from 'discord.js';
 import type { BotGuildId } from '../../config/discord-access';
-import { COMMAND_CATEGORY_METADATA } from '../../config/discord-command-categories';
+import {
+  COMMAND_CATEGORIES,
+  COMMAND_CATEGORY_METADATA,
+} from '../../config/discord-command-categories';
 import {
   type CommandMetadata,
   HELP_AUDIENCES,
-  HELP_CATEGORIES,
   HELP_COMMANDS,
 } from '../../config/discord-command-metadata';
 
 const COMMAND_CATEGORY_ORDER = [
-  HELP_CATEGORIES.GENERAL,
-  HELP_CATEGORIES.STREAM_INFO,
-  HELP_CATEGORIES.BOSSES,
-  HELP_CATEGORIES.BOSS_TRIALS,
-  HELP_CATEGORIES.STAGING,
-  HELP_CATEGORIES.HELP,
+  COMMAND_CATEGORIES.GENERAL,
+  COMMAND_CATEGORIES.STREAM_INFO,
+  COMMAND_CATEGORIES.BOSSES,
+  COMMAND_CATEGORIES.BOSS_TRIALS,
+  COMMAND_CATEGORIES.COMMUNITY_STATS,
+  COMMAND_CATEGORIES.STAGING,
+  COMMAND_CATEGORIES.HELP,
 ] as const satisfies readonly CommandMetadata['helpCategory'][];
 
 export const HELP_TOPIC_SELECT_CUSTOM_ID = 'help:topic';
@@ -34,6 +37,7 @@ export type HelpTopicValue =
   | 'stream-info'
   | 'bosses'
   | 'boss-trials'
+  | 'community-stats'
   | 'staging'
   | 'general'
   | 'help';
@@ -50,42 +54,49 @@ const HELP_TOPIC_OPTIONS = [
     name: 'General',
     value: 'general',
     description: 'Basic commands',
-    category: HELP_CATEGORIES.GENERAL,
+    category: COMMAND_CATEGORIES.GENERAL,
     adminOnly: false,
   },
   {
     name: 'Stream Info',
     value: 'stream-info',
     description: 'Stream schedule and stream metadata commands',
-    category: HELP_CATEGORIES.STREAM_INFO,
+    category: COMMAND_CATEGORIES.STREAM_INFO,
     adminOnly: false,
   },
   {
     name: 'Bosses',
     value: 'bosses',
     description: 'Boss stats commands',
-    category: HELP_CATEGORIES.BOSSES,
+    category: COMMAND_CATEGORIES.BOSSES,
     adminOnly: false,
   },
   {
     name: 'Boss Trials',
     value: 'boss-trials',
     description: 'Boss trial poll and stats commands',
-    category: HELP_CATEGORIES.BOSS_TRIALS,
+    category: COMMAND_CATEGORIES.BOSS_TRIALS,
+    adminOnly: false,
+  },
+  {
+    name: 'Community Stats',
+    value: 'community-stats',
+    description: 'Community discussion stats commands',
+    category: COMMAND_CATEGORIES.COMMUNITY_STATS,
     adminOnly: false,
   },
   {
     name: 'Staging',
     value: 'staging',
     description: 'Staging-only command helpers',
-    category: HELP_CATEGORIES.STAGING,
+    category: COMMAND_CATEGORIES.STAGING,
     adminOnly: true,
   },
   {
     name: 'Help',
     value: 'help',
     description: 'Help command usage',
-    category: HELP_CATEGORIES.HELP,
+    category: COMMAND_CATEGORIES.HELP,
     adminOnly: false,
   },
 ] as const satisfies readonly {
@@ -265,7 +276,7 @@ const getTopicByValue = (topic: HelpTopicValue) =>
   HELP_TOPIC_OPTIONS.find((option) => option.value === topic);
 
 const getTopicTitle = (topicName: string): string => {
-  if (topicName === HELP_CATEGORIES.HELP) {
+  if (topicName === COMMAND_CATEGORIES.HELP) {
     return 'Help';
   }
 

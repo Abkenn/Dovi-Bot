@@ -1,16 +1,17 @@
 import { DISCORD_STYLE } from './discord-style';
 
-export const HELP_CATEGORIES = {
+export const COMMAND_CATEGORIES = {
   HELP: 'Help',
   GENERAL: 'General',
   STREAM_INFO: 'Stream Info',
   BOSSES: 'Bosses',
   BOSS_TRIALS: 'Boss Trials',
+  COMMUNITY_STATS: 'Community Stats',
   STAGING: 'Staging',
 } as const;
 
 export type CommandHelpCategory =
-  (typeof HELP_CATEGORIES)[keyof typeof HELP_CATEGORIES];
+  (typeof COMMAND_CATEGORIES)[keyof typeof COMMAND_CATEGORIES];
 
 export type CommandCategoryMetadata = {
   name: CommandHelpCategory;
@@ -18,28 +19,32 @@ export type CommandCategoryMetadata = {
 };
 
 export const COMMAND_CATEGORY_METADATA = {
-  [HELP_CATEGORIES.GENERAL]: {
-    name: HELP_CATEGORIES.GENERAL,
+  [COMMAND_CATEGORIES.GENERAL]: {
+    name: COMMAND_CATEGORIES.GENERAL,
     accentColor: 0x57f287,
   },
-  [HELP_CATEGORIES.STREAM_INFO]: {
-    name: HELP_CATEGORIES.STREAM_INFO,
+  [COMMAND_CATEGORIES.STREAM_INFO]: {
+    name: COMMAND_CATEGORIES.STREAM_INFO,
     accentColor: DISCORD_STYLE.BOT_ACCENT_COLOR,
   },
-  [HELP_CATEGORIES.BOSSES]: {
-    name: HELP_CATEGORIES.BOSSES,
+  [COMMAND_CATEGORIES.BOSSES]: {
+    name: COMMAND_CATEGORIES.BOSSES,
     accentColor: 0xf59e0b,
   },
-  [HELP_CATEGORIES.BOSS_TRIALS]: {
-    name: HELP_CATEGORIES.BOSS_TRIALS,
+  [COMMAND_CATEGORIES.BOSS_TRIALS]: {
+    name: COMMAND_CATEGORIES.BOSS_TRIALS,
     accentColor: 0xc026d3,
   },
-  [HELP_CATEGORIES.STAGING]: {
-    name: HELP_CATEGORIES.STAGING,
+  [COMMAND_CATEGORIES.COMMUNITY_STATS]: {
+    name: COMMAND_CATEGORIES.COMMUNITY_STATS,
+    accentColor: 0x14b8a6,
+  },
+  [COMMAND_CATEGORIES.STAGING]: {
+    name: COMMAND_CATEGORIES.STAGING,
     accentColor: 0x5865f2,
   },
-  [HELP_CATEGORIES.HELP]: {
-    name: HELP_CATEGORIES.HELP,
+  [COMMAND_CATEGORIES.HELP]: {
+    name: COMMAND_CATEGORIES.HELP,
     accentColor: 0xfee75c,
   },
 } as const satisfies Record<CommandHelpCategory, CommandCategoryMetadata>;
