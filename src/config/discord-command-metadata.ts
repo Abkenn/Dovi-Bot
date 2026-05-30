@@ -80,7 +80,7 @@ export const COMMAND_METADATA = {
     name: 'setgame',
     description: 'Sets the default game for future regular game streams.',
     guildIds: COMMAND_GUILDS.SET_GAME,
-    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.STREAM_INFO,
   },
   SET_STREAM_INFO: {

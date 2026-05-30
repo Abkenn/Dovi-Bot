@@ -1,5 +1,4 @@
 import { Command } from '@sapphire/framework';
-import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { updateLiveGameInfo } from '../modules/boss-tracking/boss-tracking.service';
@@ -27,7 +26,6 @@ export class SetGameCommand extends Command {
         builder
           .setName(this.name)
           .setDescription(this.description)
-          .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION)
           .addStringOption((option) =>
             option
               .setName('game')
