@@ -1,18 +1,12 @@
 import { Command } from '@sapphire/framework';
-import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandGuildAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { updateLiveGameInfo } from '../modules/boss-tracking/boss-tracking.service';
-import {
-  EPHEMERAL_COMMAND_REPLY,
-  runCommand,
-} from '../modules/command-runner/run-command';
-import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
-import { setDefaultGameName } from '../modules/stream-info/stream-info.service';
+import { runCommand } from '../modules/command-runner/run-command';
 
-const METADATA = COMMAND_METADATA.SET_GAME;
+const METADATA = COMMAND_METADATA.UPDATE_GAME_INFO;
 
-export class SetGameCommand extends Command {
+export class UpdateGameInfoCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -27,12 +21,18 @@ export class SetGameCommand extends Command {
         builder
           .setName(this.name)
           .setDescription(this.description)
-          .setDefaultMemberPermissions(ADMIN_COMMAND_PERMISSION)
           .addStringOption((option) =>
             option
               .setName('game')
-              .setDescription('Default game name')
-              .setRequired(true),
+              .setDescription('Game to update, defaults to the stream game')
+              .setRequired(false)
+              .setAutocomplete(true),
+          )
+          .addStringOption((option) =>
+            option
+              .setName('name')
+              .setDescription('Display name for the game')
+              .setRequired(false),
           )
           .addStringOption((option) =>
             option
@@ -60,26 +60,29 @@ export class SetGameCommand extends Command {
     return runCommand({
       interaction,
       commandName: this.name,
-      deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) => {
-        const game = interaction.options.getString('game', true);
-        const aliases = interaction.options.getString('aliases');
-        const tags = interaction.options.getString('tags');
-
-        await setDefaultGameName(guildId, game);
-        await updateLiveGameInfo({
+        const result = await updateLiveGameInfo({
           guildId,
           userId: interaction.user.id,
-          gameName: game,
-          aliases,
-          contextWords: tags,
+          gameName: interaction.options.getString('game'),
+          name: interaction.options.getString('name'),
+          aliases: interaction.options.getString('aliases'),
+          contextWords: interaction.options.getString('tags'),
         });
 
         return editReply({
-          content: `Default game for future regular game streams updated to **${game}**.`,
-          embeds: [await getStreamInfoEmbed(guildId)],
+          content: [
+            result.updatedName
+              ? `Updated game name to **${result.gameName}**.`
+              : `Updated **${result.gameName}**.`,
+            result.addedCount > 0
+              ? `Added ${result.addedCount} topic term${result.addedCount === 1 ? '' : 's'}.`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' '),
         });
       },
     });

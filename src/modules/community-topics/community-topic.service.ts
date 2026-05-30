@@ -18,7 +18,12 @@ export const recordCommunityTopicMessage = async (
     return { matchCount: 0, skipped: true };
   }
 
-  const matcher = getCommunityTopicMatcher();
+  const matcher = await getCommunityTopicMatcher();
+
+  if (!matcher) {
+    return { matchCount: 0, skipped: true };
+  }
+
   const matches = matcher.matchContent(input.content);
 
   if (matches.length === 0) {

@@ -18,7 +18,18 @@ export const areBossStatsTablesPresent = async () => {
 export const findBossGamesForAutocomplete = (normalizedQuery: string) =>
   prisma.bossGame.findMany({
     ...(normalizedQuery
-      ? { where: { normalizedName: { contains: normalizedQuery } } }
+      ? {
+          where: {
+            OR: [
+              { normalizedName: { contains: normalizedQuery } },
+              {
+                topicTerms: {
+                  some: { normalizedValue: { contains: normalizedQuery } },
+                },
+              },
+            ],
+          },
+        }
       : {}),
     orderBy: { name: 'asc' },
     take: AUTOCOMPLETE_LIMIT,
@@ -45,7 +56,16 @@ export const findBossesForAutocomplete = async ({
     where: {
       gameId: game.id,
       ...(normalizedBossQuery
-        ? { normalizedName: { contains: normalizedBossQuery } }
+        ? {
+            OR: [
+              { normalizedName: { contains: normalizedBossQuery } },
+              {
+                topicTerms: {
+                  some: { normalizedValue: { contains: normalizedBossQuery } },
+                },
+              },
+            ],
+          }
         : {}),
     },
     orderBy: { name: 'asc' },

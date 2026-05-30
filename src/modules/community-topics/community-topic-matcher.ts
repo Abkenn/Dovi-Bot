@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import {
+  areCommunityTopicCatalogTablesPresent,
+  type CommunityTopicCatalog,
+  findCommunityTopicCatalog,
+} from '../../data/queries/community-topic-catalog';
+import { BossTopicTermKind } from '../../generated/prisma/enums';
 import {
   COMMUNITY_TOPIC_KINDS,
   type CommunityTopicMatch,
@@ -9,7 +13,7 @@ import {
   type CommunityTopicSeedGame,
 } from './community-topic.types';
 
-const DEFAULT_SEED_PATH = 'data/boss-discussion-aliases.seed.json';
+const MATCHER_CACHE_TTL_MS = 30_000;
 const GENERIC_WEAK_ALIAS_TERMS = new Set([
   'angel',
   'ape',
@@ -66,6 +70,7 @@ type CommunityTopicMatcher = {
 };
 
 let cachedMatcher: CommunityTopicMatcher | null = null;
+let cachedMatcherLoadedAt = 0;
 
 const normalizeForMatch = (value: string) =>
   value
@@ -102,17 +107,6 @@ const buildTerms = (values: string[]) =>
           (otherTerm) => otherTerm.normalized === term.normalized,
         ) === index,
     );
-
-const loadSeed = (path: string): CommunityTopicSeed => {
-  const raw = readFileSync(resolve(path), 'utf8').replace(/^\uFEFF/, '');
-  const parsed = JSON.parse(raw) as CommunityTopicSeed;
-
-  if (!Array.isArray(parsed.games) || !Array.isArray(parsed.bosses)) {
-    throw new Error('Community topic seed must include games[] and bosses[].');
-  }
-
-  return parsed;
-};
 
 const buildGameIndex = (games: CommunityTopicSeedGame[]): GameIndex[] =>
   games.map((game) => ({
@@ -152,8 +146,37 @@ const getMatchedTerms = (normalizedContent: string, terms: MatchTerm[]) =>
 
 const roundScore = (value: number) => Math.round(value * 100) / 100;
 
-const createMatcher = (seedPath = DEFAULT_SEED_PATH): CommunityTopicMatcher => {
-  const seed = loadSeed(seedPath);
+const getTermValues = (
+  topicTerms: {
+    kind: BossTopicTermKind;
+    value: string;
+  }[],
+  kind: BossTopicTermKind,
+) => topicTerms.filter((term) => term.kind === kind).map((term) => term.value);
+
+const buildSeedFromCatalog = (
+  catalog: CommunityTopicCatalog,
+): CommunityTopicSeed => ({
+  games: catalog.map((game) => ({
+    canonicalName: game.name,
+    aliases: [
+      ...getTermValues(game.topicTerms, BossTopicTermKind.ALIAS),
+      ...getTermValues(game.topicTerms, BossTopicTermKind.CONTEXT),
+    ],
+  })),
+  bosses: catalog.flatMap((game) =>
+    game.bosses.map((boss) => ({
+      canonicalName: boss.name,
+      game: game.name,
+      aliases: getTermValues(boss.topicTerms, BossTopicTermKind.ALIAS),
+      weakAliases: getTermValues(boss.topicTerms, BossTopicTermKind.WEAK_ALIAS),
+      contextWords: getTermValues(boss.topicTerms, BossTopicTermKind.CONTEXT),
+      notes: '',
+    })),
+  ),
+});
+
+const createMatcher = (seed: CommunityTopicSeed): CommunityTopicMatcher => {
   const games = buildGameIndex(seed.games);
   const bosses = buildBossIndex(seed.bosses);
   const gameAliasTermsByName = new Map(
@@ -295,8 +318,28 @@ const createMatcher = (seedPath = DEFAULT_SEED_PATH): CommunityTopicMatcher => {
   };
 };
 
-export const getCommunityTopicMatcher = () => {
-  cachedMatcher ??= createMatcher();
+export const invalidateCommunityTopicMatcherCache = () => {
+  cachedMatcher = null;
+  cachedMatcherLoadedAt = 0;
+};
+
+export const getCommunityTopicMatcher = async () => {
+  const now = Date.now();
+
+  if (cachedMatcher && now - cachedMatcherLoadedAt < MATCHER_CACHE_TTL_MS) {
+    return cachedMatcher;
+  }
+
+  const tablesPresent = await areCommunityTopicCatalogTablesPresent();
+
+  if (!tablesPresent) {
+    return null;
+  }
+
+  cachedMatcher = createMatcher(
+    buildSeedFromCatalog(await findCommunityTopicCatalog()),
+  );
+  cachedMatcherLoadedAt = now;
 
   return cachedMatcher;
 };

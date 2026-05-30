@@ -23,11 +23,13 @@ const BOSS_AUTOCOMPLETE_COMMANDS = new Set([
   'trackbossresume',
   'trackbossstart',
   'updatebossinfo',
+  'updategameinfo',
 ]);
 const COMMANDS_WITH_DEFAULT_STREAM_GAME = new Set([
   'trackbossresume',
   'trackbossstart',
   'updatebossinfo',
+  'updategameinfo',
 ]);
 
 type BossAutocompleteParseData = {

@@ -176,6 +176,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.BOSSES,
   },
+  UPDATE_GAME_INFO: {
+    name: 'updategameinfo',
+    description: 'Updates a tracked game name, aliases, and topic tags.',
+    guildIds: COMMAND_GUILDS.UPDATE_GAME_INFO,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.BOSSES,
+  },
   DAVI_STREAM_INFO: {
     name: 'davistreaminfo',
     description: 'Shows prod env stream information from staging.',

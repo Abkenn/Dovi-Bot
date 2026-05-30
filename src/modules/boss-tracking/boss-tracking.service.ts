@@ -3,6 +3,7 @@ import {
   findLatestBossTrackingSession,
 } from '../../data/queries/boss-tracking';
 import { findGuildStreamConfig } from '../../data/queries/stream-info';
+import { updateBossGameTopicInfo } from '../../data/transactions/boss-topic-info';
 import {
   cancelBossTrackingSession,
   endBossTrackingSession,
@@ -17,6 +18,7 @@ import {
   BossTrackingEndResult,
 } from '../../generated/prisma/enums';
 import { normalizeBossName } from '../bosses/bosses.utils';
+import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
 
 const assertNonEmptyName = (value: string, label: string) => {
   const trimmed = value.trim();
@@ -144,6 +146,45 @@ const toTopicTerms = ({
     });
 };
 
+const toGameTopicTerms = ({
+  gameName,
+  aliases,
+  contextWords,
+}: {
+  gameName: string;
+  aliases: string[];
+  contextWords: string[];
+}) => {
+  const seen = new Set<string>();
+
+  return [
+    { kind: BossTopicTermKind.ALIAS, value: gameName },
+    ...aliases.map((value) => ({ kind: BossTopicTermKind.ALIAS, value })),
+    ...contextWords.map((value) => ({
+      kind: BossTopicTermKind.CONTEXT,
+      value,
+    })),
+  ]
+    .map((term) => ({
+      ...term,
+      normalizedValue: normalizeBossName(term.value),
+    }))
+    .filter((term) => {
+      if (!term.normalizedValue) {
+        return false;
+      }
+
+      const key = `${term.kind}:${term.normalizedValue}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+};
+
 export const startLiveBossTracking = async ({
   guildId,
   channelId,
@@ -178,7 +219,7 @@ export const startLiveBossTracking = async ({
 
   assertNonNegativeInteger(startDeaths, 'Starting deaths');
 
-  return startBossTrackingSession({
+  const session = await startBossTrackingSession({
     guildId,
     channelId,
     trackerUserId,
@@ -196,6 +237,10 @@ export const startLiveBossTracking = async ({
       contextWords: parseTopicTerms(contextWords ?? null),
     }),
   });
+
+  invalidateCommunityTopicMatcherCache();
+
+  return session;
 };
 
 export const recordLiveBossDeath = (guildId: string) =>
@@ -304,7 +349,7 @@ export const updateLiveBossInfo = async ({
     throw new Error('Add a name, alias, or tag.');
   }
 
-  return updateBossTrackingInfo({
+  const result = await updateBossTrackingInfo({
     guildId,
     createdByUserId: userId,
     topicTerms,
@@ -321,6 +366,58 @@ export const updateLiveBossInfo = async ({
       ? { normalizedBossName: normalizeBossName(cleanBossName) }
       : {}),
   });
+
+  invalidateCommunityTopicMatcherCache();
+
+  return result;
+};
+
+export const updateLiveGameInfo = async ({
+  guildId,
+  userId,
+  gameName,
+  name,
+  aliases,
+  contextWords,
+}: {
+  guildId: string;
+  userId: string;
+  gameName?: string | null;
+  name?: string | null;
+  aliases?: string | null;
+  contextWords?: string | null;
+}) => {
+  const cleanGameName = await resolveGameName({
+    guildId,
+    ...(gameName === undefined ? {} : { gameName }),
+  });
+  const topicTerms = toGameTopicTerms({
+    gameName: cleanGameName,
+    aliases: parseTopicTerms(aliases ?? null),
+    contextWords: parseTopicTerms(contextWords ?? null),
+  });
+  const cleanName = name?.trim() || null;
+
+  if (topicTerms.length === 0 && !cleanName) {
+    throw new Error('Add a name, alias, or tag.');
+  }
+
+  const result = await updateBossGameTopicInfo({
+    gameName: cleanGameName,
+    normalizedGameName: normalizeBossName(cleanGameName),
+    createdByUserId: userId,
+    topicTerms,
+    ...(cleanName
+      ? {
+          canonicalGameName: cleanName,
+          normalizedCanonicalGameName: normalizeBossName(cleanName),
+        }
+      : {}),
+  });
+
+  invalidateCommunityTopicMatcherCache();
+
+  return result;
 };
 
 export const endLiveBossTracking = ({

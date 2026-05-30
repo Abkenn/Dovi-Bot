@@ -206,6 +206,7 @@ model BossGame {
   bosses           Boss[]
   trials           BossTrial[]
   trackingSessions BossTrackingSession[]
+  topicTerms       BossGameTopicTerm[]
 }
 
 model Boss {
@@ -393,6 +394,22 @@ model BossTopicTerm {
   boss Boss @relation(fields: [bossId], references: [id], onDelete: Cascade)
 
   @@unique([bossId, kind, normalizedValue])
+  @@index([kind, normalizedValue])
+}
+
+model BossGameTopicTerm {
+  id             String            @id @default(cuid())
+  gameId         String
+  kind           BossTopicTermKind
+  value          String
+  normalizedValue String
+  createdByUserId String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  game BossGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, kind, normalizedValue])
   @@index([kind, normalizedValue])
 }
 
