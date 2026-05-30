@@ -168,3 +168,8 @@ vite.config.ts.timestamp-*
 # LLM
 AGENTS.md
 skills/*
+
+# Local analysis output
+.local/
+data/boss-discussion-backfill-*.json
+data/boss-discussion-backfill-*.jsonl

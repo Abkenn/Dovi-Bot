@@ -1,0 +1,3452 @@
+﻿{
+  "bosses": [
+    {
+      "aliases": ["Amygdala"],
+      "canonicalName": "Amygdala",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Nightmare Frontier",
+        "Defiled Chalice",
+        "chalice"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Blood-starved Beast", "Blood Starved Beast", "BSB"],
+      "canonicalName": "Blood-starved Beast",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Old Yharnam",
+        "poison"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["blood starved"]
+    },
+    {
+      "aliases": ["Bloody Crow of Cainhurst", "Bloody Crow"],
+      "canonicalName": "Bloody Crow of Cainhurst",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Cainhurst",
+        "Eileen",
+        "Grand Cathedral"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Crow"]
+    },
+    {
+      "aliases": ["Celestial Emissary"],
+      "canonicalName": "Celestial Emissary",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Upper Cathedral Ward",
+        "aliens"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Emissary"]
+    },
+    {
+      "aliases": ["Cleric Beast"],
+      "canonicalName": "Cleric Beast",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Great Bridge",
+        "Central Yharnam"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Darkbeast Paarl", "Paarl"],
+      "canonicalName": "Darkbeast Paarl",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Hypogean Gaol",
+        "Yahar'gul"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Darkbeast"]
+    },
+    {
+      "aliases": ["Ebrietas", "Ebrietas Daughter of the Cosmos"],
+      "canonicalName": "Ebrietas, Daughter of the Cosmos",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Daughter of the Cosmos",
+        "Upper Cathedral Ward",
+        "cosmos"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Father Gascoigne", "Gascoigne", "Papa G", "Papa Gascoigne"],
+      "canonicalName": "Father Gascoigne",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Central Yharnam",
+        "music box",
+        "beast phase"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Father"]
+    },
+    {
+      "aliases": ["Gehrman", "Gehrman the First Hunter", "First Hunter"],
+      "canonicalName": "Gehrman, The First Hunter",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Hunter's Dream",
+        "scythe",
+        "moon"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Hunter"]
+    },
+    {
+      "aliases": [
+        "Lady Maria",
+        "Maria of the Astral Clocktower",
+        "Lady Maria of the Astral Clocktower"
+      ],
+      "canonicalName": "Lady Maria of the Astral Clocktower",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Astral Clocktower",
+        "Old Hunters",
+        "Rakuyo"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Maria"]
+    },
+    {
+      "aliases": ["Laurence", "Laurence the First Vicar", "First Vicar"],
+      "canonicalName": "Laurence, the First Vicar",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Old Hunters",
+        "flaming cleric beast",
+        "Research Hall"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Vicar"]
+    },
+    {
+      "aliases": ["Living Failures"],
+      "canonicalName": "Living Failures",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Research Hall",
+        "meteor"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Failures"]
+    },
+    {
+      "aliases": [
+        "Ludwig",
+        "Ludwig the Accursed",
+        "Ludwig the Holy Blade",
+        "Holy Blade"
+      ],
+      "canonicalName": "Ludwig, the Accursed / Holy Blade",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Old Hunters",
+        "moonlight sword",
+        "horse"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Martyr Logarius", "Logarius"],
+      "canonicalName": "Martyr Logarius",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Cainhurst",
+        "rooftop",
+        "crown"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Martyr"]
+    },
+    {
+      "aliases": ["Mergo's Wet Nurse", "Mergos Wet Nurse", "Wet Nurse"],
+      "canonicalName": "Mergo's Wet Nurse",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Nightmare of Mensis",
+        "Mergo",
+        "nightmare"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Mergo"]
+    },
+    {
+      "aliases": [
+        "Micolash",
+        "Micolash Host of the Nightmare",
+        "Host of the Nightmare"
+      ],
+      "canonicalName": "Micolash, Host of the Nightmare",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Nightmare of Mensis",
+        "cage head",
+        "Kos parasite"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Moon Presence"],
+      "canonicalName": "Moon Presence",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "secret ending",
+        "Hunter's Dream",
+        "umbilical cords"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Orphan of Kos", "OoK", "Orphan"],
+      "canonicalName": "Orphan of Kos",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Fishing Hamlet",
+        "Old Hunters",
+        "placenta"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Kos"]
+    },
+    {
+      "aliases": ["Rom", "Rom the Vacuous Spider", "Vacuous Spider"],
+      "canonicalName": "Rom, the Vacuous Spider",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Byrgenwerth",
+        "Moonside Lake",
+        "spiders"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Spider"]
+    },
+    {
+      "aliases": ["Shadows of Yharnam", "Shadow of Yharnam", "SoY"],
+      "canonicalName": "Shadows of Yharnam",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Forbidden Woods",
+        "three bosses",
+        "snakes"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Shadows"]
+    },
+    {
+      "aliases": ["The One Reborn", "One Reborn"],
+      "canonicalName": "The One Reborn",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Yahar'gul",
+        "bell maidens",
+        "corpse pile"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Reborn"]
+    },
+    {
+      "aliases": ["Vicar Amelia", "Amelia"],
+      "canonicalName": "Vicar Amelia",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Grand Cathedral",
+        "cathedral ward",
+        "pendant"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Vicar"]
+    },
+    {
+      "aliases": ["Witch of Hemwick", "Witches of Hemwick", "Hemwick Witches"],
+      "canonicalName": "Witch of Hemwick",
+      "contextWords": [
+        "Bloodborne",
+        "BB",
+        "hunter",
+        "Yharnam",
+        "Hemwick Charnel Lane",
+        "mad ones"
+      ],
+      "game": "Bloodborne",
+      "notes": "",
+      "weakAliases": ["Witch", "Witches"]
+    },
+    {
+      "aliases": ["Angel and Devil", "The Angel and The Devil"],
+      "canonicalName": "Angel and Devil",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "secret boss",
+        "graveyard"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Angel", "Devil"]
+    },
+    {
+      "aliases": ["Baroness Von Bon Bon", "Baroness von Bon Bon", "Bon Bon"],
+      "canonicalName": "Baroness Von Bon Bon",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Sugarland Shimmy",
+        "candy"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Baroness"]
+    },
+    {
+      "aliases": ["Beppi the Clown", "Beppi"],
+      "canonicalName": "Beppi the Clown",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Carnival Kerfuffle",
+        "roller coaster"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Clown"]
+    },
+    {
+      "aliases": ["Cagney Carnation", "Cagney"],
+      "canonicalName": "Cagney Carnation",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Floral Fury",
+        "flower"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Cala Maria"],
+      "canonicalName": "Cala Maria",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "High Seas Hi-Jinx",
+        "mermaid",
+        "Medusa"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Cala", "Maria"]
+    },
+    {
+      "aliases": ["Captain Brineybeard", "Brineybeard"],
+      "canonicalName": "Captain Brineybeard",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Shootin N Lootin",
+        "pirate",
+        "ship"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Captain"]
+    },
+    {
+      "aliases": ["Chef Saltbaker", "Saltbaker"],
+      "canonicalName": "Chef Saltbaker",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "A Dish to Die For",
+        "DLC final"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Chef"]
+    },
+    {
+      "aliases": ["Djimmi the Great", "Djimmi"],
+      "canonicalName": "Djimmi the Great",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Pyramid Peril",
+        "genie"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Great"]
+    },
+    {
+      "aliases": [
+        "Dr. Kahl's Robot",
+        "Dr Kahls Robot",
+        "Dr. Kahl",
+        "Dr Kahl",
+        "Kahl's Robot"
+      ],
+      "canonicalName": "Dr. Kahl's Robot",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Junkyard Jive",
+        "plane"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Robot"]
+    },
+    {
+      "aliases": ["Esther Winchester", "Eshter Winchester"],
+      "canonicalName": "Esther Winchester",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "DLC",
+        "High-Noon Hoopla",
+        "cow"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Esther"]
+    },
+    {
+      "aliases": ["Glumstone the Giant", "Glumstone"],
+      "canonicalName": "Glumstone the Giant",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "DLC",
+        "Gnome Way Out"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Giant"]
+    },
+    {
+      "aliases": ["Goopy Le Grande", "Goopy"],
+      "canonicalName": "Goopy Le Grande",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Ruse of an Ooze",
+        "slime"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Grim Matchstick", "Grim Matchsticks"],
+      "canonicalName": "Grim Matchstick",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Fiery Frolic",
+        "dragon"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Grim"]
+    },
+    {
+      "aliases": ["Hilda Berg"],
+      "canonicalName": "Hilda Berg",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Threatenin Zeppelin",
+        "moon",
+        "plane"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Hilda"]
+    },
+    {
+      "aliases": ["King Dice"],
+      "canonicalName": "King Dice",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "casino",
+        "All Bets Are Off"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Dice"]
+    },
+    {
+      "aliases": ["Moonshine Mob"],
+      "canonicalName": "Moonshine Mob",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "DLC",
+        "Bootlegger Boogie"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Mob"]
+    },
+    {
+      "aliases": ["Mortimer Freeze", "Mortimer"],
+      "canonicalName": "Mortimer Freeze",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "DLC",
+        "Snow Cult Scuffle"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Freeze"]
+    },
+    {
+      "aliases": ["Phantom Express", "The Phantom Express"],
+      "canonicalName": "Phantom Express",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Railroad Wrath",
+        "train",
+        "ghost"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Express"]
+    },
+    {
+      "aliases": ["Ribby and Croaks", "Ribby & Croaks"],
+      "canonicalName": "Ribby and Croaks",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Clip Joint Calamity",
+        "frogs"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Ribby", "Croaks"]
+    },
+    {
+      "aliases": ["Rumor Honeybottoms"],
+      "canonicalName": "Rumor Honeybottoms",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Honeycomb Herald",
+        "bee"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Rumor"]
+    },
+    {
+      "aliases": ["Sally Stageplay", "Sally"],
+      "canonicalName": "Sally Stageplay",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Dramatic Fanatic",
+        "theater"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Stageplay"]
+    },
+    {
+      "aliases": ["The Devil", "Cuphead Devil"],
+      "canonicalName": "The Devil",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "One Hell of a Time",
+        "final boss"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Devil"]
+    },
+    {
+      "aliases": ["The Howling Aces", "Howling Aces"],
+      "canonicalName": "The Howling Aces",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "DLC",
+        "Doggone Dogfight"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Aces"]
+    },
+    {
+      "aliases": ["The Root Pack", "Root Pack"],
+      "canonicalName": "The Root Pack",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Botanic Panic",
+        "vegetables"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Root"]
+    },
+    {
+      "aliases": ["Wally Warbles", "Wally"],
+      "canonicalName": "Wally Warbles",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Aviary Action",
+        "bird"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Warbles"]
+    },
+    {
+      "aliases": ["Werner Werman", "Werner"],
+      "canonicalName": "Werner Werman",
+      "contextWords": [
+        "Cuphead",
+        "Inkwell",
+        "DLC",
+        "Delicious Last Course",
+        "Murine Corps",
+        "rat"
+      ],
+      "game": "Cuphead",
+      "notes": "",
+      "weakAliases": ["Werman"]
+    },
+    {
+      "aliases": ["Alecto the Black Knife", "Alecto", "Black Knife Ringleader"],
+      "canonicalName": "Alecto, Black Knife Ringleader",
+      "contextWords": ["Elden Ring", "ER", "Tarnished", "Evergaol", "Tiche"],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Black Knife"]
+    },
+    {
+      "aliases": ["Ancestral Spirit"],
+      "canonicalName": "Ancestral Spirit",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Siofra River",
+        "ancestor"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Spirit"]
+    },
+    {
+      "aliases": [
+        "Astel",
+        "Astel Naturalborn of the Void",
+        "Astel the wtf is that",
+        "Naturalborn of the Void"
+      ],
+      "canonicalName": "Astel, Naturalborn of the Void",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Lake of Rot",
+        "Ranni",
+        "void"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Bayle the Dread", "Bayle"],
+      "canonicalName": "Bayle the Dread",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Jagged Peak",
+        "Igon"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Commander Gaius", "Gaius"],
+      "canonicalName": "Commander Gaius",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "boar",
+        "Shadow Keep"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Commander"]
+    },
+    {
+      "aliases": ["Divine Beast Dancing Lion", "Dancing Lion"],
+      "canonicalName": "Divine Beast Dancing Lion",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Belurat"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Divine Beast", "Lion"]
+    },
+    {
+      "aliases": ["Draconic Tree Sentinel", "DTS"],
+      "canonicalName": "Draconic Tree Sentinel",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Leyndell",
+        "Farum Azula",
+        "horse"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Tree Sentinel"]
+    },
+    {
+      "aliases": ["Dragonlord Placidusax", "Placidusax", "Placi"],
+      "canonicalName": "Dragonlord Placidusax",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Farum Azula",
+        "time storm"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Dragonlord"]
+    },
+    {
+      "aliases": ["Fire Giant"],
+      "canonicalName": "Fire Giant",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Mountaintops",
+        "forge"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Glintstone Dragon Smarag",
+        "Glintostone Dragon Smarag",
+        "Smarag"
+      ],
+      "canonicalName": "Glintstone Dragon Smarag",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Liurnia",
+        "Academy key"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Glintstone Dragon"]
+    },
+    {
+      "aliases": [
+        "Godfrey piss color edition",
+        "Golden Godfrey",
+        "Goldfrey",
+        "Godfrey Golden Shade",
+        "Godfrey Shade"
+      ],
+      "canonicalName": "Godfrey, First Elden Lord (Golden Shade)",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Leyndell",
+        "golden shade",
+        "projection"
+      ],
+      "game": "Elden Ring",
+      "notes": "Godfrey alone is ambiguous with the later Godfrey / Hoarah Loux fight.",
+      "weakAliases": ["Godfrey"]
+    },
+    {
+      "aliases": [
+        "Godfrey/Hoarah Loux",
+        "Godfrey Hoarah Loux",
+        "Hoarah Loux",
+        "Godfrey First Elden Lord"
+      ],
+      "canonicalName": "Godfrey, First Elden Lord / Hoarah Loux",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Ashen Capital",
+        "warrior",
+        "phase 2"
+      ],
+      "game": "Elden Ring",
+      "notes": "Godfrey alone is ambiguous with Golden Shade Godfrey.",
+      "weakAliases": ["Godfrey"]
+    },
+    {
+      "aliases": ["Godrick the Grafted", "Godrick"],
+      "canonicalName": "Godrick the Grafted",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Stormveil",
+        "graft",
+        "dragon hand"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Grafted"]
+    },
+    {
+      "aliases": ["Godskin Duo", "GS Duo"],
+      "canonicalName": "Godskin Duo",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Farum Azula",
+        "apostle",
+        "noble"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Godskin"]
+    },
+    {
+      "aliases": ["Jori The Elder Inquisitor", "Jori", "Elder Inquisitor"],
+      "canonicalName": "Jori, Elder Inquisitor",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Abyssal Woods"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Inquisitor"]
+    },
+    {
+      "aliases": ["Leonine Misbegotten"],
+      "canonicalName": "Leonine Misbegotten",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Castle Morne",
+        "grafted blade"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Misbegotten"]
+    },
+    {
+      "aliases": ["Lichdragon Fortissax", "Fortissax"],
+      "canonicalName": "Lichdragon Fortissax",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Fia",
+        "Deeproot Depths"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Lichdragon"]
+    },
+    {
+      "aliases": [
+        "Loretta of the Haligtree",
+        "Loretta",
+        "Loretta Knight of the Haligtree"
+      ],
+      "canonicalName": "Loretta, Knight of the Haligtree",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Haligtree",
+        "horse",
+        "Caria"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Magma Wyrm Makar", "Makar"],
+      "canonicalName": "Magma Wyrm Makar",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Ruin-Strewn Precipice",
+        "Altus"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Magma Wyrm"]
+    },
+    {
+      "aliases": [
+        "Malenia",
+        "Malenia Blade of Miquella",
+        "Blade of Miquella",
+        "Goddess of Rot"
+      ],
+      "canonicalName": "Malenia, Blade of Miquella",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Haligtree",
+        "Waterfowl",
+        "rot",
+        "Miquella"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Maliketh the Black Blade", "Maliketh", "Black Blade"],
+      "canonicalName": "Maliketh, the Black Blade",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Farum Azula",
+        "Beast Clergyman",
+        "Destined Death"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Margit the Fell Omen", "Margit"],
+      "canonicalName": "Margit, the Fell Omen",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Stormveil",
+        "Limgrave",
+        "shackles"
+      ],
+      "game": "Elden Ring",
+      "notes": "Margit is related to Morgott, but the boss encounter is distinct.",
+      "weakAliases": ["Fell Omen"]
+    },
+    {
+      "aliases": ["Messmer the Impaler", "Messmer"],
+      "canonicalName": "Messmer the Impaler",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Shadow Keep",
+        "serpentflame"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Metyr Mother of Fingers", "Metyr", "Mother of Fingers"],
+      "canonicalName": "Metyr, Mother of Fingers",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Finger Ruins",
+        "Ymir"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Midra",
+        "Midra Lord of Frenzied Flame",
+        "Lord of Frenzied Flame"
+      ],
+      "canonicalName": "Midra, Lord of Frenzied Flame",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Abyssal Woods",
+        "frenzy"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Miquella's simps",
+        "Miquellas simps",
+        "Needle Knight Leda",
+        "Leda and Allies",
+        "Leda gank",
+        "Miquella's Followers"
+      ],
+      "canonicalName": "Needle Knight Leda and Allies",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Enir-Ilim",
+        "Ansbach",
+        "Thiollier"
+      ],
+      "game": "Elden Ring",
+      "notes": "Source name is a joke alias for the Leda allies fight.",
+      "weakAliases": ["Leda"]
+    },
+    {
+      "aliases": [
+        "Mogh, Lord of Blood",
+        "Mohg Lord of Blood",
+        "Mohg",
+        "Mogh",
+        "Lord of Blood"
+      ],
+      "canonicalName": "Mohg, Lord of Blood",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Mohgwyn Palace",
+        "Nihil",
+        "bloodflame"
+      ],
+      "game": "Elden Ring",
+      "notes": "Mohg is sometimes misspelled as Mogh.",
+      "weakAliases": ["Mog"]
+    },
+    {
+      "aliases": ["Morgott the Omen King", "Morgott", "Omen King"],
+      "canonicalName": "Morgott, the Omen King",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Leyndell",
+        "Margit",
+        "throne"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Promised Consort Radahn",
+        "PCR",
+        "Consort Radahn",
+        "Radahn Consort"
+      ],
+      "canonicalName": "Promised Consort Radahn",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Shadow of the Erdtree",
+        "Miquella",
+        "Enir-Ilim"
+      ],
+      "game": "Elden Ring",
+      "notes": "Radahn alone is ambiguous with Starscourge Radahn.",
+      "weakAliases": ["Radahn", "Consort"]
+    },
+    {
+      "aliases": ["Putrescent Knight"],
+      "canonicalName": "Putrescent Knight",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Fissure",
+        "Trina"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Putrescent"]
+    },
+    {
+      "aliases": [
+        "Radagon and Elden Beast",
+        "Radabeast",
+        "Radagon",
+        "Elden Beast"
+      ],
+      "canonicalName": "Radagon of the Golden Order / Elden Beast",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "final boss",
+        "Marika",
+        "Elden Throne"
+      ],
+      "game": "Elden Ring",
+      "notes": "Radagon and Elden Beast are commonly discussed as one final-boss sequence.",
+      "weakAliases": ["Beast"]
+    },
+    {
+      "aliases": ["Red Wolf of Radagon", "Red Wolf"],
+      "canonicalName": "Red Wolf of Radagon",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Raya Lucaria",
+        "Academy"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Wolf"]
+    },
+    {
+      "aliases": ["Regal Ancestral Spirit"],
+      "canonicalName": "Regal Ancestral Spirit",
+      "contextWords": ["Elden Ring", "ER", "Tarnished", "Nokron", "ancestor"],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Regal", "Spirit"]
+    },
+    {
+      "aliases": ["Rellana Twin Moon Knight", "Rellana", "Twin Moon Knight"],
+      "canonicalName": "Rellana, Twin Moon Knight",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Castle Ensis",
+        "moon"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Rennala of the Full Moon",
+        "Rennala",
+        "Queen of the Full Moon"
+      ],
+      "canonicalName": "Rennala, Queen of the Full Moon",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Raya Lucaria",
+        "rebirth",
+        "moon"
+      ],
+      "game": "Elden Ring",
+      "notes": "Rennala can be confused by typo with Rellana.",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Rick Soldier of God",
+        "Soldier of Godrick",
+        "Godrick Soldier",
+        "Rick, Soldier of God"
+      ],
+      "canonicalName": "Rick, Soldier of God",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "tutorial",
+        "meme",
+        "Stranded Graveyard"
+      ],
+      "game": "Elden Ring",
+      "notes": "Meme alias for Soldier of Godrick.",
+      "weakAliases": ["Rick"]
+    },
+    {
+      "aliases": ["Romina Saint of the Bud", "Romina"],
+      "canonicalName": "Romina, Saint of the Bud",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Church of the Bud",
+        "rot"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Rykard Lord of Blasphemy", "Rykard", "Lord of Blasphemy"],
+      "canonicalName": "Rykard, Lord of Blasphemy",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Volcano Manor",
+        "serpent",
+        "TOGETHAA"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Scadutree Avatar", "Scadu Avatar"],
+      "canonicalName": "Scadutree Avatar",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Shadow Keep",
+        "sunflower"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Avatar"]
+    },
+    {
+      "aliases": ["Starscourge Radahn", "Radahn Festival", "General Radahn"],
+      "canonicalName": "Starscourge Radahn",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "Caelid",
+        "Redmane Castle",
+        "festival",
+        "meteor"
+      ],
+      "game": "Elden Ring",
+      "notes": "Radahn alone is ambiguous with Promised Consort Radahn.",
+      "weakAliases": ["Radahn"]
+    },
+    {
+      "aliases": [
+        "That's probably not a hippo",
+        "Thats probably not a hippo",
+        "Golden Hippopotamus",
+        "Golden Hippo"
+      ],
+      "canonicalName": "Golden Hippopotamus",
+      "contextWords": [
+        "Elden Ring",
+        "ER",
+        "Tarnished",
+        "DLC",
+        "SOTE",
+        "Shadow Keep"
+      ],
+      "game": "Elden Ring",
+      "notes": "",
+      "weakAliases": ["Hippo"]
+    },
+    {
+      "aliases": ["Broken Vessel"],
+      "canonicalName": "Broken Vessel",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Ancient Basin",
+        "Lost Kin"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Vessel"]
+    },
+    {
+      "aliases": ["Brooding Mawlek", "Mawlek"],
+      "canonicalName": "Brooding Mawlek",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Forgotten Crossroads"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Crystal Guardian"],
+      "canonicalName": "Crystal Guardian",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Crystal Peak",
+        "bench"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Guardian"]
+    },
+    {
+      "aliases": ["Dung Defender", "Ogrim"],
+      "canonicalName": "Dung Defender",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Royal Waterways",
+        "Isma"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Defender"]
+    },
+    {
+      "aliases": ["Elder Hu"],
+      "canonicalName": "Elder Hu",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Fungal Wastes"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Hu"]
+    },
+    {
+      "aliases": ["Enraged Guardian"],
+      "canonicalName": "Enraged Guardian",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Crystal Peak",
+        "Crystal Guardian rematch"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Guardian"]
+    },
+    {
+      "aliases": ["Failed Champion"],
+      "canonicalName": "Failed Champion",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "False Knight dream",
+        "Godhome"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Champion"]
+    },
+    {
+      "aliases": ["False Knight"],
+      "canonicalName": "False Knight",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Forgotten Crossroads",
+        "maggot"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Knight"]
+    },
+    {
+      "aliases": ["FlukeMarm", "Flukemarm"],
+      "canonicalName": "Flukemarm",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Royal Waterways",
+        "flukes"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Galien"],
+      "canonicalName": "Galien",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Deepnest"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Gorb"],
+      "canonicalName": "Gorb",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Howling Cliffs",
+        "ascend"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Grey Prince Zote", "GPZ", "Prince Zote"],
+      "canonicalName": "Grey Prince Zote",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Bretta",
+        "dream",
+        "Godhome"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Zote"]
+    },
+    {
+      "aliases": ["Grimm", "Troupe Master Grimm"],
+      "canonicalName": "Grimm",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Grimm Troupe",
+        "Nightmare Lantern"
+      ],
+      "game": "Hollow Knight",
+      "notes": "Grimm alone can mean Troupe Master Grimm or Nightmare King Grimm.",
+      "weakAliases": ["Troupe Master"]
+    },
+    {
+      "aliases": ["Gruz Mother"],
+      "canonicalName": "Gruz Mother",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Forgotten Crossroads"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Gruz"]
+    },
+    {
+      "aliases": ["Hive Knight"],
+      "canonicalName": "Hive Knight",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "The Hive",
+        "Vespa"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Hive"]
+    },
+    {
+      "aliases": [
+        "Hollow Knight + Radiance",
+        "The Hollow Knight + Radiance",
+        "THK Radiance",
+        "Radiance ending"
+      ],
+      "canonicalName": "The Hollow Knight + Radiance",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "final boss",
+        "Temple of the Black Egg"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Radiance", "THK"]
+    },
+    {
+      "aliases": ["Hornet Protector", "Hornet 1"],
+      "canonicalName": "Hornet Protector",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Greenpath",
+        "Protector"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Hornet"]
+    },
+    {
+      "aliases": ["Hornet Sentinel", "Hornet 2"],
+      "canonicalName": "Hornet Sentinel",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Kingdom's Edge",
+        "Sentinel"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Hornet"]
+    },
+    {
+      "aliases": ["Lost Kin"],
+      "canonicalName": "Lost Kin",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Broken Vessel dream",
+        "Ancient Basin"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Kin"]
+    },
+    {
+      "aliases": ["Mantis Lords"],
+      "canonicalName": "Mantis Lords",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Mantis Village",
+        "three sisters"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Mantis"]
+    },
+    {
+      "aliases": ["Markoth"],
+      "canonicalName": "Markoth",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Kingdom's Edge",
+        "shield"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Marmu"],
+      "canonicalName": "Marmu",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Queen's Gardens"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Massive Moss Charger", "MMC"],
+      "canonicalName": "Massive Moss Charger",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Greenpath"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Moss Charger"]
+    },
+    {
+      "aliases": ["Nightmare King Grimm", "NKG"],
+      "canonicalName": "Nightmare King Grimm",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Grimm Troupe",
+        "Nightmare Heart"
+      ],
+      "game": "Hollow Knight",
+      "notes": "Grimm alone can mean Troupe Master Grimm or Nightmare King Grimm.",
+      "weakAliases": ["Grimm"]
+    },
+    {
+      "aliases": ["No Eyes"],
+      "canonicalName": "No Eyes",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Stone Sanctuary"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Eyes"]
+    },
+    {
+      "aliases": ["Nosk"],
+      "canonicalName": "Nosk",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Deepnest",
+        "mimic"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Soul Master"],
+      "canonicalName": "Soul Master",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Soul Sanctum"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Master"]
+    },
+    {
+      "aliases": ["Soul Tyrant"],
+      "canonicalName": "Soul Tyrant",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Soul Master dream",
+        "Soul Sanctum"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Tyrant"]
+    },
+    {
+      "aliases": ["Soul Warrior"],
+      "canonicalName": "Soul Warrior",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Soul Sanctum"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Warrior"]
+    },
+    {
+      "aliases": [
+        "Soul Warrior 2",
+        "Second Soul Warrior",
+        "Soul Warrior rematch"
+      ],
+      "canonicalName": "Soul Warrior 2",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Soul Sanctum",
+        "Elegant Key",
+        "rematch"
+      ],
+      "game": "Hollow Knight",
+      "notes": "Variant should be kept separate from the first Soul Warrior encounter.",
+      "weakAliases": ["Warrior"]
+    },
+    {
+      "aliases": ["The Collector", "Collector"],
+      "canonicalName": "The Collector",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Tower of Love",
+        "jars"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Collector"]
+    },
+    {
+      "aliases": ["The Hollow Knight", "THK"],
+      "canonicalName": "The Hollow Knight",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "final boss",
+        "Black Egg"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Hollow Knight"]
+    },
+    {
+      "aliases": ["Traitor Lord Gauntlet", "Traitor Lord"],
+      "canonicalName": "Traitor Lord",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Queen's Gardens",
+        "Cloth"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Traitor"]
+    },
+    {
+      "aliases": ["Uumuu"],
+      "canonicalName": "Uumuu",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Teacher's Archives",
+        "Quirrel"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Vengefly King"],
+      "canonicalName": "Vengefly King",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Greenpath",
+        "Colosseum"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Vengefly"]
+    },
+    {
+      "aliases": ["Watcher Knights"],
+      "canonicalName": "Watcher Knights",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Watcher Spire",
+        "Lurien"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Watchers"]
+    },
+    {
+      "aliases": ["White Defender"],
+      "canonicalName": "White Defender",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Dung Defender dream",
+        "Godhome"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": ["Defender"]
+    },
+    {
+      "aliases": ["Xero"],
+      "canonicalName": "Xero",
+      "contextWords": [
+        "Hollow Knight",
+        "HK",
+        "Hallownest",
+        "Godhome",
+        "Warrior Dream",
+        "Resting Grounds"
+      ],
+      "game": "Hollow Knight",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Anguished Guardian"],
+      "canonicalName": "Anguished Guardian",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Guardian"]
+    },
+    {
+      "aliases": ["Arlecchino The Blood Artist", "Arlecchino", "Blood Artist"],
+      "canonicalName": "Arlecchino, The Blood Artist",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Black Cat"],
+      "canonicalName": "Black Cat",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "stalker",
+        "Red Fox"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Cat"]
+    },
+    {
+      "aliases": [
+        "Black Rabbit Brotherhood",
+        "BRB",
+        "BRB1",
+        "Eldest of the Black Rabbit Brotherhood"
+      ],
+      "canonicalName": "Black Rabbit Brotherhood",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Malum District",
+        "eldest"
+      ],
+      "game": "Lies of P",
+      "notes": "BRB can also refer to the rematch.",
+      "weakAliases": ["Rabbits"]
+    },
+    {
+      "aliases": [
+        "Black Rabbit Brotherhood 2",
+        "BRB2",
+        "BRB rematch",
+        "Black Rabbit Brotherhood rematch"
+      ],
+      "canonicalName": "Black Rabbit Brotherhood 2",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Relic of Trismegistus",
+        "rematch"
+      ],
+      "game": "Lies of P",
+      "notes": "BRB alone is ambiguous with the first Brotherhood fight.",
+      "weakAliases": ["BRB", "Rabbits"]
+    },
+    {
+      "aliases": ["Champion Victor", "Victor"],
+      "canonicalName": "Champion Victor",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Grand Exhibition",
+        "boxer"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Champion"]
+    },
+    {
+      "aliases": ["Corrupted Parade Master", "Corrupted Parade"],
+      "canonicalName": "Corrupted Parade Master",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Krat Central Station",
+        "corrupted"
+      ],
+      "game": "Lies of P",
+      "notes": "Parade Master alone is ambiguous with the first Parade Master.",
+      "weakAliases": ["Parade Master"]
+    },
+    {
+      "aliases": ["Door Guardian"],
+      "canonicalName": "Door Guardian",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Arche Abbey",
+        "shock"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Guardian"]
+    },
+    {
+      "aliases": ["Fallen Archbishop Andreus", "Archbishop Andreus", "Andreus"],
+      "canonicalName": "Fallen Archbishop Andreus",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "St. Frangelico Cathedral"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Archbishop"]
+    },
+    {
+      "aliases": [
+        "Fuoco, the King's Flame",
+        "Fuoco the King's Flame",
+        "Fuoco",
+        "King's Flame"
+      ],
+      "canonicalName": "Fuoco, King's Flame",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Venigni Works",
+        "flame"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Green Monster of the Swamp",
+        "Green Monster",
+        "Swamp Monster",
+        "Puppet-Devouring Green Monster"
+      ],
+      "canonicalName": "Green Monster of the Swamp",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Barren Swamp",
+        "phase 2"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Monster"]
+    },
+    {
+      "aliases": ["Laxasia the Complete", "Laxasia"],
+      "canonicalName": "Laxasia the Complete",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Arche Abbey",
+        "lightning"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Lumacchio"],
+      "canonicalName": "Lumacchio",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Mad Clown Puppet", "Mad Clown"],
+      "canonicalName": "Mad Clown Puppet",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Rosa Isabelle Street",
+        "puppet"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Clown"]
+    },
+    {
+      "aliases": ["Mad Donkey"],
+      "canonicalName": "Mad Donkey",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "stalker",
+        "Krat City Hall"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Donkey"]
+    },
+    {
+      "aliases": [
+        "Markiona Puppeteer of Death",
+        "Markiona",
+        "Puppeteer of Death"
+      ],
+      "canonicalName": "Markiona, Puppeteer of Death",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Nameless Puppets", "Nameless Puppet"],
+      "canonicalName": "Nameless Puppet",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Geppetto",
+        "true final boss"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Nameless"]
+    },
+    {
+      "aliases": ["Owl Doctor"],
+      "canonicalName": "Owl Doctor",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Barren Swamp",
+        "stalker"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Owl"]
+    },
+    {
+      "aliases": ["Parade Master"],
+      "canonicalName": "Parade Master",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Krat Central Station",
+        "tutorial"
+      ],
+      "game": "Lies of P",
+      "notes": "Parade Master alone is ambiguous with Corrupted Parade Master.",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Premetamorphic Green Hunter", "Green Hunter"],
+      "canonicalName": "Premetamorphic Green Hunter",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Hunter"]
+    },
+    {
+      "aliases": ["Red Fox"],
+      "canonicalName": "Red Fox",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "stalker",
+        "Black Cat"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Fox"]
+    },
+    {
+      "aliases": ["Robber Weasel"],
+      "canonicalName": "Robber Weasel",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Krat Central Station",
+        "stalker"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Weasel"]
+    },
+    {
+      "aliases": ["Romeo King of Puppets", "Romeo", "King of Puppets", "KoP"],
+      "canonicalName": "Romeo, King of Puppets",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Estella Opera House",
+        "puppet king"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["King"]
+    },
+    {
+      "aliases": ["Scrapped Watchman", "Watchman"],
+      "canonicalName": "Scrapped Watchman",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Krat City Hall",
+        "electric"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Simon Manus",
+        "Simon Manus Arm of God",
+        "Simon",
+        "Arm of God"
+      ],
+      "canonicalName": "Simon Manus, Arm of God",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Arche Abbey",
+        "final boss"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Manus"]
+    },
+    {
+      "aliases": [],
+      "canonicalName": "Survivor",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Workshop Union",
+        "stalker"
+      ],
+      "game": "Lies of P",
+      "notes": "One-word common noun, should require Lies of P context.",
+      "weakAliases": ["Survivor"]
+    },
+    {
+      "aliases": ["Two-Faced Overseer", "Two Faced Overseer"],
+      "canonicalName": "Two-Faced Overseer",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Overseer"]
+    },
+    {
+      "aliases": ["Tyrannical Predator"],
+      "canonicalName": "Tyrannical Predator",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Predator"]
+    },
+    {
+      "aliases": ["Veronique"],
+      "canonicalName": "Veronique",
+      "contextWords": ["Lies of P", "LoP", "Krat", "puppet", "Overture", "DLC"],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Walker of Illusions"],
+      "canonicalName": "Walker of Illusions",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Collapsed Street",
+        "illusion"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Walker"]
+    },
+    {
+      "aliases": ["White Lady"],
+      "canonicalName": "White Lady",
+      "contextWords": [
+        "Lies of P",
+        "LoP",
+        "Krat",
+        "puppet",
+        "Rosa Isabelle Street",
+        "stalker"
+      ],
+      "game": "Lies of P",
+      "notes": "",
+      "weakAliases": ["Lady"]
+    },
+    {
+      "aliases": ["Celestial Enforcer Huanxian", "Huanxian"],
+      "canonicalName": "Celestial Enforcer Huanxian",
+      "contextWords": [
+        "Nine Sols",
+        "NS",
+        "Yi",
+        "sols",
+        "Celestial",
+        "Huanxian"
+      ],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Enforcer"]
+    },
+    {
+      "aliases": ["Celestial Enforcer Tieyan", "Tieyan"],
+      "canonicalName": "Celestial Enforcer Tieyan",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Celestial", "Tieyan"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Enforcer"]
+    },
+    {
+      "aliases": ["Celestial Sentinel Jiaoduan", "Jiaoduan"],
+      "canonicalName": "Celestial Sentinel Jiaoduan",
+      "contextWords": [
+        "Nine Sols",
+        "NS",
+        "Yi",
+        "sols",
+        "Celestial",
+        "Jiaoduan"
+      ],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Sentinel"]
+    },
+    {
+      "aliases": ["Celestial Sentinel Wuqiang", "Wuqiang"],
+      "canonicalName": "Celestial Sentinel Wuqiang",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Celestial", "Wuqiang"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Sentinel"]
+    },
+    {
+      "aliases": [
+        "Celestian Spectre Shangui",
+        "Celestial Spectre Shangui",
+        "Shangui"
+      ],
+      "canonicalName": "Celestial Spectre Shangui",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Celestial", "Shangui"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Spectre"]
+    },
+    {
+      "aliases": [
+        "Celsestial Warden Yinyue",
+        "Celestial Warden Yinyue",
+        "Yinyue"
+      ],
+      "canonicalName": "Celestial Warden Yinyue",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Celestial", "Yinyue"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Warden"]
+    },
+    {
+      "aliases": ["Eigong"],
+      "canonicalName": "Eigong",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "final boss", "Sol"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["General Yingzhao", "Yingzhao"],
+      "canonicalName": "General Yingzhao",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "first boss", "spear"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["General"]
+    },
+    {
+      "aliases": ["Goumang"],
+      "canonicalName": "Goumang",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Sol", "minions"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [],
+      "canonicalName": "Ji",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Sol", "Nine Sols Ji"],
+      "game": "Nine Sols",
+      "notes": "Very short one-word name, should require Nine Sols context.",
+      "weakAliases": ["Ji"]
+    },
+    {
+      "aliases": ["Jiequan"],
+      "canonicalName": "Jiequan",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Sol", "prison"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Kanghui"],
+      "canonicalName": "Kanghui",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Nine Sols", "Kanghui"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Lady Ethereal"],
+      "canonicalName": "Lady Ethereal",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Sol", "dreamscape"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Ethereal", "Lady"]
+    },
+    {
+      "aliases": ["Red Tiger Elite Baichang", "Baichang"],
+      "canonicalName": "Red Tiger Elite Baichang",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Red Tiger Elite"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Red Tiger", "Elite"]
+    },
+    {
+      "aliases": ["Red Tiger Elite Kuiyan", "Kuiyan"],
+      "canonicalName": "Red Tiger Elite Kuiyan",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Red Tiger Elite"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Red Tiger", "Elite"]
+    },
+    {
+      "aliases": ["Red Tiger Elite Lieguan", "Lieguan"],
+      "canonicalName": "Red Tiger Elite Lieguan",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Red Tiger Elite"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Red Tiger", "Elite"]
+    },
+    {
+      "aliases": ["Red Tiger Elite Yanren", "Yanren"],
+      "canonicalName": "Red Tiger Elite Yanren",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Red Tiger Elite"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Red Tiger", "Elite"]
+    },
+    {
+      "aliases": ["Spirit Keeper Cixing", "Cixing"],
+      "canonicalName": "Spirit Keeper Cixing",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Cixing"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Spirit Keeper"]
+    },
+    {
+      "aliases": ["The Fengs", "Fengs"],
+      "canonicalName": "The Fengs",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Fuxi", "Nuwa"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Feng"]
+    },
+    {
+      "aliases": [
+        "The Great Miner Tianshou",
+        "Great Miner Tianshou",
+        "Tianshou"
+      ],
+      "canonicalName": "The Great Miner Tianshou",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "mine"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": ["Miner"]
+    },
+    {
+      "aliases": ["Xingtian"],
+      "canonicalName": "Xingtian",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "first fight"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Xingtian Again", "Xingtian rematch", "Second Xingtian"],
+      "canonicalName": "Xingtian (Again)",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "rematch", "again"],
+      "game": "Nine Sols",
+      "notes": "Xingtian alone is ambiguous with the first Xingtian encounter.",
+      "weakAliases": ["Xingtian"]
+    },
+    {
+      "aliases": ["Yanlao"],
+      "canonicalName": "Yanlao",
+      "contextWords": ["Nine Sols", "NS", "Yi", "sols", "Sol", "factory"],
+      "game": "Nine Sols",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Armored Warrior"],
+      "canonicalName": "Armored Warrior",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Senpou Temple",
+        "Robert"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Warrior"]
+    },
+    {
+      "aliases": ["Ashina Elite"],
+      "canonicalName": "Ashina Elite",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Castle",
+        "quickdraw"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Elite"]
+    },
+    {
+      "aliases": ["Ashina Spear Shume", "Shume Masaji Oniwa", "Shume"],
+      "canonicalName": "Shume Masaji Oniwa",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Seven Ashina Spears",
+        "Oniwa",
+        "Ashina Reservoir"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Ashina Spear"]
+    },
+    {
+      "aliases": [
+        "Ashina Spear Yamauchi",
+        "Seven Ashina Spears Yamauchi",
+        "Shikibu Toshikatsu Yamauchi",
+        "Yamauchi Spear"
+      ],
+      "canonicalName": "Seven Ashina Spears - Shikibu Toshikatsu Yamauchi",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Reservoir",
+        "Seven Spears"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Yamauchi", "Ashina Spear"]
+    },
+    {
+      "aliases": ["Blazing Bull"],
+      "canonicalName": "Blazing Bull",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Outskirts",
+        "fire"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Bull"]
+    },
+    {
+      "aliases": [
+        "Centipede Sen'Un",
+        "Long-arm Centipede Sen'un",
+        "Sen'un",
+        "Senun"
+      ],
+      "canonicalName": "Long-arm Centipede Sen'un",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Senpou Temple",
+        "claw"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Centipede"]
+    },
+    {
+      "aliases": [
+        "Centipide Giraffe",
+        "Long-arm Centipede Giraffe",
+        "Centipede Giraffe",
+        "Giraffe"
+      ],
+      "canonicalName": "Long-arm Centipede Giraffe",
+      "contextWords": ["Sekiro", "SDT", "Ashina", "Wolf", "Gun Fort", "claw"],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Centipede"]
+    },
+    {
+      "aliases": ["Chained Ogre", "Ogre 1"],
+      "canonicalName": "Chained Ogre",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Outskirts",
+        "grab"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Ogre"]
+    },
+    {
+      "aliases": ["Chained Ogre 2", "Second Chained Ogre", "Ogre 2"],
+      "canonicalName": "Chained Ogre 2",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Castle",
+        "rematch"
+      ],
+      "game": "Sekiro",
+      "notes": "Ogre alone is ambiguous with the first Chained Ogre.",
+      "weakAliases": ["Ogre"]
+    },
+    {
+      "aliases": ["Corrupted Monk", "Illusion Monk"],
+      "canonicalName": "Corrupted Monk",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Mibu Village",
+        "illusion"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Monk"]
+    },
+    {
+      "aliases": ["Demon of Hatred", "DoH"],
+      "canonicalName": "Demon of Hatred",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Outskirts",
+        "flame"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Demon"]
+    },
+    {
+      "aliases": ["Divine Dragon"],
+      "canonicalName": "Divine Dragon",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Fountainhead Palace",
+        "tears"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "Elite Jinsuke",
+        "Ashina Elite Jinsuke",
+        "Jinsuke Saze",
+        "Jinsuke"
+      ],
+      "canonicalName": "Ashina Elite - Jinsuke Saze",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Castle",
+        "dojo"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Elite"]
+    },
+    {
+      "aliases": ["Folding Screen Monkeys", "FSM", "Screen Monkeys"],
+      "canonicalName": "Folding Screen Monkeys",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Senpou Temple",
+        "illusion"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Monkeys"]
+    },
+    {
+      "aliases": ["General Kawarada", "Naomori Kawarada", "Kawarada"],
+      "canonicalName": "General Naomori Kawarada",
+      "contextWords": ["Sekiro", "SDT", "Ashina", "Wolf", "Ashina Outskirts"],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["General"]
+    },
+    {
+      "aliases": ["General Matsumoto", "Kuranosuke Matsumoto", "Matsumoto"],
+      "canonicalName": "General Kuranosuke Matsumoto",
+      "contextWords": ["Sekiro", "SDT", "Ashina", "Wolf", "Ashina Castle"],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["General"]
+    },
+    {
+      "aliases": ["General Yamauchi", "Tenzen Yamauchi"],
+      "canonicalName": "General Tenzen Yamauchi",
+      "contextWords": ["Sekiro", "SDT", "Ashina", "Wolf", "Ashina Outskirts"],
+      "game": "Sekiro",
+      "notes": "Yamauchi is shared with Seven Ashina Spears Yamauchi.",
+      "weakAliases": ["Yamauchi", "General"]
+    },
+    {
+      "aliases": ["Genichiro", "Genichiro Ashina", "Geni"],
+      "canonicalName": "Genichiro Ashina",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Castle",
+        "Way of Tomoe"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": [
+        "GodApe Duo",
+        "Guardian Ape Duo",
+        "Headless Ape Duo",
+        "Ape Duo"
+      ],
+      "canonicalName": "Guardian Ape Duo",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Depths",
+        "bride ape"
+      ],
+      "game": "Sekiro",
+      "notes": "Source name appears to be a typo/joke for Guardian Ape Duo.",
+      "weakAliases": ["Ape"]
+    },
+    {
+      "aliases": ["Great Shinobi Owl", "GS Owl", "Owl Shinobi"],
+      "canonicalName": "Great Shinobi Owl",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Castle",
+        "father"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Owl"]
+    },
+    {
+      "aliases": ["Guardian Ape"],
+      "canonicalName": "Guardian Ape",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Sunken Valley",
+        "headless phase"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Ape", "Guardian"]
+    },
+    {
+      "aliases": [
+        "Gyobu Oniwa",
+        "Gyoubu Oniwa",
+        "Gyoubu Masataka Oniwa",
+        "Gyobu"
+      ],
+      "canonicalName": "Gyoubu Masataka Oniwa",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Outskirts",
+        "horse",
+        "MY NAME"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Oniwa"]
+    },
+    {
+      "aliases": ["Juzou the Drunkard", "Juzou"],
+      "canonicalName": "Juzou the Drunkard",
+      "contextWords": ["Sekiro", "SDT", "Ashina", "Wolf", "Hirata Estate"],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Drunkard"]
+    },
+    {
+      "aliases": ["Juzou the Drunkard 2", "Second Juzou", "Juzou rematch"],
+      "canonicalName": "Juzou the Drunkard 2",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Hirata Estate",
+        "Owl memory",
+        "rematch"
+      ],
+      "game": "Sekiro",
+      "notes": "Juzou alone is ambiguous with the first Juzou fight.",
+      "weakAliases": ["Juzou", "Drunkard"]
+    },
+    {
+      "aliases": ["Lady Butterfly", "Butterfly"],
+      "canonicalName": "Lady Butterfly",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Hirata Estate",
+        "snap seeds"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Lady"]
+    },
+    {
+      "aliases": ["Leader Yamauchi", "Shigenori Yamauchi"],
+      "canonicalName": "Leader Shigenori Yamauchi",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "tutorial",
+        "Ashina Reservoir"
+      ],
+      "game": "Sekiro",
+      "notes": "Yamauchi is shared with other Sekiro mini-bosses.",
+      "weakAliases": ["Yamauchi", "Leader"]
+    },
+    {
+      "aliases": [
+        "Lone Shadow Longsword",
+        "Lone Shadow Longswordsman",
+        "Longswordsman"
+      ],
+      "canonicalName": "Lone Shadow Longswordsman",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Reservoir",
+        "well"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Lone Shadow"]
+    },
+    {
+      "aliases": ["Lone Shadow Masanaga", "Masanaga", "Spear-Bearer"],
+      "canonicalName": "Lone Shadow Masanaga the Spear-Bearer",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Serpent Shrine",
+        "Hirata"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Lone Shadow"]
+    },
+    {
+      "aliases": ["Lone Shadow Vilehand", "Vilehand"],
+      "canonicalName": "Lone Shadow Vilehand",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Castle",
+        "dojo"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Lone Shadow"]
+    },
+    {
+      "aliases": ["Mist Noble"],
+      "canonicalName": "Mist Noble",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Hidden Forest",
+        "meme"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Noble"]
+    },
+    {
+      "aliases": ["O'rin", "O'Rin of the Water", "O Rin", "Orin"],
+      "canonicalName": "O'Rin of the Water",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Mibu Village",
+        "shamisen"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Owl (Father)", "Owl Father", "Father Owl"],
+      "canonicalName": "Owl (Father)",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Hirata Estate",
+        "memory"
+      ],
+      "game": "Sekiro",
+      "notes": "Owl alone is ambiguous with Great Shinobi Owl.",
+      "weakAliases": ["Owl", "Father"]
+    },
+    {
+      "aliases": [
+        "Red Guard Shigehichi",
+        "Shigekichi of the Red Guard",
+        "Shigehichi",
+        "Shigekichi"
+      ],
+      "canonicalName": "Shigekichi of the Red Guard",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Outskirts",
+        "red guard"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Red Guard"]
+    },
+    {
+      "aliases": ["Sakura Bull", "Sakura Bull of the Palace"],
+      "canonicalName": "Sakura Bull of the Palace",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Fountainhead Palace"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Bull"]
+    },
+    {
+      "aliases": ["Shichimen Warrior"],
+      "canonicalName": "Shichimen Warrior",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "terror",
+        "apparition"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Warrior"]
+    },
+    {
+      "aliases": ["Shinobi Hunter Enshin", "Enshin of Misen", "Enshin"],
+      "canonicalName": "Shinobi Hunter Enshin of Misen",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Hirata Estate",
+        "mikiri"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Shinobi Hunter"]
+    },
+    {
+      "aliases": ["Snake Shirafuji", "Snake Eyes Shirafuji", "Shirafuji"],
+      "canonicalName": "Snake Eyes Shirafuji",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Sunken Valley",
+        "gun"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Snake Eyes"]
+    },
+    {
+      "aliases": ["Snake Shirahagi", "Snake Eyes Shirahagi", "Shirahagi"],
+      "canonicalName": "Snake Eyes Shirahagi",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Ashina Depths",
+        "poison pool"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Snake Eyes"]
+    },
+    {
+      "aliases": [
+        "Sword Saint Isshin",
+        "Isshin the Sword Saint",
+        "Isshin, the Sword Saint",
+        "SSI"
+      ],
+      "canonicalName": "Isshin, the Sword Saint",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "final boss",
+        "Genichiro",
+        "gun spear"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Isshin"]
+    },
+    {
+      "aliases": ["Tokujiro the Glutton", "Tokujiro"],
+      "canonicalName": "Tokujiro the Glutton",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Hidden Forest",
+        "drunkard variant"
+      ],
+      "game": "Sekiro",
+      "notes": "",
+      "weakAliases": ["Glutton"]
+    },
+    {
+      "aliases": ["True Corrupted Monk", "True Monk"],
+      "canonicalName": "True Corrupted Monk",
+      "contextWords": [
+        "Sekiro",
+        "SDT",
+        "Ashina",
+        "Wolf",
+        "Fountainhead Palace",
+        "bridge"
+      ],
+      "game": "Sekiro",
+      "notes": "Monk alone is ambiguous with Corrupted Monk illusion.",
+      "weakAliases": ["Monk"]
+    },
+    {
+      "aliases": ["Asgore", "Asgore Dreemurr"],
+      "canonicalName": "Asgore Dreemurr",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "king",
+        "barrier"
+      ],
+      "game": "UNDERTALE",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Mettaton", "Mettaton EX", "Mettaton NEO"],
+      "canonicalName": "Mettaton EX",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "core",
+        "robot",
+        "ratings"
+      ],
+      "game": "UNDERTALE",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Papyrus"],
+      "canonicalName": "Papyrus",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "Snowdin",
+        "skeleton"
+      ],
+      "game": "UNDERTALE",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["sans.", "Sans"],
+      "canonicalName": "Sans",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "genocide",
+        "skeleton",
+        "bad time"
+      ],
+      "game": "UNDERTALE",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Toriel"],
+      "canonicalName": "Toriel",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "Ruins",
+        "goat mom"
+      ],
+      "game": "UNDERTALE",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Undyne"],
+      "canonicalName": "Undyne",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "Waterfall",
+        "spear"
+      ],
+      "game": "UNDERTALE",
+      "notes": "",
+      "weakAliases": []
+    },
+    {
+      "aliases": ["Undyne the Undying", "Undying Undyne"],
+      "canonicalName": "Undyne the Undying",
+      "contextWords": [
+        "UNDERTALE",
+        "Undertale",
+        "UT",
+        "Frisk",
+        "genocide",
+        "Waterfall",
+        "spear"
+      ],
+      "game": "UNDERTALE",
+      "notes": "Undyne alone is ambiguous with the normal Undyne fight.",
+      "weakAliases": ["Undyne"]
+    }
+  ],
+  "games": [
+    {
+      "aliases": ["Bloodborne", "BB"],
+      "canonicalName": "Bloodborne"
+    },
+    {
+      "aliases": ["Cuphead"],
+      "canonicalName": "Cuphead"
+    },
+    {
+      "aliases": ["Elden Ring", "ER"],
+      "canonicalName": "Elden Ring"
+    },
+    {
+      "aliases": ["Hollow Knight", "HK"],
+      "canonicalName": "Hollow Knight"
+    },
+    {
+      "aliases": ["Lies of P", "LoP"],
+      "canonicalName": "Lies of P"
+    },
+    {
+      "aliases": ["Nine Sols", "NS"],
+      "canonicalName": "Nine Sols"
+    },
+    {
+      "aliases": ["Sekiro", "Sekiro: Shadows Die Twice", "SDT"],
+      "canonicalName": "Sekiro"
+    },
+    {
+      "aliases": ["UNDERTALE", "Undertale", "UT"],
+      "canonicalName": "UNDERTALE"
+    }
+  ]
+}

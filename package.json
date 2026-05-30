@@ -10,6 +10,8 @@
     "start": "tsx src/index.ts",
     "build": "pnpm exec prisma generate && tsc --noEmit -p tsconfig.json",
     "check": "biome check .",
+    "boss-discussion:backfill": "tsx scripts/boss-discussion-backfill.ts",
+    "boss-discussion:backfill:dry-run": "tsx scripts/boss-discussion-backfill.ts --dry-run",
     "format": "biome format --write ."
   },
   "keywords": [],

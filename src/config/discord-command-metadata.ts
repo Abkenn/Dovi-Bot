@@ -162,6 +162,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.ADMIN,
     helpCategory: HELP_CATEGORIES.STAGING,
   },
+  COMMUNITY_TOPIC_STATS: {
+    name: 'showbossstats_ml',
+    description: 'Shows prod env boss/game discussion signals from staging.',
+    guildIds: COMMAND_GUILDS.COMMUNITY_TOPIC_STATS,
+    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpCategory: HELP_CATEGORIES.STAGING,
+  },
   DAVI_SYNC_BOSS_STATS: {
     name: 'davisyncbossstats',
     description: 'Syncs prod env boss stats from staging.',

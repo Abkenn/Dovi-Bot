@@ -273,3 +273,53 @@ model BossTrialVote {
   @@index([trialId, votedAt])
   @@index([userId, votedAt])
 }
+
+model CommunityTopicMessageScan {
+  id               String   @id @default(cuid())
+  guildId          String
+  channelId        String
+  messageId        String   @unique
+  authorUserId     String
+  messageCreatedAt DateTime
+  contentHash      String
+  source           String
+  signalCount      Int      @default(0)
+  analyzedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  signals CommunityTopicSignal[]
+
+  @@index([guildId, messageCreatedAt])
+  @@index([guildId, channelId, messageCreatedAt])
+  @@index([guildId, authorUserId, messageCreatedAt])
+  @@index([source, analyzedAt])
+}
+
+model CommunityTopicSignal {
+  id                 String   @id @default(cuid())
+  scanId             String
+  guildId            String
+  channelId          String
+  messageId          String
+  authorUserId       String
+  messageCreatedAt   DateTime
+  topicKind          String
+  entityKey          String
+  entityName         String
+  gameName           String?
+  matchedAliases     Json
+  matchedWeakAliases Json
+  contextWords       Json
+  confidence         Float
+  intensity          Float
+  createdAt          DateTime @default(now())
+
+  scan CommunityTopicMessageScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, topicKind, entityKey])
+  @@index([guildId, topicKind, messageCreatedAt])
+  @@index([guildId, entityKey, messageCreatedAt])
+  @@index([guildId, authorUserId, messageCreatedAt])
+  @@index([guildId, topicKind, entityKey, messageCreatedAt])
+}
