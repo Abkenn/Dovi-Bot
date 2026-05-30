@@ -126,7 +126,7 @@ export const buildBossTrackingEmbed = ({
     .setTitle(title)
     .setColor(
       getCommandCategoryAccentColor(
-        COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
+        COMMAND_CATEGORIES.STREAM_GAME_TRACKING_TOOLS,
       ),
     )
     .addFields(
@@ -164,7 +164,7 @@ export const buildGameTrackingStatusEmbed = (status: GameTrackingStatusView) =>
     .setTitle('Game Tracking Status')
     .setColor(
       getCommandCategoryAccentColor(
-        COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
+        COMMAND_CATEGORIES.STREAM_GAME_TRACKING_TOOLS,
       ),
     )
     .addFields(

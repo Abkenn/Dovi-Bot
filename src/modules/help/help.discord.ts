@@ -24,6 +24,7 @@ const COMMAND_CATEGORY_ORDER = [
   COMMAND_CATEGORIES.GENERAL,
   COMMAND_CATEGORIES.STREAM_INFO,
   COMMAND_CATEGORIES.BOSSES,
+  COMMAND_CATEGORIES.STREAM_GAME_TRACKING_TOOLS,
   COMMAND_CATEGORIES.BOSS_TRIALS,
   COMMAND_CATEGORIES.COMMUNITY_STATS,
   COMMAND_CATEGORIES.STAGING,
@@ -37,6 +38,7 @@ export type HelpTopicValue =
   | 'stream-info'
   | 'bosses'
   | 'boss-trials'
+  | 'davi-stream-tracking-tools'
   | 'community-stats'
   | 'staging'
   | 'general'
@@ -76,6 +78,13 @@ const HELP_TOPIC_OPTIONS = [
     value: 'boss-trials',
     description: 'Boss trial poll and stats commands',
     category: COMMAND_CATEGORIES.BOSS_TRIALS,
+    adminOnly: false,
+  },
+  {
+    name: 'Stream Game Tracking Tools',
+    value: 'davi-stream-tracking-tools',
+    description: 'Live and offline boss tracking commands',
+    category: COMMAND_CATEGORIES.STREAM_GAME_TRACKING_TOOLS,
     adminOnly: false,
   },
   {
