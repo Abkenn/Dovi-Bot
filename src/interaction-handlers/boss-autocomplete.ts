@@ -19,6 +19,7 @@ import {
 import { getDefaultStreamGameName } from '../modules/stream-info/stream-info.service';
 
 const AUTOCOMPLETE_TIMEOUT_MS = 2_500;
+const latestAutocompleteInteractionByKey = new Map<string, string>();
 
 const GAME_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
@@ -84,6 +85,34 @@ const withAutocompleteTimeout = async <TValue>(
     }),
   ]);
 
+const getAutocompleteRequestKey = (
+  interaction: AutocompleteInteraction,
+  focusedOption: AutocompleteFocusedOption,
+) =>
+  [
+    interaction.user.id,
+    interaction.guildId ?? 'dm',
+    interaction.channelId ?? 'unknown-channel',
+    interaction.commandName,
+    focusedOption.name,
+  ].join(':');
+
+const markLatestAutocompleteRequest = (
+  interaction: AutocompleteInteraction,
+  focusedOption: AutocompleteFocusedOption,
+) => {
+  const key = getAutocompleteRequestKey(interaction, focusedOption);
+
+  latestAutocompleteInteractionByKey.set(key, interaction.id);
+
+  return key;
+};
+
+const isLatestAutocompleteRequest = (
+  key: string,
+  interaction: AutocompleteInteraction,
+) => latestAutocompleteInteractionByKey.get(key) === interaction.id;
+
 const getAutocompleteGameName = async (
   interaction: AutocompleteInteraction,
 ) => {
@@ -137,11 +166,20 @@ export class BossAutocompleteHandler extends InteractionHandler {
     interaction: AutocompleteInteraction,
     { focusedOption }: InteractionHandler.ParseResult<this>,
   ) {
+    const requestKey = markLatestAutocompleteRequest(
+      interaction,
+      focusedOption,
+    );
+
     if (focusedOption.name === 'game') {
       const games = await withAutocompleteTimeout(
         getBossGameAutocomplete(String(focusedOption.value)),
         [],
       );
+
+      if (!isLatestAutocompleteRequest(requestKey, interaction)) {
+        return;
+      }
 
       return respondSafely(
         interaction,
@@ -158,6 +196,10 @@ export class BossAutocompleteHandler extends InteractionHandler {
           : []),
         BOSS_TRIAL_BUMP_OPTIONS.NONE,
       ];
+
+      if (!isLatestAutocompleteRequest(requestKey, interaction)) {
+        return;
+      }
 
       return respondSafely(
         interaction,
@@ -182,6 +224,10 @@ export class BossAutocompleteHandler extends InteractionHandler {
         [],
       );
 
+      if (!isLatestAutocompleteRequest(requestKey, interaction)) {
+        return;
+      }
+
       return respondSafely(
         interaction,
         bosses.map((boss) => ({
@@ -201,6 +247,10 @@ export class BossAutocompleteHandler extends InteractionHandler {
       }),
       [],
     );
+
+    if (!isLatestAutocompleteRequest(requestKey, interaction)) {
+      return;
+    }
 
     return respondSafely(
       interaction,
