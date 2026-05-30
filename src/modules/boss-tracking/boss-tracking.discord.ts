@@ -107,24 +107,7 @@ const getAverageAttemptTime = (session: BossTrackingSessionView) => {
 };
 
 const getFieldRows = (fields: Omit<BossTrackingEmbedField, 'inline'>[]) => {
-  const rows: BossTrackingEmbedField[] = [];
-
-  for (let index = 0; index < fields.length; index += 2) {
-    const left = fields[index];
-    const right = fields[index + 1];
-
-    if (!left) {
-      continue;
-    }
-
-    rows.push(
-      { ...left, inline: true },
-      ...(right ? [{ ...right, inline: true }] : []),
-      { name: '\u200b', value: '\u200b', inline: true },
-    );
-  }
-
-  return rows;
+  return fields.map((field) => ({ ...field, inline: true }));
 };
 
 export const buildBossTrackingEmbed = ({
