@@ -25,6 +25,7 @@ const GAME_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
   'gamediscussionstats',
   'showgamestats',
+  'trackgamestatus',
   'trackbossresume',
   'updatebossinfo',
   'updategameinfo',
@@ -35,6 +36,7 @@ const BOSS_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
   'showbossstats',
   'showgamestats',
   'trackbossresume',
+  'trackgamestatus',
   'updatebossinfo',
 ]);
 const BUMP_OPTION_AUTOCOMPLETE_COMMANDS = new Set(['bosstrial']);

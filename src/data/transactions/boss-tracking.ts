@@ -187,6 +187,99 @@ const upsertBossTopicTerms = async ({
   }
 };
 
+const deleteOrphanedBossAfterCancel = async ({
+  tx,
+  bossId,
+}: {
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+  bossId: string;
+}) => {
+  const boss = await tx.boss.findUnique({
+    where: { id: bossId },
+    select: {
+      id: true,
+      gameId: true,
+      topicTerms: { select: { createdByUserId: true } },
+      _count: {
+        select: {
+          stats: true,
+          trials: true,
+          trackingSessions: true,
+        },
+      },
+    },
+  });
+
+  if (!boss) {
+    return null;
+  }
+
+  const hasDurableBossData =
+    boss._count.stats > 0 ||
+    boss._count.trials > 0 ||
+    boss._count.trackingSessions > 0 ||
+    boss.topicTerms.some((term) => term.createdByUserId === null);
+
+  if (hasDurableBossData) {
+    return boss.gameId;
+  }
+
+  await tx.boss.delete({ where: { id: boss.id } });
+
+  return boss.gameId;
+};
+
+const deleteOrphanedGameAfterCancel = async ({
+  tx,
+  gameId,
+  gameName,
+}: {
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+  gameId: string;
+  gameName: string;
+}) => {
+  const game = await tx.bossGame.findUnique({
+    where: { id: gameId },
+    select: {
+      id: true,
+      topicTerms: { select: { createdByUserId: true } },
+      _count: {
+        select: {
+          bosses: true,
+          trials: true,
+          trackingSessions: true,
+        },
+      },
+    },
+  });
+
+  if (!game) {
+    return;
+  }
+
+  const defaultStreamGameConfig = await tx.guildConfig.findFirst({
+    where: {
+      defaultGameName: {
+        equals: gameName,
+        mode: 'insensitive',
+      },
+    },
+    select: { guildId: true },
+  });
+  const hasDurableGameData =
+    game._count.bosses > 0 ||
+    game._count.trials > 0 ||
+    game._count.trackingSessions > 0 ||
+    game.topicTerms.some((term) => term.createdByUserId === null) ||
+    defaultStreamGameConfig !== null;
+
+  if (hasDurableGameData) {
+    return;
+  }
+
+  await tx.bossGame.delete({ where: { id: game.id } });
+};
+
 export const startBossTrackingSession = async ({
   guildId,
   channelId,
@@ -736,7 +829,7 @@ export const cancelBossTrackingSession = async (guildId: string) =>
       });
     }
 
-    return tx.bossTrackingSession.update({
+    const cancelledSession = await tx.bossTrackingSession.update({
       where: { id: session.id },
       data: {
         status: BossTrackingSessionStatus.CANCELLED,
@@ -745,4 +838,23 @@ export const cancelBossTrackingSession = async (guildId: string) =>
       },
       include: activeSessionInclude,
     });
+
+    await tx.bossTrackingSession.delete({
+      where: { id: session.id },
+    });
+
+    const gameId = await deleteOrphanedBossAfterCancel({
+      tx,
+      bossId: session.bossId,
+    });
+
+    if (gameId) {
+      await deleteOrphanedGameAfterCancel({
+        tx,
+        gameId,
+        gameName: session.game.name,
+      });
+    }
+
+    return cancelledSession;
   });

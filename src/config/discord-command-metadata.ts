@@ -169,6 +169,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
   },
+  TRACK_GAME_STATUS: {
+    name: 'trackgamestatus',
+    description: 'Shows tracked deaths and boss progress for a game.',
+    guildIds: COMMAND_GUILDS.TRACK_GAME_STATUS,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
+  },
   TRACK_BOSS_CANCEL: {
     name: 'trackbosscancel',
     description: 'Cancels the active boss tracking session.',

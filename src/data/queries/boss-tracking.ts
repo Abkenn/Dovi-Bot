@@ -1,4 +1,7 @@
-import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
+import {
+  BossTrackingEndResult,
+  BossTrackingSessionStatus,
+} from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 
 const ACTIVE_SESSION_STATUSES = [
@@ -94,4 +97,63 @@ export const findOpenBossTrackingBossesForAutocomplete = async ({
       name: session.boss.name,
       gameName: session.game.name,
     }));
+};
+
+export const findTrackedGameStatus = async (normalizedGameName: string) => {
+  const game = await prisma.bossGame.findFirst({
+    where: {
+      OR: [
+        { normalizedName: normalizedGameName },
+        {
+          topicTerms: {
+            some: { normalizedValue: normalizedGameName },
+          },
+        },
+      ],
+    },
+    include: {
+      bosses: {
+        include: {
+          trackingSessions: {
+            where: {
+              status: { not: BossTrackingSessionStatus.CANCELLED },
+            },
+            select: {
+              deathCount: true,
+              endResult: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!game) {
+    return null;
+  }
+
+  const trackedBosses = game.bosses.filter(
+    (boss) => boss.trackingSessions.length > 0,
+  );
+  const killedBosses = trackedBosses.filter((boss) =>
+    boss.trackingSessions.some(
+      (session) => session.endResult === BossTrackingEndResult.KILLED,
+    ),
+  );
+  const totalDeaths = trackedBosses.reduce(
+    (sum, boss) =>
+      sum +
+      boss.trackingSessions.reduce(
+        (bossSum, session) => bossSum + session.deathCount,
+        0,
+      ),
+    0,
+  );
+
+  return {
+    gameName: game.name,
+    deaths: totalDeaths,
+    killedBossCount: killedBosses.length,
+    pendingBossCount: trackedBosses.length - killedBosses.length,
+  };
 };

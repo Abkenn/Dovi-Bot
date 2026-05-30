@@ -2,6 +2,7 @@ import {
   findActiveBossTrackingSession,
   findLatestBossTrackingSession,
   findOpenBossTrackingBossesForAutocomplete,
+  findTrackedGameStatus,
 } from '../../data/queries/boss-tracking';
 import { findGuildStreamConfig } from '../../data/queries/stream-info';
 import { updateBossGameTopicInfo } from '../../data/transactions/boss-topic-info';
@@ -312,6 +313,28 @@ export const getLiveBossTrackingStatus = async (guildId: string) => {
   return session;
 };
 
+export const getLiveGameTrackingStatus = async ({
+  guildId,
+  gameName,
+}: {
+  guildId: string;
+  gameName?: string | null;
+}) => {
+  const cleanGameName = await resolveGameName({
+    guildId,
+    ...(gameName === undefined ? {} : { gameName }),
+  });
+  const status = await findTrackedGameStatus(normalizeBossName(cleanGameName));
+
+  if (!status) {
+    throw new Error(
+      'No tracked game found. Set the game or start a boss first.',
+    );
+  }
+
+  return status;
+};
+
 export const getOpenBossTrackingBossAutocomplete = async ({
   guildId,
   gameName,
@@ -474,9 +497,17 @@ export const endLiveBossTracking = ({
   });
 };
 
-export const cancelLiveBossTracking = (guildId: string) =>
-  cancelBossTrackingSession(guildId);
+export const cancelLiveBossTracking = async (guildId: string) => {
+  const session = await cancelBossTrackingSession(guildId);
+
+  invalidateCommunityTopicMatcherCache();
+
+  return session;
+};
 
 export type BossTrackingSessionView = Awaited<
   ReturnType<typeof startLiveBossTracking>
+>;
+export type GameTrackingStatusView = Awaited<
+  ReturnType<typeof getLiveGameTrackingStatus>
 >;

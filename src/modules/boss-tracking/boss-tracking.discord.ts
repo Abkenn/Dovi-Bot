@@ -8,7 +8,10 @@ import {
   BossTrackingEndResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
-import type { BossTrackingSessionView } from './boss-tracking.service';
+import type {
+  BossTrackingSessionView,
+  GameTrackingStatusView,
+} from './boss-tracking.service';
 
 type BossTrackingEmbedField = {
   name: string;
@@ -155,3 +158,21 @@ export const buildBossTrackingEmbed = ({
         : []),
     );
 };
+
+export const buildGameTrackingStatusEmbed = (status: GameTrackingStatusView) =>
+  new EmbedBuilder()
+    .setTitle('Game Tracking Status')
+    .setColor(
+      getCommandCategoryAccentColor(
+        COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
+      ),
+    )
+    .addFields(
+      { name: 'Game', value: status.gameName, inline: true },
+      { name: 'Deaths', value: String(status.deaths), inline: true },
+      {
+        name: 'Bosses',
+        value: `${status.killedBossCount} killed / ${status.pendingBossCount} pending`,
+        inline: false,
+      },
+    );
