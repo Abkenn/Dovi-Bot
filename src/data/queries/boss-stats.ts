@@ -40,21 +40,23 @@ export const findBossesForAutocomplete = async ({
   normalizedGameName,
   normalizedBossQuery,
 }: {
-  normalizedGameName: string;
+  normalizedGameName?: string;
   normalizedBossQuery: string;
 }) => {
-  const game = await prisma.bossGame.findUnique({
-    where: { normalizedName: normalizedGameName },
-    select: { id: true },
-  });
+  const game = normalizedGameName
+    ? await prisma.bossGame.findUnique({
+        where: { normalizedName: normalizedGameName },
+        select: { id: true },
+      })
+    : null;
 
-  if (!game) {
+  if (normalizedGameName && !game) {
     return [];
   }
 
   return prisma.boss.findMany({
     where: {
-      gameId: game.id,
+      ...(game ? { gameId: game.id } : {}),
       ...(normalizedBossQuery
         ? {
             OR: [
@@ -68,9 +70,9 @@ export const findBossesForAutocomplete = async ({
           }
         : {}),
     },
-    orderBy: { name: 'asc' },
+    orderBy: [{ game: { name: 'asc' } }, { name: 'asc' }],
     take: AUTOCOMPLETE_LIMIT,
-    select: { name: true },
+    select: { name: true, game: { select: { name: true } } },
   });
 };
 
@@ -78,15 +80,15 @@ export const findBossWithDaviSpreadsheetStats = ({
   normalizedGameName,
   normalizedBossName,
 }: {
-  normalizedGameName: string;
+  normalizedGameName?: string;
   normalizedBossName: string;
 }) =>
   prisma.boss.findFirst({
     where: {
       normalizedName: normalizedBossName,
-      game: {
-        normalizedName: normalizedGameName,
-      },
+      ...(normalizedGameName
+        ? { game: { normalizedName: normalizedGameName } }
+        : {}),
     },
     include: {
       game: true,
@@ -95,4 +97,9 @@ export const findBossWithDaviSpreadsheetStats = ({
         take: 1,
       },
     },
+  });
+
+export const countBossesByNormalizedName = (normalizedBossName: string) =>
+  prisma.boss.count({
+    where: { normalizedName: normalizedBossName },
   });

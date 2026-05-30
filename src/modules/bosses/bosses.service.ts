@@ -1,9 +1,12 @@
 import {
+  countBossesByNormalizedName,
   findBossesForAutocomplete,
   findBossGamesForAutocomplete,
   findBossWithDaviSpreadsheetStats,
 } from '@data/queries/boss-stats';
 import { normalizeBossName } from './bosses.utils';
+
+const BOSS_LOOKUP_SEPARATOR = '::';
 
 export const getBossGameAutocomplete = async (query: string) => {
   const normalizedQuery = normalizeBossName(query);
@@ -18,30 +21,60 @@ export const getBossAutocomplete = async ({
   gameName: string | null;
   query: string;
 }) => {
-  if (!gameName) {
-    return [];
-  }
-
   return findBossesForAutocomplete({
-    normalizedGameName: normalizeBossName(gameName),
+    ...(gameName ? { normalizedGameName: normalizeBossName(gameName) } : {}),
     normalizedBossQuery: normalizeBossName(query),
   });
+};
+
+export const toBossAutocompleteValue = ({
+  gameName,
+  bossName,
+}: {
+  gameName: string;
+  bossName: string;
+}) => `${gameName}${BOSS_LOOKUP_SEPARATOR}${bossName}`;
+
+const parseBossAutocompleteValue = (value: string) => {
+  const [gameName, ...bossNameParts] = value.split(BOSS_LOOKUP_SEPARATOR);
+  const bossName = bossNameParts.join(BOSS_LOOKUP_SEPARATOR).trim();
+
+  if (!gameName || !bossName) {
+    return null;
+  }
+
+  return { gameName: gameName.trim(), bossName };
 };
 
 export const getBossView = async ({
   gameName,
   bossName,
 }: {
-  gameName: string;
+  gameName?: string | null;
   bossName: string;
 }) => {
+  const parsedBoss = gameName ? null : parseBossAutocompleteValue(bossName);
+  const resolvedGameName = gameName ?? parsedBoss?.gameName ?? null;
+  const resolvedBossName = parsedBoss?.bossName ?? bossName;
+  const normalizedBossName = normalizeBossName(resolvedBossName);
+
+  if (!resolvedGameName) {
+    const bossCount = await countBossesByNormalizedName(normalizedBossName);
+
+    if (bossCount > 1) {
+      throw new Error('More than one game has that boss. Pass game too.');
+    }
+  }
+
   const boss = await findBossWithDaviSpreadsheetStats({
-    normalizedGameName: normalizeBossName(gameName),
-    normalizedBossName: normalizeBossName(bossName),
+    ...(resolvedGameName
+      ? { normalizedGameName: normalizeBossName(resolvedGameName) }
+      : {}),
+    normalizedBossName,
   });
 
   if (!boss) {
-    throw new Error('Pick a boss from the autocomplete list for that game.');
+    throw new Error('Pick a boss from autocomplete, or pass game too.');
   }
 
   return boss;

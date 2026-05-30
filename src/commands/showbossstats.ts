@@ -24,16 +24,16 @@ export class ShowBossStatsCommand extends Command {
           .setDescription(this.description)
           .addStringOption((option) =>
             option
-              .setName('game')
-              .setDescription('Game name')
+              .setName('boss')
+              .setDescription('Boss name')
               .setRequired(true)
               .setAutocomplete(true),
           )
           .addStringOption((option) =>
             option
-              .setName('boss')
-              .setDescription('Boss name')
-              .setRequired(true)
+              .setName('game')
+              .setDescription('Optional game name')
+              .setRequired(false)
               .setAutocomplete(true),
           ),
       {
@@ -52,7 +52,7 @@ export class ShowBossStatsCommand extends Command {
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply }) => {
         const boss = await getBossView({
-          gameName: interaction.options.getString('game', true),
+          gameName: interaction.options.getString('game'),
           bossName: interaction.options.getString('boss', true),
         });
 

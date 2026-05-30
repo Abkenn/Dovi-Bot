@@ -14,6 +14,7 @@ import {
 import {
   getBossAutocomplete,
   getBossGameAutocomplete,
+  toBossAutocompleteValue,
 } from '../modules/bosses/bosses.service';
 import { getDefaultStreamGameName } from '../modules/stream-info/stream-info.service';
 
@@ -141,13 +142,22 @@ export class BossAutocompleteHandler extends InteractionHandler {
       );
     }
 
+    const gameName = await getAutocompleteGameName(interaction);
     const bosses = await getBossAutocomplete({
-      gameName: await getAutocompleteGameName(interaction),
+      gameName,
       query: String(focusedOption.value),
     });
 
     return interaction.respond(
-      bosses.map((boss) => ({ name: boss.name, value: boss.name })),
+      bosses.map((boss) => ({
+        name: gameName ? boss.name : `${boss.game.name} - ${boss.name}`,
+        value: gameName
+          ? boss.name
+          : toBossAutocompleteValue({
+              gameName: boss.game.name,
+              bossName: boss.name,
+            }),
+      })),
     );
   }
 }
