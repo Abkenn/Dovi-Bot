@@ -193,10 +193,6 @@ export class BossAutocompleteHandler extends InteractionHandler {
     const gameName = await getAutocompleteGameName(interaction);
     const query = String(focusedOption.value);
 
-    if (gameName && !query.trim()) {
-      return respondSafely(interaction, []);
-    }
-
     const bosses = await withAutocompleteTimeout(
       getBossAutocomplete({
         gameName,
