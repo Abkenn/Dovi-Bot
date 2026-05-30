@@ -327,9 +327,12 @@ export const getLiveGameTrackingStatus = async ({
   const status = await findTrackedGameStatus(normalizeBossName(cleanGameName));
 
   if (!status) {
-    throw new Error(
-      'No tracked game found. Set the game or start a boss first.',
-    );
+    return {
+      gameName: cleanGameName,
+      deaths: 0,
+      killedBossCount: 0,
+      pendingBossCount: 0,
+    };
   }
 
   return status;
