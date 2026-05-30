@@ -182,7 +182,7 @@ const normalizeEditReplyOptions = (
 
   const { embeds } = options;
 
-  if (!embeds) {
+  if (!embeds || embeds.length === 0) {
     return options;
   }
 
