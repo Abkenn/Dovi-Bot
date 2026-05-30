@@ -200,6 +200,7 @@ const normalizeEditReplyOptions = (
 
   const normalizedOptions: MessageEditOptions = {
     ...replyOptions,
+    allowedMentions: replyOptions.allowedMentions ?? { parse: [] },
     flags: MessageFlags.IsComponentsV2,
   };
 
