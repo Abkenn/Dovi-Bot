@@ -142,10 +142,10 @@ export const buildCommunityTopicBossDiscussionEmbed = ({
         inline: false,
       },
       {
-        name: 'Signals',
+        name: 'Mentions',
         value:
           stats.totalCount === 0
-            ? 'No signals yet.'
+            ? 'No mentions yet.'
             : `${stats.totalCount} mentions`,
         inline: false,
       },
