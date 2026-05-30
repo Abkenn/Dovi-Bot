@@ -3,6 +3,7 @@ import {
   findBossesForAutocomplete,
   findBossGamesForAutocomplete,
   findBossWithDaviSpreadsheetStats,
+  findGameBossDeathRanking,
 } from '@data/queries/boss-stats';
 import { normalizeBossName } from './bosses.utils';
 
@@ -95,4 +96,20 @@ export const getBossView = async ({
   return boss;
 };
 
+export const getGameBossDeathRanking = async (gameName: string) => {
+  const gameStats = await findGameBossDeathRanking({
+    normalizedGameName: normalizeBossName(gameName),
+    limit: 10,
+  });
+
+  if (!gameStats) {
+    throw new Error('Pick a game from autocomplete.');
+  }
+
+  return gameStats;
+};
+
 export type BossView = Awaited<ReturnType<typeof getBossView>>;
+export type GameBossDeathRankingView = Awaited<
+  ReturnType<typeof getGameBossDeathRanking>
+>;

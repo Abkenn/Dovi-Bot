@@ -23,7 +23,7 @@ const AUTOCOMPLETE_TIMEOUT_MS = 2_500;
 const GAME_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
   'gamediscussionstats',
-  'showbossstats',
+  'showgamestats',
   'trackbossresume',
   'updatebossinfo',
   'updategameinfo',
@@ -32,6 +32,7 @@ const BOSS_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
   'gamediscussionstats',
   'showbossstats',
+  'showgamestats',
   'trackbossresume',
   'updatebossinfo',
 ]);

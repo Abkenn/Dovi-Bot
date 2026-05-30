@@ -55,6 +55,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.BOSSES,
   },
+  SHOW_GAME_STATS: {
+    name: 'showgamestats',
+    description: "Shows Davi's stored stats for a game.",
+    guildIds: COMMAND_GUILDS.SHOW_GAME_STATS,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.BOSSES,
+  },
   BOSS_TRIAL: {
     name: 'bosstrial',
     description: 'Starts a community verdict vote for a boss.',

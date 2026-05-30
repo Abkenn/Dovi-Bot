@@ -112,3 +112,44 @@ export const countBossesByNormalizedName = (normalizedBossName: string) =>
   prisma.boss.count({
     where: { normalizedName: normalizedBossName },
   });
+
+export const findGameBossDeathRanking = async ({
+  normalizedGameName,
+  limit,
+}: {
+  normalizedGameName: string;
+  limit: number;
+}) => {
+  const game = await prisma.bossGame.findFirst({
+    where: {
+      OR: [
+        { normalizedName: normalizedGameName },
+        {
+          topicTerms: {
+            some: { normalizedValue: normalizedGameName },
+          },
+        },
+      ],
+    },
+    select: { id: true, name: true },
+  });
+
+  if (!game) {
+    return null;
+  }
+
+  const stats = await prisma.bossEncounterStat.findMany({
+    where: {
+      source: BossEncounterSource.DAVI_SPREADSHEET,
+      deaths: { not: null },
+      boss: { gameId: game.id },
+    },
+    orderBy: [{ deaths: 'desc' }, { boss: { name: 'asc' } }],
+    take: limit,
+    include: {
+      boss: true,
+    },
+  });
+
+  return { game, stats };
+};
