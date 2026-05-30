@@ -7,6 +7,7 @@ import {
 import { normalizeBossName } from './bosses.utils';
 
 const BOSS_LOOKUP_SEPARATOR = '::';
+const AUTOCOMPLETE_LIMIT = 25;
 
 export const getBossGameAutocomplete = async (query: string) => {
   const normalizedQuery = normalizeBossName(query);
@@ -21,10 +22,24 @@ export const getBossAutocomplete = async ({
   gameName: string | null;
   query: string;
 }) => {
-  return findBossesForAutocomplete({
+  const bosses = await findBossesForAutocomplete({
     ...(gameName ? { normalizedGameName: normalizeBossName(gameName) } : {}),
     normalizedBossQuery: normalizeBossName(query),
   });
+  const seen = new Set<string>();
+
+  return bosses
+    .filter((boss) => {
+      const key = `${boss.game.name}:${boss.name}`.toLowerCase();
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
+    .slice(0, AUTOCOMPLETE_LIMIT);
 };
 
 export const toBossAutocompleteValue = ({

@@ -44,8 +44,17 @@ export const findBossesForAutocomplete = async ({
   normalizedBossQuery: string;
 }) => {
   const game = normalizedGameName
-    ? await prisma.bossGame.findUnique({
-        where: { normalizedName: normalizedGameName },
+    ? await prisma.bossGame.findFirst({
+        where: {
+          OR: [
+            { normalizedName: normalizedGameName },
+            {
+              topicTerms: {
+                some: { normalizedValue: normalizedGameName },
+              },
+            },
+          ],
+        },
         select: { id: true },
       })
     : null;
@@ -71,7 +80,7 @@ export const findBossesForAutocomplete = async ({
         : {}),
     },
     orderBy: [{ game: { name: 'asc' } }, { name: 'asc' }],
-    take: AUTOCOMPLETE_LIMIT,
+    take: AUTOCOMPLETE_LIMIT * 2,
     select: { name: true, game: { select: { name: true } } },
   });
 };
