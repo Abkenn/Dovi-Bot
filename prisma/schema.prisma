@@ -128,6 +128,37 @@ enum BossTrialBumpMode {
   NONE
 }
 
+enum BossTrackingSessionStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
+enum BossTrackingEndResult {
+  KILLED
+  ABANDONED
+}
+
+enum BossTrackingAttemptResult {
+  IN_PROGRESS
+  DEATH
+  KILLED
+  ABANDONED
+  CANCELLED
+}
+
+enum BossTrackingAttemptTimingStatus {
+  TRUSTED
+  RECONCILED
+}
+
+enum BossTopicTermKind {
+  ALIAS
+  WEAK_ALIAS
+  CONTEXT
+}
+
 model CommandExecutionLog {
   id              String                 @id @default(cuid())
   guildId         String?
@@ -172,8 +203,9 @@ model BossGame {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  bosses Boss[]
-  trials BossTrial[]
+  bosses           Boss[]
+  trials           BossTrial[]
+  trackingSessions BossTrackingSession[]
 }
 
 model Boss {
@@ -184,9 +216,11 @@ model Boss {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  game  BossGame            @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  stats  BossEncounterStat[]
-  trials BossTrial[]
+  game             BossGame               @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  stats            BossEncounterStat[]
+  trials           BossTrial[]
+  trackingSessions BossTrackingSession[]
+  topicTerms       BossTopicTerm[]
 
   @@unique([gameId, normalizedName])
   @@index([gameId])
@@ -272,6 +306,94 @@ model BossTrialVote {
   @@unique([trialId, userId])
   @@index([trialId, votedAt])
   @@index([userId, votedAt])
+}
+
+model BossTrackingSession {
+  id                 String                    @id @default(cuid())
+  guildId            String
+  channelId          String
+  trackerUserId      String
+  gameId             String
+  bossId             String
+  status             BossTrackingSessionStatus @default(ACTIVE)
+  startDeaths        Int                       @default(0)
+  deathCount         Int                       @default(0)
+  recordedDeathCount Int                       @default(0)
+  finalDeaths        Int?
+  manualTrackedSeconds Int?
+  vodLabel           String?
+  vodStartSeconds    Int?
+  vodEndSeconds      Int?
+  attemptTimingStatus BossTrackingAttemptTimingStatus @default(TRUSTED)
+  reconciliationNote String?
+  totalPausedSeconds Int                       @default(0)
+  pausedAt           DateTime?
+  startedAt          DateTime                  @default(now())
+  focusedAt          DateTime                  @default(now())
+  endedAt            DateTime?
+  endResult          BossTrackingEndResult?
+  notes              String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  game     BossGame              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  boss     Boss                  @relation(fields: [bossId], references: [id], onDelete: Cascade)
+  attempts BossTrackingAttempt[]
+  pauses   BossTrackingPause[]
+
+  @@index([guildId, status, startedAt])
+  @@index([guildId, status, focusedAt])
+  @@index([guildId, trackerUserId, startedAt])
+  @@index([bossId, startedAt])
+}
+
+model BossTrackingAttempt {
+  id            String                    @id @default(cuid())
+  sessionId     String
+  attemptNumber Int
+  startedAt     DateTime                  @default(now())
+  endedAt       DateTime?
+  result        BossTrackingAttemptResult @default(IN_PROGRESS)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  session BossTrackingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, attemptNumber])
+  @@index([sessionId, result])
+}
+
+model BossTrackingPause {
+  id        String   @id @default(cuid())
+  sessionId String
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  reason    String?
+  vodLabel  String?
+  vodPauseSeconds Int?
+  vodResumeSeconds Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session BossTrackingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, startedAt])
+}
+
+model BossTopicTerm {
+  id             String            @id @default(cuid())
+  bossId         String
+  kind           BossTopicTermKind
+  value          String
+  normalizedValue String
+  createdByUserId String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  boss Boss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+
+  @@unique([bossId, kind, normalizedValue])
+  @@index([kind, normalizedValue])
 }
 
 model CommunityTopicMessageScan {

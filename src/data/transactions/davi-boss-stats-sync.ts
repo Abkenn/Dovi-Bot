@@ -32,6 +32,9 @@ export const upsertDaviSpreadsheetBossEncounter = async ({
   sourceRowNumber: number;
 }) => {
   return prisma.$transaction(async (tx) => {
+    // Spreadsheet sync is intentionally source-scoped. It may refresh the
+    // official DAVI_SPREADSHEET stat row, but live command tracking lives in
+    // BossTrackingSession/BossTrackingAttempt and must not be deleted here.
     const game = await tx.bossGame.upsert({
       where: { normalizedName: normalizedGameName },
       update: { name: gameName },

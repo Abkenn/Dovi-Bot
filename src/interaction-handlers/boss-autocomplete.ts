@@ -15,17 +15,20 @@ import {
   getBossGameAutocomplete,
 } from '../modules/bosses/bosses.service';
 
-const BOSS_STATS_AUTOCOMPLETE_COMMANDS = new Set([
+const BOSS_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
   'gamediscussionstats',
   'showbossstats',
+  'trackbossresume',
+  'trackbossstart',
+  'updatebossinfo',
 ]);
 
-type BossTrialAutocompleteParseData = {
+type BossAutocompleteParseData = {
   focusedOption: AutocompleteFocusedOption;
 };
 
-export class BossTrialAutocompleteHandler extends InteractionHandler {
+export class BossAutocompleteHandler extends InteractionHandler {
   public constructor(
     context: InteractionHandler.LoaderContext,
     options: InteractionHandler.Options,
@@ -37,7 +40,7 @@ export class BossTrialAutocompleteHandler extends InteractionHandler {
   }
 
   public override parse(interaction: AutocompleteInteraction) {
-    if (!BOSS_STATS_AUTOCOMPLETE_COMMANDS.has(interaction.commandName)) {
+    if (!BOSS_AUTOCOMPLETE_COMMANDS.has(interaction.commandName)) {
       return this.none();
     }
 
@@ -53,7 +56,7 @@ export class BossTrialAutocompleteHandler extends InteractionHandler {
 
     return this.some({
       focusedOption,
-    } satisfies BossTrialAutocompleteParseData);
+    } satisfies BossAutocompleteParseData);
   }
 
   public override async run(
