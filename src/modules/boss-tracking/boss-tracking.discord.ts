@@ -5,9 +5,16 @@ import {
 } from '../../config/discord-command-categories';
 import {
   BossTrackingAttemptTimingStatus,
+  BossTrackingEndResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import type { BossTrackingSessionView } from './boss-tracking.service';
+
+type BossTrackingEmbedField = {
+  name: string;
+  value: string;
+  inline: boolean;
+};
 
 const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
@@ -47,19 +54,6 @@ const getTrackedSeconds = (
   );
 };
 
-const getCurrentAttemptNumber = (session: BossTrackingSessionView) =>
-  session.attempts[0]?.attemptNumber ?? session.deathCount + 1;
-
-const getTimingStatus = (session: BossTrackingSessionView) => {
-  if (session.attemptTimingStatus === BossTrackingAttemptTimingStatus.TRUSTED) {
-    return 'Trusted';
-  }
-
-  return session.reconciliationNote
-    ? `Reconciled: ${session.reconciliationNote}`
-    : 'Reconciled';
-};
-
 const getLatestPauseReason = (session: BossTrackingSessionView) => {
   const reason = session.pauses[0]?.reason;
 
@@ -86,52 +80,87 @@ const getStatusLabel = (session: BossTrackingSessionView) => {
   return 'Active';
 };
 
+const getDisplayedDeaths = (session: BossTrackingSessionView) =>
+  session.finalDeaths ?? session.startDeaths + session.deathCount;
+
+const getAverageAttemptTime = (session: BossTrackingSessionView) => {
+  if (session.attemptTimingStatus !== BossTrackingAttemptTimingStatus.TRUSTED) {
+    return null;
+  }
+
+  const trackedSeconds = getTrackedSeconds(session);
+
+  if (trackedSeconds <= 0) {
+    return null;
+  }
+
+  const completedAttemptCount =
+    session.endResult === BossTrackingEndResult.KILLED
+      ? session.recordedDeathCount + 1
+      : session.recordedDeathCount;
+
+  if (completedAttemptCount <= 0) {
+    return null;
+  }
+
+  return formatDuration(Math.round(trackedSeconds / completedAttemptCount));
+};
+
+const getFieldRows = (fields: Omit<BossTrackingEmbedField, 'inline'>[]) => {
+  const rows: BossTrackingEmbedField[] = [];
+
+  for (let index = 0; index < fields.length; index += 2) {
+    const left = fields[index];
+    const right = fields[index + 1];
+
+    if (!left) {
+      continue;
+    }
+
+    rows.push(
+      { ...left, inline: true },
+      ...(right ? [{ ...right, inline: true }] : []),
+      { name: '\u200b', value: '\u200b', inline: true },
+    );
+  }
+
+  return rows;
+};
+
 export const buildBossTrackingEmbed = ({
   session,
   title,
 }: {
   session: BossTrackingSessionView;
   title: string;
-}) =>
-  new EmbedBuilder()
+}) => {
+  const averageAttemptTime = getAverageAttemptTime(session);
+
+  return new EmbedBuilder()
     .setTitle(title)
-    .setColor(getCommandCategoryAccentColor(COMMAND_CATEGORIES.BOSSES))
+    .setColor(
+      getCommandCategoryAccentColor(
+        COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
+      ),
+    )
     .addFields(
-      { name: 'Game', value: session.game.name, inline: true },
-      { name: 'Boss', value: session.boss.name, inline: true },
-      { name: 'Status', value: getStatusLabel(session), inline: true },
-      {
-        name: 'Deaths',
-        value: String(
-          session.finalDeaths ?? session.startDeaths + session.deathCount,
+      ...getFieldRows(
+        [
+          { name: 'Game', value: session.game.name },
+          { name: 'Boss', value: session.boss.name },
+          { name: 'Status', value: getStatusLabel(session) },
+          { name: 'Deaths', value: String(getDisplayedDeaths(session)) },
+          averageAttemptTime
+            ? {
+                name: 'Avg attempt',
+                value: averageAttemptTime,
+              }
+            : null,
+        ].filter(
+          (field): field is Omit<BossTrackingEmbedField, 'inline'> =>
+            field !== null,
         ),
-        inline: true,
-      },
-      {
-        name: 'Session deaths',
-        value: String(session.deathCount),
-        inline: true,
-      },
-      {
-        name: 'Tracked deaths',
-        value: String(session.recordedDeathCount),
-        inline: true,
-      },
-      {
-        name: 'Current attempt',
-        value: String(getCurrentAttemptNumber(session)),
-        inline: true,
-      },
-      {
-        name: 'Tracked time',
-        value: formatDuration(getTrackedSeconds(session)),
-        inline: true,
-      },
-      {
-        name: 'Attempt timing',
-        value: getTimingStatus(session),
-        inline: false,
-      },
+      ),
       ...(getLatestPauseReason(session)
         ? [
             {
@@ -142,3 +171,4 @@ export const buildBossTrackingEmbed = ({
           ]
         : []),
     );
+};

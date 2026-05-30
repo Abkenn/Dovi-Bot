@@ -6,6 +6,7 @@ import type {
   AutocompleteFocusedOption,
   AutocompleteInteraction,
 } from 'discord.js';
+import { getOpenBossTrackingBossAutocomplete } from '../modules/boss-tracking/boss-tracking.service';
 import {
   BOSS_TRIAL_BUMP_OPTIONS,
   BOSS_TRIAL_DURATION_OPTIONS,
@@ -16,18 +17,24 @@ import {
 } from '../modules/bosses/bosses.service';
 import { getDefaultStreamGameName } from '../modules/stream-info/stream-info.service';
 
-const BOSS_AUTOCOMPLETE_COMMANDS = new Set([
+const GAME_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
   'bosstrial',
   'gamediscussionstats',
   'showbossstats',
   'trackbossresume',
-  'trackbossstart',
   'updatebossinfo',
   'updategameinfo',
 ]);
+const BOSS_OPTION_AUTOCOMPLETE_COMMANDS = new Set([
+  'bosstrial',
+  'gamediscussionstats',
+  'showbossstats',
+  'trackbossresume',
+  'updatebossinfo',
+]);
+const BUMP_OPTION_AUTOCOMPLETE_COMMANDS = new Set(['bosstrial']);
 const COMMANDS_WITH_DEFAULT_STREAM_GAME = new Set([
   'trackbossresume',
-  'trackbossstart',
   'updatebossinfo',
   'updategameinfo',
 ]);
@@ -67,17 +74,16 @@ export class BossAutocompleteHandler extends InteractionHandler {
   }
 
   public override parse(interaction: AutocompleteInteraction) {
-    if (!BOSS_AUTOCOMPLETE_COMMANDS.has(interaction.commandName)) {
-      return this.none();
-    }
-
     const focusedOption = interaction.options.getFocused(true);
+    const shouldHandle =
+      (focusedOption.name === 'game' &&
+        GAME_OPTION_AUTOCOMPLETE_COMMANDS.has(interaction.commandName)) ||
+      (focusedOption.name === 'boss' &&
+        BOSS_OPTION_AUTOCOMPLETE_COMMANDS.has(interaction.commandName)) ||
+      (focusedOption.name === 'bump' &&
+        BUMP_OPTION_AUTOCOMPLETE_COMMANDS.has(interaction.commandName));
 
-    if (
-      focusedOption.name !== 'game' &&
-      focusedOption.name !== 'boss' &&
-      focusedOption.name !== 'bump'
-    ) {
+    if (!shouldHandle) {
       return this.none();
     }
 
@@ -112,6 +118,25 @@ export class BossAutocompleteHandler extends InteractionHandler {
         bumpOptions.map((option) => ({
           name: option.label,
           value: option.value,
+        })),
+      );
+    }
+
+    if (interaction.commandName === 'trackbossresume') {
+      if (!interaction.guildId) {
+        return interaction.respond([]);
+      }
+
+      const bosses = await getOpenBossTrackingBossAutocomplete({
+        guildId: interaction.guildId,
+        gameName: await getAutocompleteGameName(interaction),
+        query: String(focusedOption.value),
+      });
+
+      return interaction.respond(
+        bosses.map((boss) => ({
+          name: `${boss.gameName} - ${boss.name}`,
+          value: boss.name,
         })),
       );
     }

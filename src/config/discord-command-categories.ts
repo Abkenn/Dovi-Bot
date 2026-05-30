@@ -5,6 +5,7 @@ export const COMMAND_CATEGORIES = {
   GENERAL: 'General',
   STREAM_INFO: 'Stream Info',
   BOSSES: 'Bosses',
+  DAVI_STREAM_TRACKING_TOOLS: 'Davi Stream Tracking Tools',
   BOSS_TRIALS: 'Boss Trials',
   COMMUNITY_STATS: 'Community Stats',
   STAGING: 'Staging',
@@ -29,6 +30,10 @@ export const COMMAND_CATEGORY_METADATA = {
   },
   [COMMAND_CATEGORIES.BOSSES]: {
     name: COMMAND_CATEGORIES.BOSSES,
+    accentColor: 0xf59e0b,
+  },
+  [COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS]: {
+    name: COMMAND_CATEGORIES.DAVI_STREAM_TRACKING_TOOLS,
     accentColor: 0xf59e0b,
   },
   [COMMAND_CATEGORIES.BOSS_TRIALS]: {

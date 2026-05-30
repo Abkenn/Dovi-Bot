@@ -36,3 +36,62 @@ export const findLatestBossTrackingSession = (guildId: string) =>
     include: bossTrackingSessionInclude,
     orderBy: { focusedAt: 'desc' },
   });
+
+export const findOpenBossTrackingBossesForAutocomplete = async ({
+  guildId,
+  normalizedGameName,
+  normalizedBossQuery,
+}: {
+  guildId: string;
+  normalizedGameName?: string;
+  normalizedBossQuery: string;
+}) => {
+  const sessions = await prisma.bossTrackingSession.findMany({
+    where: {
+      guildId,
+      status: { in: ACTIVE_SESSION_STATUSES },
+      ...(normalizedGameName
+        ? { game: { normalizedName: normalizedGameName } }
+        : {}),
+      ...(normalizedBossQuery
+        ? {
+            boss: {
+              OR: [
+                { normalizedName: { contains: normalizedBossQuery } },
+                {
+                  topicTerms: {
+                    some: {
+                      normalizedValue: { contains: normalizedBossQuery },
+                    },
+                  },
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+    include: {
+      game: { select: { id: true, name: true } },
+      boss: { select: { id: true, name: true } },
+    },
+    orderBy: { focusedAt: 'desc' },
+    take: 25,
+  });
+  const seen = new Set<string>();
+
+  return sessions
+    .filter((session) => {
+      const key = `${session.game.id}:${session.boss.id}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
+    .map((session) => ({
+      name: session.boss.name,
+      gameName: session.game.name,
+    }));
+};

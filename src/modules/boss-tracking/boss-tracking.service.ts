@@ -1,6 +1,7 @@
 import {
   findActiveBossTrackingSession,
   findLatestBossTrackingSession,
+  findOpenBossTrackingBossesForAutocomplete,
 } from '../../data/queries/boss-tracking';
 import { findGuildStreamConfig } from '../../data/queries/stream-info';
 import { updateBossGameTopicInfo } from '../../data/transactions/boss-topic-info';
@@ -310,6 +311,21 @@ export const getLiveBossTrackingStatus = async (guildId: string) => {
 
   return session;
 };
+
+export const getOpenBossTrackingBossAutocomplete = async ({
+  guildId,
+  gameName,
+  query,
+}: {
+  guildId: string;
+  gameName: string | null;
+  query: string;
+}) =>
+  findOpenBossTrackingBossesForAutocomplete({
+    guildId,
+    ...(gameName ? { normalizedGameName: normalizeBossName(gameName) } : {}),
+    normalizedBossQuery: normalizeBossName(query),
+  });
 
 export const updateLiveBossInfo = async ({
   guildId,

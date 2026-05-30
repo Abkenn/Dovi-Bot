@@ -26,15 +26,13 @@ export class TrackBossStartCommand extends Command {
             option
               .setName('boss')
               .setDescription('Boss name')
-              .setRequired(true)
-              .setAutocomplete(true),
+              .setRequired(true),
           )
           .addStringOption((option) =>
             option
               .setName('game')
               .setDescription('Game name, defaults to the stream game')
-              .setRequired(false)
-              .setAutocomplete(true),
+              .setRequired(false),
           )
           .addIntegerOption((option) =>
             option
