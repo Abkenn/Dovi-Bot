@@ -29,6 +29,7 @@ type HealthCheckState = 'ok' | 'not_ok';
 
 const STATUS_CHECK_TIMEOUT_MS = 15_000;
 const HEALTH_CHECK_TIMEOUT_MS = 15_000;
+const UPTIME_ALERT_FAILURE_THRESHOLD = 2;
 
 let uptimeStatusInterval: NodeJS.Timeout | undefined;
 let healthCheckInterval: NodeJS.Timeout | undefined;
@@ -38,6 +39,7 @@ let lastUptimeState: UptimeStatusState | undefined;
 let lastHealthCheckState: HealthCheckState | undefined;
 let hasSentUptimeAlert = false;
 let hasSentHealthCheckAlert = false;
+let consecutiveUptimeFailures = 0;
 
 const getUptimeRobotApiUrl = (statusPageUrl: string) => {
   const url = new URL(statusPageUrl);
@@ -152,6 +154,16 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
     return;
   }
 
+  const hasReachedFailureThreshold = () => {
+    consecutiveUptimeFailures += 1;
+
+    const hasEnoughFailures =
+      consecutiveUptimeFailures >= UPTIME_ALERT_FAILURE_THRESHOLD;
+    const isAlreadyAlerting = lastUptimeState === 'not_operational';
+
+    return hasEnoughFailures && !isAlreadyAlerting;
+  };
+
   const abortController = new AbortController();
   const timeout = setTimeout(() => {
     abortController.abort();
@@ -168,13 +180,12 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
       ? 'operational'
       : 'not_operational';
 
-    if (currentState === lastUptimeState) {
-      return;
-    }
-
-    lastUptimeState = currentState;
-
     if (currentState === 'not_operational') {
+      if (!hasReachedFailureThreshold()) {
+        return;
+      }
+
+      lastUptimeState = 'not_operational';
       hasSentUptimeAlert = true;
       await sendUptimeStatusDm(
         client,
@@ -188,6 +199,14 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
       );
       return;
     }
+
+    consecutiveUptimeFailures = 0;
+
+    if (currentState === lastUptimeState) {
+      return;
+    }
+
+    lastUptimeState = currentState;
 
     if (!hasSentUptimeAlert) {
       return;
@@ -204,7 +223,7 @@ const runUptimeStatusCheck = async (client: SapphireClient) => {
       ].join('\n'),
     );
   } catch (error) {
-    if (lastUptimeState === 'not_operational') {
+    if (!hasReachedFailureThreshold()) {
       return;
     }
 
