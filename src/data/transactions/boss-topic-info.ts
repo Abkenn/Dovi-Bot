@@ -96,14 +96,31 @@ export const updateBossGameTopicInfo = async ({
   topicTerms: TopicTermInput[];
 }) =>
   prisma.$transaction(async (tx) => {
-    const game = await tx.bossGame.upsert({
-      where: { normalizedName: normalizedGameName },
-      update: { name: gameName },
-      create: {
-        name: gameName,
-        normalizedName: normalizedGameName,
+    const existingGame = await tx.bossGame.findFirst({
+      where: {
+        OR: [
+          { normalizedName: normalizedGameName },
+          {
+            topicTerms: {
+              some: { normalizedValue: normalizedGameName },
+            },
+          },
+        ],
       },
     });
+    const game = existingGame
+      ? existingGame.normalizedName === normalizedGameName
+        ? await tx.bossGame.update({
+            where: { id: existingGame.id },
+            data: { name: gameName },
+          })
+        : existingGame
+      : await tx.bossGame.create({
+          data: {
+            name: gameName,
+            normalizedName: normalizedGameName,
+          },
+        });
     const extraTopicTerms = [...topicTerms];
     let updatedGame = game;
 

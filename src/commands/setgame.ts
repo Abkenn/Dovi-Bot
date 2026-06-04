@@ -66,17 +66,17 @@ export class SetGameCommand extends Command {
         const aliases = interaction.options.getString('aliases');
         const tags = interaction.options.getString('tags');
 
-        await setDefaultGameName(guildId, game);
-        await updateLiveGameInfo({
+        const result = await updateLiveGameInfo({
           guildId,
           userId: interaction.user.id,
           gameName: game,
           aliases,
           contextWords: tags,
         });
+        await setDefaultGameName(guildId, result.gameName);
 
         return editReply({
-          content: `Default game for future regular game streams updated to **${game}**.`,
+          content: `Default game for future regular game streams updated to **${result.gameName}**.`,
           embeds: [await getStreamInfoEmbed(guildId)],
         });
       },
