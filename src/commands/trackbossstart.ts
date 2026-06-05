@@ -37,7 +37,7 @@ export class TrackBossStartCommand extends Command {
           .addIntegerOption((option) =>
             option
               .setName('deaths')
-              .setDescription('Current death count before this session')
+              .setDescription('Current run death count before this boss')
               .setRequired(false)
               .setMinValue(0),
           )

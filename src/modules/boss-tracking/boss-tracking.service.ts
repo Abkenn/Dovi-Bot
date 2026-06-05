@@ -362,6 +362,7 @@ export const updateLiveBossInfo = async ({
   aliases,
   weakAliases,
   contextWords,
+  runbackSeconds,
 }: {
   guildId: string;
   userId: string;
@@ -371,6 +372,7 @@ export const updateLiveBossInfo = async ({
   aliases?: string | null;
   weakAliases?: string | null;
   contextWords?: string | null;
+  runbackSeconds?: number | null;
 }) => {
   const cleanBossName = bossName?.trim();
   const cleanGameName = cleanBossName
@@ -386,9 +388,18 @@ export const updateLiveBossInfo = async ({
     contextWords: parseTopicTerms(contextWords ?? null),
   });
   const cleanName = name?.trim() || null;
+  const cleanRunbackSeconds = runbackSeconds ?? undefined;
 
-  if (topicTerms.length === 0 && !cleanName) {
-    throw new Error('Add a name, alias, or tag.');
+  if (cleanRunbackSeconds !== undefined) {
+    assertNonNegativeInteger(cleanRunbackSeconds, 'Runback seconds');
+  }
+
+  if (
+    topicTerms.length === 0 &&
+    !cleanName &&
+    cleanRunbackSeconds === undefined
+  ) {
+    throw new Error('Add a name, alias, tag, or runback seconds.');
   }
 
   const result = await updateBossTrackingInfo({
@@ -407,6 +418,9 @@ export const updateLiveBossInfo = async ({
     ...(cleanBossName
       ? { normalizedBossName: normalizeBossName(cleanBossName) }
       : {}),
+    ...(cleanRunbackSeconds === undefined
+      ? {}
+      : { runbackSeconds: cleanRunbackSeconds }),
   });
 
   invalidateCommunityTopicMatcherCache();

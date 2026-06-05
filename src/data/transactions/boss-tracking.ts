@@ -399,6 +399,7 @@ export const updateBossTrackingInfo = async ({
   normalizedCanonicalBossName,
   createdByUserId,
   topicTerms,
+  runbackSeconds,
 }: {
   guildId: string;
   normalizedGameName?: string;
@@ -406,6 +407,7 @@ export const updateBossTrackingInfo = async ({
   canonicalBossName?: string;
   normalizedCanonicalBossName?: string;
   createdByUserId: string;
+  runbackSeconds?: number;
   topicTerms: {
     kind: BossTopicTermKind;
     value: string;
@@ -438,12 +440,17 @@ export const updateBossTrackingInfo = async ({
       name: string;
       gameId: string;
       normalizedName: string;
+      runbackSeconds: number | null;
       game: { name: string };
     }) => {
       let updatedBoss = boss;
       const extraTopicTerms = [...topicTerms];
+      const hasNameUpdate = Boolean(
+        canonicalBossName && normalizedCanonicalBossName,
+      );
+      const hasRunbackUpdate = runbackSeconds !== undefined;
 
-      if (canonicalBossName && normalizedCanonicalBossName) {
+      if (hasNameUpdate && canonicalBossName && normalizedCanonicalBossName) {
         if (normalizedCanonicalBossName !== boss.normalizedName) {
           const existingBoss = await tx.boss.findUnique({
             where: {
@@ -467,12 +474,19 @@ export const updateBossTrackingInfo = async ({
             normalizedValue: boss.normalizedName,
           });
         }
+      }
 
+      if (hasNameUpdate || hasRunbackUpdate) {
         updatedBoss = await tx.boss.update({
           where: { id: boss.id },
           data: {
-            name: canonicalBossName,
-            normalizedName: normalizedCanonicalBossName,
+            ...(canonicalBossName && normalizedCanonicalBossName
+              ? {
+                  name: canonicalBossName,
+                  normalizedName: normalizedCanonicalBossName,
+                }
+              : {}),
+            ...(runbackSeconds === undefined ? {} : { runbackSeconds }),
           },
           include: { game: true },
         });
@@ -488,7 +502,9 @@ export const updateBossTrackingInfo = async ({
       return {
         gameName: updatedBoss.game.name,
         bossName: updatedBoss.name,
-        updatedName: Boolean(canonicalBossName),
+        runbackSeconds: updatedBoss.runbackSeconds,
+        updatedName: hasNameUpdate,
+        updatedRunbackSeconds: hasRunbackUpdate,
         addedCount: extraTopicTerms.length,
       };
     };

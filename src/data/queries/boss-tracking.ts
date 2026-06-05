@@ -112,6 +112,18 @@ export const findTrackedGameStatus = async (normalizedGameName: string) => {
       ],
     },
     include: {
+      trackingSessions: {
+        where: {
+          status: { not: BossTrackingSessionStatus.CANCELLED },
+        },
+        select: {
+          startDeaths: true,
+          deathCount: true,
+          finalDeaths: true,
+        },
+        orderBy: { focusedAt: 'desc' },
+        take: 1,
+      },
       bosses: {
         include: {
           trackingSessions: {
@@ -140,15 +152,11 @@ export const findTrackedGameStatus = async (normalizedGameName: string) => {
       (session) => session.endResult === BossTrackingEndResult.KILLED,
     ),
   );
-  const totalDeaths = trackedBosses.reduce(
-    (sum, boss) =>
-      sum +
-      boss.trackingSessions.reduce(
-        (bossSum, session) => bossSum + session.deathCount,
-        0,
-      ),
-    0,
-  );
+  const latestSession = game.trackingSessions[0] ?? null;
+  const totalDeaths = latestSession
+    ? (latestSession.finalDeaths ??
+      latestSession.startDeaths + latestSession.deathCount)
+    : 0;
 
   return {
     gameName: game.name,

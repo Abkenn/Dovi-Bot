@@ -35,7 +35,7 @@ export class TrackBossEndCommand extends Command {
           .addIntegerOption((option) =>
             option
               .setName('final_deaths')
-              .setDescription('Final total death count after this session')
+              .setDescription('Final run death count after this boss')
               .setRequired(false)
               .setMinValue(0),
           )

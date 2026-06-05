@@ -60,6 +60,13 @@ export class UpdateBossInfoCommand extends Command {
               .setName('weak_aliases')
               .setDescription('Advanced: ambiguous names that need tag context')
               .setRequired(false),
+          )
+          .addIntegerOption((option) =>
+            option
+              .setName('runback_seconds')
+              .setDescription('Approx runback seconds after each death')
+              .setRequired(false)
+              .setMinValue(0),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -85,6 +92,7 @@ export class UpdateBossInfoCommand extends Command {
           aliases: interaction.options.getString('aliases'),
           weakAliases: interaction.options.getString('weak_aliases'),
           contextWords: interaction.options.getString('tags'),
+          runbackSeconds: interaction.options.getInteger('runback_seconds'),
         });
 
         return editReply({
@@ -94,6 +102,9 @@ export class UpdateBossInfoCommand extends Command {
               : `Updated **${result.gameName} - ${result.bossName}**.`,
             result.addedCount > 0
               ? `Added ${result.addedCount} topic term${result.addedCount === 1 ? '' : 's'}.`
+              : null,
+            result.updatedRunbackSeconds
+              ? `Set runback to ${result.runbackSeconds ?? 0}s.`
               : null,
           ]
             .filter(Boolean)

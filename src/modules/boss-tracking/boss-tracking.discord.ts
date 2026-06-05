@@ -83,15 +83,18 @@ const getStatusLabel = (session: BossTrackingSessionView) => {
   return 'Active';
 };
 
-const getDisplayedDeaths = (session: BossTrackingSessionView) =>
-  session.finalDeaths ?? session.startDeaths + session.deathCount;
-
 const getAverageAttemptTime = (session: BossTrackingSessionView) => {
   if (session.attemptTimingStatus !== BossTrackingAttemptTimingStatus.TRUSTED) {
     return null;
   }
 
-  const trackedSeconds = getTrackedSeconds(session);
+  const nonFirstAttemptCount = session.recordedDeathCount;
+  const runbackSeconds =
+    (session.boss.runbackSeconds ?? 0) * nonFirstAttemptCount;
+  const trackedSeconds = Math.max(
+    0,
+    getTrackedSeconds(session) - runbackSeconds,
+  );
 
   if (trackedSeconds <= 0) {
     return null;
@@ -135,7 +138,7 @@ export const buildBossTrackingEmbed = ({
           { name: 'Game', value: session.game.name },
           { name: 'Boss', value: session.boss.name },
           { name: 'Status', value: getStatusLabel(session) },
-          { name: 'Deaths', value: String(getDisplayedDeaths(session)) },
+          { name: 'Deaths', value: String(session.deathCount) },
           averageAttemptTime
             ? {
                 name: 'Avg attempt',
