@@ -1,4 +1,7 @@
-import { BossEncounterSource } from '../../generated/prisma/enums';
+import {
+  BossEncounterSource,
+  BossTrackingSessionStatus,
+} from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 
 const AUTOCOMPLETE_LIMIT = 25;
@@ -105,6 +108,21 @@ export const findBossWithDaviSpreadsheetStats = ({
         where: { source: BossEncounterSource.DAVI_SPREADSHEET },
         take: 1,
       },
+      trackingSessions: {
+        where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+        orderBy: { startedAt: 'desc' },
+        select: {
+          status: true,
+          deathCount: true,
+          recordedDeathCount: true,
+          endResult: true,
+          manualTrackedSeconds: true,
+          attemptTimingStatus: true,
+          totalPausedSeconds: true,
+          startedAt: true,
+          endedAt: true,
+        },
+      },
     },
   });
 
@@ -150,6 +168,24 @@ export const findGameBossDeathRanking = async ({
       boss: true,
     },
   });
+  const trackedBosses = await prisma.boss.findMany({
+    where: {
+      gameId: game.id,
+      trackingSessions: {
+        some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+      },
+    },
+    orderBy: { name: 'asc' },
+    include: {
+      trackingSessions: {
+        where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+        select: {
+          deathCount: true,
+          endResult: true,
+        },
+      },
+    },
+  });
 
-  return { game, stats };
+  return { game, stats, trackedBosses };
 };
