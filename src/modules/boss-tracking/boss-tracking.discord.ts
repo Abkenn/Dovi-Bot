@@ -4,11 +4,11 @@ import {
   getCommandCategoryAccentColor,
 } from '../../config/discord-command-categories';
 import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
+import { calculateBossTrackingAverageAttemptTime } from './boss-tracking.service';
 import type {
   BossTrackingSessionView,
   GameTrackingStatusView,
-} from './boss-tracking.service';
-import { calculateBossTrackingAverageAttemptTime } from './boss-tracking.service';
+} from './boss-tracking.types';
 
 type BossTrackingEmbedField = {
   name: string;

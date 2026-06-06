@@ -24,6 +24,13 @@ import {
 } from '../../generated/prisma/enums';
 import { normalizeBossName } from '../bosses/bosses.utils';
 import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
+import type {
+  BossTrackingAverageAttemptTime,
+  BossTrackingSessionView,
+  GameTrackingStatusView,
+  GetLiveGameTrackingStatusInput,
+  StartLiveBossTrackingInput,
+} from './boss-tracking.types';
 
 const assertNonEmptyName = (value: string, label: string) => {
   const trimmed = value.trim();
@@ -189,16 +196,6 @@ const toGameTopicTerms = ({
       return true;
     });
 };
-
-export type BossTrackingAverageAttemptTime =
-  | {
-      seconds: number;
-      reason: null;
-    }
-  | {
-      seconds: null;
-      reason: string;
-    };
 
 const getTrackedAttemptSeconds = (
   session: BossTrackingSessionView,
@@ -443,20 +440,7 @@ export const startLiveBossTracking = async ({
   contextWords,
   vod,
   vodTime,
-}: {
-  guildId: string;
-  channelId: string;
-  trackerUserId: string;
-  gameName?: string | null;
-  bossName: string;
-  startDeaths: number;
-  startedAgoSeconds?: number | null;
-  aliases?: string | null;
-  weakAliases?: string | null;
-  contextWords?: string | null;
-  vod?: string | null;
-  vodTime?: string | null;
-}) => {
+}: StartLiveBossTrackingInput): Promise<BossTrackingSessionView> => {
   const cleanGameName = await resolveGameName({
     guildId,
     ...(gameName === undefined ? {} : { gameName }),
@@ -572,7 +556,9 @@ export const resumeLiveBossTracking = async ({
   });
 };
 
-export const getLiveBossTrackingStatus = async (guildId: string) => {
+export const getLiveBossTrackingStatus = async (
+  guildId: string,
+): Promise<BossTrackingSessionView> => {
   const session =
     (await findActiveBossTrackingSession(guildId)) ??
     (await findLatestBossTrackingSession(guildId));
@@ -587,10 +573,7 @@ export const getLiveBossTrackingStatus = async (guildId: string) => {
 export const getLiveGameTrackingStatus = async ({
   guildId,
   gameName,
-}: {
-  guildId: string;
-  gameName?: string | null;
-}) => {
+}: GetLiveGameTrackingStatusInput): Promise<GameTrackingStatusView> => {
   const cleanGameName = await resolveGameName({
     guildId,
     ...(gameName === undefined ? {} : { gameName }),
@@ -673,26 +656,31 @@ export const updateLiveBossInfo = async ({
     throw new Error('Add a name, alias, tag, or runback seconds.');
   }
 
-  const result = await updateBossTrackingInfo({
+  const trackingInfoUpdate: Parameters<typeof updateBossTrackingInfo>[0] = {
     guildId,
     createdByUserId: userId,
     topicTerms,
-    ...(cleanName
-      ? {
-          canonicalBossName: cleanName,
-          normalizedCanonicalBossName: normalizeBossName(cleanName),
-        }
-      : {}),
-    ...(cleanGameName
-      ? { normalizedGameName: normalizeBossName(cleanGameName) }
-      : {}),
-    ...(cleanBossName
-      ? { normalizedBossName: normalizeBossName(cleanBossName) }
-      : {}),
-    ...(cleanRunbackSeconds === undefined
-      ? {}
-      : { runbackSeconds: cleanRunbackSeconds }),
-  });
+  };
+
+  if (cleanName) {
+    trackingInfoUpdate.canonicalBossName = cleanName;
+    trackingInfoUpdate.normalizedCanonicalBossName =
+      normalizeBossName(cleanName);
+  }
+
+  if (cleanGameName) {
+    trackingInfoUpdate.normalizedGameName = normalizeBossName(cleanGameName);
+  }
+
+  if (cleanBossName) {
+    trackingInfoUpdate.normalizedBossName = normalizeBossName(cleanBossName);
+  }
+
+  if (cleanRunbackSeconds !== undefined) {
+    trackingInfoUpdate.runbackSeconds = cleanRunbackSeconds;
+  }
+
+  const result = await updateBossTrackingInfo(trackingInfoUpdate);
 
   invalidateCommunityTopicMatcherCache();
 
@@ -792,10 +780,3 @@ export const cancelLiveBossTracking = async (guildId: string) => {
 
   return session;
 };
-
-export type BossTrackingSessionView = Awaited<
-  ReturnType<typeof startLiveBossTracking>
->;
-export type GameTrackingStatusView = Awaited<
-  ReturnType<typeof getLiveGameTrackingStatus>
->;
