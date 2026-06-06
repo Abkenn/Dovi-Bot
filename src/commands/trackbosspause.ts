@@ -28,11 +28,12 @@ export class TrackBossPauseCommand extends Command {
               .setDescription('Why tracking is paused')
               .setRequired(false),
           )
-          .addStringOption((option) =>
+          .addIntegerOption((option) =>
             option
-              .setName('vod_time')
-              .setDescription('Optional VOD pause time, like 12:34 or 1:23:45')
-              .setRequired(false),
+              .setName('current_deaths')
+              .setDescription('Current run death count at pause')
+              .setRequired(false)
+              .setMinValue(0),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -52,7 +53,7 @@ export class TrackBossPauseCommand extends Command {
         const session = await pauseLiveBossTracking({
           guildId,
           reason: interaction.options.getString('reason'),
-          vodTime: interaction.options.getString('vod_time'),
+          currentDeaths: interaction.options.getInteger('current_deaths'),
         });
 
         return editReply({

@@ -374,7 +374,6 @@ model BossTrackingPause {
   endedAt   DateTime?
   reason    String?
   vodLabel  String?
-  vodPauseSeconds Int?
   vodResumeSeconds Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

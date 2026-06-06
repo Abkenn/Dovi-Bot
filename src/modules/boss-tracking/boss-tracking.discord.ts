@@ -3,15 +3,12 @@ import {
   COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
 } from '../../config/discord-command-categories';
-import {
-  BossTrackingAttemptTimingStatus,
-  BossTrackingEndResult,
-  BossTrackingSessionStatus,
-} from '../../generated/prisma/enums';
+import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
 import type {
   BossTrackingSessionView,
   GameTrackingStatusView,
 } from './boss-tracking.service';
+import { calculateBossTrackingAverageAttemptTime } from './boss-tracking.service';
 
 type BossTrackingEmbedField = {
   name: string;
@@ -35,85 +32,11 @@ const formatDuration = (seconds: number) => {
   return `${remainingSeconds}s`;
 };
 
-const getTrackedSeconds = (
-  session: BossTrackingSessionView,
-  now = new Date(),
-) => {
-  if (session.manualTrackedSeconds !== null) {
-    return session.manualTrackedSeconds;
-  }
-
-  const pauses = [...session.pauses].sort(
-    (left, right) => left.startedAt.getTime() - right.startedAt.getTime(),
-  );
-  const latestAttempt = [...session.attempts].sort(
-    (left, right) => right.attemptNumber - left.attemptNumber,
-  )[0];
-  const latestVodEndSeconds =
-    session.vodEndSeconds ??
-    latestAttempt?.vodEndSeconds ??
-    latestAttempt?.vodStartSeconds ??
-    null;
-  let trackedSeconds = 0;
-  let segmentStartDate = session.startedAt;
-  let segmentStartVodSeconds = session.vodStartSeconds;
-
-  for (const pause of pauses) {
-    if (segmentStartVodSeconds !== null && pause.vodPauseSeconds !== null) {
-      trackedSeconds += Math.max(
-        0,
-        pause.vodPauseSeconds - segmentStartVodSeconds,
-      );
-    } else {
-      trackedSeconds += Math.max(
-        0,
-        Math.floor(
-          (pause.startedAt.getTime() - segmentStartDate.getTime()) / 1000,
-        ),
-      );
-    }
-
-    if (!pause.endedAt) {
-      return trackedSeconds;
-    }
-
-    segmentStartDate = pause.endedAt;
-    segmentStartVodSeconds = pause.vodResumeSeconds;
-  }
-
-  if (segmentStartVodSeconds !== null && latestVodEndSeconds !== null) {
-    trackedSeconds += Math.max(0, latestVodEndSeconds - segmentStartVodSeconds);
-  } else {
-    const endedAt = session.endedAt ?? now;
-
-    trackedSeconds += Math.max(
-      0,
-      Math.floor((endedAt.getTime() - segmentStartDate.getTime()) / 1000),
-    );
-  }
-
-  if (session.status === BossTrackingSessionStatus.PAUSED && session.pausedAt) {
-    return trackedSeconds;
-  }
-
-  return Math.max(0, trackedSeconds);
-};
-
-const getCompletedAttemptCount = (session: BossTrackingSessionView) => {
-  const completedAttempts = session.attempts.filter((attempt) =>
-    ['DEATH', 'KILLED', 'ABANDONED', 'CANCELLED'].includes(attempt.result),
-  );
-
-  if (completedAttempts.length > 0) {
-    return completedAttempts.length;
-  }
-
-  return session.endResult === BossTrackingEndResult.KILLED
-    ? session.recordedDeathCount + 1
-    : session.recordedDeathCount;
-};
-
 const getLatestPauseReason = (session: BossTrackingSessionView) => {
+  if (session.status !== BossTrackingSessionStatus.PAUSED) {
+    return null;
+  }
+
   const reason = session.pauses[0]?.reason;
 
   return reason?.trim() || null;
@@ -139,32 +62,6 @@ const getStatusLabel = (session: BossTrackingSessionView) => {
   return 'Active';
 };
 
-const getAverageAttemptTime = (session: BossTrackingSessionView) => {
-  if (session.attemptTimingStatus !== BossTrackingAttemptTimingStatus.TRUSTED) {
-    return null;
-  }
-
-  const nonFirstAttemptCount = session.recordedDeathCount;
-  const runbackSeconds =
-    (session.boss.runbackSeconds ?? 0) * nonFirstAttemptCount;
-  const trackedSeconds = Math.max(
-    0,
-    getTrackedSeconds(session) - runbackSeconds,
-  );
-
-  if (trackedSeconds <= 0) {
-    return null;
-  }
-
-  const completedAttemptCount = getCompletedAttemptCount(session);
-
-  if (completedAttemptCount <= 0) {
-    return null;
-  }
-
-  return formatDuration(Math.round(trackedSeconds / completedAttemptCount));
-};
-
 const getFieldRows = (fields: Omit<BossTrackingEmbedField, 'inline'>[]) => {
   return fields.map((field) => ({ ...field, inline: true }));
 };
@@ -176,7 +73,7 @@ export const buildBossTrackingEmbed = ({
   session: BossTrackingSessionView;
   title: string;
 }) => {
-  const averageAttemptTime = getAverageAttemptTime(session);
+  const averageAttemptTime = calculateBossTrackingAverageAttemptTime(session);
 
   return new EmbedBuilder()
     .setTitle(title)
@@ -186,23 +83,20 @@ export const buildBossTrackingEmbed = ({
       ),
     )
     .addFields(
-      ...getFieldRows(
-        [
-          { name: 'Game', value: session.game.name },
-          { name: 'Boss', value: session.boss.name },
-          { name: 'Status', value: getStatusLabel(session) },
-          { name: 'Deaths', value: String(session.deathCount) },
-          averageAttemptTime
-            ? {
-                name: 'Avg attempt',
-                value: averageAttemptTime,
-              }
-            : null,
-        ].filter(
-          (field): field is Omit<BossTrackingEmbedField, 'inline'> =>
-            field !== null,
-        ),
-      ),
+      ...getFieldRows([
+        { name: 'Game', value: session.game.name },
+        { name: 'Boss', value: session.boss.name },
+        { name: 'Status', value: getStatusLabel(session) },
+        { name: 'Deaths', value: String(session.deathCount) },
+        {
+          name: 'Avg attempt',
+          value:
+            (averageAttemptTime.seconds === null
+              ? null
+              : formatDuration(averageAttemptTime.seconds)) ??
+            `Unknown (reason: ${averageAttemptTime.reason})`,
+        },
+      ]),
       ...(getLatestPauseReason(session)
         ? [
             {

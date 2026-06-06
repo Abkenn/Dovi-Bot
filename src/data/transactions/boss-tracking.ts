@@ -15,48 +15,6 @@ const ACTIVE_SESSION_STATUSES = [
 const getSecondsBetween = (from: Date, to: Date) =>
   Math.max(0, Math.floor((to.getTime() - from.getTime()) / 1000));
 
-const getVodTrackedSeconds = ({
-  session,
-  vodEndSeconds,
-}: {
-  session: {
-    vodStartSeconds: number | null;
-    pauses: {
-      startedAt: Date;
-      vodPauseSeconds: number | null;
-      vodResumeSeconds: number | null;
-    }[];
-  };
-  vodEndSeconds?: number;
-}) => {
-  if (session.vodStartSeconds === null || vodEndSeconds === undefined) {
-    return undefined;
-  }
-
-  let trackedSeconds = 0;
-  let currentSegmentStart: number | null = session.vodStartSeconds;
-  const pauses = [...session.pauses].sort(
-    (left, right) => left.startedAt.getTime() - right.startedAt.getTime(),
-  );
-
-  for (const pause of pauses) {
-    if (currentSegmentStart !== null && pause.vodPauseSeconds !== null) {
-      trackedSeconds += Math.max(
-        0,
-        pause.vodPauseSeconds - currentSegmentStart,
-      );
-    }
-
-    currentSegmentStart = pause.vodResumeSeconds;
-  }
-
-  if (currentSegmentStart !== null) {
-    trackedSeconds += Math.max(0, vodEndSeconds - currentSegmentStart);
-  }
-
-  return trackedSeconds;
-};
-
 const activeSessionInclude = {
   game: true,
   boss: {
@@ -609,11 +567,11 @@ export const recordBossTrackingDeath = async ({
 export const pauseBossTrackingSession = async ({
   guildId,
   reason,
-  vodPauseSeconds,
+  currentDeaths,
 }: {
   guildId: string;
   reason: string | null;
-  vodPauseSeconds?: number;
+  currentDeaths?: number;
 }) =>
   prisma.$transaction(async (tx) => {
     const session = await tx.bossTrackingSession.findFirst({
@@ -633,16 +591,31 @@ export const pauseBossTrackingSession = async ({
       throw new Error('Boss tracking is already paused.');
     }
 
+    const reconciliation =
+      currentDeaths === undefined
+        ? null
+        : getReconciliation({
+            startDeaths: session.startDeaths,
+            finalDeaths: currentDeaths,
+            recordedDeathCount: session.recordedDeathCount,
+          });
+
     return tx.bossTrackingSession.update({
       where: { id: session.id },
       data: {
         status: BossTrackingSessionStatus.PAUSED,
         pausedAt: new Date(),
         focusedAt: new Date(),
+        ...(reconciliation === null
+          ? {}
+          : {
+              deathCount: reconciliation.deathCount,
+              attemptTimingStatus: reconciliation.attemptTimingStatus,
+              reconciliationNote: reconciliation.reconciliationNote,
+            }),
         pauses: {
           create: {
             ...(reason ? { reason } : {}),
-            ...(vodPauseSeconds === undefined ? {} : { vodPauseSeconds }),
           },
         },
       },
@@ -718,10 +691,13 @@ export const resumeBossTrackingSession = async ({
       });
     }
 
-    if (currentAttempt && vodResumeSeconds !== undefined) {
+    if (currentAttempt) {
       await tx.bossTrackingAttempt.update({
         where: { id: currentAttempt.id },
-        data: { vodStartSeconds: vodResumeSeconds },
+        data: {
+          startedAt: now,
+          vodStartSeconds: vodResumeSeconds ?? null,
+        },
       });
     }
 
@@ -770,7 +746,9 @@ export const endBossTrackingSession = async ({
         ? getSecondsBetween(session.pausedAt, now)
         : 0;
     const resolvedFinalDeaths =
-      finalDeaths ?? session.startDeaths + session.recordedDeathCount;
+      finalDeaths ??
+      session.startDeaths +
+        Math.max(session.deathCount, session.recordedDeathCount);
     const reconciliation = getReconciliation({
       startDeaths: session.startDeaths,
       finalDeaths: resolvedFinalDeaths,
@@ -778,13 +756,6 @@ export const endBossTrackingSession = async ({
     });
     const currentAttempt = session.attempts[0];
     const currentPause = session.pauses[0];
-    const trackedSeconds =
-      manualTrackedSeconds ??
-      getVodTrackedSeconds({
-        session,
-        ...(vodEndSeconds === undefined ? {} : { vodEndSeconds }),
-      });
-
     if (
       session.status === BossTrackingSessionStatus.PAUSED &&
       currentPause &&
@@ -820,9 +791,7 @@ export const endBossTrackingSession = async ({
         focusedAt: now,
         totalPausedSeconds: { increment: pausedSeconds },
         finalDeaths: resolvedFinalDeaths,
-        ...(trackedSeconds === undefined
-          ? {}
-          : { manualTrackedSeconds: trackedSeconds }),
+        ...(manualTrackedSeconds === undefined ? {} : { manualTrackedSeconds }),
         ...(vodEndSeconds === undefined ? {} : { vodEndSeconds }),
         deathCount: reconciliation.deathCount,
         attemptTimingStatus: reconciliation.attemptTimingStatus,
