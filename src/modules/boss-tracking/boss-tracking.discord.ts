@@ -43,18 +43,74 @@ const getTrackedSeconds = (
     return session.manualTrackedSeconds;
   }
 
-  const endedAt = session.endedAt ?? now;
-  const pausedSeconds =
-    session.status === BossTrackingSessionStatus.PAUSED && session.pausedAt
-      ? Math.floor((endedAt.getTime() - session.pausedAt.getTime()) / 1000)
-      : 0;
-
-  return Math.max(
-    0,
-    Math.floor((endedAt.getTime() - session.startedAt.getTime()) / 1000) -
-      session.totalPausedSeconds -
-      Math.max(0, pausedSeconds),
+  const pauses = [...session.pauses].sort(
+    (left, right) => left.startedAt.getTime() - right.startedAt.getTime(),
   );
+  const latestAttempt = [...session.attempts].sort(
+    (left, right) => right.attemptNumber - left.attemptNumber,
+  )[0];
+  const latestVodEndSeconds =
+    session.vodEndSeconds ??
+    latestAttempt?.vodEndSeconds ??
+    latestAttempt?.vodStartSeconds ??
+    null;
+  let trackedSeconds = 0;
+  let segmentStartDate = session.startedAt;
+  let segmentStartVodSeconds = session.vodStartSeconds;
+
+  for (const pause of pauses) {
+    if (segmentStartVodSeconds !== null && pause.vodPauseSeconds !== null) {
+      trackedSeconds += Math.max(
+        0,
+        pause.vodPauseSeconds - segmentStartVodSeconds,
+      );
+    } else {
+      trackedSeconds += Math.max(
+        0,
+        Math.floor(
+          (pause.startedAt.getTime() - segmentStartDate.getTime()) / 1000,
+        ),
+      );
+    }
+
+    if (!pause.endedAt) {
+      return trackedSeconds;
+    }
+
+    segmentStartDate = pause.endedAt;
+    segmentStartVodSeconds = pause.vodResumeSeconds;
+  }
+
+  if (segmentStartVodSeconds !== null && latestVodEndSeconds !== null) {
+    trackedSeconds += Math.max(0, latestVodEndSeconds - segmentStartVodSeconds);
+  } else {
+    const endedAt = session.endedAt ?? now;
+
+    trackedSeconds += Math.max(
+      0,
+      Math.floor((endedAt.getTime() - segmentStartDate.getTime()) / 1000),
+    );
+  }
+
+  if (session.status === BossTrackingSessionStatus.PAUSED && session.pausedAt) {
+    return trackedSeconds;
+  }
+
+  return Math.max(0, trackedSeconds);
+};
+
+const getCompletedAttemptCount = (session: BossTrackingSessionView) => {
+  const completedAttempts = session.attempts.filter((attempt) =>
+    ['DEATH', 'KILLED', 'ABANDONED', 'CANCELLED'].includes(attempt.result),
+  );
+
+  if (completedAttempts.length > 0) {
+    return completedAttempts.length;
+  }
+
+  return session.endResult === BossTrackingEndResult.KILLED
+    ? session.recordedDeathCount + 1
+    : session.recordedDeathCount;
 };
 
 const getLatestPauseReason = (session: BossTrackingSessionView) => {
@@ -100,10 +156,7 @@ const getAverageAttemptTime = (session: BossTrackingSessionView) => {
     return null;
   }
 
-  const completedAttemptCount =
-    session.endResult === BossTrackingEndResult.KILLED
-      ? session.recordedDeathCount + 1
-      : session.recordedDeathCount;
+  const completedAttemptCount = getCompletedAttemptCount(session);
 
   if (completedAttemptCount <= 0) {
     return null;

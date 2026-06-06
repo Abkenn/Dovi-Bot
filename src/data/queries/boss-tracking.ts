@@ -16,7 +16,6 @@ export const bossTrackingSessionInclude = {
   },
   attempts: {
     orderBy: { attemptNumber: 'desc' },
-    take: 1,
   },
   pauses: {
     orderBy: { startedAt: 'desc' },

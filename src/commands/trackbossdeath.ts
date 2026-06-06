@@ -18,7 +18,16 @@ export class TrackBossDeathCommand extends Command {
 
   public override registerApplicationCommands(registry: Command.Registry) {
     registry.registerChatInputCommand(
-      (builder) => builder.setName(this.name).setDescription(this.description),
+      (builder) =>
+        builder
+          .setName(this.name)
+          .setDescription(this.description)
+          .addStringOption((option) =>
+            option
+              .setName('vod_time')
+              .setDescription('Optional VOD death time, like 12:34 or 1:23:45')
+              .setRequired(false),
+          ),
       {
         guildIds: [...METADATA.guildIds],
       },
@@ -34,7 +43,10 @@ export class TrackBossDeathCommand extends Command {
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) => {
-        const session = await recordLiveBossDeath(guildId);
+        const session = await recordLiveBossDeath({
+          guildId,
+          vodTime: interaction.options.getString('vod_time'),
+        });
 
         return editReply({
           embeds: [

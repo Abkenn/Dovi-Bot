@@ -257,8 +257,20 @@ export const startLiveBossTracking = async ({
   return session;
 };
 
-export const recordLiveBossDeath = (guildId: string) =>
-  recordBossTrackingDeath(guildId);
+export const recordLiveBossDeath = ({
+  guildId,
+  vodTime,
+}: {
+  guildId: string;
+  vodTime?: string | null;
+}) => {
+  const vodDeathSeconds = parseVodTimestamp(vodTime);
+
+  return recordBossTrackingDeath({
+    guildId,
+    ...(vodDeathSeconds === undefined ? {} : { vodDeathSeconds }),
+  });
+};
 
 export const pauseLiveBossTracking = ({
   guildId,

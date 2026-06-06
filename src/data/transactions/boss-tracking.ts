@@ -64,7 +64,6 @@ const activeSessionInclude = {
   },
   attempts: {
     orderBy: { attemptNumber: 'desc' },
-    take: 1,
   },
   pauses: {
     orderBy: { startedAt: 'desc' },
@@ -389,6 +388,7 @@ export const startBossTrackingSession = async ({
           create: {
             attemptNumber: 1,
             startedAt: sessionStartedAt,
+            ...(vodStartSeconds === undefined ? {} : { vodStartSeconds }),
           },
         },
       },
@@ -545,7 +545,13 @@ export const updateBossTrackingInfo = async ({
     return applyUpdate(boss);
   });
 
-export const recordBossTrackingDeath = async (guildId: string) =>
+export const recordBossTrackingDeath = async ({
+  guildId,
+  vodDeathSeconds,
+}: {
+  guildId: string;
+  vodDeathSeconds?: number;
+}) =>
   prisma.$transaction(async (tx) => {
     const session = await tx.bossTrackingSession.findFirst({
       where: {
@@ -574,6 +580,9 @@ export const recordBossTrackingDeath = async (guildId: string) =>
       where: { id: currentAttempt.id },
       data: {
         endedAt: new Date(),
+        ...(vodDeathSeconds === undefined
+          ? {}
+          : { vodEndSeconds: vodDeathSeconds }),
         result: BossTrackingAttemptResult.DEATH,
       },
     });
@@ -587,6 +596,9 @@ export const recordBossTrackingDeath = async (guildId: string) =>
         attempts: {
           create: {
             attemptNumber: currentAttempt.attemptNumber + 1,
+            ...(vodDeathSeconds === undefined
+              ? {}
+              : { vodStartSeconds: vodDeathSeconds }),
           },
         },
       },
@@ -693,6 +705,7 @@ export const resumeBossTrackingSession = async ({
       ? getSecondsBetween(session.pausedAt, now)
       : 0;
     const currentPause = session.pauses[0];
+    const currentAttempt = session.attempts[0];
 
     if (currentPause && !currentPause.endedAt) {
       await tx.bossTrackingPause.update({
@@ -702,6 +715,13 @@ export const resumeBossTrackingSession = async ({
           ...(vodLabel === undefined ? {} : { vodLabel }),
           ...(vodResumeSeconds === undefined ? {} : { vodResumeSeconds }),
         },
+      });
+    }
+
+    if (currentAttempt && vodResumeSeconds !== undefined) {
+      await tx.bossTrackingAttempt.update({
+        where: { id: currentAttempt.id },
+        data: { vodStartSeconds: vodResumeSeconds },
       });
     }
 
@@ -781,6 +801,7 @@ export const endBossTrackingSession = async ({
         where: { id: currentAttempt.id },
         data: {
           endedAt: now,
+          ...(vodEndSeconds === undefined ? {} : { vodEndSeconds }),
           result:
             result === BossTrackingEndResult.KILLED
               ? BossTrackingAttemptResult.KILLED
