@@ -41,6 +41,13 @@ export class TrackBossStartCommand extends Command {
               .setRequired(false)
               .setMinValue(0),
           )
+          .addIntegerOption((option) =>
+            option
+              .setName('started_ago_seconds')
+              .setDescription('How many seconds ago this boss attempt started')
+              .setRequired(false)
+              .setMinValue(0),
+          )
           .addStringOption((option) =>
             option
               .setName('vod_time')
@@ -95,6 +102,9 @@ export class TrackBossStartCommand extends Command {
           gameName: interaction.options.getString('game'),
           bossName: interaction.options.getString('boss', true),
           startDeaths: interaction.options.getInteger('deaths') ?? 0,
+          startedAgoSeconds: interaction.options.getInteger(
+            'started_ago_seconds',
+          ),
           aliases: interaction.options.getString('aliases'),
           weakAliases: interaction.options.getString('weak_aliases'),
           contextWords: interaction.options.getString('tags'),

@@ -289,6 +289,7 @@ export const startBossTrackingSession = async ({
   bossName,
   normalizedBossName,
   startDeaths,
+  startedAt,
   vodLabel,
   vodStartSeconds,
   topicTerms,
@@ -301,6 +302,7 @@ export const startBossTrackingSession = async ({
   bossName: string;
   normalizedBossName: string;
   startDeaths: number;
+  startedAt?: Date;
   vodLabel?: string;
   vodStartSeconds?: number;
   topicTerms: {
@@ -363,6 +365,7 @@ export const startBossTrackingSession = async ({
     });
 
     const now = new Date();
+    const sessionStartedAt = startedAt ?? now;
     await pauseOtherActiveSessions({
       tx,
       guildId,
@@ -378,12 +381,14 @@ export const startBossTrackingSession = async ({
         gameId: game.id,
         bossId: boss.id,
         startDeaths,
+        startedAt: sessionStartedAt,
         focusedAt: now,
         ...(vodLabel === undefined ? {} : { vodLabel }),
         ...(vodStartSeconds === undefined ? {} : { vodStartSeconds }),
         attempts: {
           create: {
             attemptNumber: 1,
+            startedAt: sessionStartedAt,
           },
         },
       },

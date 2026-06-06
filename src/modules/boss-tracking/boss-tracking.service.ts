@@ -194,6 +194,7 @@ export const startLiveBossTracking = async ({
   gameName,
   bossName,
   startDeaths,
+  startedAgoSeconds,
   aliases,
   weakAliases,
   contextWords,
@@ -206,6 +207,7 @@ export const startLiveBossTracking = async ({
   gameName?: string | null;
   bossName: string;
   startDeaths: number;
+  startedAgoSeconds?: number | null;
   aliases?: string | null;
   weakAliases?: string | null;
   contextWords?: string | null;
@@ -220,6 +222,11 @@ export const startLiveBossTracking = async ({
   const vodStartSeconds = parseVodTimestamp(vodTime);
 
   assertNonNegativeInteger(startDeaths, 'Starting deaths');
+  const cleanStartedAgoSeconds = startedAgoSeconds ?? undefined;
+
+  if (cleanStartedAgoSeconds !== undefined) {
+    assertNonNegativeInteger(cleanStartedAgoSeconds, 'Started ago seconds');
+  }
 
   const session = await startBossTrackingSession({
     guildId,
@@ -230,6 +237,11 @@ export const startLiveBossTracking = async ({
     bossName: cleanBossName,
     normalizedBossName: normalizeBossName(cleanBossName),
     startDeaths,
+    ...(cleanStartedAgoSeconds === undefined
+      ? {}
+      : {
+          startedAt: new Date(Date.now() - cleanStartedAgoSeconds * 1000),
+        }),
     ...(vod?.trim() ? { vodLabel: vod.trim() } : {}),
     ...(vodStartSeconds === undefined ? {} : { vodStartSeconds }),
     topicTerms: toTopicTerms({
