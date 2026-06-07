@@ -20,7 +20,6 @@ import {
   BossTrackingAttemptResult,
   BossTrackingAttemptTimingStatus,
   BossTrackingEndResult,
-  BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import { normalizeBossName } from '../bosses/bosses.utils';
 import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
@@ -68,6 +67,20 @@ const resolveGameName = async ({
   }
 
   return defaultGameName;
+};
+
+const resolveGameNameFromOption = ({
+  guildId,
+  gameName,
+}: {
+  guildId: string;
+  gameName: string | null | undefined;
+}) => {
+  if (gameName === undefined) {
+    return resolveGameName({ guildId });
+  }
+
+  return resolveGameName({ guildId, gameName });
 };
 
 const assertNonNegativeInteger = (value: number, label: string) => {
@@ -197,26 +210,17 @@ const toGameTopicTerms = ({
     });
 };
 
-const getTrackedAttemptSeconds = (
-  session: BossTrackingSessionView,
-  now = new Date(),
-) => {
+const getTrackedAttemptSeconds = (session: BossTrackingSessionView) => {
   if (session.manualTrackedSeconds !== null) {
     return session.manualTrackedSeconds;
   }
 
   return session.attempts.reduce((totalSeconds, attempt) => {
-    if (
-      attempt.result === BossTrackingAttemptResult.IN_PROGRESS &&
-      session.status !== BossTrackingSessionStatus.ACTIVE
-    ) {
+    if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
       return totalSeconds;
     }
 
-    const dateEnd =
-      attempt.result === BossTrackingAttemptResult.IN_PROGRESS
-        ? now
-        : attempt.endedAt;
+    const dateEnd = attempt.endedAt;
 
     if (attempt.vodStartSeconds !== null && attempt.vodEndSeconds !== null) {
       return (
@@ -265,6 +269,10 @@ const getSummaryTrackedSeconds = (session: BossTrackingSessionView) => {
 
 const hasPartialVodAttemptTiming = (session: BossTrackingSessionView) =>
   session.attempts.some((attempt) => {
+    if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
+      return false;
+    }
+
     const hasVodStart = attempt.vodStartSeconds !== null;
     const hasVodEnd = attempt.vodEndSeconds !== null;
 
@@ -441,9 +449,9 @@ export const startLiveBossTracking = async ({
   vod,
   vodTime,
 }: StartLiveBossTrackingInput): Promise<BossTrackingSessionView> => {
-  const cleanGameName = await resolveGameName({
+  const cleanGameName = await resolveGameNameFromOption({
     guildId,
-    ...(gameName === undefined ? {} : { gameName }),
+    gameName,
   });
   const cleanBossName = assertNonEmptyName(bossName, 'Boss');
   const vodStartSeconds = parseVodTimestamp(vodTime);
@@ -455,7 +463,7 @@ export const startLiveBossTracking = async ({
     assertNonNegativeInteger(cleanStartedAgoSeconds, 'Started ago seconds');
   }
 
-  const session = await startBossTrackingSession({
+  const startSessionInput: Parameters<typeof startBossTrackingSession>[0] = {
     guildId,
     channelId,
     trackerUserId,
@@ -464,20 +472,31 @@ export const startLiveBossTracking = async ({
     bossName: cleanBossName,
     normalizedBossName: normalizeBossName(cleanBossName),
     startDeaths,
-    ...(cleanStartedAgoSeconds === undefined
-      ? {}
-      : {
-          startedAt: new Date(Date.now() - cleanStartedAgoSeconds * 1000),
-        }),
-    ...(vod?.trim() ? { vodLabel: vod.trim() } : {}),
-    ...(vodStartSeconds === undefined ? {} : { vodStartSeconds }),
     topicTerms: toTopicTerms({
       bossName: cleanBossName,
       aliases: parseTopicTerms(aliases ?? null),
       weakAliases: parseTopicTerms(weakAliases ?? null),
       contextWords: parseTopicTerms(contextWords ?? null),
     }),
-  });
+  };
+
+  if (cleanStartedAgoSeconds !== undefined) {
+    startSessionInput.startedAt = new Date(
+      Date.now() - cleanStartedAgoSeconds * 1000,
+    );
+  }
+
+  const cleanVodLabel = vod?.trim();
+
+  if (cleanVodLabel) {
+    startSessionInput.vodLabel = cleanVodLabel;
+  }
+
+  if (vodStartSeconds !== undefined) {
+    startSessionInput.vodStartSeconds = vodStartSeconds;
+  }
+
+  const session = await startBossTrackingSession(startSessionInput);
 
   invalidateCommunityTopicMatcherCache();
 
@@ -493,10 +512,9 @@ export const recordLiveBossDeath = ({
 }) => {
   const vodDeathSeconds = parseVodTimestamp(vodTime);
 
-  return recordBossTrackingDeath({
-    guildId,
-    ...(vodDeathSeconds === undefined ? {} : { vodDeathSeconds }),
-  });
+  return vodDeathSeconds === undefined
+    ? recordBossTrackingDeath({ guildId })
+    : recordBossTrackingDeath({ guildId, vodDeathSeconds });
 };
 
 export const pauseLiveBossTracking = ({
@@ -512,13 +530,11 @@ export const pauseLiveBossTracking = ({
     assertNonNegativeInteger(currentDeaths, 'Current deaths');
   }
 
-  return pauseBossTrackingSession({
-    guildId,
-    reason: reason?.trim() || null,
-    ...(currentDeaths === null || currentDeaths === undefined
-      ? {}
-      : { currentDeaths }),
-  });
+  const cleanReason = reason?.trim() || null;
+
+  return currentDeaths === null || currentDeaths === undefined
+    ? pauseBossTrackingSession({ guildId, reason: cleanReason })
+    : pauseBossTrackingSession({ guildId, reason: cleanReason, currentDeaths });
 };
 
 export const resumeLiveBossTracking = async ({
@@ -536,24 +552,32 @@ export const resumeLiveBossTracking = async ({
 }) => {
   const cleanBossName = bossName?.trim();
   const cleanGameName = cleanBossName
-    ? await resolveGameName({
-        guildId,
-        ...(gameName === undefined ? {} : { gameName }),
-      })
+    ? await resolveGameNameFromOption({ guildId, gameName })
     : null;
   const vodResumeSeconds = parseVodTimestamp(vodTime);
-
-  return resumeBossTrackingSession({
+  const resumeSessionInput: Parameters<typeof resumeBossTrackingSession>[0] = {
     guildId,
-    ...(cleanGameName
-      ? { normalizedGameName: normalizeBossName(cleanGameName) }
-      : {}),
-    ...(cleanBossName
-      ? { normalizedBossName: normalizeBossName(cleanBossName) }
-      : {}),
-    ...(vod?.trim() ? { vodLabel: vod.trim() } : {}),
-    ...(vodResumeSeconds === undefined ? {} : { vodResumeSeconds }),
-  });
+  };
+
+  if (cleanGameName) {
+    resumeSessionInput.normalizedGameName = normalizeBossName(cleanGameName);
+  }
+
+  if (cleanBossName) {
+    resumeSessionInput.normalizedBossName = normalizeBossName(cleanBossName);
+  }
+
+  const cleanVodLabel = vod?.trim();
+
+  if (cleanVodLabel) {
+    resumeSessionInput.vodLabel = cleanVodLabel;
+  }
+
+  if (vodResumeSeconds !== undefined) {
+    resumeSessionInput.vodResumeSeconds = vodResumeSeconds;
+  }
+
+  return resumeBossTrackingSession(resumeSessionInput);
 };
 
 export const getLiveBossTrackingStatus = async (
@@ -574,9 +598,9 @@ export const getLiveGameTrackingStatus = async ({
   guildId,
   gameName,
 }: GetLiveGameTrackingStatusInput): Promise<GameTrackingStatusView> => {
-  const cleanGameName = await resolveGameName({
+  const cleanGameName = await resolveGameNameFromOption({
     guildId,
-    ...(gameName === undefined ? {} : { gameName }),
+    gameName,
   });
   const status = await findTrackedGameStatus(normalizeBossName(cleanGameName));
 
@@ -630,10 +654,7 @@ export const updateLiveBossInfo = async ({
 }) => {
   const cleanBossName = bossName?.trim();
   const cleanGameName = cleanBossName
-    ? await resolveGameName({
-        guildId,
-        ...(gameName === undefined ? {} : { gameName }),
-      })
+    ? await resolveGameNameFromOption({ guildId, gameName })
     : null;
   const topicTerms = toTopicTerms({
     bossName: '',
@@ -702,9 +723,9 @@ export const updateLiveGameInfo = async ({
   aliases?: string | null;
   contextWords?: string | null;
 }) => {
-  const cleanGameName = await resolveGameName({
+  const cleanGameName = await resolveGameNameFromOption({
     guildId,
-    ...(gameName === undefined ? {} : { gameName }),
+    gameName,
   });
   const topicTerms = toGameTopicTerms({
     gameName: cleanGameName,
@@ -717,18 +738,20 @@ export const updateLiveGameInfo = async ({
     throw new Error('Add a name, alias, or tag.');
   }
 
-  const result = await updateBossGameTopicInfo({
+  const gameTopicInfoUpdate: Parameters<typeof updateBossGameTopicInfo>[0] = {
     gameName: cleanGameName,
     normalizedGameName: normalizeBossName(cleanGameName),
     createdByUserId: userId,
     topicTerms,
-    ...(cleanName
-      ? {
-          canonicalGameName: cleanName,
-          normalizedCanonicalGameName: normalizeBossName(cleanName),
-        }
-      : {}),
-  });
+  };
+
+  if (cleanName) {
+    gameTopicInfoUpdate.canonicalGameName = cleanName;
+    gameTopicInfoUpdate.normalizedCanonicalGameName =
+      normalizeBossName(cleanName);
+  }
+
+  const result = await updateBossGameTopicInfo(gameTopicInfoUpdate);
 
   invalidateCommunityTopicMatcherCache();
 
@@ -761,16 +784,24 @@ export const endLiveBossTracking = ({
       ? BossTrackingEndResult.ABANDONED
       : BossTrackingEndResult.KILLED;
   const vodEndSeconds = parseVodTimestamp(vodTime);
-
-  return endBossTrackingSession({
+  const endInput: Parameters<typeof endBossTrackingSession>[0] = {
     guildId,
     result: endResult,
-    ...(finalDeaths === undefined ? {} : { finalDeaths }),
-    ...(totalMinutes === undefined
-      ? {}
-      : { manualTrackedSeconds: Math.round(totalMinutes * 60) }),
-    ...(vodEndSeconds === undefined ? {} : { vodEndSeconds }),
-  });
+  };
+
+  if (finalDeaths !== undefined) {
+    endInput.finalDeaths = finalDeaths;
+  }
+
+  if (totalMinutes !== undefined) {
+    endInput.manualTrackedSeconds = Math.round(totalMinutes * 60);
+  }
+
+  if (vodEndSeconds !== undefined) {
+    endInput.vodEndSeconds = vodEndSeconds;
+  }
+
+  return endBossTrackingSession(endInput);
 };
 
 export const cancelLiveBossTracking = async (guildId: string) => {
