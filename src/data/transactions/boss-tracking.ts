@@ -1,11 +1,23 @@
 import {
-  type BossTopicTermKind,
   BossTrackingAttemptResult,
   BossTrackingAttemptTimingStatus,
   BossTrackingEndResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import type {
+  BossTrackingReconciliationInput,
+  DeleteOrphanedBossAfterCancelInput,
+  DeleteOrphanedGameAfterCancelInput,
+  EndBossTrackingSessionInput,
+  PauseBossTrackingSessionInput,
+  PauseOtherActiveSessionsInput,
+  RecordBossTrackingDeathInput,
+  ResumeBossTrackingSessionInput,
+  StartBossTrackingSessionInput,
+  UpdateBossTrackingInfoInput,
+  UpsertBossTopicTermsInput,
+} from './boss-tracking.types';
 
 const ACTIVE_SESSION_STATUSES = [
   BossTrackingSessionStatus.ACTIVE,
@@ -38,13 +50,7 @@ const pauseOtherActiveSessions = async ({
   exceptSessionId,
   pausedAt,
   reason,
-}: {
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-  guildId: string;
-  exceptSessionId?: string;
-  pausedAt: Date;
-  reason: string;
-}) => {
+}: PauseOtherActiveSessionsInput) => {
   const sessions = await tx.bossTrackingSession.findMany({
     where: {
       guildId,
@@ -72,11 +78,7 @@ const getReconciliation = ({
   startDeaths,
   finalDeaths,
   recordedDeathCount,
-}: {
-  startDeaths: number;
-  finalDeaths: number;
-  recordedDeathCount: number;
-}) => {
+}: BossTrackingReconciliationInput) => {
   const deathCount = finalDeaths - startDeaths;
 
   if (deathCount < 0) {
@@ -110,16 +112,7 @@ const upsertBossTopicTerms = async ({
   bossId,
   createdByUserId,
   topicTerms,
-}: {
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-  bossId: string;
-  createdByUserId: string;
-  topicTerms: {
-    kind: BossTopicTermKind;
-    value: string;
-    normalizedValue: string;
-  }[];
-}) => {
+}: UpsertBossTopicTermsInput) => {
   for (const term of topicTerms) {
     await tx.bossTopicTerm.upsert({
       where: {
@@ -131,14 +124,14 @@ const upsertBossTopicTerms = async ({
       },
       update: {
         value: term.value,
-        createdByUserId,
+        ...(createdByUserId === undefined ? {} : { createdByUserId }),
       },
       create: {
         bossId,
         kind: term.kind,
         value: term.value,
         normalizedValue: term.normalizedValue,
-        createdByUserId,
+        ...(createdByUserId === undefined ? {} : { createdByUserId }),
       },
     });
   }
@@ -147,10 +140,7 @@ const upsertBossTopicTerms = async ({
 const deleteOrphanedBossAfterCancel = async ({
   tx,
   bossId,
-}: {
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-  bossId: string;
-}) => {
+}: DeleteOrphanedBossAfterCancelInput) => {
   const boss = await tx.boss.findUnique({
     where: { id: bossId },
     select: {
@@ -190,11 +180,7 @@ const deleteOrphanedGameAfterCancel = async ({
   tx,
   gameId,
   gameName,
-}: {
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-  gameId: string;
-  gameName: string;
-}) => {
+}: DeleteOrphanedGameAfterCancelInput) => {
   const game = await tx.bossGame.findUnique({
     where: { id: gameId },
     select: {
@@ -250,24 +236,7 @@ export const startBossTrackingSession = async ({
   vodLabel,
   vodStartSeconds,
   topicTerms,
-}: {
-  guildId: string;
-  channelId: string;
-  trackerUserId: string;
-  gameName: string;
-  normalizedGameName: string;
-  bossName: string;
-  normalizedBossName: string;
-  startDeaths: number;
-  startedAt?: Date;
-  vodLabel?: string;
-  vodStartSeconds?: number;
-  topicTerms: {
-    kind: BossTopicTermKind;
-    value: string;
-    normalizedValue: string;
-  }[];
-}) =>
+}: StartBossTrackingSessionInput) =>
   prisma.$transaction(async (tx) => {
     const existingSession = await tx.bossTrackingSession.findFirst({
       where: {
@@ -363,20 +332,7 @@ export const updateBossTrackingInfo = async ({
   createdByUserId,
   topicTerms,
   runbackSeconds,
-}: {
-  guildId: string;
-  normalizedGameName?: string;
-  normalizedBossName?: string;
-  canonicalBossName?: string;
-  normalizedCanonicalBossName?: string;
-  createdByUserId: string;
-  runbackSeconds?: number;
-  topicTerms: {
-    kind: BossTopicTermKind;
-    value: string;
-    normalizedValue: string;
-  }[];
-}) =>
+}: UpdateBossTrackingInfoInput) =>
   prisma.$transaction(async (tx) => {
     const activeSession =
       normalizedBossName === undefined
@@ -506,10 +462,7 @@ export const updateBossTrackingInfo = async ({
 export const recordBossTrackingDeath = async ({
   guildId,
   vodDeathSeconds,
-}: {
-  guildId: string;
-  vodDeathSeconds?: number;
-}) =>
+}: RecordBossTrackingDeathInput) =>
   prisma.$transaction(async (tx) => {
     const session = await tx.bossTrackingSession.findFirst({
       where: {
@@ -568,11 +521,7 @@ export const pauseBossTrackingSession = async ({
   guildId,
   reason,
   currentDeaths,
-}: {
-  guildId: string;
-  reason: string | null;
-  currentDeaths?: number;
-}) =>
+}: PauseBossTrackingSessionInput) =>
   prisma.$transaction(async (tx) => {
     const session = await tx.bossTrackingSession.findFirst({
       where: {
@@ -629,13 +578,7 @@ export const resumeBossTrackingSession = async ({
   normalizedBossName,
   vodLabel,
   vodResumeSeconds,
-}: {
-  guildId: string;
-  normalizedGameName?: string;
-  normalizedBossName?: string;
-  vodLabel?: string;
-  vodResumeSeconds?: number;
-}) =>
+}: ResumeBossTrackingSessionInput) =>
   prisma.$transaction(async (tx) => {
     const bossFilter = normalizedBossName
       ? {
@@ -719,13 +662,7 @@ export const endBossTrackingSession = async ({
   finalDeaths,
   manualTrackedSeconds,
   vodEndSeconds,
-}: {
-  guildId: string;
-  result: BossTrackingEndResult;
-  finalDeaths?: number;
-  manualTrackedSeconds?: number;
-  vodEndSeconds?: number;
-}) =>
+}: EndBossTrackingSessionInput) =>
   prisma.$transaction(async (tx) => {
     const session = await tx.bossTrackingSession.findFirst({
       where: {

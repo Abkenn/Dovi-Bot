@@ -1,30 +1,13 @@
-import type {
-  MusicMode,
-  ScheduleStatus,
-  StreamKind,
-  Weekday,
-} from '../../generated/prisma/client';
 import { prisma } from '../../lib/prisma';
+import type {
+  EnsureGuildStreamConfigInput,
+  FindStreamScheduleOverridesInDateRangeInput,
+  TargetStreamOverrideInput,
+  UpsertStreamScheduleDefaultForRuleInput,
+  UpsertStreamTitleResetOverrideInput,
+} from './stream-info.types';
 
-type DefaultStreamScheduleRule = {
-  weekday: Weekday;
-  startTime: string;
-  durationMinutes: number;
-  isEnabled: boolean;
-};
-
-export type TargetStreamOverrideInput = {
-  guildId: string;
-  streamDateKey: string;
-  resolvedFromWeekday: Weekday | null;
-  startAtUtc: Date;
-  status?: ScheduleStatus;
-  streamKind?: StreamKind | null;
-  musicMode?: MusicMode | null;
-  titleOverride?: string | null;
-  gameName?: string | null;
-  createGameName?: string | null;
-};
+export type { TargetStreamOverrideInput } from './stream-info.types';
 
 export const buildTargetStreamOverrideUpsertArgs = ({
   guildId,
@@ -70,17 +53,7 @@ export const ensureGuildStreamConfig = async ({
   defaultConfig,
   defaultSchedule,
   startTimeToMinutes,
-}: {
-  guildId: string;
-  defaultConfig: {
-    canonicalTimezone: string;
-    currentWindowMinutes: number;
-    lookaheadDays: number;
-    defaultStreamKind: StreamKind;
-  };
-  defaultSchedule: readonly DefaultStreamScheduleRule[];
-  startTimeToMinutes: (startTime: string) => number;
-}) => {
+}: EnsureGuildStreamConfigInput) => {
   const config = await prisma.guildConfig.upsert({
     where: { guildId },
     update: {},
@@ -105,11 +78,7 @@ const upsertStreamScheduleDefaultForRule = ({
   guildId,
   rule,
   startTimeToMinutes,
-}: {
-  guildId: string;
-  rule: DefaultStreamScheduleRule;
-  startTimeToMinutes: (startTime: string) => number;
-}) =>
+}: UpsertStreamScheduleDefaultForRuleInput) =>
   prisma.streamScheduleDefault.upsert({
     where: {
       guildId_weekday: {
@@ -160,11 +129,7 @@ export const findStreamScheduleOverridesInDateRange = ({
   guildId,
   start,
   end,
-}: {
-  guildId: string;
-  start: string;
-  end: string;
-}) =>
+}: FindStreamScheduleOverridesInDateRangeInput) =>
   prisma.streamScheduleOverride.findMany({
     where: {
       guildId,
@@ -180,12 +145,7 @@ export const upsertStreamTitleResetOverride = ({
   streamDateKey,
   resolvedFromWeekday,
   startAtUtc,
-}: {
-  guildId: string;
-  streamDateKey: string;
-  resolvedFromWeekday: Weekday | null;
-  startAtUtc: Date;
-}) =>
+}: UpsertStreamTitleResetOverrideInput) =>
   prisma.streamScheduleOverride.upsert({
     where: {
       guildId_streamDateKey: {

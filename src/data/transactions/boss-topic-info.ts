@@ -1,26 +1,20 @@
-import {
-  type BossTopicTermKind,
-  BossTopicTermKind as TermKind,
-} from '../../generated/prisma/enums';
+import { BossTopicTermKind as TermKind } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import type {
+  CommunityTopicSeedImport,
+  UpdateBossGameTopicInfoInput,
+  UpsertBossGameTopicTermsInput,
+  UpsertBossTopicTermsInput,
+} from './boss-topic-info.types';
 
-type TopicTermInput = {
-  kind: BossTopicTermKind;
-  value: string;
-  normalizedValue: string;
-};
+export type { CommunityTopicSeedImport } from './boss-topic-info.types';
 
 const upsertBossGameTopicTerms = async ({
   tx,
   gameId,
   createdByUserId,
   topicTerms,
-}: {
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-  gameId: string;
-  createdByUserId?: string;
-  topicTerms: TopicTermInput[];
-}) => {
+}: UpsertBossGameTopicTermsInput) => {
   for (const term of topicTerms) {
     await tx.bossGameTopicTerm.upsert({
       where: {
@@ -50,12 +44,7 @@ const upsertBossTopicTerms = async ({
   bossId,
   createdByUserId,
   topicTerms,
-}: {
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-  bossId: string;
-  createdByUserId?: string;
-  topicTerms: TopicTermInput[];
-}) => {
+}: UpsertBossTopicTermsInput) => {
   for (const term of topicTerms) {
     await tx.bossTopicTerm.upsert({
       where: {
@@ -87,14 +76,7 @@ export const updateBossGameTopicInfo = async ({
   normalizedCanonicalGameName,
   createdByUserId,
   topicTerms,
-}: {
-  gameName: string;
-  normalizedGameName: string;
-  canonicalGameName?: string;
-  normalizedCanonicalGameName?: string;
-  createdByUserId: string;
-  topicTerms: TopicTermInput[];
-}) =>
+}: UpdateBossGameTopicInfoInput) =>
   prisma.$transaction(async (tx) => {
     const existingGame = await tx.bossGame.findFirst({
       where: {
@@ -164,21 +146,6 @@ export const updateBossGameTopicInfo = async ({
       addedCount: extraTopicTerms.length,
     };
   });
-
-export type CommunityTopicSeedImport = {
-  games: {
-    name: string;
-    normalizedName: string;
-    topicTerms: TopicTermInput[];
-  }[];
-  bosses: {
-    gameName: string;
-    normalizedGameName: string;
-    name: string;
-    normalizedName: string;
-    topicTerms: TopicTermInput[];
-  }[];
-};
 
 export const importCommunityTopicSeed = async (
   seed: CommunityTopicSeedImport,

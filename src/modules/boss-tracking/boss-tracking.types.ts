@@ -82,6 +82,54 @@ export type StartLiveBossTrackingInput = {
   vodTime?: string | null;
 };
 
+export type ResolveGameNameInput = {
+  guildId: string;
+  gameName?: string | null;
+};
+
+export type ResolveGameNameFromOptionInput = {
+  guildId: string;
+  gameName: string | null | undefined;
+};
+
+export type BossTopicTermsInput = {
+  bossName: string;
+  aliases: string[];
+  weakAliases: string[];
+  contextWords: string[];
+};
+
+export type GameTopicTermsInput = {
+  gameName: string;
+  aliases: string[];
+  contextWords: string[];
+};
+
+export type BossTrackingAverageFromSecondsInput = {
+  trackedSeconds: number;
+  attemptCount: number;
+  runbackSeconds: number;
+};
+
+export type RecordLiveBossDeathInput = {
+  guildId: string;
+  vodTime?: string | null;
+};
+
+export type PauseLiveBossTrackingInput = {
+  guildId: string;
+  reason?: string | null;
+  currentDeaths?: number | null;
+};
+
+export type ResumeLiveBossTrackingInput = {
+  guildId: string;
+  gameName?: string | null;
+  bossName?: string | null;
+  vod?: string | null;
+  vodTime?: string | null;
+};
+
 export type GameTrackingStatusView = {
   gameName: string;
   deaths: number;
@@ -92,6 +140,41 @@ export type GameTrackingStatusView = {
 export type GetLiveGameTrackingStatusInput = {
   guildId: string;
   gameName?: string | null;
+};
+
+export type GetOpenBossTrackingBossAutocompleteInput = {
+  guildId: string;
+  gameName: string | null;
+  query: string;
+};
+
+export type UpdateLiveBossInfoInput = {
+  guildId: string;
+  userId: string;
+  gameName?: string | null;
+  bossName?: string | null;
+  name?: string | null;
+  aliases?: string | null;
+  weakAliases?: string | null;
+  contextWords?: string | null;
+  runbackSeconds?: number | null;
+};
+
+export type UpdateLiveGameInfoInput = {
+  guildId: string;
+  userId: string;
+  gameName?: string | null;
+  name?: string | null;
+  aliases?: string | null;
+  contextWords?: string | null;
+};
+
+export type EndLiveBossTrackingInput = {
+  guildId: string;
+  result: string;
+  finalDeaths?: number;
+  totalMinutes?: number;
+  vodTime?: string | null;
 };
 
 export type BossTrackingAverageAttemptTime =

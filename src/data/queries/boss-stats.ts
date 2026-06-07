@@ -3,6 +3,11 @@ import {
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import type {
+  FindBossesForAutocompleteInput,
+  FindBossWithDaviSpreadsheetStatsInput,
+  FindGameBossDeathRankingInput,
+} from './boss-stats.types';
 
 const AUTOCOMPLETE_LIMIT = 25;
 
@@ -42,10 +47,7 @@ export const findBossGamesForAutocomplete = (normalizedQuery: string) =>
 export const findBossesForAutocomplete = async ({
   normalizedGameName,
   normalizedBossQuery,
-}: {
-  normalizedGameName?: string;
-  normalizedBossQuery: string;
-}) => {
+}: FindBossesForAutocompleteInput) => {
   const game = normalizedGameName
     ? await prisma.bossGame.findFirst({
         where: {
@@ -91,10 +93,7 @@ export const findBossesForAutocomplete = async ({
 export const findBossWithDaviSpreadsheetStats = ({
   normalizedGameName,
   normalizedBossName,
-}: {
-  normalizedGameName?: string;
-  normalizedBossName: string;
-}) =>
+}: FindBossWithDaviSpreadsheetStatsInput) =>
   prisma.boss.findFirst({
     where: {
       normalizedName: normalizedBossName,
@@ -134,10 +133,7 @@ export const countBossesByNormalizedName = (normalizedBossName: string) =>
 export const findGameBossDeathRanking = async ({
   normalizedGameName,
   limit,
-}: {
-  normalizedGameName: string;
-  limit: number;
-}) => {
+}: FindGameBossDeathRankingInput) => {
   const game = await prisma.bossGame.findFirst({
     where: {
       OR: [

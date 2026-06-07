@@ -3,6 +3,7 @@ import {
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import type { FindOpenBossTrackingBossesForAutocompleteInput } from './boss-stats.types';
 
 const ACTIVE_SESSION_STATUSES = [
   BossTrackingSessionStatus.ACTIVE,
@@ -43,11 +44,7 @@ export const findOpenBossTrackingBossesForAutocomplete = async ({
   guildId,
   normalizedGameName,
   normalizedBossQuery,
-}: {
-  guildId: string;
-  normalizedGameName?: string;
-  normalizedBossQuery: string;
-}) => {
+}: FindOpenBossTrackingBossesForAutocompleteInput) => {
   const sessions = await prisma.bossTrackingSession.findMany({
     where: {
       guildId,

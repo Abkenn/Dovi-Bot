@@ -25,10 +25,22 @@ import { normalizeBossName } from '../bosses/bosses.utils';
 import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
 import type {
   BossTrackingAverageAttemptTime,
+  BossTrackingAverageFromSecondsInput,
   BossTrackingSessionView,
+  BossTopicTermsInput,
+  EndLiveBossTrackingInput,
   GameTrackingStatusView,
   GetLiveGameTrackingStatusInput,
+  GetOpenBossTrackingBossAutocompleteInput,
+  GameTopicTermsInput,
+  PauseLiveBossTrackingInput,
+  RecordLiveBossDeathInput,
+  ResolveGameNameFromOptionInput,
+  ResolveGameNameInput,
+  ResumeLiveBossTrackingInput,
   StartLiveBossTrackingInput,
+  UpdateLiveBossInfoInput,
+  UpdateLiveGameInfoInput,
 } from './boss-tracking.types';
 
 const assertNonEmptyName = (value: string, label: string) => {
@@ -47,13 +59,7 @@ const getDefaultGameName = async (guildId: string) => {
   return config?.defaultGameName ?? null;
 };
 
-const resolveGameName = async ({
-  guildId,
-  gameName,
-}: {
-  guildId: string;
-  gameName?: string | null;
-}) => {
+const resolveGameName = async ({ guildId, gameName }: ResolveGameNameInput) => {
   const cleanGameName = gameName?.trim();
 
   if (cleanGameName) {
@@ -72,10 +78,7 @@ const resolveGameName = async ({
 const resolveGameNameFromOption = ({
   guildId,
   gameName,
-}: {
-  guildId: string;
-  gameName: string | null | undefined;
-}) => {
+}: ResolveGameNameFromOptionInput) => {
   if (gameName === undefined) {
     return resolveGameName({ guildId });
   }
@@ -131,12 +134,7 @@ const toTopicTerms = ({
   aliases,
   weakAliases,
   contextWords,
-}: {
-  bossName: string;
-  aliases: string[];
-  weakAliases: string[];
-  contextWords: string[];
-}) => {
+}: BossTopicTermsInput) => {
   const seen = new Set<string>();
 
   return [
@@ -175,11 +173,7 @@ const toGameTopicTerms = ({
   gameName,
   aliases,
   contextWords,
-}: {
-  gameName: string;
-  aliases: string[];
-  contextWords: string[];
-}) => {
+}: GameTopicTermsInput) => {
   const seen = new Set<string>();
 
   return [
@@ -372,11 +366,7 @@ const getAverageFromSeconds = ({
   trackedSeconds,
   attemptCount,
   runbackSeconds,
-}: {
-  trackedSeconds: number;
-  attemptCount: number;
-  runbackSeconds: number;
-}): BossTrackingAverageAttemptTime => {
+}: BossTrackingAverageFromSecondsInput): BossTrackingAverageAttemptTime => {
   const adjustedSeconds = Math.max(0, trackedSeconds - runbackSeconds);
 
   if (adjustedSeconds <= 0 || attemptCount <= 0) {
@@ -506,10 +496,7 @@ export const startLiveBossTracking = async ({
 export const recordLiveBossDeath = ({
   guildId,
   vodTime,
-}: {
-  guildId: string;
-  vodTime?: string | null;
-}) => {
+}: RecordLiveBossDeathInput) => {
   const vodDeathSeconds = parseVodTimestamp(vodTime);
 
   return vodDeathSeconds === undefined
@@ -521,11 +508,7 @@ export const pauseLiveBossTracking = ({
   guildId,
   reason,
   currentDeaths,
-}: {
-  guildId: string;
-  reason?: string | null;
-  currentDeaths?: number | null;
-}) => {
+}: PauseLiveBossTrackingInput) => {
   if (currentDeaths !== null && currentDeaths !== undefined) {
     assertNonNegativeInteger(currentDeaths, 'Current deaths');
   }
@@ -543,13 +526,7 @@ export const resumeLiveBossTracking = async ({
   bossName,
   vod,
   vodTime,
-}: {
-  guildId: string;
-  gameName?: string | null;
-  bossName?: string | null;
-  vod?: string | null;
-  vodTime?: string | null;
-}) => {
+}: ResumeLiveBossTrackingInput) => {
   const cleanBossName = bossName?.trim();
   const cleanGameName = cleanBossName
     ? await resolveGameNameFromOption({ guildId, gameName })
@@ -620,11 +597,7 @@ export const getOpenBossTrackingBossAutocomplete = async ({
   guildId,
   gameName,
   query,
-}: {
-  guildId: string;
-  gameName: string | null;
-  query: string;
-}) =>
+}: GetOpenBossTrackingBossAutocompleteInput) =>
   findOpenBossTrackingBossesForAutocomplete({
     guildId,
     ...(gameName ? { normalizedGameName: normalizeBossName(gameName) } : {}),
@@ -641,17 +614,7 @@ export const updateLiveBossInfo = async ({
   weakAliases,
   contextWords,
   runbackSeconds,
-}: {
-  guildId: string;
-  userId: string;
-  gameName?: string | null;
-  bossName?: string | null;
-  name?: string | null;
-  aliases?: string | null;
-  weakAliases?: string | null;
-  contextWords?: string | null;
-  runbackSeconds?: number | null;
-}) => {
+}: UpdateLiveBossInfoInput) => {
   const cleanBossName = bossName?.trim();
   const cleanGameName = cleanBossName
     ? await resolveGameNameFromOption({ guildId, gameName })
@@ -715,14 +678,7 @@ export const updateLiveGameInfo = async ({
   name,
   aliases,
   contextWords,
-}: {
-  guildId: string;
-  userId: string;
-  gameName?: string | null;
-  name?: string | null;
-  aliases?: string | null;
-  contextWords?: string | null;
-}) => {
+}: UpdateLiveGameInfoInput) => {
   const cleanGameName = await resolveGameNameFromOption({
     guildId,
     gameName,
@@ -764,13 +720,7 @@ export const endLiveBossTracking = ({
   finalDeaths,
   totalMinutes,
   vodTime,
-}: {
-  guildId: string;
-  result: string;
-  finalDeaths?: number;
-  totalMinutes?: number;
-  vodTime?: string | null;
-}) => {
+}: EndLiveBossTrackingInput) => {
   if (finalDeaths !== undefined) {
     assertNonNegativeInteger(finalDeaths, 'Final deaths');
   }

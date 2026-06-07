@@ -5,6 +5,11 @@ import {
   findBossWithDaviSpreadsheetStats,
   findGameBossDeathRanking,
 } from '@data/queries/boss-stats';
+import type {
+  BossAutocompleteValueInput,
+  GetBossAutocompleteInput,
+  GetBossViewInput,
+} from './bosses.types';
 import { normalizeBossName } from './bosses.utils';
 
 const BOSS_LOOKUP_SEPARATOR = '::';
@@ -19,10 +24,7 @@ export const getBossGameAutocomplete = async (query: string) => {
 export const getBossAutocomplete = async ({
   gameName,
   query,
-}: {
-  gameName: string | null;
-  query: string;
-}) => {
+}: GetBossAutocompleteInput) => {
   const bosses = await findBossesForAutocomplete({
     ...(gameName ? { normalizedGameName: normalizeBossName(gameName) } : {}),
     normalizedBossQuery: normalizeBossName(query),
@@ -46,10 +48,8 @@ export const getBossAutocomplete = async ({
 export const toBossAutocompleteValue = ({
   gameName,
   bossName,
-}: {
-  gameName: string;
-  bossName: string;
-}) => `${gameName}${BOSS_LOOKUP_SEPARATOR}${bossName}`;
+}: BossAutocompleteValueInput) =>
+  `${gameName}${BOSS_LOOKUP_SEPARATOR}${bossName}`;
 
 const parseBossAutocompleteValue = (value: string) => {
   const [gameName, ...bossNameParts] = value.split(BOSS_LOOKUP_SEPARATOR);
@@ -62,13 +62,7 @@ const parseBossAutocompleteValue = (value: string) => {
   return { gameName: gameName.trim(), bossName };
 };
 
-export const getBossView = async ({
-  gameName,
-  bossName,
-}: {
-  gameName?: string | null;
-  bossName: string;
-}) => {
+export const getBossView = async ({ gameName, bossName }: GetBossViewInput) => {
   const parsedBoss = gameName ? null : parseBossAutocompleteValue(bossName);
   const resolvedGameName = gameName ?? parsedBoss?.gameName ?? null;
   const resolvedBossName = parsedBoss?.bossName ?? bossName;

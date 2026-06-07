@@ -10,6 +10,10 @@ import {
   getCommunityTopicMatcher,
   toCommunityTopicEntityKey,
 } from './community-topic-matcher';
+import type {
+  GetCommunityTopicBossDiscussionStatsInput,
+  GetCommunityTopicGameDiscussionStatsInput,
+} from './community-topic.service.types';
 
 export const recordCommunityTopicMessage = async (
   input: CommunityTopicMessageInput,
@@ -56,11 +60,7 @@ export const getCommunityTopicBossDiscussionStats = async ({
   guildId,
   gameName,
   bossName,
-}: {
-  guildId: string;
-  gameName: string;
-  bossName: string;
-}) => {
+}: GetCommunityTopicBossDiscussionStatsInput) => {
   const tablesPresent = await areCommunityTopicTablesPresent();
 
   if (!tablesPresent) {
@@ -90,10 +90,7 @@ export const getCommunityTopicBossDiscussionStats = async ({
 export const getCommunityTopicGameDiscussionStats = async ({
   guildId,
   gameName,
-}: {
-  guildId: string;
-  gameName: string;
-}) => {
+}: GetCommunityTopicGameDiscussionStatsInput) => {
   const tablesPresent = await areCommunityTopicTablesPresent();
 
   if (!tablesPresent) {
