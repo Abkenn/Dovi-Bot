@@ -30,8 +30,8 @@ export const upsertDaviSpreadsheetBossEncounter = async ({
   rawWinningAttemptTime: string | null;
   rawDifficultyCoefficient: string | null;
   sourceRowNumber: number;
-}) => {
-  return prisma.$transaction(async (tx) => {
+}) =>
+  prisma.$transaction(async (tx) => {
     // Spreadsheet sync is intentionally source-scoped. It may refresh the
     // official DAVI_SPREADSHEET stat row, but live command tracking lives in
     // BossTrackingSession/BossTrackingAttempt and must not be deleted here.
@@ -94,4 +94,3 @@ export const upsertDaviSpreadsheetBossEncounter = async ({
 
     return existingStat ? 'updated' : 'imported';
   });
-};

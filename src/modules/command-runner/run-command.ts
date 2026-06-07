@@ -3,6 +3,7 @@ import {
   type MessageEditOptions,
   MessageFlags,
 } from 'discord.js';
+import type { AsyncReturnType } from 'type-fest';
 import { ZodError } from 'zod';
 import { BOT_GUILDS } from '../../config/discord-access';
 import {
@@ -11,6 +12,7 @@ import {
 } from '../../config/discord-command-categories';
 import { HELP_COMMANDS } from '../../config/discord-command-metadata';
 import { CommandExecutionStatus } from '../../generated/prisma/enums';
+import { getNumberProperty } from '../../lib/type-guards';
 import { CommandDeniedError } from '../command-logging/command-denied';
 import {
   createCommandErrorLog,
@@ -53,10 +55,7 @@ const getLogStatus = (error: unknown): CommandExecutionStatus => {
 };
 
 const isUnknownInteractionError = (error: unknown): boolean =>
-  typeof error === 'object' &&
-  error !== null &&
-  'code' in error &&
-  (error as { code?: unknown }).code === 10062;
+  getNumberProperty(error, 'code') === 10062;
 
 const shouldCreateErrorLog = (error: unknown): boolean => {
   if (error instanceof CommandDeniedError) {
@@ -144,8 +143,8 @@ type CommandDeferReplyOptions = Parameters<
   ChatInputCommandInteraction['deferReply']
 >[0];
 
-type CommandEditReplyResult = Awaited<
-  ReturnType<ChatInputCommandInteraction['editReply']>
+type CommandEditReplyResult = AsyncReturnType<
+  ChatInputCommandInteraction['editReply']
 >;
 
 export type CommandRunContext = {

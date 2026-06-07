@@ -41,11 +41,10 @@ export class DaviStreamInfoCommand extends Command {
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
-      run: async ({ editReply }) => {
-        return editReply({
+      run: async ({ editReply }) =>
+        editReply({
           embeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],
-        });
-      },
+        }),
     });
   }
 }

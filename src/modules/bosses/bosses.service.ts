@@ -5,6 +5,7 @@ import {
   findBossWithDaviSpreadsheetStats,
   findGameBossDeathRanking,
 } from '@data/queries/boss-stats';
+import type { AsyncReturnType } from 'type-fest';
 import type {
   BossAutocompleteValueInput,
   GetBossAutocompleteInput,
@@ -103,7 +104,7 @@ export const getGameBossDeathRanking = async (gameName: string) => {
   return gameStats;
 };
 
-export type BossView = Awaited<ReturnType<typeof getBossView>>;
-export type GameBossDeathRankingView = Awaited<
-  ReturnType<typeof getGameBossDeathRanking>
+export type BossView = AsyncReturnType<typeof getBossView>;
+export type GameBossDeathRankingView = AsyncReturnType<
+  typeof getGameBossDeathRanking
 >;

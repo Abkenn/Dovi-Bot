@@ -191,14 +191,13 @@ const buildOccurrences = (
   return occurrences.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 };
 
-const ensureGuildStreamConfig = async (guildId: string) => {
-  return ensureGuildStreamConfigRows({
+const ensureGuildStreamConfig = async (guildId: string) =>
+  ensureGuildStreamConfigRows({
     guildId,
     defaultConfig: DEFAULT_GUILD_STREAM_CONFIG,
     defaultSchedule: DEFAULT_STREAM_SCHEDULE,
     startTimeToMinutes,
   });
-};
 
 const updateDefaultGameName = (guildId: string, gameName: string) =>
   updateDefaultGameNameRow(guildId, gameName);

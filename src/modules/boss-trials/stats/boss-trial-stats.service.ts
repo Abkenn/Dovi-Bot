@@ -1,4 +1,5 @@
 import { getBossTrialStatsRows } from '@data/queries/boss-trial-stats';
+import type { AsyncReturnType } from 'type-fest';
 import { BossTrialStatus } from '../../../generated/prisma/enums';
 import {
   BOSS_TRIAL_VERDICT_LABELS,
@@ -10,8 +11,8 @@ import {
   shouldShowBossTrialVotes,
 } from '../poll/boss-trial.service';
 
-export type BossTrialStatsTrial = Awaited<
-  ReturnType<typeof getBossTrialStats>
+export type BossTrialStatsTrial = AsyncReturnType<
+  typeof getBossTrialStats
 >['trials'][number];
 
 const formatVerdictLabels = (trial: BossTrialStatsTrial) => {

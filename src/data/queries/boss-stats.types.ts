@@ -1,11 +1,15 @@
+import type { Simplify } from 'type-fest';
+
 export type FindBossesForAutocompleteInput = {
   normalizedGameName?: string;
   normalizedBossQuery: string;
 };
 
-export type FindOpenBossTrackingBossesForAutocompleteInput = {
-  guildId: string;
-} & FindBossesForAutocompleteInput;
+export type FindOpenBossTrackingBossesForAutocompleteInput = Simplify<
+  {
+    guildId: string;
+  } & FindBossesForAutocompleteInput
+>;
 
 export type FindBossWithDaviSpreadsheetStatsInput = {
   normalizedGameName?: string;

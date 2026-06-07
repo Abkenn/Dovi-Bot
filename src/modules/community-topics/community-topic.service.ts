@@ -5,15 +5,15 @@ import {
   getCommunityTopicSignalStats,
 } from '../../data/queries/community-topic-signals';
 import { upsertCommunityTopicMessageSignals } from '../../data/transactions/community-topic-signals';
+import type {
+  GetCommunityTopicBossDiscussionStatsInput,
+  GetCommunityTopicGameDiscussionStatsInput,
+} from './community-topic.service.types';
 import type { CommunityTopicMessageInput } from './community-topic.types';
 import {
   getCommunityTopicMatcher,
   toCommunityTopicEntityKey,
 } from './community-topic-matcher';
-import type {
-  GetCommunityTopicBossDiscussionStatsInput,
-  GetCommunityTopicGameDiscussionStatsInput,
-} from './community-topic.service.types';
 
 export const recordCommunityTopicMessage = async (
   input: CommunityTopicMessageInput,

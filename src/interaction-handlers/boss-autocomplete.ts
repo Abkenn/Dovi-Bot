@@ -6,6 +6,7 @@ import type {
   AutocompleteFocusedOption,
   AutocompleteInteraction,
 } from 'discord.js';
+import { getNumberProperty } from '../lib/type-guards';
 import { getOpenBossTrackingBossAutocomplete } from '../modules/boss-tracking/boss-tracking.service';
 import {
   BOSS_TRIAL_BUMP_OPTIONS,
@@ -56,10 +57,7 @@ type AutocompleteChoice = {
 };
 
 const isExpiredAutocompleteResponseError = (error: unknown) =>
-  typeof error === 'object' &&
-  error !== null &&
-  'code' in error &&
-  [40060, 10062].includes(Number((error as { code?: unknown }).code));
+  [40060, 10062].includes(getNumberProperty(error, 'code') ?? 0);
 
 const respondSafely = async (
   interaction: AutocompleteInteraction,

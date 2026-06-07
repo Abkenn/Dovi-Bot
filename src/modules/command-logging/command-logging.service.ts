@@ -7,6 +7,7 @@ import {
   type CommandExecutionStatus,
   Prisma,
 } from '../../generated/prisma/client';
+import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 
 type CommandExecutionLogInteraction = {
   guildId: string | null;
@@ -54,8 +55,8 @@ export const createCommandExecutionLog = async ({
   status: CommandExecutionStatus;
   note?: string | null;
   durationMs?: number | null;
-}) => {
-  return createCommandExecutionLogRow({
+}) =>
+  createCommandExecutionLogRow({
     guildId: interaction.guildId,
     channelId: interaction.channelId,
     userId: interaction.user.id,
@@ -66,7 +67,6 @@ export const createCommandExecutionLog = async ({
     note: note ?? null,
     durationMs: durationMs ?? null,
   });
-};
 
 export const createInteractionExecutionLog = async ({
   interaction,
@@ -82,8 +82,8 @@ export const createInteractionExecutionLog = async ({
   status: CommandExecutionStatus;
   note?: string | null;
   durationMs?: number | null;
-}) => {
-  return createCommandExecutionLogRow({
+}) =>
+  createCommandExecutionLogRow({
     guildId: interaction.guildId,
     channelId: interaction.channelId,
     userId: interaction.user.id,
@@ -94,7 +94,6 @@ export const createInteractionExecutionLog = async ({
     note: note ?? null,
     durationMs: durationMs ?? null,
   });
-};
 
 export const createCommandErrorLog = async ({
   commandExecutionId,
@@ -104,19 +103,15 @@ export const createCommandErrorLog = async ({
   error: unknown;
 }) => {
   const errorObject = error instanceof Error ? error : new Error(String(error));
-  const anyError = error as {
-    code?: number;
-    status?: number;
-    rawError?: unknown;
-  };
+  const errorRecord = isUnknownRecord(error) ? error : null;
 
   return createCommandErrorLogRow({
     commandExecutionId,
     errorName: errorObject.name,
     errorMessage: errorObject.message,
     stack: errorObject.stack ?? null,
-    discordCode: typeof anyError?.code === 'number' ? anyError.code : null,
-    httpStatus: typeof anyError?.status === 'number' ? anyError.status : null,
-    rawJson: serializeRawError(anyError?.rawError),
+    discordCode: getNumberProperty(error, 'code'),
+    httpStatus: getNumberProperty(error, 'status'),
+    rawJson: serializeRawError(errorRecord?.rawError),
   });
 };

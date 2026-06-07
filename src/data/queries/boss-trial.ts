@@ -1,3 +1,4 @@
+import type { AsyncReturnType } from 'type-fest';
 import type { Prisma } from '../../generated/prisma/client';
 import type {
   BossTrialBumpMode,
@@ -235,4 +236,4 @@ export const claimBossTrialFinalResults = (trialId: string) =>
     status: BossTrialStatus.RESULTS_PUBLISHED,
   } satisfies Prisma.BossTrialUpdateManyMutationInput);
 
-export type BossTrialView = Awaited<ReturnType<typeof getBossTrialView>>;
+export type BossTrialView = AsyncReturnType<typeof getBossTrialView>;

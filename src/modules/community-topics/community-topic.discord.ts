@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import type { AsyncReturnType } from 'type-fest';
 import { DISCORD_STYLE } from '../../config/discord-style';
 import type {
   CommunityTopicBossUserShareRow,
@@ -7,6 +8,21 @@ import type {
   CommunityTopicUserEntityStatRow,
   CommunityTopicUserStatRow,
 } from '../../data/queries/community-topic-signals';
+import type {
+  getCommunityTopicBossDiscussionStats,
+  getCommunityTopicGameDiscussionStats,
+  getCommunityTopicStats,
+} from './community-topic.service';
+
+type CommunityTopicStatsView = NonNullable<
+  AsyncReturnType<typeof getCommunityTopicStats>
+>;
+type CommunityTopicBossDiscussionStatsView = NonNullable<
+  AsyncReturnType<typeof getCommunityTopicBossDiscussionStats>
+>;
+type CommunityTopicGameDiscussionStatsView = NonNullable<
+  AsyncReturnType<typeof getCommunityTopicGameDiscussionStats>
+>;
 
 const formatStatRows = (rows: CommunityTopicStatRow[], emptyMessage: string) =>
   rows.length === 0
@@ -49,13 +65,7 @@ export const buildCommunityTopicStatsEmbed = ({
   stats,
 }: {
   title: string;
-  stats: NonNullable<
-    Awaited<
-      ReturnType<
-        typeof import('./community-topic.service').getCommunityTopicStats
-      >
-    >
-  >;
+  stats: CommunityTopicStatsView;
 }) =>
   new EmbedBuilder()
     .setTitle(title)
@@ -116,13 +126,7 @@ const formatBossUserShareRows = ({
 export const buildCommunityTopicBossDiscussionEmbed = ({
   stats,
 }: {
-  stats: NonNullable<
-    Awaited<
-      ReturnType<
-        typeof import('./community-topic.service').getCommunityTopicBossDiscussionStats
-      >
-    >
-  >;
+  stats: CommunityTopicBossDiscussionStatsView;
 }) =>
   new EmbedBuilder()
     .setTitle('Game Discussion Stats')
@@ -168,13 +172,7 @@ const formatGameBossRows = (bosses: CommunityTopicGameBossRow[]) => {
 export const buildCommunityTopicGameDiscussionEmbed = ({
   stats,
 }: {
-  stats: NonNullable<
-    Awaited<
-      ReturnType<
-        typeof import('./community-topic.service').getCommunityTopicGameDiscussionStats
-      >
-    >
-  >;
+  stats: CommunityTopicGameDiscussionStatsView;
 }) =>
   new EmbedBuilder()
     .setTitle('Game Discussion Stats')

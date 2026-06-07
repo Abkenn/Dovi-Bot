@@ -1,7 +1,8 @@
 import { env } from '@zod-schemas/env.zod';
 import { PermissionFlagsBits } from 'discord.js';
+import type { Tagged } from 'type-fest';
 
-export type BotGuildId = string & { readonly __brand: unique symbol };
+export type BotGuildId = Tagged<string, 'BotGuildId'>;
 
 const asBotGuildId = (value: string): BotGuildId => value as BotGuildId;
 
