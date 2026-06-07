@@ -39,6 +39,7 @@ import type {
   UpdateLiveBossInfoInput,
   UpdateLiveGameInfoInput,
 } from './boss-tracking.types';
+import { getBossTrackingReconciliation } from './boss-tracking.utils';
 
 const assertNonEmptyName = (value: string, label: string) => {
   const trimmed = value.trim();
@@ -125,6 +126,10 @@ const parseTopicTerms = (value: string | null) =>
     .split(',')
     .map((term) => term.trim())
     .filter(Boolean);
+
+const findOpenOrLatestBossTrackingSession = async (guildId: string) =>
+  (await findActiveBossTrackingSession(guildId)) ??
+  (await findLatestBossTrackingSession(guildId));
 
 const toTopicTerms = ({
   bossName,
@@ -280,7 +285,7 @@ export const recordLiveBossDeath = ({
     : recordBossTrackingDeath({ guildId, vodDeathSeconds });
 };
 
-export const pauseLiveBossTracking = ({
+export const pauseLiveBossTracking = async ({
   guildId,
   reason,
   currentDeaths,
@@ -290,10 +295,24 @@ export const pauseLiveBossTracking = ({
   }
 
   const cleanReason = reason?.trim() || null;
+  const pauseInput: Parameters<typeof pauseBossTrackingSession>[0] = {
+    guildId,
+    reason: cleanReason,
+  };
 
-  return currentDeaths === null || currentDeaths === undefined
-    ? pauseBossTrackingSession({ guildId, reason: cleanReason })
-    : pauseBossTrackingSession({ guildId, reason: cleanReason, currentDeaths });
+  if (currentDeaths !== null && currentDeaths !== undefined) {
+    const session = await findOpenOrLatestBossTrackingSession(guildId);
+
+    if (session) {
+      pauseInput.reconciliation = getBossTrackingReconciliation({
+        startDeaths: session.startDeaths,
+        totalDeaths: currentDeaths,
+        recordedDeathCount: session.recordedDeathCount,
+      });
+    }
+  }
+
+  return pauseBossTrackingSession(pauseInput);
 };
 
 export const resumeLiveBossTracking = async ({
@@ -336,9 +355,7 @@ export const resumeLiveBossTracking = async ({
 export const getLiveBossTrackingStatus = async (
   guildId: string,
 ): Promise<BossTrackingSessionView> => {
-  const session =
-    (await findActiveBossTrackingSession(guildId)) ??
-    (await findLatestBossTrackingSession(guildId));
+  const session = await findOpenOrLatestBossTrackingSession(guildId);
 
   if (!session) {
     throw new Error('No boss tracking session has been recorded yet.');
@@ -490,7 +507,7 @@ export const updateLiveGameInfo = async ({
   return result;
 };
 
-export const endLiveBossTracking = ({
+export const endLiveBossTracking = async ({
   guildId,
   result,
   finalDeaths,
@@ -505,19 +522,32 @@ export const endLiveBossTracking = ({
     assertNonNegativeNumber(totalMinutes, 'Total minutes');
   }
 
+  const session = await findOpenOrLatestBossTrackingSession(guildId);
+
+  if (!session) {
+    throw new Error('No boss tracking session found.');
+  }
+
+  const resolvedFinalDeaths =
+    finalDeaths ??
+    session.startDeaths +
+      Math.max(session.deathCount, session.recordedDeathCount);
+
   const endResult =
     result === 'abandoned'
       ? BossTrackingEndResult.ABANDONED
       : BossTrackingEndResult.KILLED;
   const vodEndSeconds = parseVodTimestamp(vodTime);
+  const reconciliation = getBossTrackingReconciliation({
+    startDeaths: session.startDeaths,
+    totalDeaths: resolvedFinalDeaths,
+    recordedDeathCount: session.recordedDeathCount,
+  });
   const endInput: Parameters<typeof endBossTrackingSession>[0] = {
     guildId,
     result: endResult,
+    reconciliation,
   };
-
-  if (finalDeaths !== undefined) {
-    endInput.finalDeaths = finalDeaths;
-  }
 
   if (totalMinutes !== undefined) {
     endInput.manualTrackedSeconds = Math.round(totalMinutes * 60);

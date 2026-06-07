@@ -1,12 +1,13 @@
 import {
   BossTrackingAttemptResult,
-  BossTrackingAttemptTimingStatus,
   BossTrackingEndResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import { getElapsedSeconds } from '../../lib/time.utils';
+import { hasDurableBossData, hasDurableGameData } from '../boss-catalog.utils';
+import { OPEN_BOSS_TRACKING_SESSION_STATUSES } from '../boss-tracking.constants';
 import type {
-  BossTrackingReconciliationInput,
   DeleteOrphanedBossAfterCancelInput,
   DeleteOrphanedGameAfterCancelInput,
   EndBossTrackingSessionInput,
@@ -18,14 +19,6 @@ import type {
   UpdateBossTrackingInfoInput,
   UpsertBossTopicTermsInput,
 } from './boss-tracking.types';
-
-const ACTIVE_SESSION_STATUSES = [
-  BossTrackingSessionStatus.ACTIVE,
-  BossTrackingSessionStatus.PAUSED,
-];
-
-const getSecondsBetween = (from: Date, to: Date) =>
-  Math.max(0, Math.floor((to.getTime() - from.getTime()) / 1000));
 
 const activeSessionInclude = {
   game: true,
@@ -41,7 +34,7 @@ const activeSessionInclude = {
 } as const;
 
 const activeSessionWhere = {
-  status: { in: ACTIVE_SESSION_STATUSES },
+  status: { in: OPEN_BOSS_TRACKING_SESSION_STATUSES },
 } as const;
 
 const pauseOtherActiveSessions = async ({
@@ -72,39 +65,6 @@ const pauseOtherActiveSessions = async ({
       },
     });
   }
-};
-
-const getReconciliation = ({
-  startDeaths,
-  finalDeaths,
-  recordedDeathCount,
-}: BossTrackingReconciliationInput) => {
-  const deathCount = finalDeaths - startDeaths;
-
-  if (deathCount < 0) {
-    throw new Error('Final deaths cannot be lower than starting deaths.');
-  }
-
-  if (deathCount === recordedDeathCount) {
-    return {
-      deathCount,
-      attemptTimingStatus: BossTrackingAttemptTimingStatus.TRUSTED,
-      reconciliationNote: null,
-    };
-  }
-
-  const difference = deathCount - recordedDeathCount;
-  const missedDeathCount = Math.abs(difference);
-  const reconciliationNote =
-    difference > 0
-      ? `Final death count has ${difference} more death${difference === 1 ? '' : 's'} than tracked manually.`
-      : `Manual tracking recorded ${missedDeathCount} more death${missedDeathCount === 1 ? '' : 's'} than the final count.`;
-
-  return {
-    deathCount,
-    attemptTimingStatus: BossTrackingAttemptTimingStatus.RECONCILED,
-    reconciliationNote,
-  };
 };
 
 const upsertBossTopicTerms = async ({
@@ -144,7 +104,6 @@ const deleteOrphanedBossAfterCancel = async ({
   const boss = await tx.boss.findUnique({
     where: { id: bossId },
     select: {
-      id: true,
       gameId: true,
       topicTerms: { select: { createdByUserId: true } },
       _count: {
@@ -161,17 +120,11 @@ const deleteOrphanedBossAfterCancel = async ({
     return null;
   }
 
-  const hasDurableBossData =
-    boss._count.stats > 0 ||
-    boss._count.trials > 0 ||
-    boss._count.trackingSessions > 0 ||
-    boss.topicTerms.some((term) => term.createdByUserId === null);
-
-  if (hasDurableBossData) {
+  if (hasDurableBossData(boss)) {
     return boss.gameId;
   }
 
-  await tx.boss.delete({ where: { id: boss.id } });
+  await tx.boss.delete({ where: { id: bossId } });
 
   return boss.gameId;
 };
@@ -184,7 +137,6 @@ const deleteOrphanedGameAfterCancel = async ({
   const game = await tx.bossGame.findUnique({
     where: { id: gameId },
     select: {
-      id: true,
       topicTerms: { select: { createdByUserId: true } },
       _count: {
         select: {
@@ -209,18 +161,12 @@ const deleteOrphanedGameAfterCancel = async ({
     },
     select: { guildId: true },
   });
-  const hasDurableGameData =
-    game._count.bosses > 0 ||
-    game._count.trials > 0 ||
-    game._count.trackingSessions > 0 ||
-    game.topicTerms.some((term) => term.createdByUserId === null) ||
-    defaultStreamGameConfig !== null;
 
-  if (hasDurableGameData) {
+  if (hasDurableGameData({ ...game, defaultStreamGameConfig })) {
     return;
   }
 
-  await tx.bossGame.delete({ where: { id: game.id } });
+  await tx.bossGame.delete({ where: { id: gameId } });
 };
 
 export const startBossTrackingSession = async ({
@@ -520,7 +466,7 @@ export const recordBossTrackingDeath = async ({
 export const pauseBossTrackingSession = async ({
   guildId,
   reason,
-  currentDeaths,
+  reconciliation,
 }: PauseBossTrackingSessionInput) =>
   prisma.$transaction(async (tx) => {
     const session = await tx.bossTrackingSession.findFirst({
@@ -540,22 +486,13 @@ export const pauseBossTrackingSession = async ({
       throw new Error('Boss tracking is already paused.');
     }
 
-    const reconciliation =
-      currentDeaths === undefined
-        ? null
-        : getReconciliation({
-            startDeaths: session.startDeaths,
-            finalDeaths: currentDeaths,
-            recordedDeathCount: session.recordedDeathCount,
-          });
-
     return tx.bossTrackingSession.update({
       where: { id: session.id },
       data: {
         status: BossTrackingSessionStatus.PAUSED,
         pausedAt: new Date(),
         focusedAt: new Date(),
-        ...(reconciliation === null
+        ...(reconciliation === undefined
           ? {}
           : {
               deathCount: reconciliation.deathCount,
@@ -618,7 +555,7 @@ export const resumeBossTrackingSession = async ({
     });
 
     const pausedSeconds = session.pausedAt
-      ? getSecondsBetween(session.pausedAt, now)
+      ? getElapsedSeconds(session.pausedAt, now)
       : 0;
     const currentPause = session.pauses[0];
     const currentAttempt = session.attempts[0];
@@ -659,7 +596,7 @@ export const resumeBossTrackingSession = async ({
 export const endBossTrackingSession = async ({
   guildId,
   result,
-  finalDeaths,
+  reconciliation,
   manualTrackedSeconds,
   vodEndSeconds,
 }: EndBossTrackingSessionInput) =>
@@ -680,17 +617,8 @@ export const endBossTrackingSession = async ({
     const now = new Date();
     const pausedSeconds =
       session.status === BossTrackingSessionStatus.PAUSED && session.pausedAt
-        ? getSecondsBetween(session.pausedAt, now)
+        ? getElapsedSeconds(session.pausedAt, now)
         : 0;
-    const resolvedFinalDeaths =
-      finalDeaths ??
-      session.startDeaths +
-        Math.max(session.deathCount, session.recordedDeathCount);
-    const reconciliation = getReconciliation({
-      startDeaths: session.startDeaths,
-      finalDeaths: resolvedFinalDeaths,
-      recordedDeathCount: session.recordedDeathCount,
-    });
     const currentAttempt = session.attempts[0];
     const currentPause = session.pauses[0];
     if (
@@ -727,7 +655,7 @@ export const endBossTrackingSession = async ({
         pausedAt: null,
         focusedAt: now,
         totalPausedSeconds: { increment: pausedSeconds },
-        finalDeaths: resolvedFinalDeaths,
+        finalDeaths: reconciliation.totalDeaths,
         ...(manualTrackedSeconds === undefined ? {} : { manualTrackedSeconds }),
         ...(vodEndSeconds === undefined ? {} : { vodEndSeconds }),
         deathCount: reconciliation.deathCount,

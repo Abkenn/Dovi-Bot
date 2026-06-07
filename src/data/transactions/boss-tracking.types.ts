@@ -1,4 +1,7 @@
-import type { BossTrackingEndResult } from '../../generated/prisma/enums';
+import type {
+  BossTrackingAttemptTimingStatus,
+  BossTrackingEndResult,
+} from '../../generated/prisma/enums';
 import type { PrismaTransactionClient } from '../../types/prisma/types';
 import type { BossTopicTermInput } from './boss-topic-info.types';
 
@@ -12,10 +15,11 @@ export type PauseOtherActiveSessionsInput = {
   reason: string;
 };
 
-export type BossTrackingReconciliationInput = {
-  startDeaths: number;
-  finalDeaths: number;
-  recordedDeathCount: number;
+export type BossTrackingReconciliation = {
+  totalDeaths: number;
+  deathCount: number;
+  attemptTimingStatus: BossTrackingAttemptTimingStatus;
+  reconciliationNote: string | null;
 };
 
 export type DeleteOrphanedBossAfterCancelInput = {
@@ -63,7 +67,7 @@ export type RecordBossTrackingDeathInput = {
 export type PauseBossTrackingSessionInput = {
   guildId: string;
   reason: string | null;
-  currentDeaths?: number;
+  reconciliation?: BossTrackingReconciliation;
 };
 
 export type ResumeBossTrackingSessionInput = {
@@ -77,7 +81,7 @@ export type ResumeBossTrackingSessionInput = {
 export type EndBossTrackingSessionInput = {
   guildId: string;
   result: BossTrackingEndResult;
-  finalDeaths?: number;
+  reconciliation: BossTrackingReconciliation;
   manualTrackedSeconds?: number;
   vodEndSeconds?: number;
 };

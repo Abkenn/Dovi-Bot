@@ -116,6 +116,12 @@ export type RecordLiveBossDeathInput = {
   vodTime?: string | null;
 };
 
+export type GetBossTrackingReconciliationInput = {
+  startDeaths: number;
+  totalDeaths: number;
+  recordedDeathCount: number;
+};
+
 export type PauseLiveBossTrackingInput = {
   guildId: string;
   reason?: string | null;
