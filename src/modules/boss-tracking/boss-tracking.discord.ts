@@ -4,11 +4,11 @@ import {
   getCommandCategoryAccentColor,
 } from '../../config/discord-command-categories';
 import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
-import { calculateBossTrackingAverageAttemptTime } from './boss-tracking.service';
 import type {
   BossTrackingSessionView,
   GameTrackingStatusView,
 } from './boss-tracking.types';
+import { calculateBossTrackingAverageAttemptTime } from './boss-tracking-stats';
 
 type BossTrackingEmbedField = {
   name: string;
@@ -62,9 +62,8 @@ const getStatusLabel = (session: BossTrackingSessionView) => {
   return 'Active';
 };
 
-const getFieldRows = (fields: Omit<BossTrackingEmbedField, 'inline'>[]) => {
-  return fields.map((field) => ({ ...field, inline: true }));
-};
+const getFieldRows = (fields: Omit<BossTrackingEmbedField, 'inline'>[]) =>
+  fields.map((field) => ({ ...field, inline: true }));
 
 export const buildBossTrackingEmbed = ({
   session,

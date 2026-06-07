@@ -90,19 +90,24 @@ export const updateBossGameTopicInfo = async ({
         ],
       },
     });
-    const game = existingGame
-      ? existingGame.normalizedName === normalizedGameName
-        ? await tx.bossGame.update({
-            where: { id: existingGame.id },
-            data: { name: gameName },
-          })
-        : existingGame
-      : await tx.bossGame.create({
-          data: {
-            name: gameName,
-            normalizedName: normalizedGameName,
-          },
-        });
+    let game = existingGame;
+
+    if (game?.normalizedName === normalizedGameName) {
+      game = await tx.bossGame.update({
+        where: { id: game.id },
+        data: { name: gameName },
+      });
+    }
+
+    if (!game) {
+      game = await tx.bossGame.create({
+        data: {
+          name: gameName,
+          normalizedName: normalizedGameName,
+        },
+      });
+    }
+
     const extraTopicTerms = [...topicTerms];
     let updatedGame = game;
 

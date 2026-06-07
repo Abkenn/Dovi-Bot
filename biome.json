@@ -21,7 +21,18 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "complexity": {
+        "useArrowFunction": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "style": {
+        "noNestedTernary": "error",
+        "noNonNullAssertion": "error",
+        "useAsConstAssertion": "error"
+      }
     }
   }
 }

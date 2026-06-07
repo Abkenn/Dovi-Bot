@@ -17,22 +17,19 @@ import {
 } from '../../data/transactions/boss-tracking';
 import {
   BossTopicTermKind,
-  BossTrackingAttemptResult,
-  BossTrackingAttemptTimingStatus,
   BossTrackingEndResult,
 } from '../../generated/prisma/enums';
+import { summarizeTrackedGameStatus } from '../bosses/bosses.stats';
 import { normalizeBossName } from '../bosses/bosses.utils';
 import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
 import type {
-  BossTrackingAverageAttemptTime,
-  BossTrackingAverageFromSecondsInput,
-  BossTrackingSessionView,
   BossTopicTermsInput,
+  BossTrackingSessionView,
   EndLiveBossTrackingInput,
+  GameTopicTermsInput,
   GameTrackingStatusView,
   GetLiveGameTrackingStatusInput,
   GetOpenBossTrackingBossAutocompleteInput,
-  GameTopicTermsInput,
   PauseLiveBossTrackingInput,
   RecordLiveBossDeathInput,
   ResolveGameNameFromOptionInput,
@@ -204,227 +201,6 @@ const toGameTopicTerms = ({
     });
 };
 
-const getTrackedAttemptSeconds = (session: BossTrackingSessionView) => {
-  if (session.manualTrackedSeconds !== null) {
-    return session.manualTrackedSeconds;
-  }
-
-  return session.attempts.reduce((totalSeconds, attempt) => {
-    if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
-      return totalSeconds;
-    }
-
-    const dateEnd = attempt.endedAt;
-
-    if (attempt.vodStartSeconds !== null && attempt.vodEndSeconds !== null) {
-      return (
-        totalSeconds +
-        Math.max(0, attempt.vodEndSeconds - attempt.vodStartSeconds)
-      );
-    }
-
-    if (!dateEnd) {
-      return totalSeconds;
-    }
-
-    return (
-      totalSeconds +
-      Math.max(
-        0,
-        Math.floor((dateEnd.getTime() - attempt.startedAt.getTime()) / 1000),
-      )
-    );
-  }, 0);
-};
-
-const hasVodContext = (session: BossTrackingSessionView) =>
-  session.vodLabel !== null ||
-  session.vodStartSeconds !== null ||
-  session.vodEndSeconds !== null ||
-  session.attempts.some(
-    (attempt) =>
-      attempt.vodStartSeconds !== null || attempt.vodEndSeconds !== null,
-  ) ||
-  session.pauses.some(
-    (pause) => pause.vodLabel !== null || pause.vodResumeSeconds !== null,
-  );
-
-const getSummaryTrackedSeconds = (session: BossTrackingSessionView) => {
-  if (session.manualTrackedSeconds !== null) {
-    return session.manualTrackedSeconds;
-  }
-
-  if (session.vodStartSeconds !== null && session.vodEndSeconds !== null) {
-    return Math.max(0, session.vodEndSeconds - session.vodStartSeconds);
-  }
-
-  return null;
-};
-
-const hasPartialVodAttemptTiming = (session: BossTrackingSessionView) =>
-  session.attempts.some((attempt) => {
-    if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
-      return false;
-    }
-
-    const hasVodStart = attempt.vodStartSeconds !== null;
-    const hasVodEnd = attempt.vodEndSeconds !== null;
-
-    return hasVodStart !== hasVodEnd;
-  });
-
-const wasStartedByLiveResumeWithoutVod = (
-  session: BossTrackingSessionView,
-  attempt: BossTrackingSessionView['attempts'][number],
-) =>
-  session.pauses.some((pause) => {
-    if (
-      !pause.endedAt ||
-      pause.vodLabel !== null ||
-      pause.vodResumeSeconds !== null
-    ) {
-      return false;
-    }
-
-    const secondsAfterResume = Math.abs(
-      Math.floor(
-        (attempt.startedAt.getTime() - pause.endedAt.getTime()) / 1000,
-      ),
-    );
-
-    return secondsAfterResume <= 5;
-  });
-
-const hasUntimedVodAttempts = (session: BossTrackingSessionView) =>
-  hasVodContext(session) &&
-  session.manualTrackedSeconds === null &&
-  session.attempts.some(
-    (attempt) =>
-      attempt.result !== BossTrackingAttemptResult.IN_PROGRESS &&
-      attempt.vodStartSeconds === null &&
-      attempt.vodEndSeconds === null &&
-      !wasStartedByLiveResumeWithoutVod(session, attempt),
-  );
-
-const getCompletedAttemptCount = (session: BossTrackingSessionView) => {
-  const completedAttempts = session.attempts.filter(
-    (attempt) => attempt.result !== BossTrackingAttemptResult.IN_PROGRESS,
-  );
-
-  if (completedAttempts.length > 0) {
-    return completedAttempts.length;
-  }
-
-  return session.endResult === BossTrackingEndResult.KILLED
-    ? session.recordedDeathCount + 1
-    : session.recordedDeathCount;
-};
-
-const getRunbackAttemptCount = (session: BossTrackingSessionView) => {
-  const attempts = [...session.attempts].sort(
-    (left, right) => left.attemptNumber - right.attemptNumber,
-  );
-
-  return attempts.filter((attempt, index) => {
-    const previousAttempt = attempts[index - 1];
-
-    if (
-      !previousAttempt ||
-      attempt.result === BossTrackingAttemptResult.IN_PROGRESS
-    ) {
-      return false;
-    }
-
-    if (
-      attempt.vodStartSeconds !== null &&
-      previousAttempt.vodEndSeconds !== null
-    ) {
-      return attempt.vodStartSeconds === previousAttempt.vodEndSeconds;
-    }
-
-    if (!previousAttempt.endedAt) {
-      return false;
-    }
-
-    const secondsAfterPreviousAttempt = Math.floor(
-      (attempt.startedAt.getTime() - previousAttempt.endedAt.getTime()) / 1000,
-    );
-
-    return secondsAfterPreviousAttempt <= 5;
-  }).length;
-};
-
-const getSummaryAttemptCount = (session: BossTrackingSessionView) => {
-  if (session.endResult === BossTrackingEndResult.KILLED) {
-    return session.deathCount + 1;
-  }
-
-  return session.deathCount;
-};
-
-const getAverageFromSeconds = ({
-  trackedSeconds,
-  attemptCount,
-  runbackSeconds,
-}: BossTrackingAverageFromSecondsInput): BossTrackingAverageAttemptTime => {
-  const adjustedSeconds = Math.max(0, trackedSeconds - runbackSeconds);
-
-  if (adjustedSeconds <= 0 || attemptCount <= 0) {
-    return { seconds: null, reason: 'not enough timed attempts' };
-  }
-
-  return {
-    seconds: Math.round(adjustedSeconds / attemptCount),
-    reason: null,
-  };
-};
-
-export const calculateBossTrackingAverageAttemptTime = (
-  session: BossTrackingSessionView,
-): BossTrackingAverageAttemptTime => {
-  const runbackSecondsPerAttempt = session.boss.runbackSeconds;
-  const hasSummaryDeaths = session.deathCount > session.recordedDeathCount;
-  const summaryTrackedSeconds = getSummaryTrackedSeconds(session);
-
-  if (hasPartialVodAttemptTiming(session)) {
-    return { seconds: null, reason: 'partial attempt times' };
-  }
-
-  if (hasSummaryDeaths) {
-    if (summaryTrackedSeconds === null) {
-      return { seconds: null, reason: 'missing total attempt time' };
-    }
-
-    if (runbackSecondsPerAttempt === null && session.deathCount > 0) {
-      return {
-        seconds: null,
-        reason: 'average runback time not added',
-      };
-    }
-
-    return getAverageFromSeconds({
-      trackedSeconds: summaryTrackedSeconds,
-      attemptCount: getSummaryAttemptCount(session),
-      runbackSeconds: (runbackSecondsPerAttempt ?? 0) * session.deathCount,
-    });
-  }
-
-  if (hasUntimedVodAttempts(session)) {
-    return { seconds: null, reason: 'missing attempt times' };
-  }
-
-  if (session.attemptTimingStatus !== BossTrackingAttemptTimingStatus.TRUSTED) {
-    return { seconds: null, reason: 'death count was reconciled' };
-  }
-
-  return getAverageFromSeconds({
-    trackedSeconds: getTrackedAttemptSeconds(session),
-    attemptCount: getCompletedAttemptCount(session),
-    runbackSeconds:
-      (runbackSecondsPerAttempt ?? 0) * getRunbackAttemptCount(session),
-  });
-};
-
 export const startLiveBossTracking = async ({
   guildId,
   channelId,
@@ -579,9 +355,9 @@ export const getLiveGameTrackingStatus = async ({
     guildId,
     gameName,
   });
-  const status = await findTrackedGameStatus(normalizeBossName(cleanGameName));
+  const game = await findTrackedGameStatus(normalizeBossName(cleanGameName));
 
-  if (!status) {
+  if (!game) {
     return {
       gameName: cleanGameName,
       deaths: 0,
@@ -590,7 +366,7 @@ export const getLiveGameTrackingStatus = async ({
     };
   }
 
-  return status;
+  return summarizeTrackedGameStatus(game);
 };
 
 export const getOpenBossTrackingBossAutocomplete = async ({
