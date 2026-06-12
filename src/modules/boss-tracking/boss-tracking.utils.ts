@@ -1,16 +1,17 @@
 import type { BossTrackingReconciliation } from '../../data/transactions/boss-tracking.types';
 import { BossTrackingAttemptTimingStatus } from '../../generated/prisma/enums';
-import type { GetBossTrackingReconciliationInput } from './boss-tracking.types';
+import type {
+  GetBossTrackingReconciliationFromBossDeathsInput,
+  GetBossTrackingReconciliationInput,
+} from './boss-tracking.types';
 
-export const getBossTrackingReconciliation = ({
-  startDeaths,
-  totalDeaths,
+export const getBossTrackingReconciliationFromBossDeaths = ({
+  deathCount,
   recordedDeathCount,
-}: GetBossTrackingReconciliationInput): BossTrackingReconciliation => {
-  const deathCount = totalDeaths - startDeaths;
-
+  totalDeaths,
+}: GetBossTrackingReconciliationFromBossDeathsInput): BossTrackingReconciliation => {
   if (deathCount < 0) {
-    throw new Error('Final deaths cannot be lower than starting deaths.');
+    throw new Error('Final boss deaths cannot be lower than 0.');
   }
 
   if (deathCount === recordedDeathCount) {
@@ -38,4 +39,22 @@ export const getBossTrackingReconciliation = ({
     attemptTimingStatus: BossTrackingAttemptTimingStatus.RECONCILED,
     reconciliationNote,
   };
+};
+
+export const getBossTrackingReconciliation = ({
+  startDeaths,
+  totalDeaths,
+  recordedDeathCount,
+}: GetBossTrackingReconciliationInput): BossTrackingReconciliation => {
+  const deathCount = totalDeaths - startDeaths;
+
+  if (deathCount < 0) {
+    throw new Error('Final deaths cannot be lower than starting deaths.');
+  }
+
+  return getBossTrackingReconciliationFromBossDeaths({
+    deathCount,
+    totalDeaths,
+    recordedDeathCount,
+  });
 };

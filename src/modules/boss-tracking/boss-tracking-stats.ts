@@ -184,7 +184,10 @@ const getSummaryAttemptCount = (session: BossTrackingSessionView) => {
 export const getBossTrackingAverageAttemptCount = (
   session: BossTrackingSessionView,
 ) => {
-  if (session.deathCount > session.recordedDeathCount) {
+  if (
+    session.deathCount > session.recordedDeathCount &&
+    getSummaryTrackedSeconds(session) !== null
+  ) {
     return getSummaryAttemptCount(session);
   }
 
@@ -219,30 +222,35 @@ export const calculateBossTrackingAverageAttemptTime = (
     return { seconds: null, reason: 'partial attempt times' };
   }
 
-  if (hasSummaryDeaths) {
-    if (summaryTrackedSeconds === null) {
-      return { seconds: null, reason: 'missing total attempt time' };
-    }
+  if (hasUntimedVodAttempts(session)) {
+    return { seconds: null, reason: 'missing attempt times' };
+  }
 
-    if (runbackSecondsPerAttempt === null && session.deathCount > 0) {
+  if (hasSummaryDeaths) {
+    if (
+      summaryTrackedSeconds !== null &&
+      runbackSecondsPerAttempt === null &&
+      session.deathCount > 0
+    ) {
       return {
         seconds: null,
         reason: 'average runback time not added',
       };
     }
 
-    return getAverageFromSeconds({
-      trackedSeconds: summaryTrackedSeconds,
-      attemptCount: getSummaryAttemptCount(session),
-      runbackSeconds: (runbackSecondsPerAttempt ?? 0) * session.deathCount,
-    });
+    if (summaryTrackedSeconds !== null) {
+      return getAverageFromSeconds({
+        trackedSeconds: summaryTrackedSeconds,
+        attemptCount: getSummaryAttemptCount(session),
+        runbackSeconds: (runbackSecondsPerAttempt ?? 0) * session.deathCount,
+      });
+    }
   }
 
-  if (hasUntimedVodAttempts(session)) {
-    return { seconds: null, reason: 'missing attempt times' };
-  }
-
-  if (session.attemptTimingStatus !== BossTrackingAttemptTimingStatus.TRUSTED) {
+  if (
+    session.attemptTimingStatus !== BossTrackingAttemptTimingStatus.TRUSTED &&
+    session.deathCount <= session.recordedDeathCount
+  ) {
     return { seconds: null, reason: 'death count was reconciled' };
   }
 

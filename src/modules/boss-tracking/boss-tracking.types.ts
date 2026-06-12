@@ -123,6 +123,12 @@ export type GetBossTrackingReconciliationInput = {
   recordedDeathCount: number;
 };
 
+export type GetBossTrackingReconciliationFromBossDeathsInput = {
+  deathCount: number;
+  totalDeaths: number;
+  recordedDeathCount: number;
+};
+
 export type PauseLiveBossTrackingInput = {
   guildId: string;
   reason?: string | null;
@@ -182,6 +188,7 @@ export type EndLiveBossTrackingInput = {
   guildId: string;
   result: string;
   finalDeaths?: number;
+  gameDeaths?: number;
   totalMinutes?: number;
   vodTime?: string | null;
 };

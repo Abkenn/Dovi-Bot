@@ -39,7 +39,10 @@ import type {
   UpdateLiveBossInfoInput,
   UpdateLiveGameInfoInput,
 } from './boss-tracking.types';
-import { getBossTrackingReconciliation } from './boss-tracking.utils';
+import {
+  getBossTrackingReconciliation,
+  getBossTrackingReconciliationFromBossDeaths,
+} from './boss-tracking.utils';
 
 const assertNonEmptyName = (value: string, label: string) => {
   const trimmed = value.trim();
@@ -488,13 +491,21 @@ export const updateLiveGameInfo = async ({
     guildId,
     gameName,
   });
-  const topicTerms = toGameTopicTerms({
-    gameName: cleanGameName,
-    aliases: parseTopicTerms(aliases ?? null),
-    contextWords: parseTopicTerms(contextWords ?? null),
-  });
+  const cleanAliases = parseTopicTerms(aliases ?? null);
+  const cleanContextWords = parseTopicTerms(contextWords ?? null);
   const cleanName = name?.trim() || null;
   const cleanDeaths = deaths ?? undefined;
+  const shouldUpdateTopicTerms =
+    Boolean(cleanName) ||
+    cleanAliases.length > 0 ||
+    cleanContextWords.length > 0;
+  const topicTerms = shouldUpdateTopicTerms
+    ? toGameTopicTerms({
+        gameName: cleanGameName,
+        aliases: cleanAliases,
+        contextWords: cleanContextWords,
+      })
+    : [];
 
   if (cleanDeaths !== undefined) {
     assertNonNegativeInteger(cleanDeaths, 'Deaths');
@@ -533,11 +544,16 @@ export const endLiveBossTracking = async ({
   guildId,
   result,
   finalDeaths,
+  gameDeaths,
   totalMinutes,
   vodTime,
 }: EndLiveBossTrackingInput) => {
   if (finalDeaths !== undefined) {
-    assertNonNegativeInteger(finalDeaths, 'Final deaths');
+    assertNonNegativeInteger(finalDeaths, 'Final boss deaths');
+  }
+
+  if (gameDeaths !== undefined) {
+    assertNonNegativeInteger(gameDeaths, 'Game deaths');
   }
 
   if (totalMinutes !== undefined) {
@@ -550,19 +566,25 @@ export const endLiveBossTracking = async ({
     throw new Error('No boss tracking session found.');
   }
 
-  const resolvedFinalDeaths =
-    finalDeaths ??
-    session.startDeaths +
-      Math.max(session.deathCount, session.recordedDeathCount);
+  const resolvedBossDeaths =
+    finalDeaths ?? Math.max(session.deathCount, session.recordedDeathCount);
+  const resolvedGameDeaths =
+    gameDeaths ?? session.startDeaths + resolvedBossDeaths;
+
+  if (resolvedGameDeaths < session.startDeaths + resolvedBossDeaths) {
+    throw new Error(
+      'Game deaths cannot be lower than starting deaths plus boss deaths.',
+    );
+  }
 
   const endResult =
     result === 'abandoned'
       ? BossTrackingEndResult.ABANDONED
       : BossTrackingEndResult.KILLED;
   const vodEndSeconds = parseVodTimestamp(vodTime);
-  const reconciliation = getBossTrackingReconciliation({
-    startDeaths: session.startDeaths,
-    totalDeaths: resolvedFinalDeaths,
+  const reconciliation = getBossTrackingReconciliationFromBossDeaths({
+    deathCount: resolvedBossDeaths,
+    totalDeaths: resolvedGameDeaths,
     recordedDeathCount: session.recordedDeathCount,
   });
   const endInput: Parameters<typeof endBossTrackingSession>[0] = {
