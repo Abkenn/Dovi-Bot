@@ -278,19 +278,28 @@ export const updateBossTrackingInfo = async ({
   createdByUserId,
   topicTerms,
   runbackSeconds,
+  nextRunbackSeconds,
 }: UpdateBossTrackingInfoInput) =>
   prisma.$transaction(async (tx) => {
-    const activeSession =
-      normalizedBossName === undefined
-        ? await tx.bossTrackingSession.findFirst({
-            where: {
-              guildId,
-              ...activeSessionWhere,
-            },
-            include: activeSessionInclude,
-            orderBy: { focusedAt: 'desc' },
-          })
-        : null;
+    const bossFilter = normalizedBossName
+      ? {
+          boss: {
+            normalizedName: normalizedBossName,
+            ...(normalizedGameName
+              ? { game: { normalizedName: normalizedGameName } }
+              : {}),
+          },
+        }
+      : {};
+    const activeSession = await tx.bossTrackingSession.findFirst({
+      where: {
+        guildId,
+        ...activeSessionWhere,
+        ...bossFilter,
+      },
+      include: activeSessionInclude,
+      orderBy: { focusedAt: 'desc' },
+    });
     const latestSession =
       normalizedBossName === undefined && !activeSession
         ? await tx.bossTrackingSession.findFirst({
@@ -314,6 +323,7 @@ export const updateBossTrackingInfo = async ({
         canonicalBossName && normalizedCanonicalBossName,
       );
       const hasRunbackUpdate = runbackSeconds !== undefined;
+      const hasNextRunbackUpdate = nextRunbackSeconds !== undefined;
 
       if (hasNameUpdate && canonicalBossName && normalizedCanonicalBossName) {
         if (normalizedCanonicalBossName !== boss.normalizedName) {
@@ -370,12 +380,33 @@ export const updateBossTrackingInfo = async ({
         runbackSeconds: updatedBoss.runbackSeconds,
         updatedName: hasNameUpdate,
         updatedRunbackSeconds: hasRunbackUpdate,
+        nextRunbackSeconds: nextRunbackSeconds ?? null,
+        updatedNextRunbackSeconds: hasNextRunbackUpdate,
         addedCount: extraTopicTerms.length,
       };
     };
 
     if (activeSession) {
+      if (nextRunbackSeconds !== undefined) {
+        const currentAttempt = activeSession.attempts[0];
+
+        if (!currentAttempt) {
+          throw new Error('The active boss tracking session has no attempt.');
+        }
+
+        await tx.bossTrackingAttempt.update({
+          where: { id: currentAttempt.id },
+          data: { runbackSeconds: nextRunbackSeconds },
+        });
+      }
+
       return applyUpdate(activeSession.boss);
+    }
+
+    if (nextRunbackSeconds !== undefined) {
+      throw new Error(
+        'Start or resume tracking this boss before setting next runback.',
+      );
     }
 
     if (latestSession) {

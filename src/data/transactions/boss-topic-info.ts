@@ -1,4 +1,7 @@
-import { BossTopicTermKind as TermKind } from '../../generated/prisma/enums';
+import {
+  BossTrackingSessionStatus,
+  BossTopicTermKind as TermKind,
+} from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 import type {
   CommunityTopicSeedImport,
@@ -70,11 +73,13 @@ const upsertBossTopicTerms = async ({
 };
 
 export const updateBossGameTopicInfo = async ({
+  guildId,
   gameName,
   normalizedGameName,
   canonicalGameName,
   normalizedCanonicalGameName,
   createdByUserId,
+  deaths,
   topicTerms,
 }: UpdateBossGameTopicInfoInput) =>
   prisma.$transaction(async (tx) => {
@@ -145,9 +150,37 @@ export const updateBossGameTopicInfo = async ({
       topicTerms: extraTopicTerms.filter((term) => term.normalizedValue),
     });
 
+    if (deaths !== undefined) {
+      const latestSession = await tx.bossTrackingSession.findFirst({
+        where: {
+          guildId,
+          gameId: updatedGame.id,
+          status: { not: BossTrackingSessionStatus.CANCELLED },
+        },
+        select: { id: true, deathCount: true },
+        orderBy: { focusedAt: 'desc' },
+      });
+
+      if (!latestSession) {
+        throw new Error('Start tracking this game before updating deaths.');
+      }
+
+      if (deaths < latestSession.deathCount) {
+        throw new Error(
+          'Game deaths cannot be lower than tracked boss deaths.',
+        );
+      }
+
+      await tx.bossTrackingSession.update({
+        where: { id: latestSession.id },
+        data: { startDeaths: deaths - latestSession.deathCount },
+      });
+    }
+
     return {
       gameName: updatedGame.name,
       updatedName: Boolean(canonicalGameName),
+      updatedDeaths: deaths ?? null,
       addedCount: extraTopicTerms.length,
     };
   });

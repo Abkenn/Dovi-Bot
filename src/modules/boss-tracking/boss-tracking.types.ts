@@ -12,6 +12,7 @@ export type BossTrackingAttemptView = {
   endedAt: Date | null;
   vodStartSeconds: number | null;
   vodEndSeconds: number | null;
+  runbackSeconds: number | null;
   result: BossTrackingAttemptResult;
 };
 
@@ -164,6 +165,7 @@ export type UpdateLiveBossInfoInput = {
   weakAliases?: string | null;
   contextWords?: string | null;
   runbackSeconds?: number | null;
+  nextRunbackSeconds?: number | null;
 };
 
 export type UpdateLiveGameInfoInput = {
@@ -173,6 +175,7 @@ export type UpdateLiveGameInfoInput = {
   name?: string | null;
   aliases?: string | null;
   contextWords?: string | null;
+  deaths?: number | null;
 };
 
 export type EndLiveBossTrackingInput = {

@@ -22,11 +22,13 @@ export type UpsertBossTopicTermsInput = {
 };
 
 export type UpdateBossGameTopicInfoInput = {
+  guildId: string;
   gameName: string;
   normalizedGameName: string;
   canonicalGameName?: string;
   normalizedCanonicalGameName?: string;
   createdByUserId: string;
+  deaths?: number;
   topicTerms: BossTopicTermInput[];
 };
 

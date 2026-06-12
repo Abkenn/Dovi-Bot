@@ -407,6 +407,7 @@ export const updateLiveBossInfo = async ({
   weakAliases,
   contextWords,
   runbackSeconds,
+  nextRunbackSeconds,
 }: UpdateLiveBossInfoInput) => {
   const cleanBossName = bossName?.trim();
   const cleanGameName = cleanBossName
@@ -420,15 +421,21 @@ export const updateLiveBossInfo = async ({
   });
   const cleanName = name?.trim() || null;
   const cleanRunbackSeconds = runbackSeconds ?? undefined;
+  const cleanNextRunbackSeconds = nextRunbackSeconds ?? undefined;
 
   if (cleanRunbackSeconds !== undefined) {
     assertNonNegativeInteger(cleanRunbackSeconds, 'Runback seconds');
   }
 
+  if (cleanNextRunbackSeconds !== undefined) {
+    assertNonNegativeInteger(cleanNextRunbackSeconds, 'Next runback seconds');
+  }
+
   if (
     topicTerms.length === 0 &&
     !cleanName &&
-    cleanRunbackSeconds === undefined
+    cleanRunbackSeconds === undefined &&
+    cleanNextRunbackSeconds === undefined
   ) {
     throw new Error('Add a name, alias, tag, or runback seconds.');
   }
@@ -457,6 +464,10 @@ export const updateLiveBossInfo = async ({
     trackingInfoUpdate.runbackSeconds = cleanRunbackSeconds;
   }
 
+  if (cleanNextRunbackSeconds !== undefined) {
+    trackingInfoUpdate.nextRunbackSeconds = cleanNextRunbackSeconds;
+  }
+
   const result = await updateBossTrackingInfo(trackingInfoUpdate);
 
   invalidateCommunityTopicMatcherCache();
@@ -471,6 +482,7 @@ export const updateLiveGameInfo = async ({
   name,
   aliases,
   contextWords,
+  deaths,
 }: UpdateLiveGameInfoInput) => {
   const cleanGameName = await resolveGameNameFromOption({
     guildId,
@@ -482,12 +494,18 @@ export const updateLiveGameInfo = async ({
     contextWords: parseTopicTerms(contextWords ?? null),
   });
   const cleanName = name?.trim() || null;
+  const cleanDeaths = deaths ?? undefined;
 
-  if (topicTerms.length === 0 && !cleanName) {
-    throw new Error('Add a name, alias, or tag.');
+  if (cleanDeaths !== undefined) {
+    assertNonNegativeInteger(cleanDeaths, 'Deaths');
+  }
+
+  if (topicTerms.length === 0 && !cleanName && cleanDeaths === undefined) {
+    throw new Error('Add a name, alias, tag, or deaths.');
   }
 
   const gameTopicInfoUpdate: Parameters<typeof updateBossGameTopicInfo>[0] = {
+    guildId,
     gameName: cleanGameName,
     normalizedGameName: normalizeBossName(cleanGameName),
     createdByUserId: userId,
@@ -498,6 +516,10 @@ export const updateLiveGameInfo = async ({
     gameTopicInfoUpdate.canonicalGameName = cleanName;
     gameTopicInfoUpdate.normalizedCanonicalGameName =
       normalizeBossName(cleanName);
+  }
+
+  if (cleanDeaths !== undefined) {
+    gameTopicInfoUpdate.deaths = cleanDeaths;
   }
 
   const result = await updateBossGameTopicInfo(gameTopicInfoUpdate);

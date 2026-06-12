@@ -357,6 +357,7 @@ model BossTrackingAttempt {
   endedAt       DateTime?
   vodStartSeconds Int?
   vodEndSeconds Int?
+  runbackSeconds Int?
   result        BossTrackingAttemptResult @default(IN_PROGRESS)
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt

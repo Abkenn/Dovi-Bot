@@ -56,6 +56,7 @@ export type UpdateBossTrackingInfoInput = {
   normalizedCanonicalBossName?: string;
   createdByUserId: string;
   runbackSeconds?: number;
+  nextRunbackSeconds?: number;
   topicTerms: BossTopicTermInput[];
 };
 

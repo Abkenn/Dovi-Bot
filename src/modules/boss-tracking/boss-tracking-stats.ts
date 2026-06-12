@@ -130,38 +130,47 @@ export const getBossTrackingCompletedAttemptCount = (
   return session.recordedDeathCount;
 };
 
-const getRunbackAttemptCount = (session: BossTrackingSessionView) => {
+const getRunbackSeconds = (session: BossTrackingSessionView) => {
   const attempts = [...session.attempts].sort(
     (left, right) => left.attemptNumber - right.attemptNumber,
   );
 
-  return attempts.filter((attempt, index) => {
+  return attempts.reduce((totalSeconds, attempt, index) => {
     const previousAttempt = attempts[index - 1];
 
-    if (
-      !previousAttempt ||
-      attempt.result === BossTrackingAttemptResult.IN_PROGRESS
-    ) {
-      return false;
+    if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
+      return totalSeconds;
+    }
+
+    if (attempt.runbackSeconds !== null) {
+      return totalSeconds + attempt.runbackSeconds;
+    }
+
+    if (!previousAttempt) {
+      return totalSeconds;
     }
 
     if (
       attempt.vodStartSeconds !== null &&
       previousAttempt.vodEndSeconds !== null
     ) {
-      return attempt.vodStartSeconds === previousAttempt.vodEndSeconds;
+      return attempt.vodStartSeconds === previousAttempt.vodEndSeconds
+        ? totalSeconds + (session.boss.runbackSeconds ?? 0)
+        : totalSeconds;
     }
 
     if (!previousAttempt.endedAt) {
-      return false;
+      return totalSeconds;
     }
 
     const secondsAfterPreviousAttempt = Math.floor(
       (attempt.startedAt.getTime() - previousAttempt.endedAt.getTime()) / 1000,
     );
 
-    return secondsAfterPreviousAttempt <= 5;
-  }).length;
+    return secondsAfterPreviousAttempt <= 5
+      ? totalSeconds + (session.boss.runbackSeconds ?? 0)
+      : totalSeconds;
+  }, 0);
 };
 
 const getSummaryAttemptCount = (session: BossTrackingSessionView) => {
@@ -240,8 +249,7 @@ export const calculateBossTrackingAverageAttemptTime = (
   return getAverageFromSeconds({
     trackedSeconds: getTrackedAttemptSeconds(session),
     attemptCount: getBossTrackingCompletedAttemptCount(session),
-    runbackSeconds:
-      (runbackSecondsPerAttempt ?? 0) * getRunbackAttemptCount(session),
+    runbackSeconds: getRunbackSeconds(session),
   });
 };
 

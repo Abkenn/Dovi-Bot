@@ -47,6 +47,13 @@ export class UpdateGameInfoCommand extends Command {
                 'Extra topic words like shorthand, comma-separated',
               )
               .setRequired(false),
+          )
+          .addIntegerOption((option) =>
+            option
+              .setName('deaths')
+              .setDescription('Current total game deaths')
+              .setMinValue(0)
+              .setRequired(false),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -70,6 +77,7 @@ export class UpdateGameInfoCommand extends Command {
           name: interaction.options.getString('name'),
           aliases: interaction.options.getString('aliases'),
           contextWords: interaction.options.getString('tags'),
+          deaths: interaction.options.getInteger('deaths'),
         });
 
         return editReply({
@@ -77,6 +85,9 @@ export class UpdateGameInfoCommand extends Command {
             result.updatedName
               ? `Updated game name to **${result.gameName}**.`
               : `Updated **${result.gameName}**.`,
+            result.updatedDeaths !== null
+              ? `Set deaths to ${result.updatedDeaths}.`
+              : null,
             result.addedCount > 0
               ? `Added ${result.addedCount} topic term${result.addedCount === 1 ? '' : 's'}.`
               : null,

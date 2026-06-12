@@ -67,6 +67,13 @@ export class UpdateBossInfoCommand extends Command {
               .setDescription('Approx runback seconds after each death')
               .setRequired(false)
               .setMinValue(0),
+          )
+          .addIntegerOption((option) =>
+            option
+              .setName('next_runback_seconds')
+              .setDescription('Runback seconds only for the current attempt')
+              .setRequired(false)
+              .setMinValue(0),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -93,6 +100,9 @@ export class UpdateBossInfoCommand extends Command {
           weakAliases: interaction.options.getString('weak_aliases'),
           contextWords: interaction.options.getString('tags'),
           runbackSeconds: interaction.options.getInteger('runback_seconds'),
+          nextRunbackSeconds: interaction.options.getInteger(
+            'next_runback_seconds',
+          ),
         });
 
         return editReply({
@@ -105,6 +115,9 @@ export class UpdateBossInfoCommand extends Command {
               : null,
             result.updatedRunbackSeconds
               ? `Set runback to ${result.runbackSeconds ?? 0}s.`
+              : null,
+            result.updatedNextRunbackSeconds
+              ? `Set next runback to ${result.nextRunbackSeconds ?? 0}s.`
               : null,
           ]
             .filter(Boolean)
