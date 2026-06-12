@@ -75,7 +75,7 @@ const hasPartialVodAttemptTiming = (session: BossTrackingSessionView) =>
     const hasVodStart = attempt.vodStartSeconds !== null;
     const hasVodEnd = attempt.vodEndSeconds !== null;
 
-    return hasVodStart !== hasVodEnd;
+    return hasVodStart !== hasVodEnd && getAttemptSeconds(attempt) === null;
   });
 
 const wasStartedByLiveResumeWithoutVod = (
@@ -106,6 +106,7 @@ const hasUntimedVodAttempts = (session: BossTrackingSessionView) =>
   session.attempts.some(
     (attempt) =>
       attempt.result !== BossTrackingAttemptResult.IN_PROGRESS &&
+      getAttemptSeconds(attempt) === null &&
       attempt.vodStartSeconds === null &&
       attempt.vodEndSeconds === null &&
       !wasStartedByLiveResumeWithoutVod(session, attempt),
