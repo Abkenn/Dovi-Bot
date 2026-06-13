@@ -34,8 +34,8 @@ export class TrackBossEndCommand extends Command {
           )
           .addIntegerOption((option) =>
             option
-              .setName('final_deaths')
-              .setDescription('Final boss death count')
+              .setName('boss_deaths')
+              .setDescription('Final deaths to this boss, if correcting')
               .setRequired(false)
               .setMinValue(0),
           )
@@ -75,12 +75,12 @@ export class TrackBossEndCommand extends Command {
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: guildId }) => {
         const totalMinutes = interaction.options.getNumber('total_minutes');
-        const finalDeaths = interaction.options.getInteger('final_deaths');
+        const bossDeaths = interaction.options.getInteger('boss_deaths');
         const gameDeaths = interaction.options.getInteger('game_deaths');
         const session = await endLiveBossTracking({
           guildId,
           result: interaction.options.getString('result') ?? 'killed',
-          ...(finalDeaths === null ? {} : { finalDeaths }),
+          ...(bossDeaths === null ? {} : { bossDeaths }),
           ...(gameDeaths === null ? {} : { gameDeaths }),
           ...(totalMinutes === null ? {} : { totalMinutes }),
           vodTime: interaction.options.getString('vod_time'),

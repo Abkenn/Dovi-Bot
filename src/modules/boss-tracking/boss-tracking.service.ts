@@ -543,13 +543,13 @@ export const updateLiveGameInfo = async ({
 export const endLiveBossTracking = async ({
   guildId,
   result,
-  finalDeaths,
+  bossDeaths,
   gameDeaths,
   totalMinutes,
   vodTime,
 }: EndLiveBossTrackingInput) => {
-  if (finalDeaths !== undefined) {
-    assertNonNegativeInteger(finalDeaths, 'Final boss deaths');
+  if (bossDeaths !== undefined) {
+    assertNonNegativeInteger(bossDeaths, 'Boss deaths');
   }
 
   if (gameDeaths !== undefined) {
@@ -567,7 +567,7 @@ export const endLiveBossTracking = async ({
   }
 
   const resolvedBossDeaths =
-    finalDeaths ?? Math.max(session.deathCount, session.recordedDeathCount);
+    bossDeaths ?? Math.max(session.deathCount, session.recordedDeathCount);
   const resolvedGameDeaths =
     gameDeaths ?? session.startDeaths + resolvedBossDeaths;
 

@@ -187,7 +187,7 @@ export type UpdateLiveGameInfoInput = {
 export type EndLiveBossTrackingInput = {
   guildId: string;
   result: string;
-  finalDeaths?: number;
+  bossDeaths?: number;
   gameDeaths?: number;
   totalMinutes?: number;
   vodTime?: string | null;

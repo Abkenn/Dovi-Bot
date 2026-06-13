@@ -157,7 +157,7 @@ export const updateBossGameTopicInfo = async ({
           gameId: updatedGame.id,
           status: { not: BossTrackingSessionStatus.CANCELLED },
         },
-        select: { id: true, deathCount: true },
+        select: { id: true, deathCount: true, status: true },
         orderBy: { focusedAt: 'desc' },
       });
 
@@ -173,7 +173,13 @@ export const updateBossGameTopicInfo = async ({
 
       await tx.bossTrackingSession.update({
         where: { id: latestSession.id },
-        data: { startDeaths: deaths - latestSession.deathCount },
+        data: {
+          startDeaths: deaths - latestSession.deathCount,
+          finalDeaths:
+            latestSession.status === BossTrackingSessionStatus.ENDED
+              ? deaths
+              : null,
+        },
       });
     }
 
