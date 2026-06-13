@@ -6,6 +6,7 @@ import { buildShowGameStatsEmbed } from '../modules/boss-encounter-stats/game/ga
 import {
   getBossView,
   getGameBossDeathRanking,
+  isGameStatsAllBossesValue,
 } from '../modules/bosses/bosses.service';
 import { runCommand } from '../modules/command-runner/run-command';
 
@@ -57,6 +58,17 @@ export class ShowGameStatsCommand extends Command {
       run: async ({ editReply }) => {
         const gameName = interaction.options.getString('game', true);
         const bossName = interaction.options.getString('boss');
+
+        if (isGameStatsAllBossesValue(bossName)) {
+          return editReply({
+            embeds: [
+              buildShowGameStatsEmbed(
+                await getGameBossDeathRanking(gameName, { limit: null }),
+                { limit: null },
+              ),
+            ],
+          });
+        }
 
         if (bossName) {
           const boss = await getBossView({

@@ -1,3 +1,4 @@
+import type { Prisma } from '../../generated/prisma/client';
 import {
   BossEncounterSource,
   BossTrackingSessionStatus,
@@ -175,18 +176,19 @@ export const findGameBossDeathRanking = async ({
     return null;
   }
 
-  const stats = await prisma.bossEncounterStat.findMany({
+  const statsQuery = {
     where: {
       source: BossEncounterSource.DAVI_SPREADSHEET,
       deaths: { not: null },
       boss: { gameId: game.id },
     },
     orderBy: [{ deaths: 'desc' }, { boss: { name: 'asc' } }],
-    take: limit,
+    ...(limit === null || limit === undefined ? {} : { take: limit }),
     include: {
       boss: true,
     },
-  });
+  } satisfies Prisma.BossEncounterStatFindManyArgs;
+  const stats = await prisma.bossEncounterStat.findMany(statsQuery);
   const trackedBosses = await prisma.boss.findMany({
     where: {
       gameId: game.id,

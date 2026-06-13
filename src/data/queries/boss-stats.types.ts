@@ -18,5 +18,5 @@ export type FindBossWithDaviSpreadsheetStatsInput = {
 
 export type FindGameBossDeathRankingInput = {
   normalizedGameName: string;
-  limit: number;
+  limit?: number | null;
 };

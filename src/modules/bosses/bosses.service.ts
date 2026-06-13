@@ -15,6 +15,7 @@ import { normalizeBossName } from './bosses.utils';
 
 const BOSS_LOOKUP_SEPARATOR = '::';
 const AUTOCOMPLETE_LIMIT = 25;
+export const GAME_STATS_ALL_BOSSES_VALUE = 'All';
 
 export const getBossGameAutocomplete = async (query: string) => {
   const normalizedQuery = normalizeBossName(query);
@@ -91,10 +92,18 @@ export const getBossView = async ({ gameName, bossName }: GetBossViewInput) => {
   return boss;
 };
 
-export const getGameBossDeathRanking = async (gameName: string) => {
+export const isGameStatsAllBossesValue = (bossName: string | null) =>
+  bossName !== null &&
+  normalizeBossName(bossName) ===
+    normalizeBossName(GAME_STATS_ALL_BOSSES_VALUE);
+
+export const getGameBossDeathRanking = async (
+  gameName: string,
+  options: { limit?: number | null } = {},
+) => {
   const gameStats = await findGameBossDeathRanking({
     normalizedGameName: normalizeBossName(gameName),
-    limit: 10,
+    limit: options.limit === undefined ? 10 : options.limit,
   });
 
   if (!gameStats) {

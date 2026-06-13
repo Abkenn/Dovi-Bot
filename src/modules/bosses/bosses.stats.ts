@@ -126,7 +126,10 @@ export const summarizeBotTrackedBossStats = (boss: BossWithBotTrackedStats) => {
   };
 };
 
-export const getGameBossStatsRows = (gameStats: GameDeathRankingStats) => {
+export const getGameBossStatsRows = (
+  gameStats: GameDeathRankingStats,
+  options: { limit?: number | null } = {},
+) => {
   const rows = new Map<
     string,
     { name: string; deaths: number; hasDeaths: boolean }
@@ -151,7 +154,7 @@ export const getGameBossStatsRows = (gameStats: GameDeathRankingStats) => {
     });
   }
 
-  return [...rows.values()]
+  const sortedRows = [...rows.values()]
     .filter((row) => row.hasDeaths)
     .sort((left, right) => {
       if (right.deaths !== left.deaths) {
@@ -159,8 +162,13 @@ export const getGameBossStatsRows = (gameStats: GameDeathRankingStats) => {
       }
 
       return left.name.localeCompare(right.name);
-    })
-    .slice(0, 10);
+    });
+
+  if (options.limit === null) {
+    return sortedRows;
+  }
+
+  return sortedRows.slice(0, options.limit ?? 10);
 };
 
 export const summarizeTrackedGameStatus = (game: GameTrackingStatusStats) => {

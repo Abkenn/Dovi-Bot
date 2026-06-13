@@ -13,6 +13,7 @@ import {
   BOSS_TRIAL_DURATION_OPTIONS,
 } from '../modules/boss-trials/boss-trial.config';
 import {
+  GAME_STATS_ALL_BOSSES_VALUE,
   getBossAutocomplete,
   getBossGameAutocomplete,
   toBossAutocompleteValue,
@@ -46,6 +47,10 @@ const COMMANDS_WITH_DEFAULT_STREAM_GAME = new Set([
   'updatebossinfo',
   'updategameinfo',
 ]);
+const GAME_STATS_ALL_BOSSES_CHOICE = {
+  name: GAME_STATS_ALL_BOSSES_VALUE,
+  value: GAME_STATS_ALL_BOSSES_VALUE,
+};
 
 type BossAutocompleteParseData = {
   focusedOption: AutocompleteFocusedOption;
@@ -252,17 +257,22 @@ export class BossAutocompleteHandler extends InteractionHandler {
       return;
     }
 
-    return respondSafely(
-      interaction,
-      bosses.map((boss) => ({
-        name: gameName ? boss.name : `${boss.game.name} - ${boss.name}`,
-        value: gameName
-          ? boss.name
-          : toBossAutocompleteValue({
-              gameName: boss.game.name,
-              bossName: boss.name,
-            }),
-      })),
-    );
+    const bossChoices = bosses.map((boss) => ({
+      name: gameName ? boss.name : `${boss.game.name} - ${boss.name}`,
+      value: gameName
+        ? boss.name
+        : toBossAutocompleteValue({
+            gameName: boss.game.name,
+            bossName: boss.name,
+          }),
+    }));
+    const shouldAddAllChoice =
+      interaction.commandName === 'showgamestats' &&
+      GAME_STATS_ALL_BOSSES_VALUE.toLowerCase().startsWith(query.toLowerCase());
+    const choices = shouldAddAllChoice
+      ? [GAME_STATS_ALL_BOSSES_CHOICE, ...bossChoices].slice(0, 25)
+      : bossChoices;
+
+    return respondSafely(interaction, choices);
   }
 }
