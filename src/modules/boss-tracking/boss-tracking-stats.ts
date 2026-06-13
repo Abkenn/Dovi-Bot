@@ -135,42 +135,54 @@ const getRunbackSeconds = (session: BossTrackingSessionView) => {
     (left, right) => left.attemptNumber - right.attemptNumber,
   );
 
-  return attempts.reduce((totalSeconds, attempt, index) => {
-    const previousAttempt = attempts[index - 1];
+  return attempts.reduce(
+    (totalSeconds, attempt, index) =>
+      totalSeconds +
+      getAttemptRunbackSeconds(session, attempts, attempt, index),
+    0,
+  );
+};
 
-    if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
-      return totalSeconds;
-    }
+const getAttemptRunbackSeconds = (
+  session: BossTrackingSessionView,
+  attempts: BossTrackingAttemptView[],
+  attempt: BossTrackingAttemptView,
+  index: number,
+) => {
+  const previousAttempt = attempts[index - 1];
 
-    if (attempt.runbackSeconds !== null) {
-      return totalSeconds + attempt.runbackSeconds;
-    }
+  if (attempt.result === BossTrackingAttemptResult.IN_PROGRESS) {
+    return 0;
+  }
 
-    if (!previousAttempt) {
-      return totalSeconds;
-    }
+  if (attempt.runbackSeconds !== null) {
+    return attempt.runbackSeconds;
+  }
 
-    if (
-      attempt.vodStartSeconds !== null &&
-      previousAttempt.vodEndSeconds !== null
-    ) {
-      return attempt.vodStartSeconds === previousAttempt.vodEndSeconds
-        ? totalSeconds + (session.boss.runbackSeconds ?? 0)
-        : totalSeconds;
-    }
+  if (!previousAttempt) {
+    return 0;
+  }
 
-    if (!previousAttempt.endedAt) {
-      return totalSeconds;
-    }
+  if (
+    attempt.vodStartSeconds !== null &&
+    previousAttempt.vodEndSeconds !== null
+  ) {
+    return attempt.vodStartSeconds === previousAttempt.vodEndSeconds
+      ? (session.boss.runbackSeconds ?? 0)
+      : 0;
+  }
 
-    const secondsAfterPreviousAttempt = Math.floor(
-      (attempt.startedAt.getTime() - previousAttempt.endedAt.getTime()) / 1000,
-    );
+  if (!previousAttempt.endedAt) {
+    return 0;
+  }
 
-    return secondsAfterPreviousAttempt <= 5
-      ? totalSeconds + (session.boss.runbackSeconds ?? 0)
-      : totalSeconds;
-  }, 0);
+  const secondsAfterPreviousAttempt = Math.floor(
+    (attempt.startedAt.getTime() - previousAttempt.endedAt.getTime()) / 1000,
+  );
+
+  return secondsAfterPreviousAttempt <= 5
+    ? (session.boss.runbackSeconds ?? 0)
+    : 0;
 };
 
 const getSummaryAttemptCount = (session: BossTrackingSessionView) => {
@@ -307,7 +319,29 @@ export const getBossTrackingSessionWinningAttemptSeconds = (
     return null;
   }
 
-  return getAttemptSeconds(winningAttempt);
+  const attemptSeconds = getAttemptSeconds(winningAttempt);
+
+  if (attemptSeconds === null) {
+    return null;
+  }
+
+  const attempts = [...session.attempts].sort(
+    (left, right) => left.attemptNumber - right.attemptNumber,
+  );
+  const winningAttemptIndex = attempts.findIndex(
+    (attempt) => attempt.id === winningAttempt.id,
+  );
+
+  return Math.max(
+    0,
+    attemptSeconds -
+      getAttemptRunbackSeconds(
+        session,
+        attempts,
+        winningAttempt,
+        winningAttemptIndex,
+      ),
+  );
 };
 
 export const summarizeBossTrackingSessions = (
