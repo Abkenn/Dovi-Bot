@@ -1,6 +1,7 @@
 import { env } from '@zod-schemas/env.zod';
-import type { DateTime } from 'luxon';
+import { DateTime } from 'luxon';
 import type { StreamOccurrence } from './stream-info.types';
+import { LUXON_WEEKDAY_TO_WEEKDAY, makeDateKey } from './stream-info.utils';
 
 type YouTubeChannel = {
   handle: string;
@@ -34,6 +35,7 @@ type YouTubeVideosResponse = {
       liveBroadcastContent?: string;
     };
     liveStreamingDetails?: {
+      scheduledStartTime?: string;
       actualStartTime?: string;
       actualEndTime?: string;
     };
@@ -43,13 +45,15 @@ type YouTubeVideosResponse = {
 type YouTubeStreamStatus = {
   title: string;
   url: string;
+  scheduledStartAt: Date | null;
   actualStartAt: Date | null;
   actualEndAt: Date | null;
   isLive: boolean;
+  isUpcoming: boolean;
 };
 
 const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
-const YOUTUBE_POLL_BEFORE_SCHEDULE_MS = 60 * 60 * 1000;
+const YOUTUBE_MATCH_BEFORE_SCHEDULE_MS = 6 * 60 * 60 * 1000;
 const YOUTUBE_POLL_AFTER_SCHEDULE_START_MS = 16 * 60 * 60 * 1000;
 const YOUTUBE_RECENT_END_GRACE_MS = 10 * 60 * 1000;
 const YOUTUBE_ACTIVE_CACHE_MS = 60 * 1000;
@@ -172,21 +176,30 @@ const getStreamStatuses = async (
           return null;
         }
 
+        const scheduledStartAt = toDate(
+          item.liveStreamingDetails.scheduledStartTime,
+        );
         const actualStartAt = toDate(item.liveStreamingDetails.actualStartTime);
         const actualEndAt = toDate(item.liveStreamingDetails.actualEndTime);
         const isLive =
           item.snippet.liveBroadcastContent === 'live' && actualEndAt === null;
+        const isUpcoming =
+          item.snippet.liveBroadcastContent === 'upcoming' &&
+          scheduledStartAt !== null &&
+          actualEndAt === null;
 
-        if (!isLive && !actualEndAt) {
+        if (!isLive && !isUpcoming && !actualEndAt) {
           return null;
         }
 
         return {
           title: item.snippet.title,
           url: `https://www.youtube.com/watch?v=${item.id}`,
+          scheduledStartAt,
           actualStartAt,
           actualEndAt,
           isLive,
+          isUpcoming,
         };
       })
       .filter((status) => status !== null) ?? []
@@ -212,6 +225,29 @@ const getFreshYouTubeStreamStatus =
     }
 
     const now = Date.now();
+    const upcomingStatuses = statuses
+      .filter((status) => {
+        const scheduledStartMs = status.scheduledStartAt?.getTime();
+
+        return (
+          status.isUpcoming &&
+          scheduledStartMs !== undefined &&
+          scheduledStartMs + YOUTUBE_POLL_AFTER_SCHEDULE_START_MS >= now
+        );
+      })
+      .sort((a, b) => {
+        const aStart = a.scheduledStartAt?.getTime() ?? 0;
+        const bStart = b.scheduledStartAt?.getTime() ?? 0;
+        const aDistance = Math.abs(aStart - now);
+        const bDistance = Math.abs(bStart - now);
+
+        return aDistance - bDistance;
+      });
+
+    if (upcomingStatuses[0]) {
+      return upcomingStatuses[0];
+    }
+
     const recentlyEndedStatuses = statuses
       .filter(
         (status) =>
@@ -226,34 +262,26 @@ const getFreshYouTubeStreamStatus =
     return recentlyEndedStatuses[0] ?? null;
   };
 
-const shouldPollYouTube = (
-  occurrences: readonly StreamOccurrence[],
-  now: DateTime,
-): boolean => {
+const shouldPollYouTube = (): boolean => {
   if (!env.YOUTUBE_API_KEY || getYouTubeChannelHandles().length === 0) {
     return false;
   }
 
-  const nowMs = now.toMillis();
-
-  return occurrences.some((occurrence) => {
-    const startMs = occurrence.startAt.getTime();
-
-    return (
-      nowMs >= startMs - YOUTUBE_POLL_BEFORE_SCHEDULE_MS &&
-      nowMs <= startMs + YOUTUBE_POLL_AFTER_SCHEDULE_START_MS
-    );
-  });
+  return true;
 };
 
 const getYouTubeStreamStatus = async (
-  occurrences: readonly StreamOccurrence[],
   now: DateTime,
 ): Promise<YouTubeStreamStatus | null> => {
   const nowMs = now.toMillis();
   const cachedStatus = streamCache?.status;
   const cachedStatusIsActive =
     cachedStatus?.isLive ||
+    (cachedStatus?.isUpcoming &&
+      cachedStatus.scheduledStartAt &&
+      cachedStatus.scheduledStartAt.getTime() +
+        YOUTUBE_POLL_AFTER_SCHEDULE_START_MS >=
+        nowMs) ||
     (cachedStatus?.actualEndAt &&
       cachedStatus.actualEndAt.getTime() + YOUTUBE_RECENT_END_GRACE_MS >=
         nowMs);
@@ -262,7 +290,7 @@ const getYouTubeStreamStatus = async (
     return streamCache.status;
   }
 
-  if (!shouldPollYouTube(occurrences, now) && !cachedStatusIsActive) {
+  if (!shouldPollYouTube() && !cachedStatusIsActive) {
     return null;
   }
 
@@ -283,7 +311,11 @@ const getYouTubeStreamStatus = async (
 };
 
 const getStatusTime = (status: YouTubeStreamStatus): number | null =>
-  (status.actualStartAt ?? status.actualEndAt)?.getTime() ?? null;
+  (
+    status.actualStartAt ??
+    status.scheduledStartAt ??
+    status.actualEndAt
+  )?.getTime() ?? null;
 
 const findMatchingOccurrence = (
   occurrences: readonly StreamOccurrence[],
@@ -301,7 +333,7 @@ const findMatchingOccurrence = (
         const startMs = occurrence.startAt.getTime();
 
         return (
-          statusTime >= startMs - YOUTUBE_POLL_BEFORE_SCHEDULE_MS &&
+          statusTime >= startMs - YOUTUBE_MATCH_BEFORE_SCHEDULE_MS &&
           statusTime <= startMs + YOUTUBE_POLL_AFTER_SCHEDULE_START_MS
         );
       })
@@ -317,37 +349,73 @@ const applyYouTubeStreamStatus = (
   occurrence: StreamOccurrence,
   status: YouTubeStreamStatus,
   now: DateTime,
+  timezone: string,
+  isMatchedOccurrence: boolean,
 ): StreamOccurrence => {
+  const startAt = status.actualStartAt ?? status.scheduledStartAt;
+  const durationMs = occurrence.endAt.getTime() - occurrence.startAt.getTime();
   const endAt = status.actualEndAt
     ? new Date(status.actualEndAt.getTime() + YOUTUBE_RECENT_END_GRACE_MS)
-    : new Date(now.toMillis() + YOUTUBE_RECENT_END_GRACE_MS);
+    : new Date((startAt?.getTime() ?? now.toMillis()) + durationMs);
+  const resolvedStartAt = startAt ?? occurrence.startAt;
+  const localStart = DateTime.fromJSDate(resolvedStartAt, {
+    zone: 'utc',
+  }).setZone(timezone);
 
   return {
     ...occurrence,
-    startAt: status.actualStartAt ?? occurrence.startAt,
+    dateKey: isMatchedOccurrence ? occurrence.dateKey : makeDateKey(localStart),
+    weekday: isMatchedOccurrence
+      ? occurrence.weekday
+      : (LUXON_WEEKDAY_TO_WEEKDAY[localStart.weekday] ?? occurrence.weekday),
+    startAt: resolvedStartAt,
     endAt,
+    title: isMatchedOccurrence ? occurrence.title : status.title,
     streamUrl: status.url,
   };
+};
+
+const findFallbackOccurrence = (
+  occurrences: readonly StreamOccurrence[],
+  now: DateTime,
+): StreamOccurrence | null => {
+  const nowMs = now.toMillis();
+
+  return (
+    occurrences.find((occurrence) => occurrence.startAt.getTime() > nowMs) ??
+    occurrences[0] ??
+    null
+  );
 };
 
 export const getYouTubeCurrentOccurrence = async ({
   occurrences,
   now,
+  timezone,
 }: {
   occurrences: readonly StreamOccurrence[];
   now: DateTime;
+  timezone: string;
 }): Promise<StreamOccurrence | null> => {
-  const status = await getYouTubeStreamStatus(occurrences, now);
+  const status = await getYouTubeStreamStatus(now);
 
   if (!status) {
     return null;
   }
 
-  const occurrence = findMatchingOccurrence(occurrences, status);
+  const matchedOccurrence = findMatchingOccurrence(occurrences, status);
+  const occurrence =
+    matchedOccurrence ?? findFallbackOccurrence(occurrences, now);
 
   if (!occurrence) {
     return null;
   }
 
-  return applyYouTubeStreamStatus(occurrence, status, now);
+  return applyYouTubeStreamStatus(
+    occurrence,
+    status,
+    now,
+    timezone,
+    matchedOccurrence !== null,
+  );
 };

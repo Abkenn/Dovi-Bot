@@ -29,14 +29,18 @@ const buildOccurrenceValue = (
     return label === 'Next' ? 'No upcoming stream found.' : '-';
   }
 
+  const startsInFuture = occurrence.startAt.getTime() > Date.now();
+  let relativePrefix = '';
+  if (label === 'Current') {
+    relativePrefix = startsInFuture ? 'starts ' : 'started ';
+  }
+
   const lines = [
     occurrence.title ?? 'Stream',
-    label === 'Current'
-      ? `${discordTs(occurrence.startAt, 'F')} (started ${discordTs(
-          occurrence.startAt,
-          'R',
-        )})`
-      : `${discordTs(occurrence.startAt, 'F')} (${discordTs(occurrence.startAt, 'R')})`,
+    `${discordTs(occurrence.startAt, 'F')} (${relativePrefix}${discordTs(
+      occurrence.startAt,
+      'R',
+    )})`,
   ];
 
   if (shouldShowGame(occurrence) && occurrence.gameName?.trim()) {

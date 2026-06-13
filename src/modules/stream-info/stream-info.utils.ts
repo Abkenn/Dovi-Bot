@@ -63,11 +63,10 @@ export const findNextOccurrence = (
 };
 
 export const resolveTargetStream = (
-  now: DateTime,
   current: StreamOccurrence | null,
   next: StreamOccurrence | null,
 ): { target: TargetStream; occurrence: StreamOccurrence | null } => {
-  if (current && isOngoingOccurrence(current, now)) {
+  if (current) {
     return {
       target: 'current',
       occurrence: current,

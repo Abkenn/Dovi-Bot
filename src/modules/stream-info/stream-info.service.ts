@@ -263,7 +263,7 @@ const buildTargetOccurrenceForWeekday = async ({
   movedFromOccurrence: StreamOccurrence | null;
 }> => {
   const info = await getStreamInfo(guildId);
-  const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+  const target = resolveTargetStream(info.current, info.next);
 
   if (!targetWeekday) {
     if (!target.occurrence) {
@@ -341,7 +341,7 @@ const buildSkipTargetOccurrenceForWeekday = async ({
   const info = await getStreamInfo(guildId);
 
   if (!targetWeekday) {
-    const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+    const target = resolveTargetStream(info.current, info.next);
 
     if (!target.occurrence) {
       throw new Error('No target stream found');
@@ -392,7 +392,7 @@ export const getStreamInfoDayAutocomplete = async ({
   }
 
   const info = await getStreamInfo(guildId);
-  const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+  const target = resolveTargetStream(info.current, info.next);
 
   if (!target.occurrence) {
     return [];
@@ -477,6 +477,7 @@ export const getStreamInfo = async (
   const youtubeCurrent = await getYouTubeCurrentOccurrence({
     occurrences,
     now,
+    timezone: config.canonicalTimezone,
   });
   const current = youtubeCurrent ?? scheduledCurrent;
   const next = findNextOccurrence(
@@ -649,7 +650,7 @@ export const skipStream = async (input: SkipStreamInput) => {
 
 export const resetStreamTitle = async (guildId: string) => {
   const info = await getStreamInfo(guildId);
-  const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+  const target = resolveTargetStream(info.current, info.next);
   const targetOccurrence = target.occurrence;
 
   if (!targetOccurrence) {
@@ -666,7 +667,7 @@ export const resetStreamTitle = async (guildId: string) => {
 
 export const resetStreamInfo = async (guildId: string) => {
   const info = await getStreamInfo(guildId);
-  const target = resolveTargetStream(DateTime.utc(), info.current, info.next);
+  const target = resolveTargetStream(info.current, info.next);
   const targetOccurrence = target.occurrence;
 
   if (!targetOccurrence) {
