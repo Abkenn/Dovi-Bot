@@ -8,12 +8,15 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "build": "pnpm exec prisma generate && tsc --noEmit -p tsconfig.json",
+    "build": "prisma generate && tsc --noEmit -p tsconfig.json",
     "check": "biome check .",
+    "prepare": "husky",
     "test": "vitest --watch",
     "test:full": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:dal": "playwright test -c playwright.dal.config.ts",
+    "toolchain:check": "node scripts/verify-toolchain.mjs",
+    "verify:push": "npm run toolchain:check && npm run format && git diff --exit-code && npm run check && npm run build && npm run test:coverage && npm run test:dal",
     "boss-discussion:backfill": "tsx scripts/boss-discussion-backfill.ts",
     "boss-discussion:backfill:dry-run": "tsx scripts/boss-discussion-backfill.ts --dry-run",
     "community-topics:seed": "tsx scripts/community-topic-seed.ts",
@@ -23,27 +26,45 @@
   "author": "Abken",
   "license": "ISC",
   "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": "24.16.0",
+    "npm": "11.17.0",
+    "pnpm": "10.33.2"
+  },
+  "volta": {
+    "node": "24.16.0",
+    "npm": "11.17.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.7",
     "@playwright/test": "^1.60.0",
     "@types/luxon": "^3.7.1",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.1.8",
+    "husky": "^9.1.7",
     "prisma": "^7.8.0",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
     "type-fest": "^5.7.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.11",
+    "@hono/node-server": "^1.19.14",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@sapphire/framework": "^5.5.0",
-    "discord.js": "14",
+    "discord.js": "^14.26.4",
     "dotenv": "^17.3.1",
-    "hono": "^4.12.8",
+    "hono": "^4.12.25",
     "luxon": "^3.7.2",
     "zod": "^4.3.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "@hono/node-server": "1.19.14",
+      "fast-uri": "3.1.2",
+      "lodash": "4.18.1",
+      "ws": "8.21.0"
+    }
   }
 }
