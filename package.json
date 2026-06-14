@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test:dal": "playwright test -c playwright.dal.config.ts",
     "toolchain:check": "node scripts/verify-toolchain.mjs",
-    "verify:push": "npm run toolchain:check && npm run format && git diff --exit-code && npm run check && npm run build && npm run test:coverage && npm run test:dal",
+    "verify:push": "pnpm run toolchain:check && pnpm run format && git diff --exit-code && pnpm run check && pnpm run build && pnpm run test:coverage && pnpm run test:dal",
     "boss-discussion:backfill": "tsx scripts/boss-discussion-backfill.ts",
     "boss-discussion:backfill:dry-run": "tsx scripts/boss-discussion-backfill.ts --dry-run",
     "community-topics:seed": "tsx scripts/community-topic-seed.ts",
@@ -28,12 +28,10 @@
   "packageManager": "pnpm@10.33.2",
   "engines": {
     "node": "24.16.0",
-    "npm": "11.17.0",
     "pnpm": "10.33.2"
   },
   "volta": {
-    "node": "24.16.0",
-    "npm": "11.17.0"
+    "node": "24.16.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.7",

@@ -13,7 +13,6 @@ const commandVersion = (command) =>
 
 const actual = {
   node: process.version.replace(/^v/, ''),
-  npm: commandVersion('npm'),
   pnpm: commandVersion('pnpm'),
 };
 
@@ -31,6 +30,4 @@ if (mismatches.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `Toolchain OK: node ${actual.node}, npm ${actual.npm}, pnpm ${actual.pnpm}`,
-);
+console.log(`Toolchain OK: node ${actual.node}, pnpm ${actual.pnpm}`);
