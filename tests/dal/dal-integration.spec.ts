@@ -40,6 +40,95 @@ if (runtimeEnv.databaseUrl) {
 const now = new Date('2026-06-12T18:00:00.000Z');
 const guildId = 'dal-guild';
 
+const coveredDalExports = {
+  '../../src/data/boss-catalog.utils': [
+    'hasDurableBossData',
+    'hasDurableGameData',
+  ],
+  '../../src/data/boss-tracking.constants': [
+    'OPEN_BOSS_TRACKING_SESSION_STATUSES',
+  ],
+  '../../src/data/hello-greetings': ['HELLO_GREETINGS'],
+  '../../src/data/queries/boss-stats': [
+    'areBossStatsTablesPresent',
+    'countBossesByNormalizedName',
+    'findBossGamesForAutocomplete',
+    'findBossesForAutocomplete',
+    'findBossWithDaviSpreadsheetStats',
+    'findGameBossDeathRanking',
+  ],
+  '../../src/data/queries/boss-tracking': [
+    'bossTrackingSessionInclude',
+    'findActiveBossTrackingSession',
+    'findLatestBossTrackingSession',
+    'findOpenBossTrackingBossesForAutocomplete',
+    'findTrackedGameStatus',
+  ],
+  '../../src/data/queries/boss-trial': [
+    'areBossTrialTablesPresent',
+    'attachBossTrialBumpMessage',
+    'attachBossTrialMessageAndGetView',
+    'claimBossTrialAutomaticBump',
+    'claimBossTrialFinalResults',
+    'claimBossTrialLiveResults',
+    'createBossTrialView',
+    'findBossTrialVoteVerdict',
+    'getBossTrialView',
+    'getPendingBossTrialLifecycleEvents',
+    'upsertBossTrialVoteVerdict',
+  ],
+  '../../src/data/queries/boss-trial-stats': ['getBossTrialStatsRows'],
+  '../../src/data/queries/command-logging': [
+    'createCommandErrorLog',
+    'createCommandExecutionLog',
+  ],
+  '../../src/data/queries/community-topic-catalog': [
+    'areCommunityTopicCatalogTablesPresent',
+    'findCommunityTopicCatalog',
+  ],
+  '../../src/data/queries/community-topic-signals': [
+    'areCommunityTopicTablesPresent',
+    'getCommunityTopicBossUserShares',
+    'getCommunityTopicGameBossStats',
+    'getCommunityTopicSignalStats',
+  ],
+  '../../src/data/queries/database-health': ['pingDatabase'],
+  '../../src/data/queries/stream-info': [
+    'buildTargetStreamOverrideUpsertArgs',
+    'deleteStreamScheduleOverrideForDate',
+    'ensureGuildStreamConfig',
+    'findEnabledStreamScheduleDefaults',
+    'findGuildStreamConfig',
+    'findStreamScheduleOverridesInDateRange',
+    'updateDefaultGameName',
+    'upsertStreamTitleResetOverride',
+    'upsertTargetStreamOverride',
+  ],
+  '../../src/data/transactions/boss-topic-info': [
+    'importCommunityTopicSeed',
+    'updateBossGameTopicInfo',
+  ],
+  '../../src/data/transactions/boss-tracking': [
+    'cancelBossTrackingSession',
+    'endBossTrackingSession',
+    'pauseBossTrackingSession',
+    'recordBossTrackingDeath',
+    'resumeBossTrackingSession',
+    'startBossTrackingSession',
+    'updateBossTrackingInfo',
+  ],
+  '../../src/data/transactions/community-topic-signals': [
+    'upsertCommunityTopicMessageSignals',
+  ],
+  '../../src/data/transactions/davi-boss-stats-sync': [
+    'upsertDaviSpreadsheetBossEncounter',
+  ],
+  '../../src/data/transactions/stream-info': [
+    'updateDefaultGameAndTargetStreamOverride',
+    'upsertMovedTargetStreamOverride',
+  ],
+} as const satisfies Record<string, readonly string[]>;
+
 const topicTerm = (value: string) => ({
   kind: BossTopicTermKind.ALIAS,
   value,
@@ -102,6 +191,59 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
+test('keeps every runtime DAL export represented in integration coverage', async () => {
+  for (const [modulePath, expectedExports] of Object.entries(
+    coveredDalExports,
+  )) {
+    const module = (await import(modulePath)) as Record<string, unknown>;
+    const runtimeExports = Object.entries(module)
+      .filter(([, value]) => value !== undefined)
+      .map(([name]) => name)
+      .sort();
+
+    expect(runtimeExports).toEqual([...expectedExports].sort());
+  }
+});
+
+test('covers data-only DAL helpers and constants', async () => {
+  const { hasDurableBossData, hasDurableGameData } = await import(
+    '../../src/data/boss-catalog.utils'
+  );
+  const { OPEN_BOSS_TRACKING_SESSION_STATUSES } = await import(
+    '../../src/data/boss-tracking.constants'
+  );
+  const { HELLO_GREETINGS } = await import('../../src/data/hello-greetings');
+
+  expect(OPEN_BOSS_TRACKING_SESSION_STATUSES).toEqual(['ACTIVE', 'PAUSED']);
+  expect(HELLO_GREETINGS.length).toBeGreaterThan(0);
+  expect(
+    hasDurableBossData({
+      topicTerms: [],
+      _count: { stats: 0, trials: 0, trackingSessions: 0 },
+    }),
+  ).toBe(false);
+  expect(
+    hasDurableBossData({
+      topicTerms: [{ createdByUserId: null }],
+      _count: { stats: 0, trials: 0, trackingSessions: 0 },
+    }),
+  ).toBe(true);
+  expect(
+    hasDurableGameData({
+      topicTerms: [],
+      defaultStreamGameConfig: null,
+      _count: { bosses: 0, trials: 0, trackingSessions: 0 },
+    }),
+  ).toBe(false);
+  expect(
+    hasDurableGameData({
+      topicTerms: [],
+      defaultStreamGameConfig: { guildId },
+      _count: { bosses: 0, trials: 0, trackingSessions: 0 },
+    }),
+  ).toBe(true);
+});
+
 test('checks database health and schema presence helpers', async () => {
   const { pingDatabase } = await import(
     '../../src/data/queries/database-health'
@@ -129,6 +271,38 @@ test('checks database health and schema presence helpers', async () => {
 test('covers stream-info queries and transactions', async () => {
   const queries = await import('../../src/data/queries/stream-info');
   const transactions = await import('../../src/data/transactions/stream-info');
+
+  expect(
+    queries.buildTargetStreamOverrideUpsertArgs({
+      guildId,
+      streamDateKey: '2026-06-10',
+      resolvedFromWeekday: 'WEDNESDAY',
+      startAtUtc: now,
+      status: ScheduleStatus.SCHEDULED,
+      gameName: 'Builder Game',
+    }),
+  ).toMatchObject({
+    update: { status: ScheduleStatus.SCHEDULED, gameName: 'Builder Game' },
+    create: {
+      streamKind: null,
+      musicMode: null,
+      titleOverride: null,
+      gameName: 'Builder Game',
+    },
+  });
+  expect(
+    queries.buildTargetStreamOverrideUpsertArgs({
+      guildId,
+      streamDateKey: '2026-06-11',
+      resolvedFromWeekday: 'THURSDAY',
+      startAtUtc: now,
+      gameName: 'Ignored Builder Game',
+      createGameName: null,
+    }),
+  ).toMatchObject({
+    update: { gameName: 'Ignored Builder Game' },
+    create: { gameName: null },
+  });
 
   const config = await queries.ensureGuildStreamConfig({
     guildId,
@@ -197,13 +371,13 @@ test('covers stream-info queries and transactions', async () => {
 
   await transactions.upsertMovedTargetStreamOverride({
     guildId,
-    defaultGameName: 'Moved Game',
     override: {
       guildId,
       streamDateKey: '2026-06-14',
       resolvedFromWeekday: 'SUNDAY',
       startAtUtc: now,
       status: ScheduleStatus.SCHEDULED,
+      gameName: 'Moved Game',
     },
     cancelledOverride: {
       guildId,
@@ -212,6 +386,32 @@ test('covers stream-info queries and transactions', async () => {
       startAtUtc: now,
       status: ScheduleStatus.CANCELLED,
     },
+  });
+  await expect(queries.findGuildStreamConfig(guildId)).resolves.toMatchObject({
+    defaultGameName: 'Transaction Game',
+  });
+
+  await transactions.upsertMovedTargetStreamOverride({
+    guildId,
+    defaultGameName: 'Moved Default Game',
+    override: {
+      guildId,
+      streamDateKey: '2026-06-16',
+      resolvedFromWeekday: 'TUESDAY',
+      startAtUtc: now,
+      status: ScheduleStatus.SCHEDULED,
+      gameName: 'Ignored Move Game',
+    },
+    cancelledOverride: {
+      guildId,
+      streamDateKey: '2026-06-17',
+      resolvedFromWeekday: 'WEDNESDAY',
+      startAtUtc: now,
+      status: ScheduleStatus.CANCELLED,
+    },
+  });
+  await expect(queries.findGuildStreamConfig(guildId)).resolves.toMatchObject({
+    defaultGameName: 'Moved Default Game',
   });
   await expect(
     queries.deleteStreamScheduleOverrideForDate({
@@ -428,6 +628,90 @@ test('covers boss tracking transactions and queries', async () => {
     name: 'Tracking Game',
     trackingSessions: [{ finalDeaths: 12 }],
   });
+
+  await expect(
+    trackingTransactions.updateBossTrackingInfo({
+      guildId,
+      createdByUserId: 'tracker',
+      runbackSeconds: 30,
+      topicTerms: [],
+    }),
+  ).resolves.toMatchObject({
+    gameName: 'Tracking Game',
+    bossName: 'Tracking Boss Prime',
+    runbackSeconds: 30,
+  });
+});
+
+test('covers boss tracking cancellation and orphan cleanup', async () => {
+  const trackingTransactions = await import(
+    '../../src/data/transactions/boss-tracking'
+  );
+  const trackingQueries = await import('../../src/data/queries/boss-tracking');
+  const { prisma } = await import('../../src/lib/prisma');
+
+  await expect(
+    trackingTransactions.cancelBossTrackingSession(guildId),
+  ).rejects.toThrow('No boss tracking session is active right now.');
+
+  await trackingTransactions.startBossTrackingSession({
+    guildId,
+    channelId: 'channel',
+    trackerUserId: 'tracker',
+    gameName: 'Cancel Game',
+    normalizedGameName: 'cancel game',
+    bossName: 'Cancel Boss',
+    normalizedBossName: 'cancel boss',
+    startDeaths: 0,
+    topicTerms: [topicTerm('Cancel Alias')],
+  });
+  const cancelled =
+    await trackingTransactions.cancelBossTrackingSession(guildId);
+  expect(cancelled.status).toBe('CANCELLED');
+  await expect(
+    trackingQueries.findLatestBossTrackingSession(guildId),
+  ).resolves.toBeNull();
+  await expect(
+    prisma.bossGame.findUnique({ where: { normalizedName: 'cancel game' } }),
+  ).resolves.toBeNull();
+
+  await trackingTransactions.startBossTrackingSession({
+    guildId,
+    channelId: 'channel',
+    trackerUserId: 'tracker',
+    gameName: 'Durable Cancel Game',
+    normalizedGameName: 'durable cancel game',
+    bossName: 'Durable Cancel Boss',
+    normalizedBossName: 'durable cancel boss',
+    startDeaths: 0,
+    topicTerms: [],
+  });
+  const durableBoss = await prisma.boss.findFirstOrThrow({
+    where: {
+      normalizedName: 'durable cancel boss',
+      game: { normalizedName: 'durable cancel game' },
+    },
+  });
+  await prisma.bossTopicTerm.create({
+    data: {
+      bossId: durableBoss.id,
+      kind: BossTopicTermKind.ALIAS,
+      value: 'System Durable Boss',
+      normalizedValue: 'system durable boss',
+      createdByUserId: null,
+    },
+  });
+
+  await trackingTransactions.pauseBossTrackingSession({
+    guildId,
+    reason: null,
+  });
+  const durableCancelled =
+    await trackingTransactions.cancelBossTrackingSession(guildId);
+  expect(durableCancelled.status).toBe('CANCELLED');
+  await expect(
+    prisma.boss.findUnique({ where: { id: durableBoss.id } }),
+  ).resolves.toMatchObject({ id: durableBoss.id });
 });
 
 test('covers boss topic info and community topic signal DAL', async () => {
