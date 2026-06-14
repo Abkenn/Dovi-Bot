@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test:dal": "playwright test -c playwright.dal.config.ts",
     "toolchain:check": "node scripts/verify-toolchain.mjs",
-    "verify:push": "pnpm run toolchain:check && pnpm run format && git diff --exit-code && pnpm run check && pnpm run build && pnpm run test:coverage && pnpm run test:dal",
+    "verify:push": "pnpm run toolchain:check && pnpm biome check --write . && git diff --exit-code && pnpm run check && pnpm run build && pnpm run test:coverage && pnpm run test:dal",
     "boss-discussion:backfill": "tsx scripts/boss-discussion-backfill.ts",
     "boss-discussion:backfill:dry-run": "tsx scripts/boss-discussion-backfill.ts --dry-run",
     "community-topics:seed": "tsx scripts/community-topic-seed.ts",
