@@ -97,8 +97,8 @@ export const summarizeCombinedBossStats = (boss: BossWithStats) => {
     totalAttemptSeconds: totalAttemptSeconds > 0 ? totalAttemptSeconds : null,
     averageAttemptSeconds: averageAttempt,
     winningAttemptSeconds:
-      trackedStats.winningAttemptSeconds ??
-      daviStats?.winningAttemptTimeSeconds,
+      daviStats?.winningAttemptTimeSeconds ??
+      trackedStats.winningAttemptSeconds,
     difficultyCoefficient: daviStats?.difficultyCoefficient ?? null,
     totalAttemptSecondsWithoutRunbacks:
       trackedStats.totalAttemptSecondsWithoutRunbacks,

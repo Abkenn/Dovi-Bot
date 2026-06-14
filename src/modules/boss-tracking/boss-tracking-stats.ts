@@ -11,7 +11,39 @@ import type {
 
 type BossTrackingAttemptView = BossTrackingSessionView['attempts'][number];
 
-const getAttemptSeconds = (attempt: BossTrackingAttemptView) => {
+const getAttemptPauseSeconds = (
+  session: BossTrackingSessionView,
+  attempt: BossTrackingAttemptView,
+) => {
+  if (!attempt.endedAt) {
+    return 0;
+  }
+
+  const attemptStartMs = attempt.startedAt.getTime();
+  const attemptEndMs = attempt.endedAt.getTime();
+
+  return session.pauses.reduce((totalSeconds, pause) => {
+    if (!pause.endedAt) {
+      return totalSeconds;
+    }
+
+    const pauseStartMs = pause.startedAt.getTime();
+    const pauseEndMs = pause.endedAt.getTime();
+    const overlapStartMs = Math.max(attemptStartMs, pauseStartMs);
+    const overlapEndMs = Math.min(attemptEndMs, pauseEndMs);
+
+    if (overlapEndMs <= overlapStartMs) {
+      return totalSeconds;
+    }
+
+    return totalSeconds + Math.floor((overlapEndMs - overlapStartMs) / 1000);
+  }, 0);
+};
+
+const getAttemptSeconds = (
+  session: BossTrackingSessionView,
+  attempt: BossTrackingAttemptView,
+) => {
   if (attempt.vodStartSeconds !== null && attempt.vodEndSeconds !== null) {
     return Math.max(0, attempt.vodEndSeconds - attempt.vodStartSeconds);
   }
@@ -20,12 +52,11 @@ const getAttemptSeconds = (attempt: BossTrackingAttemptView) => {
     return null;
   }
 
-  return Math.max(
-    0,
-    Math.floor(
-      (attempt.endedAt.getTime() - attempt.startedAt.getTime()) / 1000,
-    ),
+  const rawSeconds = Math.floor(
+    (attempt.endedAt.getTime() - attempt.startedAt.getTime()) / 1000,
   );
+
+  return Math.max(0, rawSeconds - getAttemptPauseSeconds(session, attempt));
 };
 
 const getTrackedAttemptSeconds = (session: BossTrackingSessionView) => {
@@ -38,7 +69,7 @@ const getTrackedAttemptSeconds = (session: BossTrackingSessionView) => {
       return totalSeconds;
     }
 
-    return totalSeconds + (getAttemptSeconds(attempt) ?? 0);
+    return totalSeconds + (getAttemptSeconds(session, attempt) ?? 0);
   }, 0);
 };
 
@@ -75,7 +106,9 @@ const hasPartialVodAttemptTiming = (session: BossTrackingSessionView) =>
     const hasVodStart = attempt.vodStartSeconds !== null;
     const hasVodEnd = attempt.vodEndSeconds !== null;
 
-    return hasVodStart !== hasVodEnd && getAttemptSeconds(attempt) === null;
+    return (
+      hasVodStart !== hasVodEnd && getAttemptSeconds(session, attempt) === null
+    );
   });
 
 const wasStartedByLiveResumeWithoutVod = (
@@ -106,7 +139,7 @@ const hasUntimedVodAttempts = (session: BossTrackingSessionView) =>
   session.attempts.some(
     (attempt) =>
       attempt.result !== BossTrackingAttemptResult.IN_PROGRESS &&
-      getAttemptSeconds(attempt) === null &&
+      getAttemptSeconds(session, attempt) === null &&
       attempt.vodStartSeconds === null &&
       attempt.vodEndSeconds === null &&
       !wasStartedByLiveResumeWithoutVod(session, attempt),
@@ -319,7 +352,7 @@ export const getBossTrackingSessionWinningAttemptSeconds = (
     return null;
   }
 
-  const attemptSeconds = getAttemptSeconds(winningAttempt);
+  const attemptSeconds = getAttemptSeconds(session, winningAttempt);
 
   if (attemptSeconds === null) {
     return null;
