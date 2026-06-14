@@ -48,7 +48,7 @@ const run = (
 
 const hasDocker = () => {
   try {
-    run(resolveDockerCommand(), ['--version']);
+    run(resolveDockerCommand(), ['info']);
     return true;
   } catch {
     return false;

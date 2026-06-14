@@ -16,8 +16,16 @@ const actual = {
   pnpm: commandVersion('pnpm'),
 };
 
+const matchesVersion = (actualVersion, expectedVersion) => {
+  if (expectedVersion.endsWith('.x')) {
+    return actualVersion.startsWith(`${expectedVersion.slice(0, -1)}`);
+  }
+
+  return actualVersion === expectedVersion;
+};
+
 const mismatches = Object.entries(expected).filter(
-  ([tool, version]) => actual[tool] !== version,
+  ([tool, version]) => !matchesVersion(actual[tool], version),
 );
 
 if (mismatches.length > 0) {
