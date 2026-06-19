@@ -11,6 +11,7 @@ import {
 import {
   applyOverrideToOccurrence,
   buildDefaultOccurrence,
+  extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
   findNextOccurrence,
   isOngoingOccurrence,
@@ -128,6 +129,18 @@ describe('stream info utils', () => {
     });
     expect(occurrence.startAt.toISOString()).toBe('2026-06-12T18:10:00.000Z');
     expect(occurrence.endAt.toISOString()).toBe('2026-06-12T22:10:00.000Z');
+  });
+
+  it('extends scheduled current detection to 260 minutes from planned start', () => {
+    const occurrence = buildDefaultOccurrence(
+      makeConfig(),
+      makeDefaultRule(),
+      friday,
+    );
+    const extended = extendOccurrenceCurrentWindow(occurrence);
+
+    expect(extended.startAt.toISOString()).toBe('2026-06-12T18:10:00.000Z');
+    expect(extended.endAt.toISOString()).toBe('2026-06-12T22:30:00.000Z');
   });
 
   it('resolves base stream fields from rule values before config defaults', () => {

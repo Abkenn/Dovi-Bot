@@ -15,6 +15,9 @@ export const DEFAULT_GUILD_STREAM_CONFIG = {
   defaultStreamKind: StreamKind.GAME,
 } as const;
 
+export const STREAM_CURRENT_FALLBACK_WINDOW_MINUTES = 260;
+export const STREAM_ENDED_LINK_GRACE_MINUTES = 10;
+
 export const DEFAULT_STREAM_SCHEDULE = [
   {
     weekday: 'FRIDAY',

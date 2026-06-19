@@ -33,6 +33,7 @@ import type {
 import {
   applyOverrideToOccurrence,
   buildDefaultOccurrence,
+  extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
   findNextOccurrence,
   LUXON_WEEKDAY_TO_WEEKDAY,
@@ -41,7 +42,7 @@ import {
   resolveTitle,
   WEEKDAY_TO_LUXON,
 } from './stream-info.utils';
-import { getYouTubeCurrentOccurrence } from './stream-info.youtube';
+import { getYouTubeStreamResolution } from './stream-info.youtube';
 import {
   DEFAULT_GUILD_STREAM_CONFIG,
   DEFAULT_STREAM_SCHEDULE,
@@ -473,13 +474,20 @@ export const getStreamInfo = async (
 
   const occurrences = buildOccurrences(config, defaults, overrides);
   const now = DateTime.utc();
-  const scheduledCurrent = findCurrentOccurrence(occurrences, now);
-  const youtubeCurrent = await getYouTubeCurrentOccurrence({
+  const scheduledCurrent = findCurrentOccurrence(
+    occurrences.map(extendOccurrenceCurrentWindow),
+    now,
+  );
+  const youtubeResolution = await getYouTubeStreamResolution({
     occurrences,
     now,
     timezone: config.canonicalTimezone,
   });
-  const current = youtubeCurrent ?? scheduledCurrent;
+  const shouldSuppressScheduledCurrent =
+    scheduledCurrent?.dateKey === youtubeResolution.suppressedScheduledDateKey;
+  const current =
+    youtubeResolution.current ??
+    (shouldSuppressScheduledCurrent ? null : scheduledCurrent);
   const next = findNextOccurrence(
     current
       ? occurrences.filter(

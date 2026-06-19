@@ -23,6 +23,21 @@ export type StreamInfoResult = {
   next: StreamOccurrence | null;
 };
 
+export type YouTubeStreamStatus = {
+  title: string;
+  url: string;
+  scheduledStartAt: Date | null;
+  actualStartAt: Date | null;
+  actualEndAt: Date | null;
+  isLive: boolean;
+  isUpcoming: boolean;
+};
+
+export type YouTubeStreamResolution = {
+  current: StreamOccurrence | null;
+  suppressedScheduledDateKey: string | null;
+};
+
 export type SetStreamInfoInput = {
   guildId: string;
   targetWeekday?: Weekday | null;

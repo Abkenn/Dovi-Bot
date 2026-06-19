@@ -8,6 +8,7 @@ import {
   type Weekday,
 } from '../../generated/prisma/client';
 import type { StreamOccurrence, TargetStream } from './stream-info.types';
+import { STREAM_CURRENT_FALLBACK_WINDOW_MINUTES } from './stream-schedule.config';
 
 export const WEEKDAY_TO_LUXON: Record<Weekday, number> = {
   MONDAY: 1,
@@ -49,6 +50,19 @@ export const findCurrentOccurrence = (
 ): StreamOccurrence | null =>
   occurrences.find((occurrence) => isOngoingOccurrence(occurrence, now)) ??
   null;
+
+export const extendOccurrenceCurrentWindow = (
+  occurrence: StreamOccurrence,
+): StreamOccurrence => ({
+  ...occurrence,
+  endAt: new Date(
+    Math.max(
+      occurrence.endAt.getTime(),
+      occurrence.startAt.getTime() +
+        STREAM_CURRENT_FALLBACK_WINDOW_MINUTES * 60 * 1000,
+    ),
+  ),
+});
 
 export const findNextOccurrence = (
   occurrences: readonly StreamOccurrence[],
