@@ -1,4 +1,5 @@
 import {
+  deleteExpiredStreamInfoMessages,
   deleteLastStreamInfoMessage,
   findLastStreamInfoMessages,
   findLatestStreamInfoCommandTargets,
@@ -21,6 +22,16 @@ import type { StreamInfoMessagePointer } from './stream-info-message-updater.typ
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
 const UNKNOWN_CHANNEL_CODE = 10003;
+const STREAM_INFO_MESSAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
+
+const getRecentMessageCutoff = () =>
+  new Date(Date.now() - STREAM_INFO_MESSAGE_RETENTION_MS);
+
+const getChannelKey = ({
+  guildId,
+  channelId,
+}: Pick<StreamInfoMessagePointer, 'guildId' | 'channelId'>) =>
+  `${guildId}:${channelId}`;
 
 const shouldForgetMessage = (error: unknown): boolean => {
   const code = getNumberProperty(error, 'code');
@@ -95,6 +106,16 @@ const buildStreamInfoMessageEdit = async (guildId: string) => {
   } satisfies MessageEditOptions;
 };
 
+const editStreamInfoMessage = async ({
+  guildId,
+  message,
+}: {
+  guildId: string;
+  message: Message;
+}) => {
+  await message.edit(await buildStreamInfoMessageEdit(guildId));
+};
+
 export const registerLastStreamInfoMessage = async ({
   guildId,
   channelId,
@@ -112,6 +133,8 @@ export const registerLastStreamInfoMessage = async ({
     guildId,
     channelId,
     messageId: message.id,
+  }).catch((error) => {
+    console.error('Failed to store stream info message', error);
   });
 };
 
@@ -125,15 +148,18 @@ export const refreshStreamInfoMessage = async ({
   try {
     const channel = await client.channels.fetch(pointer.channelId);
     if (!hasMessages(channel)) {
-      await deleteLastStreamInfoMessage(pointer.guildId);
+      await deleteLastStreamInfoMessage(pointer.messageId);
       return;
     }
 
     const message = await channel.messages.fetch(pointer.messageId);
-    await message.edit(await buildStreamInfoMessageEdit(pointer.guildId));
+    await editStreamInfoMessage({
+      guildId: pointer.guildId,
+      message,
+    });
   } catch (error) {
     if (shouldForgetMessage(error)) {
-      await deleteLastStreamInfoMessage(pointer.guildId);
+      await deleteLastStreamInfoMessage(pointer.messageId);
       return;
     }
 
@@ -172,27 +198,43 @@ export const adoptLastStreamInfoMessage = async ({
       messageId: message.id,
     };
 
-    await upsertLastStreamInfoMessage(streamInfoMessagePointer);
-    await refreshStreamInfoMessage({
-      client,
-      pointer: streamInfoMessagePointer,
+    await editStreamInfoMessage({
+      guildId: pointer.guildId,
+      message,
     });
+
+    await upsertLastStreamInfoMessage(streamInfoMessagePointer).catch(
+      (error) => {
+        console.error('Failed to store adopted stream info message', error);
+      },
+    );
   } catch (error) {
     console.error('Failed to adopt stream info message', error);
   }
 };
 
 export const refreshLastStreamInfoMessages = async (client: Client) => {
-  const pointers = await findLastStreamInfoMessages();
-  const trackedGuildIds = new Set(pointers.map((pointer) => pointer.guildId));
+  const recentCutoff = getRecentMessageCutoff();
+  await deleteExpiredStreamInfoMessages(recentCutoff).catch((error) => {
+    console.error('Failed to delete expired stream info messages', error);
+  });
+
+  const pointers = await findLastStreamInfoMessages(recentCutoff).catch(
+    (error) => {
+      console.error('Failed to load stored stream info messages', error);
+
+      return [];
+    },
+  );
+  const trackedChannelKeys = new Set(pointers.map(getChannelKey));
 
   for (const pointer of pointers) {
     await refreshStreamInfoMessage({ client, pointer });
   }
 
-  const commandTargets = await findLatestStreamInfoCommandTargets();
+  const commandTargets = await findLatestStreamInfoCommandTargets(recentCutoff);
   for (const target of commandTargets) {
-    if (trackedGuildIds.has(target.guildId)) {
+    if (trackedChannelKeys.has(getChannelKey(target))) {
       continue;
     }
 

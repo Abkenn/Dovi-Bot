@@ -11,10 +11,12 @@ export const upsertLastStreamInfoMessage = ({
 }: UpsertStreamInfoMessageInput) =>
   prisma.streamInfoMessage.upsert({
     where: {
-      guildId,
+      guildId_channelId: {
+        guildId,
+        channelId,
+      },
     },
     update: {
-      channelId,
       messageId,
     },
     create: {
@@ -24,26 +26,43 @@ export const upsertLastStreamInfoMessage = ({
     },
   });
 
-export const findLastStreamInfoMessages = () =>
+export const findLastStreamInfoMessages = (since: Date) =>
   prisma.streamInfoMessage.findMany({
+    where: {
+      updatedAt: {
+        gte: since,
+      },
+    },
     orderBy: {
       updatedAt: 'desc',
     },
   });
 
-export const deleteLastStreamInfoMessage = (guildId: string) =>
+export const deleteLastStreamInfoMessage = (messageId: string) =>
   prisma.streamInfoMessage.deleteMany({
     where: {
-      guildId,
+      messageId,
     },
   });
 
-export const findLatestStreamInfoCommandTargets = async (): Promise<
-  StreamInfoCommandTarget[]
-> => {
+export const deleteExpiredStreamInfoMessages = (before: Date) =>
+  prisma.streamInfoMessage.deleteMany({
+    where: {
+      updatedAt: {
+        lt: before,
+      },
+    },
+  });
+
+export const findLatestStreamInfoCommandTargets = async (
+  since: Date,
+): Promise<StreamInfoCommandTarget[]> => {
   const logs = await prisma.commandExecutionLog.findMany({
     where: {
       commandName: 'streaminfo',
+      createdAt: {
+        gte: since,
+      },
       guildId: {
         not: null,
       },
@@ -56,11 +75,16 @@ export const findLatestStreamInfoCommandTargets = async (): Promise<
     },
     take: 50,
   });
-  const seenGuildIds = new Set<string>();
+  const seenTargets = new Set<string>();
   const targets: StreamInfoCommandTarget[] = [];
 
   for (const log of logs) {
-    if (!log.guildId || !log.channelId || seenGuildIds.has(log.guildId)) {
+    if (!log.guildId || !log.channelId) {
+      continue;
+    }
+
+    const targetKey = `${log.guildId}:${log.channelId}`;
+    if (seenTargets.has(targetKey)) {
       continue;
     }
 
@@ -68,7 +92,7 @@ export const findLatestStreamInfoCommandTargets = async (): Promise<
       guildId: log.guildId,
       channelId: log.channelId,
     });
-    seenGuildIds.add(log.guildId);
+    seenTargets.add(targetKey);
   }
 
   return targets;
