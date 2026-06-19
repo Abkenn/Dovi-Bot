@@ -98,6 +98,17 @@ model StreamScheduleOverride {
   @@index([guildId, streamDateKey])
 }
 
+model StreamInfoMessage {
+  guildId   String   @id
+  channelId String
+  messageId String   @unique
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([channelId])
+  @@index([updatedAt])
+}
+
 enum CommandExecutionStatus {
   SUCCESS
   ERROR
