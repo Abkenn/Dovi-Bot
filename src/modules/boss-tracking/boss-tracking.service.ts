@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import {
   findActiveBossTrackingSession,
   findLatestBossTrackingSession,
@@ -255,9 +256,9 @@ export const startLiveBossTracking = async ({
   };
 
   if (cleanStartedAgoSeconds !== undefined) {
-    startSessionInput.startedAt = new Date(
-      Date.now() - cleanStartedAgoSeconds * 1000,
-    );
+    startSessionInput.startedAt = DateTime.utc()
+      .minus({ seconds: cleanStartedAgoSeconds })
+      .toJSDate();
   }
 
   const cleanVodLabel = vod?.trim();

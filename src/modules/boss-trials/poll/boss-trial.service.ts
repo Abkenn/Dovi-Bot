@@ -12,6 +12,7 @@ import {
   getPendingBossTrialLifecycleEvents as getPendingBossTrialLifecycleEventRows,
   upsertBossTrialVoteVerdict,
 } from '@data/queries/boss-trial';
+import { DateTime } from 'luxon';
 import type { BossTrialVoteVerdict } from '../../../generated/prisma/enums';
 import { BossTrialBumpMode } from '../../../generated/prisma/enums';
 import { DAY_MINUTES, MINUTE_MS } from '../../../lib/time.constants';
@@ -35,9 +36,6 @@ const AUTOMATIC_BUMP_MODES: readonly BossTrialBumpMode[] = [
 
 let bossTrialStorageReady: boolean | undefined;
 let bossTrialStorageLastCheckedAt = 0;
-
-const addMinutes = (date: Date, minutes: number) =>
-  new Date(date.getTime() + minutes * MINUTE_MS);
 
 export const isBossTrialStorageReady = async () => {
   if (bossTrialStorageReady) {
@@ -93,7 +91,7 @@ export const createBossTrial = async ({
     durationConfig.durationMinutes === DAY_MINUTES
       ? requestedBumpMode
       : BossTrialBumpMode.DEFAULT;
-  const now = new Date();
+  const now = DateTime.utc();
 
   return createBossTrialView({
     guildId,
@@ -102,8 +100,10 @@ export const createBossTrial = async ({
     gameId: boss.gameId,
     bossId: boss.id,
     durationMinutes: durationConfig.durationMinutes,
-    voteVisibilityHiddenUntil: addMinutes(now, durationConfig.hiddenMinutes),
-    endsAt: addMinutes(now, durationConfig.durationMinutes),
+    voteVisibilityHiddenUntil: now
+      .plus({ minutes: durationConfig.hiddenMinutes })
+      .toJSDate(),
+    endsAt: now.plus({ minutes: durationConfig.durationMinutes }).toJSDate(),
     bumpMode,
   });
 };
@@ -169,15 +169,13 @@ export const recordBossTrialVote = async ({
 };
 
 export const getPendingBossTrialLifecycleEvents = async () => {
-  const now = new Date();
-  const automaticBumpCreatedAtCutoff = addMinutes(
-    now,
-    -BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
-  );
+  const now = DateTime.utc();
 
   return getPendingBossTrialLifecycleEventRows({
-    now,
-    automaticBumpCreatedAtCutoff,
+    now: now.toJSDate(),
+    automaticBumpCreatedAtCutoff: now
+      .minus({ minutes: BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES })
+      .toJSDate(),
   });
 };
 
@@ -212,10 +210,11 @@ export const getWinningVerdicts = (trial: BossTrialWithVotes) => {
 
 export const shouldShowBossTrialVotes = (trial: {
   voteVisibilityHiddenUntil: Date;
-}) => Date.now() >= trial.voteVisibilityHiddenUntil.getTime();
+}) => DateTime.utc() >= DateTime.fromJSDate(trial.voteVisibilityHiddenUntil);
 
 export const shouldPostBossTrialFinalResults = (trial: BossTrialView) =>
-  !trial.finalResultsPostedAt && Date.now() >= trial.endsAt.getTime();
+  !trial.finalResultsPostedAt &&
+  DateTime.utc() >= DateTime.fromJSDate(trial.endsAt);
 
 export const shouldPublishBossTrialLiveResults = (trial: BossTrialView) =>
   !trial.liveResultsPublishedAt && shouldShowBossTrialVotes(trial);
@@ -225,10 +224,10 @@ export const shouldPostBossTrialVotesVisibleBump = (trial: BossTrialView) =>
   trial.bumpMode === BossTrialBumpMode.DEFAULT;
 
 export const shouldPostBossTrialAutomaticBump = (trial: BossTrialView) => {
-  const now = Date.now();
-  const bumpAt =
-    trial.createdAt.getTime() +
-    BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES * MINUTE_MS;
+  const now = DateTime.utc();
+  const bumpAt = DateTime.fromJSDate(trial.createdAt).plus({
+    minutes: BOSS_TRIAL_AUTOMATIC_BUMP_AFTER_MINUTES,
+  });
   const isAutomaticBumpMode = AUTOMATIC_BUMP_MODES.includes(trial.bumpMode);
 
   return (
@@ -236,7 +235,7 @@ export const shouldPostBossTrialAutomaticBump = (trial: BossTrialView) => {
     isAutomaticBumpMode &&
     !trial.automaticBumpPostedAt &&
     now >= bumpAt &&
-    now < trial.endsAt.getTime()
+    now < DateTime.fromJSDate(trial.endsAt)
   );
 };
 

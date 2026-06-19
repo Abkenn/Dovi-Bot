@@ -1,4 +1,4 @@
-import type { DateTime } from 'luxon';
+import { DateTime } from 'luxon';
 import {
   type GuildConfig,
   MusicMode,
@@ -37,11 +37,10 @@ export const isOngoingOccurrence = (
   occurrence: StreamOccurrence,
   now: DateTime,
 ): boolean => {
-  const nowMs = now.toMillis();
-  const startMs = occurrence.startAt.getTime();
-  const endMs = occurrence.endAt.getTime();
+  const start = DateTime.fromJSDate(occurrence.startAt);
+  const end = DateTime.fromJSDate(occurrence.endAt);
 
-  return nowMs >= startMs && nowMs <= endMs;
+  return now >= start && now <= end;
 };
 
 export const findCurrentOccurrence = (
@@ -53,28 +52,25 @@ export const findCurrentOccurrence = (
 
 export const extendOccurrenceCurrentWindow = (
   occurrence: StreamOccurrence,
-): StreamOccurrence => ({
-  ...occurrence,
-  endAt: new Date(
-    Math.max(
-      occurrence.endAt.getTime(),
-      occurrence.startAt.getTime() +
-        STREAM_CURRENT_FALLBACK_WINDOW_MINUTES * 60 * 1000,
-    ),
-  ),
-});
+): StreamOccurrence => {
+  const configuredEnd = DateTime.fromJSDate(occurrence.endAt);
+  const fallbackEnd = DateTime.fromJSDate(occurrence.startAt).plus({
+    minutes: STREAM_CURRENT_FALLBACK_WINDOW_MINUTES,
+  });
+
+  return {
+    ...occurrence,
+    endAt: DateTime.max(configuredEnd, fallbackEnd).toJSDate(),
+  };
+};
 
 export const findNextOccurrence = (
   occurrences: readonly StreamOccurrence[],
   now: DateTime,
-): StreamOccurrence | null => {
-  const nowMs = now.toMillis();
-
-  return (
-    occurrences.find((occurrence) => occurrence.startAt.getTime() > nowMs) ??
-    null
-  );
-};
+): StreamOccurrence | null =>
+  occurrences.find(
+    (occurrence) => DateTime.fromJSDate(occurrence.startAt) > now,
+  ) ?? null;
 
 export const resolveTargetStream = (
   current: StreamOccurrence | null,
@@ -205,9 +201,14 @@ export const applyOverrideToOccurrence = (
   const durationMinutes =
     override.durationMinutes ??
     Math.round(
-      (occurrence.endAt.getTime() - occurrence.startAt.getTime()) / 60000,
+      DateTime.fromJSDate(occurrence.endAt).diff(
+        DateTime.fromJSDate(occurrence.startAt),
+        'minutes',
+      ).minutes,
     );
-  const endAt = new Date(startAt.getTime() + durationMinutes * 60000);
+  const endAt = DateTime.fromJSDate(startAt)
+    .plus({ minutes: durationMinutes })
+    .toJSDate();
 
   const streamKind = override.streamKind ?? occurrence.streamKind;
   const musicMode = override.musicMode ?? occurrence.musicMode;

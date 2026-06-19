@@ -10,19 +10,16 @@ import {
   STREAM_ENDED_LINK_GRACE_MINUTES,
 } from './stream-schedule.config';
 
-const YOUTUBE_MATCH_BEFORE_SCHEDULE_MS = 6 * 60 * 60 * 1000;
 export const YOUTUBE_POLL_AFTER_SCHEDULE_START_MS = 16 * 60 * 60 * 1000;
 export const YOUTUBE_RECENT_END_GRACE_MS =
   STREAM_ENDED_LINK_GRACE_MINUTES * 60 * 1000;
-const YOUTUBE_CURRENT_FALLBACK_WINDOW_MS =
-  STREAM_CURRENT_FALLBACK_WINDOW_MINUTES * 60 * 1000;
 
-const getStatusTime = (status: YouTubeStreamStatus): number | null =>
-  (
-    status.actualStartAt ??
-    status.scheduledStartAt ??
-    status.actualEndAt
-  )?.getTime() ?? null;
+const getStatusTime = (status: YouTubeStreamStatus): DateTime | null => {
+  const statusTime =
+    status.actualStartAt ?? status.scheduledStartAt ?? status.actualEndAt;
+
+  return statusTime ? DateTime.fromJSDate(statusTime) : null;
+};
 
 const findMatchingOccurrence = (
   occurrences: readonly StreamOccurrence[],
@@ -37,18 +34,23 @@ const findMatchingOccurrence = (
   return (
     occurrences
       .filter((occurrence) => {
-        const startMs = occurrence.startAt.getTime();
+        const start = DateTime.fromJSDate(occurrence.startAt);
 
         return (
-          statusTime >= startMs - YOUTUBE_MATCH_BEFORE_SCHEDULE_MS &&
-          statusTime <= startMs + YOUTUBE_POLL_AFTER_SCHEDULE_START_MS
+          statusTime >= start.minus({ hours: 6 }) &&
+          statusTime <= start.plus({ hours: 16 })
         );
       })
-      .sort(
-        (a, b) =>
-          Math.abs(a.startAt.getTime() - statusTime) -
-          Math.abs(b.startAt.getTime() - statusTime),
-      )[0] ?? null
+      .sort((a, b) => {
+        const aDistance = Math.abs(
+          DateTime.fromJSDate(a.startAt).diff(statusTime).milliseconds,
+        );
+        const bDistance = Math.abs(
+          DateTime.fromJSDate(b.startAt).diff(statusTime).milliseconds,
+        );
+
+        return aDistance - bDistance;
+      })[0] ?? null
   );
 };
 
@@ -61,11 +63,12 @@ const applyYouTubeStreamStatus = (
 ): StreamOccurrence => {
   const startAt = status.actualStartAt ?? status.scheduledStartAt;
   const endAt = status.actualEndAt
-    ? new Date(status.actualEndAt.getTime() + YOUTUBE_RECENT_END_GRACE_MS)
-    : new Date(
-        (startAt?.getTime() ?? now.toMillis()) +
-          YOUTUBE_CURRENT_FALLBACK_WINDOW_MS,
-      );
+    ? DateTime.fromJSDate(status.actualEndAt)
+        .plus({ minutes: STREAM_ENDED_LINK_GRACE_MINUTES })
+        .toJSDate()
+    : (startAt ? DateTime.fromJSDate(startAt) : now)
+        .plus({ minutes: STREAM_CURRENT_FALLBACK_WINDOW_MINUTES })
+        .toJSDate();
   const resolvedStartAt = startAt ?? occurrence.startAt;
   const localStart = DateTime.fromJSDate(resolvedStartAt, {
     zone: 'utc',
@@ -88,10 +91,10 @@ const findFallbackOccurrence = (
   occurrences: readonly StreamOccurrence[],
   now: DateTime,
 ): StreamOccurrence | null => {
-  const nowMs = now.toMillis();
-
   return (
-    occurrences.find((occurrence) => occurrence.startAt.getTime() > nowMs) ??
+    occurrences.find(
+      (occurrence) => DateTime.fromJSDate(occurrence.startAt) > now,
+    ) ??
     occurrences[0] ??
     null
   );
@@ -134,7 +137,7 @@ export const resolveYouTubeStreamStatus = ({
     matchedOccurrence !== null,
   );
 
-  if (status.actualEndAt && current.endAt.getTime() <= now.toMillis()) {
+  if (status.actualEndAt && DateTime.fromJSDate(current.endAt) <= now) {
     return {
       current: null,
       suppressedScheduledDateKey: current.dateKey,

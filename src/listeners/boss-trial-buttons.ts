@@ -1,5 +1,6 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
+import { DateTime } from 'luxon';
 import { BOSS_TRIAL_VERDICT_LABELS } from '../modules/boss-trials/boss-trial.config';
 import { parseBossTrialButtonAction } from '../modules/boss-trials/poll/boss-trial.discord';
 import {
@@ -104,7 +105,7 @@ export class BossTrialButtonsListener extends Listener {
           });
         }
 
-        if (Date.now() >= trial.endsAt.getTime()) {
+        if (DateTime.utc() >= DateTime.fromJSDate(trial.endsAt)) {
           return interaction.editReply({
             content: 'This boss trial is already finished.',
           });
@@ -121,7 +122,7 @@ export class BossTrialButtonsListener extends Listener {
         });
       }
 
-      if (Date.now() < trial.endsAt.getTime()) {
+      if (DateTime.utc() < DateTime.fromJSDate(trial.endsAt)) {
         return interaction.editReply({
           content: 'Scheduled results have not been posted yet.',
         });

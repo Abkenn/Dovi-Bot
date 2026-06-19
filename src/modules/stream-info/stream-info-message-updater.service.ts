@@ -14,6 +14,7 @@ import {
   type MessageManager,
   type Snowflake,
 } from 'discord.js';
+import { DateTime } from 'luxon';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
 import { getStreamInfoEmbed } from './stream-info.discord';
@@ -22,10 +23,12 @@ import type { StreamInfoMessagePointer } from './stream-info-message-updater.typ
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
 const UNKNOWN_CHANNEL_CODE = 10003;
-const STREAM_INFO_MESSAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
+const STREAM_INFO_MESSAGE_RETENTION_HOURS = 24;
 
 const getRecentMessageCutoff = () =>
-  new Date(Date.now() - STREAM_INFO_MESSAGE_RETENTION_MS);
+  DateTime.utc()
+    .minus({ hours: STREAM_INFO_MESSAGE_RETENTION_HOURS })
+    .toJSDate();
 
 const getChannelKey = ({
   guildId,

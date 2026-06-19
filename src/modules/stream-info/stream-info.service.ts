@@ -136,7 +136,9 @@ const buildOverrideOnlyOccurrence = (
     dateKey: override.streamDateKey,
     weekday,
     startAt: override.startAtUtc,
-    endAt: new Date(override.startAtUtc.getTime() + durationMinutes * 60000),
+    endAt: DateTime.fromJSDate(override.startAtUtc)
+      .plus({ minutes: durationMinutes })
+      .toJSDate(),
     streamKind,
     musicMode,
     title,

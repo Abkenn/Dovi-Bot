@@ -1,5 +1,5 @@
 import { env } from '@zod-schemas/env.zod';
-import type { DateTime } from 'luxon';
+import { DateTime } from 'luxon';
 import type {
   StreamOccurrence,
   YouTubeStreamResolution,
@@ -73,9 +73,9 @@ const toDate = (value: string | undefined): Date | null => {
     return null;
   }
 
-  const date = new Date(value);
+  const date = DateTime.fromISO(value, { setZone: true });
 
-  return Number.isNaN(date.getTime()) ? null : date;
+  return date.isValid ? date.toUTC().toJSDate() : null;
 };
 
 const getJson = async <T>(
@@ -219,22 +219,27 @@ const getFreshYouTubeStreamStatus =
       return liveStatuses[0];
     }
 
-    const now = Date.now();
+    const now = DateTime.utc();
     const upcomingStatuses = statuses
-      .filter((status) => {
-        const scheduledStartMs = status.scheduledStartAt?.getTime();
-
-        return (
+      .filter(
+        (status) =>
           status.isUpcoming &&
-          scheduledStartMs !== undefined &&
-          scheduledStartMs + YOUTUBE_POLL_AFTER_SCHEDULE_START_MS >= now
-        );
-      })
+          status.scheduledStartAt &&
+          DateTime.fromJSDate(status.scheduledStartAt).plus({
+            milliseconds: YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
+          }) >= now,
+      )
       .sort((a, b) => {
-        const aStart = a.scheduledStartAt?.getTime() ?? 0;
-        const bStart = b.scheduledStartAt?.getTime() ?? 0;
-        const aDistance = Math.abs(aStart - now);
-        const bDistance = Math.abs(bStart - now);
+        const aDistance = a.scheduledStartAt
+          ? Math.abs(
+              DateTime.fromJSDate(a.scheduledStartAt).diff(now).milliseconds,
+            )
+          : Number.POSITIVE_INFINITY;
+        const bDistance = b.scheduledStartAt
+          ? Math.abs(
+              DateTime.fromJSDate(b.scheduledStartAt).diff(now).milliseconds,
+            )
+          : Number.POSITIVE_INFINITY;
 
         return aDistance - bDistance;
       });
@@ -270,12 +275,13 @@ const getYouTubeStreamStatus = async (
     cachedStatus?.isLive ||
     (cachedStatus?.isUpcoming &&
       cachedStatus.scheduledStartAt &&
-      cachedStatus.scheduledStartAt.getTime() +
-        YOUTUBE_POLL_AFTER_SCHEDULE_START_MS >=
-        nowMs) ||
+      DateTime.fromJSDate(cachedStatus.scheduledStartAt).plus({
+        milliseconds: YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
+      }) >= now) ||
     (cachedStatus?.actualEndAt &&
-      cachedStatus.actualEndAt.getTime() + YOUTUBE_RECENT_END_GRACE_MS >=
-        nowMs);
+      DateTime.fromJSDate(cachedStatus.actualEndAt).plus({
+        milliseconds: YOUTUBE_RECENT_END_GRACE_MS,
+      }) >= now);
 
   if (streamCache && streamCache.expiresAt > nowMs) {
     return streamCache.status;

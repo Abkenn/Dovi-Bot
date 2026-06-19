@@ -1,8 +1,13 @@
+import { DateTime } from 'luxon';
 import {
   BossTrackingAttemptResult,
   BossTrackingAttemptTimingStatus,
   BossTrackingEndResult,
 } from '../../generated/prisma/enums';
+import {
+  getElapsedSeconds,
+  getSignedElapsedSeconds,
+} from '../../lib/time.utils';
 import type {
   BossTrackingAverageAttemptTime,
   BossTrackingAverageFromSecondsInput,
@@ -19,24 +24,27 @@ const getAttemptPauseSeconds = (
     return 0;
   }
 
-  const attemptStartMs = attempt.startedAt.getTime();
-  const attemptEndMs = attempt.endedAt.getTime();
+  const attemptStart = DateTime.fromJSDate(attempt.startedAt);
+  const attemptEnd = DateTime.fromJSDate(attempt.endedAt);
 
   return session.pauses.reduce((totalSeconds, pause) => {
     if (!pause.endedAt) {
       return totalSeconds;
     }
 
-    const pauseStartMs = pause.startedAt.getTime();
-    const pauseEndMs = pause.endedAt.getTime();
-    const overlapStartMs = Math.max(attemptStartMs, pauseStartMs);
-    const overlapEndMs = Math.min(attemptEndMs, pauseEndMs);
+    const pauseStart = DateTime.fromJSDate(pause.startedAt);
+    const pauseEnd = DateTime.fromJSDate(pause.endedAt);
+    const overlapStart = DateTime.max(attemptStart, pauseStart);
+    const overlapEnd = DateTime.min(attemptEnd, pauseEnd);
 
-    if (overlapEndMs <= overlapStartMs) {
+    if (overlapEnd <= overlapStart) {
       return totalSeconds;
     }
 
-    return totalSeconds + Math.floor((overlapEndMs - overlapStartMs) / 1000);
+    return (
+      totalSeconds +
+      Math.floor(overlapEnd.diff(overlapStart, 'seconds').seconds)
+    );
   }, 0);
 };
 
@@ -52,9 +60,7 @@ const getAttemptSeconds = (
     return null;
   }
 
-  const rawSeconds = Math.floor(
-    (attempt.endedAt.getTime() - attempt.startedAt.getTime()) / 1000,
-  );
+  const rawSeconds = getElapsedSeconds(attempt.startedAt, attempt.endedAt);
 
   return Math.max(0, rawSeconds - getAttemptPauseSeconds(session, attempt));
 };
@@ -125,9 +131,7 @@ const wasStartedByLiveResumeWithoutVod = (
     }
 
     const secondsAfterResume = Math.abs(
-      Math.floor(
-        (attempt.startedAt.getTime() - pause.endedAt.getTime()) / 1000,
-      ),
+      getSignedElapsedSeconds(pause.endedAt, attempt.startedAt),
     );
 
     return secondsAfterResume <= 5;
@@ -209,8 +213,9 @@ const getAttemptRunbackSeconds = (
     return 0;
   }
 
-  const secondsAfterPreviousAttempt = Math.floor(
-    (attempt.startedAt.getTime() - previousAttempt.endedAt.getTime()) / 1000,
+  const secondsAfterPreviousAttempt = getSignedElapsedSeconds(
+    previousAttempt.endedAt,
+    attempt.startedAt,
   );
 
   return secondsAfterPreviousAttempt <= 5
@@ -323,9 +328,8 @@ export const getBossTrackingSessionTotalAttemptSeconds = (
 
   return Math.max(
     0,
-    Math.floor(
-      (session.endedAt.getTime() - session.startedAt.getTime()) / 1000,
-    ) - session.totalPausedSeconds,
+    getElapsedSeconds(session.startedAt, session.endedAt) -
+      session.totalPausedSeconds,
   );
 };
 
