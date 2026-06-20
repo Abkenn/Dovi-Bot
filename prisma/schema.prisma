@@ -112,6 +112,18 @@ model StreamInfoMessage {
   @@index([updatedAt])
 }
 
+model PingMeSubscription {
+  id            String   @id @default(cuid())
+  userId        String
+  sourceGuildId String
+  keywords      String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, sourceGuildId])
+  @@index([sourceGuildId])
+}
+
 enum CommandExecutionStatus {
   SUCCESS
   ERROR

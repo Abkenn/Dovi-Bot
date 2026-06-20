@@ -93,6 +93,12 @@ const coveredDalExports = {
     'getCommunityTopicSignalStats',
   ],
   '../../src/data/queries/database-health': ['pingDatabase'],
+  '../../src/data/queries/ping-me': [
+    'deletePingMeProfile',
+    'findPingMeProfile',
+    'findPingMeProfilesForSources',
+    'upsertPingMeProfile',
+  ],
   '../../src/data/queries/stream-info': [
     'buildTargetStreamOverrideUpsertArgs',
     'deleteStreamScheduleOverrideForDate',
@@ -932,6 +938,54 @@ test('covers boss trial queries and stats DAL', async () => {
     creatorRows: [{ requesterUserId: 'requester' }],
     participantRows: [{ userId: 'voter' }],
   });
+});
+
+test('enforces ping-me source guild direction in the DAL', async () => {
+  const queries = await import('../../src/data/queries/ping-me');
+
+  await queries.upsertPingMeProfile({
+    userId: 'staging-user',
+    sourceGuildId: 'staging',
+    keywords: ['olive oil'],
+  });
+  await queries.upsertPingMeProfile({
+    userId: 'prod-user',
+    sourceGuildId: 'prod',
+    keywords: ['cake'],
+  });
+
+  await expect(
+    queries.findPingMeProfilesForSources(['staging']),
+  ).resolves.toEqual([
+    {
+      userId: 'staging-user',
+      sourceGuildId: 'staging',
+      keywords: ['olive oil'],
+    },
+  ]);
+  await expect(
+    queries.findPingMeProfilesForSources(['staging', 'prod']),
+  ).resolves.toHaveLength(2);
+  await expect(queries.findPingMeProfilesForSources([])).toEqual([]);
+
+  await queries.upsertPingMeProfile({
+    userId: 'staging-user',
+    sourceGuildId: 'staging',
+    keywords: ['updated'],
+  });
+  await expect(
+    queries.findPingMeProfile({
+      userId: 'staging-user',
+      sourceGuildId: 'staging',
+    }),
+  ).resolves.toMatchObject({ keywords: ['updated'] });
+
+  await expect(
+    queries.deletePingMeProfile({
+      userId: 'staging-user',
+      sourceGuildId: 'staging',
+    }),
+  ).resolves.toMatchObject({ count: 1 });
 });
 
 test('covers command logging DAL', async () => {

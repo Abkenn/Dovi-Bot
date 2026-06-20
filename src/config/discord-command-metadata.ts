@@ -41,6 +41,13 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.HELP,
   },
+  PING_ME: {
+    name: 'ping-me',
+    description: 'DMs you when one of your keywords is mentioned.',
+    guildIds: COMMAND_GUILDS.PING_ME,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.GENERAL,
+  },
   STREAM_INFO: {
     name: 'streaminfo',
     description: 'Shows current and next stream information.',
