@@ -24,3 +24,21 @@ export type PingMeMessageInput = {
   authorUserId: string;
   content: string;
 };
+export type PingMeGuildCommand = {
+  id: string;
+  name: string;
+};
+
+export type PingMeGuildCommandCollection = {
+  values: () => IterableIterator<PingMeGuildCommand>;
+};
+
+export type RemoveDisabledProdPingMeCommandInput = {
+  fetch: (options: {
+    guildId: string;
+  }) => Promise<PingMeGuildCommandCollection>;
+  deleteCommand: (commandId: string, guildId: string) => Promise<unknown>;
+  commandName: string;
+  prodGuildId: string;
+  prodRegistrationEnabled: boolean;
+};

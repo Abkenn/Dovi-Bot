@@ -136,7 +136,11 @@ export const findPingMeNotifications = async (
   const matchesByUser = new Map<string, Set<string>>();
 
   for (const profile of profiles) {
-    if (profile.userId === input.authorUserId) {
+    const isProdSelfPing =
+      input.guildId === BOT_GUILDS.PROD_ENV &&
+      profile.userId === input.authorUserId;
+
+    if (isProdSelfPing) {
       continue;
     }
 

@@ -161,6 +161,29 @@ describe('ping-me service', () => {
     expect(data.findPingMeProfilesForSources).toHaveBeenCalledWith(['staging']);
   });
 
+  it('allows a staging profile to self-ping only from staging', async () => {
+    data.findPingMeProfilesForSources.mockResolvedValue([
+      {
+        userId: 'author',
+        sourceGuildId: 'staging',
+        keywords: ['abken'],
+      },
+    ]);
+
+    await expect(
+      findPingMeNotifications({
+        guildId: 'staging',
+        authorUserId: 'author',
+        content: 'test abken',
+      }),
+    ).resolves.toEqual([
+      {
+        userId: 'author',
+        matchedKeywords: ['abken'],
+      },
+    ]);
+  });
+
   it('merges staging and prod profile matches on prod without self-pinging', async () => {
     data.findPingMeProfilesForSources.mockResolvedValue([
       {
