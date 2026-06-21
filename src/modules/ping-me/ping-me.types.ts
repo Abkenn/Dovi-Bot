@@ -5,7 +5,7 @@ export type PingMeGuildBoundary = {
 
 export type PingMeNotification = {
   userId: string;
-  matchedKeywords: string[];
+  matchedKeyword: string;
 };
 
 export type PingMeCommandInput = {
@@ -41,4 +41,11 @@ export type RemoveDisabledProdPingMeCommandInput = {
   commandName: string;
   prodGuildId: string;
   prodRegistrationEnabled: boolean;
+};
+export type BuildPingMeDmOptionsInput = {
+  authorLabel: string;
+  matchedKeyword: string;
+  channelId: string;
+  messageUrl: string;
+  canAccess: boolean;
 };

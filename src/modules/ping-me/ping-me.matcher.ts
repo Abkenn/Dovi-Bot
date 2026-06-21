@@ -179,10 +179,5 @@ export const getPingMeListeningSourceGuildIds = (
   return [];
 };
 
-export const shouldForwardPingMeMessage = (
-  messageGuildId: string,
-  boundary: PingMeGuildBoundary,
-): boolean => messageGuildId === boundary.prodGuildId;
-
 export const normalizePingMeKeywordKey = (keyword: string) =>
   compactPingMeText(keyword);

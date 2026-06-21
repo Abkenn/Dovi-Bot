@@ -38,11 +38,11 @@ describe('ping-me service', () => {
   });
 
   it('parses, trims, and validates comma-delimited keywords', () => {
-    expect(parsePingMeKeywords(' Abken,  olive   oil ')).toEqual([
-      'Abken',
-      'olive oil',
+    expect(parsePingMeKeywords(' Dolor,  lorem   ipsum ')).toEqual([
+      'Dolor',
+      'lorem ipsum',
     ]);
-    expect(() => parsePingMeKeywords('olive oil, oliveoil')).toThrow(
+    expect(() => parsePingMeKeywords('lorem ipsum, loremipsum')).toThrow(
       'Duplicate keyword',
     );
     expect(() => parsePingMeKeywords('x')).toThrow(
@@ -60,7 +60,7 @@ describe('ping-me service', () => {
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'staging',
-        keywordsInput: 'Abken, olive oil',
+        keywordsInput: 'Dolor, lorem ipsum',
         clear: false,
       }),
     ).resolves.toMatchObject({
@@ -69,11 +69,11 @@ describe('ping-me service', () => {
     expect(data.upsertPingMeProfile).toHaveBeenCalledWith({
       userId: 'user',
       sourceGuildId: 'staging',
-      keywords: ['Abken', 'olive oil'],
+      keywords: ['Dolor', 'lorem ipsum'],
     });
 
     data.findPingMeProfile.mockResolvedValue({
-      keywords: ['cake'],
+      keywords: ['amet'],
     });
     await expect(
       getPingMeCommandResult({
@@ -118,7 +118,7 @@ describe('ping-me service', () => {
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'prod',
-        keywordsInput: 'cake',
+        keywordsInput: 'amet',
         clear: true,
       }),
     ).rejects.toThrow('Choose either keywords or clear');
@@ -131,12 +131,12 @@ describe('ping-me service', () => {
           {
             userId: 'staging-user',
             sourceGuildId: 'staging',
-            keywords: ['cake'],
+            keywords: ['amet'],
           },
           {
             userId: 'prod-user',
             sourceGuildId: 'prod',
-            keywords: ['cake'],
+            keywords: ['amet'],
           },
         ];
 
@@ -150,12 +150,12 @@ describe('ping-me service', () => {
       findPingMeNotifications({
         guildId: 'staging',
         authorUserId: 'author',
-        content: 'cake',
+        content: 'amet',
       }),
     ).resolves.toEqual([
       {
         userId: 'staging-user',
-        matchedKeywords: ['cake'],
+        matchedKeyword: 'amet',
       },
     ]);
     expect(data.findPingMeProfilesForSources).toHaveBeenCalledWith(['staging']);
@@ -166,7 +166,7 @@ describe('ping-me service', () => {
       {
         userId: 'author',
         sourceGuildId: 'staging',
-        keywords: ['abken'],
+        keywords: ['dolor'],
       },
     ]);
 
@@ -174,12 +174,12 @@ describe('ping-me service', () => {
       findPingMeNotifications({
         guildId: 'staging',
         authorUserId: 'author',
-        content: 'test abken',
+        content: 'test dolor',
       }),
     ).resolves.toEqual([
       {
         userId: 'author',
-        matchedKeywords: ['abken'],
+        matchedKeyword: 'dolor',
       },
     ]);
   });
@@ -189,17 +189,17 @@ describe('ping-me service', () => {
       {
         userId: 'same-user',
         sourceGuildId: 'staging',
-        keywords: ['olive oil'],
+        keywords: ['lorem ipsum'],
       },
       {
         userId: 'same-user',
         sourceGuildId: 'prod',
-        keywords: ['oliveoil', 'unrelated'],
+        keywords: ['loremipsum', 'unrelated'],
       },
       {
         userId: 'author',
         sourceGuildId: 'prod',
-        keywords: ['olive oil'],
+        keywords: ['lorem ipsum'],
       },
     ]);
 
@@ -207,12 +207,12 @@ describe('ping-me service', () => {
       findPingMeNotifications({
         guildId: 'prod',
         authorUserId: 'author',
-        content: 'Someone mentioned olive oil.',
+        content: 'Someone mentioned lorem ipsum.',
       }),
     ).resolves.toEqual([
       {
         userId: 'same-user',
-        matchedKeywords: ['olive oil', 'oliveoil'],
+        matchedKeyword: 'lorem ipsum',
       },
     ]);
     expect(data.findPingMeProfilesForSources).toHaveBeenCalledWith([
@@ -226,7 +226,7 @@ describe('ping-me service', () => {
       findPingMeNotifications({
         guildId: 'other',
         authorUserId: 'author',
-        content: 'cake',
+        content: 'amet',
       }),
     ).resolves.toEqual([]);
     expect(data.findPingMeProfilesForSources).toHaveBeenCalledWith([]);

@@ -5,7 +5,6 @@ import {
   getPingMeListeningSourceGuildIds,
   normalizePingMeKeywordKey,
   normalizePingMeText,
-  shouldForwardPingMeMessage,
 } from '../../src/modules/ping-me/ping-me.matcher';
 
 const boundary = {
@@ -15,40 +14,39 @@ const boundary = {
 
 describe('ping-me keyword matching', () => {
   it.each([
-    ['Someone said Olive Oil today', 'olive oil'],
-    ['OLIVEOIL is excellent', 'Olive Oil'],
-    ['I need olive-oil', 'olive oil'],
-    ['That oliveol take was brave', 'olive oil'],
-    ['I tried olives oil yesterday', 'olive oil'],
-    ['hey abk\u00e9n', 'Abken'],
+    ['Someone said Lorem Ipsum today', 'lorem ipsum'],
+    ['LOREMIPSUM is excellent', 'Lorem Ipsum'],
+    ['I need lorem-ipsum', 'lorem ipsum'],
+    ['That loremipsm take was brave', 'lorem ipsum'],
+    ['I tried lorems ipsum yesterday', 'lorem ipsum'],
+    ['hey d\u00f3lor', 'Dolor'],
   ])('matches useful phrase variants: %s', (content, keyword) => {
     expect(doesPingMeKeywordMatch(content, keyword)).toBe(true);
   });
 
   it.each([
-    ['olive is enough', 'olive oil'],
-    ['olives are enough', 'olive oil'],
-    ['cupcake', 'cake'],
-    ['catastrophe', 'cat'],
-    ['completely unrelated text', 'olive oil'],
+    ['lorem is enough', 'lorem ipsum'],
+    ['lorems are enough', 'lorem ipsum'],
+    ['dolorous', 'dolor'],
+    ['adipiscing', 'sit'],
+    ['completely unrelated text', 'lorem ipsum'],
   ])('rejects broad or unrelated matches: %s', (content, keyword) => {
     expect(doesPingMeKeywordMatch(content, keyword)).toBe(false);
   });
 
   it('normalizes casing, accents, spacing, and punctuation without regex', () => {
-    expect(cleanPingMeKeyword('  olive   oil  ')).toBe('olive oil');
-    expect(normalizePingMeText('  \u00d3live--OIL! ')).toEqual([
-      'olive',
-      'oil',
+    expect(cleanPingMeKeyword('  lorem   ipsum  ')).toBe('lorem ipsum');
+    expect(normalizePingMeText('  L\u00f3rem--IPSUM! ')).toEqual([
+      'lorem',
+      'ipsum',
     ]);
-    expect(normalizePingMeKeywordKey('  \u00d3live--OIL! ')).toBe('oliveoil');
+    expect(normalizePingMeKeywordKey('  L\u00f3rem--IPSUM! ')).toBe(
+      'loremipsum',
+    );
   });
   it('uses two edits only for long phrases', () => {
     expect(
-      doesPingMeKeywordMatch(
-        'community notificatons',
-        'community notification',
-      ),
+      doesPingMeKeywordMatch('lorem ipsxm dolor', 'lorem ipsum dolors'),
     ).toBe(true);
     expect(doesPingMeKeywordMatch('', '')).toBe(false);
   });
@@ -70,11 +68,5 @@ describe('ping-me guild security boundary', () => {
 
   it('ignores every unrelated guild', () => {
     expect(getPingMeListeningSourceGuildIds('other', boundary)).toEqual([]);
-  });
-
-  it('permits forwarding only for prod messages', () => {
-    expect(shouldForwardPingMeMessage('prod', boundary)).toBe(true);
-    expect(shouldForwardPingMeMessage('staging', boundary)).toBe(false);
-    expect(shouldForwardPingMeMessage('other', boundary)).toBe(false);
   });
 });

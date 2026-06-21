@@ -5,6 +5,7 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
+import { PING_ME_COMMAND_CONFIG } from '../modules/ping-me/ping-me.config';
 import { getPingMeCommandResult } from '../modules/ping-me/ping-me.service';
 
 const METADATA = COMMAND_METADATA.PING_ME;
@@ -48,6 +49,7 @@ export class PingMeCommand extends Command {
       interaction,
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
+      withCommandLogging: PING_ME_COMMAND_CONFIG.withCommandLogging,
       beforeDefer: () =>
         assertCommandGuildAccess(interaction, METADATA.guildIds),
       run: async ({ editReply, preflight: sourceGuildId }) => {

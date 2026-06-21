@@ -133,7 +133,7 @@ export const findPingMeNotifications = async (
     guildBoundary,
   );
   const profiles = await findPingMeProfilesForSources(sourceGuildIds);
-  const matchesByUser = new Map<string, Set<string>>();
+  const matchesByUser = new Map<string, string>();
 
   for (const profile of profiles) {
     const isProdSelfPing =
@@ -144,25 +144,19 @@ export const findPingMeNotifications = async (
       continue;
     }
 
-    const matchedKeywords = profile.keywords.filter((keyword) =>
+    const matchedKeyword = profile.keywords.find((keyword) =>
       doesPingMeKeywordMatch(input.content, keyword),
     );
 
-    if (matchedKeywords.length === 0) {
+    if (!matchedKeyword || matchesByUser.has(profile.userId)) {
       continue;
     }
 
-    const existingMatches = matchesByUser.get(profile.userId) ?? new Set();
-
-    for (const keyword of matchedKeywords) {
-      existingMatches.add(keyword);
-    }
-
-    matchesByUser.set(profile.userId, existingMatches);
+    matchesByUser.set(profile.userId, matchedKeyword);
   }
 
-  return [...matchesByUser].map(([userId, matchedKeywords]) => ({
+  return [...matchesByUser].map(([userId, matchedKeyword]) => ({
     userId,
-    matchedKeywords: [...matchedKeywords],
+    matchedKeyword,
   }));
 };
