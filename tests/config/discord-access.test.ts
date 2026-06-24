@@ -20,22 +20,25 @@ describe('Discord command guild access', () => {
     mockedEnv.value.ENABLE_PROD_GUILD_COMMAND_REGISTRATION = true;
   });
 
-  it('keeps ping-me staging-only while other commands register on prod', async () => {
+  it('registers ping-me on prod when prod registration is enabled', async () => {
     const { COMMAND_GUILDS, isAllowedGuildForCommand } = await import(
       '../../src/config/discord-access'
     );
 
-    expect(COMMAND_GUILDS.PING_ME).toEqual(['staging']);
+    expect(COMMAND_GUILDS.PING_ME).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
     expect(isAllowedGuildForCommand('staging', COMMAND_GUILDS.PING_ME)).toBe(
       true,
     );
-    expect(isAllowedGuildForCommand('prod', COMMAND_GUILDS.PING_ME)).toBe(
-      false,
+    expect(isAllowedGuildForCommand('prod', COMMAND_GUILDS.PING_ME)).toBe(true);
+
+    const { COMMAND_METADATA } = await import(
+      '../../src/config/discord-command-metadata'
     );
+    expect(COMMAND_METADATA.PING_ME.helpCategory).toBe('Misc');
   });
 
-  it('still respects disabled prod registration for other commands', async () => {
+  it('respects disabled prod registration for ping-me and other commands', async () => {
     mockedEnv.value.ENABLE_PROD_GUILD_COMMAND_REGISTRATION = false;
     const { COMMAND_GUILDS } = await import('../../src/config/discord-access');
 

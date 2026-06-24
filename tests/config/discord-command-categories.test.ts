@@ -26,6 +26,13 @@ describe('discord command categories', () => {
     );
   });
 
+  it('provides a misc category for utility commands', () => {
+    expect(COMMAND_CATEGORIES.MISC).toBe('Misc');
+    expect(COMMAND_CATEGORY_METADATA[COMMAND_CATEGORIES.MISC].name).toBe(
+      'Misc',
+    );
+  });
+
   it('falls back to the bot accent color when a category has no accent color', () => {
     Object.defineProperty(
       COMMAND_CATEGORY_METADATA[COMMAND_CATEGORIES.HELP],

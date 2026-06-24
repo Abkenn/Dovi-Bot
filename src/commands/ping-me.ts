@@ -27,14 +27,15 @@ export class PingMeCommand extends Command {
           .setDescription(this.description)
           .addStringOption((option) =>
             option
-              .setName('keywords')
-              .setDescription('Comma-delimited keywords; replaces this profile')
+              .setName('new_keywords')
+              .setDescription('Comma-delimited keywords to add')
               .setMaxLength(1_000),
           )
-          .addBooleanOption((option) =>
+          .addStringOption((option) =>
             option
               .setName('clear')
-              .setDescription('Remove this server profile'),
+              .setDescription('Remove one of your keywords')
+              .setAutocomplete(true),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -56,8 +57,8 @@ export class PingMeCommand extends Command {
         const result = await getPingMeCommandResult({
           userId: interaction.user.id,
           sourceGuildId,
-          keywordsInput: interaction.options.getString('keywords'),
-          clear: interaction.options.getBoolean('clear') ?? false,
+          newKeywordsInput: interaction.options.getString('new_keywords'),
+          clearKeyword: interaction.options.getString('clear'),
         });
 
         return editReply(result);

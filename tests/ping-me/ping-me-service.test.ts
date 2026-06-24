@@ -24,6 +24,7 @@ vi.mock('../../src/data/queries/ping-me', () => data);
 
 import {
   findPingMeNotifications,
+  getPingMeClearKeywordAutocomplete,
   getPingMeCommandResult,
   parsePingMeKeywords,
 } from '../../src/modules/ping-me/ping-me.service';
@@ -55,13 +56,16 @@ describe('ping-me service', () => {
     ).toThrow('up to 20 keywords');
   });
 
-  it('saves, displays, and clears only the invoked guild profile', async () => {
+  it('adds, displays, and removes keywords only from the invoked guild profile', async () => {
+    data.findPingMeProfile.mockResolvedValue({
+      keywords: ['existing'],
+    });
     await expect(
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'staging',
-        keywordsInput: 'Dolor, lorem ipsum',
-        clear: false,
+        newKeywordsInput: 'Dolor, lorem ipsum',
+        clearKeyword: null,
       }),
     ).resolves.toMatchObject({
       content: expect.stringContaining('this server and the production server'),
@@ -69,7 +73,7 @@ describe('ping-me service', () => {
     expect(data.upsertPingMeProfile).toHaveBeenCalledWith({
       userId: 'user',
       sourceGuildId: 'staging',
-      keywords: ['Dolor', 'lorem ipsum'],
+      keywords: ['existing', 'Dolor', 'lorem ipsum'],
     });
 
     data.findPingMeProfile.mockResolvedValue({
@@ -79,8 +83,8 @@ describe('ping-me service', () => {
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'prod',
-        keywordsInput: null,
-        clear: false,
+        newKeywordsInput: null,
+        clearKeyword: null,
       }),
     ).resolves.toMatchObject({
       content: expect.stringContaining('this server only'),
@@ -90,11 +94,11 @@ describe('ping-me service', () => {
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'prod',
-        keywordsInput: null,
-        clear: true,
+        newKeywordsInput: null,
+        clearKeyword: 'amet',
       }),
     ).resolves.toMatchObject({
-      content: expect.stringContaining('cleared'),
+      content: expect.stringContaining('removed'),
     });
     expect(data.deletePingMeProfile).toHaveBeenCalledWith({
       userId: 'user',
@@ -102,13 +106,13 @@ describe('ping-me service', () => {
     });
   });
 
-  it('shows an empty profile and rejects simultaneous save and clear', async () => {
+  it('shows an empty profile and rejects simultaneous add and clear', async () => {
     await expect(
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'prod',
-        keywordsInput: null,
-        clear: false,
+        newKeywordsInput: null,
+        clearKeyword: null,
       }),
     ).resolves.toMatchObject({
       content: expect.stringContaining('no ping-me keywords'),
@@ -118,10 +122,47 @@ describe('ping-me service', () => {
       getPingMeCommandResult({
         userId: 'user',
         sourceGuildId: 'prod',
-        keywordsInput: 'amet',
-        clear: true,
+        newKeywordsInput: 'amet',
+        clearKeyword: 'dolor',
       }),
-    ).rejects.toThrow('Choose either keywords or clear');
+    ).rejects.toThrow('Choose either new_keywords or clear');
+  });
+
+  it('removes one keyword while preserving the rest', async () => {
+    data.findPingMeProfile.mockResolvedValue({
+      keywords: ['Dolor', 'lorem ipsum'],
+    });
+
+    await expect(
+      getPingMeCommandResult({
+        userId: 'user',
+        sourceGuildId: 'prod',
+        newKeywordsInput: null,
+        clearKeyword: 'dolor',
+      }),
+    ).resolves.toMatchObject({
+      content: expect.stringContaining('lorem ipsum'),
+    });
+    expect(data.upsertPingMeProfile).toHaveBeenCalledWith({
+      userId: 'user',
+      sourceGuildId: 'prod',
+      keywords: ['lorem ipsum'],
+    });
+    expect(data.deletePingMeProfile).not.toHaveBeenCalled();
+  });
+
+  it('autocompletes clear from the current profile keywords', async () => {
+    data.findPingMeProfile.mockResolvedValue({
+      keywords: ['Dark Souls', 'Elden Ring', 'Cake'],
+    });
+
+    await expect(
+      getPingMeClearKeywordAutocomplete({
+        userId: 'user',
+        sourceGuildId: 'prod',
+        query: 'ring',
+      }),
+    ).resolves.toEqual(['Elden Ring']);
   });
 
   it('never selects prod-created profiles for a staging message', async () => {

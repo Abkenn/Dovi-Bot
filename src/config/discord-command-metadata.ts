@@ -46,7 +46,7 @@ export const COMMAND_METADATA = {
     description: 'DMs you when one of your keywords is mentioned.',
     guildIds: COMMAND_GUILDS.PING_ME,
     helpAudience: HELP_AUDIENCES.PUBLIC,
-    helpCategory: COMMAND_CATEGORIES.GENERAL,
+    helpCategory: COMMAND_CATEGORIES.MISC,
   },
   STREAM_INFO: {
     name: 'streaminfo',

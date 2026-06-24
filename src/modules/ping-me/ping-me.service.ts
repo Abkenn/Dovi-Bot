@@ -13,6 +13,7 @@ import {
   normalizePingMeKeywordKey,
 } from './ping-me.matcher';
 import type {
+  PingMeClearKeywordAutocompleteInput,
   PingMeCommandInput,
   PingMeCommandResult,
   PingMeMessageInput,
@@ -53,12 +54,15 @@ const keywordsSchema = z
 
 const commandInputSchema = z
   .object({
-    clear: z.boolean(),
-    keywordsInput: z.string().nullable(),
+    clearKeyword: z.string().nullable(),
+    newKeywordsInput: z.string().nullable(),
   })
-  .refine(({ clear, keywordsInput }) => !clear || !keywordsInput, {
-    message: 'Choose either keywords or clear, not both.',
-  });
+  .refine(
+    ({ clearKeyword, newKeywordsInput }) => !clearKeyword || !newKeywordsInput,
+    {
+      message: 'Choose either new_keywords or clear, not both.',
+    },
+  );
 
 const guildBoundary = {
   stagingGuildId: BOT_GUILDS.STAGING_ENV,
@@ -82,35 +86,114 @@ const formatKeywords = (keywords: string[]) =>
     )
     .join(', ');
 
-export const getPingMeCommandResult = async (
-  input: PingMeCommandInput,
-): Promise<PingMeCommandResult> => {
-  const { userId, sourceGuildId, keywordsInput, clear } = input;
-  commandInputSchema.parse({ clear, keywordsInput });
+const findKeyword = (keywords: string[], requestedKeyword: string) => {
+  const requestedKey = normalizePingMeKeywordKey(requestedKeyword);
 
-  if (clear) {
-    await deletePingMeProfile({ userId, sourceGuildId });
-    return {
-      content: `Ping-me keywords cleared for ${formatScope(sourceGuildId)}.`,
-    };
-  }
+  return keywords.find(
+    (keyword) => normalizePingMeKeywordKey(keyword) === requestedKey,
+  );
+};
 
-  if (keywordsInput) {
-    const keywords = parsePingMeKeywords(keywordsInput);
-    await upsertPingMeProfile({ userId, sourceGuildId, keywords });
-
-    return {
-      content:
-        'Ping-me keywords saved for ' +
-        formatScope(sourceGuildId) +
-        ':\n' +
-        formatKeywords(keywords),
-    };
-  }
-
+export const getPingMeClearKeywordAutocomplete = async ({
+  userId,
+  sourceGuildId,
+  query,
+}: PingMeClearKeywordAutocompleteInput): Promise<string[]> => {
   const profile = await findPingMeProfile({ userId, sourceGuildId });
 
   if (!profile) {
+    return [];
+  }
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  return profile.keywords
+    .filter(
+      (keyword) =>
+        !normalizedQuery || keyword.toLowerCase().includes(normalizedQuery),
+    )
+    .slice(0, 25);
+};
+
+const getProfileKeywords = async (userId: string, sourceGuildId: string) => {
+  const profile = await findPingMeProfile({ userId, sourceGuildId });
+
+  return profile?.keywords ?? [];
+};
+
+const removePingMeKeyword = async (
+  userId: string,
+  sourceGuildId: string,
+  clearKeyword: string,
+): Promise<PingMeCommandResult> => {
+  const keywords = await getProfileKeywords(userId, sourceGuildId);
+  const removedKeyword = findKeyword(keywords, clearKeyword);
+
+  if (!removedKeyword) {
+    return {
+      content:
+        'That keyword is not in your ping-me list for ' +
+        formatScope(sourceGuildId) +
+        '.',
+    };
+  }
+
+  const remainingKeywords = keywords.filter(
+    (keyword) => keyword !== removedKeyword,
+  );
+
+  if (remainingKeywords.length === 0) {
+    await deletePingMeProfile({ userId, sourceGuildId });
+  } else {
+    await upsertPingMeProfile({
+      userId,
+      sourceGuildId,
+      keywords: remainingKeywords,
+    });
+  }
+
+  const remainingList =
+    remainingKeywords.length === 0
+      ? 'You have no ping-me keywords left.'
+      : `Remaining keywords: ${formatKeywords(remainingKeywords)}`;
+
+  return {
+    content:
+      'Ping-me keyword ' +
+      formatKeywords([removedKeyword]) +
+      ' removed.\n' +
+      remainingList,
+  };
+};
+
+const addPingMeKeywords = async (
+  userId: string,
+  sourceGuildId: string,
+  newKeywordsInput: string,
+): Promise<PingMeCommandResult> => {
+  const existingKeywords = await getProfileKeywords(userId, sourceGuildId);
+  const keywords = keywordsSchema.parse([
+    ...existingKeywords,
+    ...parsePingMeKeywords(newKeywordsInput),
+  ]);
+  await upsertPingMeProfile({ userId, sourceGuildId, keywords });
+
+  return {
+    content:
+      'Ping-me keywords added for ' +
+      formatScope(sourceGuildId) +
+      ':\n' +
+      formatKeywords(keywords),
+  };
+};
+
+const getPingMeProfileResult = async (
+  userId: string,
+  sourceGuildId: string,
+): Promise<PingMeCommandResult> => {
+  const keywords = await getProfileKeywords(userId, sourceGuildId);
+
+  if (keywords.length === 0) {
     return {
       content: `You have no ping-me keywords for ${formatScope(sourceGuildId)}.`,
     };
@@ -121,8 +204,25 @@ export const getPingMeCommandResult = async (
       'Your ping-me keywords for ' +
       formatScope(sourceGuildId) +
       ':\n' +
-      formatKeywords(profile.keywords),
+      formatKeywords(keywords),
   };
+};
+
+export const getPingMeCommandResult = async (
+  input: PingMeCommandInput,
+): Promise<PingMeCommandResult> => {
+  const { userId, sourceGuildId, newKeywordsInput, clearKeyword } = input;
+  commandInputSchema.parse({ clearKeyword, newKeywordsInput });
+
+  if (clearKeyword) {
+    return removePingMeKeyword(userId, sourceGuildId, clearKeyword);
+  }
+
+  if (newKeywordsInput) {
+    return addPingMeKeywords(userId, sourceGuildId, newKeywordsInput);
+  }
+
+  return getPingMeProfileResult(userId, sourceGuildId);
 };
 
 export const findPingMeNotifications = async (

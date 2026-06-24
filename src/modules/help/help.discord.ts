@@ -22,6 +22,7 @@ import {
 
 const COMMAND_CATEGORY_ORDER = [
   COMMAND_CATEGORIES.GENERAL,
+  COMMAND_CATEGORIES.MISC,
   COMMAND_CATEGORIES.STREAM_INFO,
   COMMAND_CATEGORIES.BOSSES,
   COMMAND_CATEGORIES.STREAM_GAME_TRACKING_TOOLS,
@@ -42,6 +43,7 @@ export type HelpTopicValue =
   | 'community-stats'
   | 'staging'
   | 'general'
+  | 'misc'
   | 'help';
 
 const HELP_TOPIC_OPTIONS = [
@@ -57,6 +59,13 @@ const HELP_TOPIC_OPTIONS = [
     value: 'general',
     description: 'Basic commands',
     category: COMMAND_CATEGORIES.GENERAL,
+    adminOnly: false,
+  },
+  {
+    name: 'Misc',
+    value: 'misc',
+    description: 'Miscellaneous utility commands',
+    category: COMMAND_CATEGORIES.MISC,
     adminOnly: false,
   },
   {

@@ -11,8 +11,14 @@ export type PingMeNotification = {
 export type PingMeCommandInput = {
   userId: string;
   sourceGuildId: string;
-  keywordsInput: string | null;
-  clear: boolean;
+  newKeywordsInput: string | null;
+  clearKeyword: string | null;
+};
+
+export type PingMeClearKeywordAutocompleteInput = {
+  userId: string;
+  sourceGuildId: string;
+  query: string;
 };
 
 export type PingMeCommandResult = {

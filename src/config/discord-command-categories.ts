@@ -3,6 +3,7 @@ import { DISCORD_STYLE } from './discord-style';
 export const COMMAND_CATEGORIES = {
   HELP: 'Help',
   GENERAL: 'General',
+  MISC: 'Misc',
   STREAM_INFO: 'Stream Info',
   BOSSES: 'Bosses',
   STREAM_GAME_TRACKING_TOOLS: 'Stream Game Tracking Tools',
@@ -22,6 +23,10 @@ export type CommandCategoryMetadata = {
 export const COMMAND_CATEGORY_METADATA = {
   [COMMAND_CATEGORIES.GENERAL]: {
     name: COMMAND_CATEGORIES.GENERAL,
+    accentColor: 0x57f287,
+  },
+  [COMMAND_CATEGORIES.MISC]: {
+    name: COMMAND_CATEGORIES.MISC,
     accentColor: 0x57f287,
   },
   [COMMAND_CATEGORIES.STREAM_INFO]: {
