@@ -1,4 +1,5 @@
 import { Listener } from '@sapphire/framework';
+import { ActivityType } from 'discord.js';
 import { notifyDeploymentReady } from '../app/deployment-notifications';
 import {
   startHealthCheckMonitor,
@@ -24,6 +25,17 @@ export class ReadyListener extends Listener {
     this.container.logger.info(
       `Logged in as ${this.container.client.user?.tag ?? 'unknown-user'}`,
     );
+
+    this.container.client.user?.setPresence({
+      activities: [
+        {
+          name: 'help status',
+          state: '/help',
+          type: ActivityType.Custom,
+        },
+      ],
+    });
+
     startDaviBossStatsSyncScheduler();
     startBossTrialLifecycleScheduler(this.container.client);
     startStreamInfoMessageUpdater(this.container.client);
