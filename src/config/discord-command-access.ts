@@ -29,13 +29,13 @@ const hasChampionRole = (roleNames: readonly string[]) =>
   roleNames.some((roleName) => {
     const normalizedName = roleName.trim().toLowerCase();
 
-    return (
-      normalizedName === 'champion' || normalizedName.startsWith('champion ')
-    );
+    return normalizedName.includes('champion');
   });
 
 const hasGoldOneRole = (roleNames: readonly string[]) =>
-  roleNames.some((roleName) => roleName.trim().toLowerCase() === 'gold 1');
+  roleNames.some((roleName) =>
+    roleName.trim().toLowerCase().includes('gold 1'),
+  );
 
 export const evaluateCommandAccess = ({
   access,

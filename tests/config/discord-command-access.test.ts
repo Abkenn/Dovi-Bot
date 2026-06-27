@@ -66,7 +66,19 @@ describe('Discord command access policy', () => {
     expect(
       evaluateCommandAccess({
         ...baseInput,
+        roleNames: ['Member', '⭐ Gold 1 ⭐'],
+      }),
+    ).toEqual({ allowed: true });
+    expect(
+      evaluateCommandAccess({
+        ...baseInput,
         roleNames: ['Member', 'Champion 3 ⭐⭐⭐', 'Bronze 2'],
+      }),
+    ).toEqual({ allowed: true });
+    expect(
+      evaluateCommandAccess({
+        ...baseInput,
+        roleNames: ['Member', '⭐ Champion 3 ⭐⭐⭐', 'Bronze 2'],
       }),
     ).toEqual({ allowed: true });
   });

@@ -21,6 +21,11 @@ export type PingMeClearKeywordAutocompleteInput = {
   query: string;
 };
 
+export type PingMeProfileKeywords = {
+  sourceGuildId: string;
+  keywords: string[];
+};
+
 export type PingMeCommandResult = {
   content: string;
 };

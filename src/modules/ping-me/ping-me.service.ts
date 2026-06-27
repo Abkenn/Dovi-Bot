@@ -18,6 +18,7 @@ import type {
   PingMeCommandResult,
   PingMeMessageInput,
   PingMeNotification,
+  PingMeProfileKeywords,
 } from './ping-me.types';
 
 const MAX_KEYWORDS = 20;
@@ -94,20 +95,60 @@ const findKeyword = (keywords: string[], requestedKeyword: string) => {
   );
 };
 
+const getClearableProfiles = async (
+  userId: string,
+  sourceGuildId: string,
+): Promise<PingMeProfileKeywords[]> => {
+  const sourceGuildIds = getPingMeListeningSourceGuildIds(
+    sourceGuildId,
+    guildBoundary,
+  );
+  const profiles = await Promise.all(
+    sourceGuildIds.map(async (profileSourceGuildId) => {
+      const profile = await findPingMeProfile({
+        userId,
+        sourceGuildId: profileSourceGuildId,
+      });
+
+      return profile
+        ? {
+            sourceGuildId: profileSourceGuildId,
+            keywords: profile.keywords,
+          }
+        : null;
+    }),
+  );
+
+  return profiles.filter(
+    (profile): profile is PingMeProfileKeywords => profile !== null,
+  );
+};
+
+const getUniqueKeywords = (profiles: PingMeProfileKeywords[]): string[] => {
+  const keywordsByKey = new Map<string, string>();
+
+  for (const profile of profiles) {
+    for (const keyword of profile.keywords) {
+      const key = normalizePingMeKeywordKey(keyword);
+
+      if (!keywordsByKey.has(key)) {
+        keywordsByKey.set(key, keyword);
+      }
+    }
+  }
+
+  return [...keywordsByKey.values()];
+};
+
 export const getPingMeClearKeywordAutocomplete = async ({
   userId,
   sourceGuildId,
   query,
 }: PingMeClearKeywordAutocompleteInput): Promise<string[]> => {
-  const profile = await findPingMeProfile({ userId, sourceGuildId });
-
-  if (!profile) {
-    return [];
-  }
-
+  const profiles = await getClearableProfiles(userId, sourceGuildId);
   const normalizedQuery = query.trim().toLowerCase();
 
-  return profile.keywords
+  return getUniqueKeywords(profiles)
     .filter(
       (keyword) =>
         !normalizedQuery || keyword.toLowerCase().includes(normalizedQuery),
@@ -126,10 +167,15 @@ const removePingMeKeyword = async (
   sourceGuildId: string,
   clearKeyword: string,
 ): Promise<PingMeCommandResult> => {
-  const keywords = await getProfileKeywords(userId, sourceGuildId);
-  const removedKeyword = findKeyword(keywords, clearKeyword);
+  const profiles = await getClearableProfiles(userId, sourceGuildId);
+  const matchedProfile = profiles.find((profile) =>
+    findKeyword(profile.keywords, clearKeyword),
+  );
+  const removedKeyword = matchedProfile
+    ? findKeyword(matchedProfile.keywords, clearKeyword)
+    : undefined;
 
-  if (!removedKeyword) {
+  if (!matchedProfile || !removedKeyword) {
     return {
       content:
         'That keyword is not in your ping-me list for ' +
@@ -138,24 +184,34 @@ const removePingMeKeyword = async (
     };
   }
 
-  const remainingKeywords = keywords.filter(
+  const remainingKeywords = matchedProfile.keywords.filter(
     (keyword) => keyword !== removedKeyword,
   );
 
   if (remainingKeywords.length === 0) {
-    await deletePingMeProfile({ userId, sourceGuildId });
+    await deletePingMeProfile({
+      userId,
+      sourceGuildId: matchedProfile.sourceGuildId,
+    });
   } else {
     await upsertPingMeProfile({
       userId,
-      sourceGuildId,
+      sourceGuildId: matchedProfile.sourceGuildId,
       keywords: remainingKeywords,
     });
   }
 
+  const remainingProfiles = profiles.map((profile) =>
+    profile.sourceGuildId === matchedProfile.sourceGuildId
+      ? { ...profile, keywords: remainingKeywords }
+      : profile,
+  );
+  const allRemainingKeywords = getUniqueKeywords(remainingProfiles);
+
   const remainingList =
-    remainingKeywords.length === 0
+    allRemainingKeywords.length === 0
       ? 'You have no ping-me keywords left.'
-      : `Remaining keywords: ${formatKeywords(remainingKeywords)}`;
+      : `Remaining keywords: ${formatKeywords(allRemainingKeywords)}`;
 
   return {
     content:

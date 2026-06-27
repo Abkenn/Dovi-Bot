@@ -76,9 +76,10 @@ describe('ping-me service', () => {
       keywords: ['existing', 'Dolor', 'lorem ipsum'],
     });
 
-    data.findPingMeProfile.mockResolvedValue({
-      keywords: ['amet'],
-    });
+    data.findPingMeProfile.mockImplementation(
+      async ({ sourceGuildId }: { sourceGuildId: string }) =>
+        sourceGuildId === 'prod' ? { keywords: ['amet'] } : null,
+    );
     await expect(
       getPingMeCommandResult({
         userId: 'user',
@@ -129,9 +130,12 @@ describe('ping-me service', () => {
   });
 
   it('removes one keyword while preserving the rest', async () => {
-    data.findPingMeProfile.mockResolvedValue({
-      keywords: ['Dolor', 'lorem ipsum'],
-    });
+    data.findPingMeProfile.mockImplementation(
+      async ({ sourceGuildId }: { sourceGuildId: string }) =>
+        sourceGuildId === 'prod'
+          ? { keywords: ['Dolor', 'lorem ipsum'] }
+          : null,
+    );
 
     await expect(
       getPingMeCommandResult({
@@ -151,18 +155,80 @@ describe('ping-me service', () => {
     expect(data.deletePingMeProfile).not.toHaveBeenCalled();
   });
 
-  it('autocompletes clear from the current profile keywords', async () => {
-    data.findPingMeProfile.mockResolvedValue({
-      keywords: ['Dark Souls', 'Elden Ring', 'Cake'],
-    });
+  it('autocompletes only the invoking user staging and prod keywords on prod', async () => {
+    data.findPingMeProfile.mockImplementation(
+      async ({
+        userId,
+        sourceGuildId,
+      }: {
+        userId: string;
+        sourceGuildId: string;
+      }) => {
+        if (userId !== 'user') {
+          return { keywords: ['someone else secret'] };
+        }
+
+        return sourceGuildId === 'staging'
+          ? { keywords: ['Dark Souls', 'Elden Ring'] }
+          : { keywords: ['Cake'] };
+      },
+    );
 
     await expect(
       getPingMeClearKeywordAutocomplete({
         userId: 'user',
         sourceGuildId: 'prod',
-        query: 'ring',
+        query: '',
       }),
-    ).resolves.toEqual(['Elden Ring']);
+    ).resolves.toEqual(['Dark Souls', 'Elden Ring', 'Cake']);
+    expect(data.findPingMeProfile).toHaveBeenCalledWith({
+      userId: 'user',
+      sourceGuildId: 'staging',
+    });
+    expect(data.findPingMeProfile).toHaveBeenCalledWith({
+      userId: 'user',
+      sourceGuildId: 'prod',
+    });
+  });
+
+  it('clears a staging keyword from prod without reading another user profile', async () => {
+    data.findPingMeProfile.mockImplementation(
+      async ({
+        userId,
+        sourceGuildId,
+      }: {
+        userId: string;
+        sourceGuildId: string;
+      }) => {
+        if (userId !== 'user') {
+          return { keywords: ['someone else secret'] };
+        }
+
+        return sourceGuildId === 'staging'
+          ? { keywords: ['Dolor', 'lorem ipsum'] }
+          : { keywords: ['Cake'] };
+      },
+    );
+
+    await expect(
+      getPingMeCommandResult({
+        userId: 'user',
+        sourceGuildId: 'prod',
+        newKeywordsInput: null,
+        clearKeyword: 'dolor',
+      }),
+    ).resolves.toMatchObject({
+      content: expect.stringContaining('lorem ipsum'),
+    });
+    expect(data.upsertPingMeProfile).toHaveBeenCalledWith({
+      userId: 'user',
+      sourceGuildId: 'staging',
+      keywords: ['lorem ipsum'],
+    });
+    expect(data.findPingMeProfile.mock.calls).toEqual([
+      [{ userId: 'user', sourceGuildId: 'staging' }],
+      [{ userId: 'user', sourceGuildId: 'prod' }],
+    ]);
   });
 
   it('never selects prod-created profiles for a staging message', async () => {
