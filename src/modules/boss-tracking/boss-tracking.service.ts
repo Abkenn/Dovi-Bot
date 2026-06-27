@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import {
   findActiveBossTrackingSession,
+  findBossTrackingStatusSession,
   findLatestBossTrackingSession,
   findOpenBossTrackingBossesForAutocomplete,
   findTrackedGameStatus,
@@ -356,17 +357,16 @@ export const resumeLiveBossTracking = async ({
   return resumeBossTrackingSession(resumeSessionInput);
 };
 
-export const getLiveBossTrackingStatus = async (
-  guildId: string,
-): Promise<BossTrackingSessionView> => {
-  const session = await findOpenOrLatestBossTrackingSession(guildId);
+export const getLiveBossTrackingStatus =
+  async (): Promise<BossTrackingSessionView> => {
+    const session = await findBossTrackingStatusSession();
 
-  if (!session) {
-    throw new Error('No boss tracking session has been recorded yet.');
-  }
+    if (!session) {
+      throw new Error('No boss tracking session has been recorded yet.');
+    }
 
-  return session;
-};
+    return session;
+  };
 
 export const getLiveGameTrackingStatus = async ({
   guildId,

@@ -32,20 +32,17 @@ export class TrackBossStatusCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
-      run: async ({ editReply, preflight: guildId }) => {
-        const session = await getLiveBossTrackingStatus(guildId).catch(
-          (error) => {
-            if (
-              error instanceof Error &&
-              error.message ===
-                'No boss tracking session has been recorded yet.'
-            ) {
-              return null;
-            }
+      run: async ({ editReply }) => {
+        const session = await getLiveBossTrackingStatus().catch((error) => {
+          if (
+            error instanceof Error &&
+            error.message === 'No boss tracking session has been recorded yet.'
+          ) {
+            return null;
+          }
 
-            throw error;
-          },
-        );
+          throw error;
+        });
 
         if (!session) {
           return editReply({

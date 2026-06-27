@@ -60,6 +60,7 @@ const coveredDalExports = {
   '../../src/data/queries/boss-tracking': [
     'bossTrackingSessionInclude',
     'findActiveBossTrackingSession',
+    'findBossTrackingStatusSession',
     'findLatestBossTrackingSession',
     'findOpenBossTrackingBossesForAutocomplete',
     'findTrackedGameStatus',
@@ -628,6 +629,37 @@ test('covers boss tracking transactions and queries', async () => {
   ).resolves.toMatchObject({
     id: ended.id,
   });
+
+  const crossGuildId = `${guildId}-other`;
+  await trackingTransactions.startBossTrackingSession({
+    guildId: crossGuildId,
+    channelId: 'other-channel',
+    trackerUserId: 'tracker',
+    gameName: 'Tracking Game',
+    normalizedGameName: 'tracking game',
+    bossName: 'Cross Guild Tracking Boss',
+    normalizedBossName: 'cross guild tracking boss',
+    startDeaths: 12,
+    startedAt: new Date(now.getTime() + 1_000),
+    topicTerms: [],
+  });
+  const crossGuildEnded = await trackingTransactions.endBossTrackingSession({
+    guildId: crossGuildId,
+    result: BossTrackingEndResult.KILLED,
+    reconciliation: {
+      totalDeaths: 12,
+      deathCount: 0,
+      attemptTimingStatus: BossTrackingAttemptTimingStatus.TRUSTED,
+      reconciliationNote: null,
+    },
+  });
+  await expect(
+    trackingQueries.findBossTrackingStatusSession(),
+  ).resolves.toMatchObject({
+    id: crossGuildEnded.id,
+    boss: { name: 'Cross Guild Tracking Boss' },
+  });
+
   await expect(
     trackingQueries.findTrackedGameStatus('tracking game'),
   ).resolves.toMatchObject({

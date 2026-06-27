@@ -33,6 +33,19 @@ export const findLatestBossTrackingSession = (guildId: string) =>
     orderBy: { focusedAt: 'desc' },
   });
 
+export const findBossTrackingStatusSession = async () =>
+  (await prisma.bossTrackingSession.findFirst({
+    where: {
+      status: { in: OPEN_BOSS_TRACKING_SESSION_STATUSES },
+    },
+    include: bossTrackingSessionInclude,
+    orderBy: { focusedAt: 'desc' },
+  })) ??
+  prisma.bossTrackingSession.findFirst({
+    include: bossTrackingSessionInclude,
+    orderBy: { focusedAt: 'desc' },
+  });
+
 export const findOpenBossTrackingBossesForAutocomplete = async ({
   guildId,
   normalizedGameName,
