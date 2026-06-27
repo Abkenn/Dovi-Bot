@@ -60,8 +60,7 @@ export const evaluateCommandAccess = ({
   if (access === COMMAND_ACCESSES.REGULAR && !isRegular) {
     return {
       allowed: false,
-      message:
-        'You need to be Gold 1 or higher to use this command. Champion ranks count too.',
+      message: 'You need to be at least Gold to use this command.',
       ephemeral: false,
     };
   }

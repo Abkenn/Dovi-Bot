@@ -40,7 +40,7 @@ describe('Discord command access policy', () => {
     ).toEqual({ allowed: true });
   });
 
-  it('requires Gold 1 or a Champion role for regular prod commands', () => {
+  it('requires at least Gold for regular prod commands', () => {
     const baseInput = {
       access: COMMAND_ACCESSES.REGULAR,
       isProdGuild: true,
@@ -54,7 +54,7 @@ describe('Discord command access policy', () => {
       }),
     ).toMatchObject({
       allowed: false,
-      message: expect.stringContaining('Gold 1'),
+      message: 'You need to be at least Gold to use this command.',
       ephemeral: false,
     });
     expect(
@@ -78,7 +78,7 @@ describe('Discord command access policy', () => {
     expect(
       evaluateCommandAccess({
         ...baseInput,
-        roleNames: ['Member', '⭐ Champion 3 ⭐⭐⭐', 'Bronze 2'],
+        roleNames: ['Member', '⭐ ⭐ Champion 2 (Prestige) ⭐ ⭐', 'Bronze 2'],
       }),
     ).toEqual({ allowed: true });
   });
