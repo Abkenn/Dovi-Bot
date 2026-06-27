@@ -6,7 +6,7 @@ import type {
   AutocompleteFocusedOption,
   AutocompleteInteraction,
 } from 'discord.js';
-import { isAllowedGuildForCommand } from '../config/discord-access';
+import { isInteractionCommandAccessible } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { getPingMeClearKeywordAutocomplete } from '../modules/ping-me/ping-me.service';
 
@@ -37,10 +37,7 @@ export class PingMeClearAutocompleteHandler extends InteractionHandler {
     if (
       focusedOption.name !== 'clear' ||
       !sourceGuildId ||
-      !isAllowedGuildForCommand(
-        sourceGuildId,
-        COMMAND_METADATA.PING_ME.guildIds,
-      )
+      !isInteractionCommandAccessible(interaction, interaction.commandName)
     ) {
       return this.none();
     }

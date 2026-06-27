@@ -1,5 +1,5 @@
 import { Command } from '@sapphire/framework';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildBossTrackingEmbed } from '../modules/boss-tracking/boss-tracking.discord';
 import { getLiveBossTrackingStatus } from '../modules/boss-tracking/boss-tracking.service';
@@ -31,8 +31,7 @@ export class TrackBossStatusCommand extends Command {
     return runCommand({
       interaction,
       commandName: this.name,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         const session = await getLiveBossTrackingStatus(guildId).catch(
           (error) => {

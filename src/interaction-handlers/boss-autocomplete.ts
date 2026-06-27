@@ -6,6 +6,7 @@ import type {
   AutocompleteFocusedOption,
   AutocompleteInteraction,
 } from 'discord.js';
+import { isInteractionCommandAccessible } from '../config/discord-command-guards';
 import { getNumberProperty } from '../lib/type-guards';
 import { getOpenBossTrackingBossAutocomplete } from '../modules/boss-tracking/boss-tracking.service';
 import {
@@ -149,6 +150,10 @@ export class BossAutocompleteHandler extends InteractionHandler {
   }
 
   public override parse(interaction: AutocompleteInteraction) {
+    if (!isInteractionCommandAccessible(interaction, interaction.commandName)) {
+      return this.none();
+    }
+
     const focusedOption = interaction.options.getFocused(true);
     const shouldHandle =
       (focusedOption.name === 'game' &&

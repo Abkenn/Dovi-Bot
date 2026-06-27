@@ -1,5 +1,5 @@
 import { Command } from '@sapphire/framework';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { runCommand } from '../modules/command-runner/run-command';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
@@ -31,8 +31,7 @@ export class StreamInfoCommand extends Command {
     return runCommand({
       interaction,
       commandName: this.name,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         const message = await editReply({
           embeds: [await getStreamInfoEmbed(guildId)],

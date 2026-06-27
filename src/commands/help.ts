@@ -1,6 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { runCommand } from '../modules/command-runner/run-command';
 import {
@@ -43,8 +43,7 @@ export class HelpCommand extends Command {
     return runCommand({
       interaction,
       commandName: this.name,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         const topic = interaction.options.getString('topic');
 

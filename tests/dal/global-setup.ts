@@ -2,9 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildDockerTestDatabaseUrl } from './docker-test-database';
 
-const TEST_DB_URL =
-  'postgresql://postgres:postgres@127.0.0.1:55432/dovi_bot_dal_test';
 const CONTAINER_NAME = 'dovi-bot-dal-test-postgres';
 const WINDOWS_DOCKER_EXE =
   'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe';
@@ -46,6 +45,12 @@ const run = (
     stdio: options.stdio ?? 'ignore',
   });
 
+const capture = (command: string, args: string[]): string =>
+  execFileSync(command, args, {
+    cwd: resolve(dirname(fileURLToPath(import.meta.url)), '../..'),
+    encoding: 'utf8',
+  }).trim();
+
 const hasDocker = () => {
   try {
     run(resolveDockerCommand(), ['info']);
@@ -61,6 +66,14 @@ const resolveDockerCommand = () => {
   }
 
   return 'docker';
+};
+
+const removeTestContainer = () => {
+  try {
+    run(resolveDockerCommand(), ['rm', '-f', CONTAINER_NAME]);
+  } catch {
+    return;
+  }
 };
 
 const waitForPostgres = () => {
@@ -120,24 +133,37 @@ export default async () => {
     throw new Error(missingDatabaseMessage);
   }
 
-  run(resolveDockerCommand(), ['rm', '-f', CONTAINER_NAME]);
-  run(resolveDockerCommand(), [
-    'run',
-    '--name',
-    CONTAINER_NAME,
-    '-e',
-    'POSTGRES_PASSWORD=postgres',
-    '-e',
-    'POSTGRES_DB=dovi_bot_dal_test',
-    '-p',
-    '127.0.0.1:55432:5432',
-    '-d',
-    'postgres:16-alpine',
-  ]);
+  removeTestContainer();
 
-  waitForPostgres();
-  pushPrismaSchema(TEST_DB_URL);
-  writeRuntimeEnv({ databaseUrl: TEST_DB_URL, skipReason: null });
+  try {
+    run(
+      resolveDockerCommand(),
+      [
+        'run',
+        '--name',
+        CONTAINER_NAME,
+        '-e',
+        'POSTGRES_PASSWORD=postgres',
+        '-e',
+        'POSTGRES_DB=dovi_bot_dal_test',
+        '-p',
+        '127.0.0.1::5432',
+        '-d',
+        'postgres:16-alpine',
+      ],
+      { stdio: 'inherit' },
+    );
+
+    waitForPostgres();
+    const databaseUrl = buildDockerTestDatabaseUrl(
+      capture(resolveDockerCommand(), ['port', CONTAINER_NAME, '5432/tcp']),
+    );
+    pushPrismaSchema(databaseUrl);
+    writeRuntimeEnv({ databaseUrl, skipReason: null });
+  } catch (error) {
+    removeTestContainer();
+    throw error;
+  }
 
   return async () => {
     if (process.env.DAL_TEST_KEEP_CONTAINER === 'true') {
@@ -145,7 +171,7 @@ export default async () => {
     }
 
     if (existsSync(RUNTIME_ENV_PATH)) {
-      run(resolveDockerCommand(), ['rm', '-f', CONTAINER_NAME]);
+      removeTestContainer();
     }
   };
 };

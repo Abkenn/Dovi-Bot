@@ -24,6 +24,7 @@ import {
   CommandTimeoutError,
 } from '../command-logging/command-timeout';
 import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
+import { buildCommandErrorReplyOptions } from './command-error-reply';
 
 const getUserFacingErrorMessage = (error: unknown): string => {
   if (error instanceof CommandDeniedError) {
@@ -117,6 +118,7 @@ const logCommandErrorSafely = async ({
 const replyOrEditCommandError = async (
   interaction: ChatInputCommandInteraction,
   message: string,
+  ephemeral: boolean,
 ) => {
   try {
     if (interaction.deferred || interaction.replied) {
@@ -126,10 +128,9 @@ const replyOrEditCommandError = async (
       });
     }
 
-    return await interaction.reply({
-      content: message,
-      flags: MessageFlags.Ephemeral,
-    });
+    return await interaction.reply(
+      buildCommandErrorReplyOptions(message, ephemeral),
+    );
   } catch {
     return;
   }
@@ -354,8 +355,10 @@ export const runCommand = async <T, TPreflight = void>({
 
     const isUnknownInteraction = isUnknownInteractionError(error);
     const shouldSendResponse = !hasSentCommandResponse && !isUnknownInteraction;
+    const isEphemeralError =
+      !(error instanceof CommandDeniedError) || error.ephemeral;
     const response = shouldSendResponse
-      ? await replyOrEditCommandError(interaction, message)
+      ? await replyOrEditCommandError(interaction, message, isEphemeralError)
       : undefined;
 
     if (withCommandLogging) {

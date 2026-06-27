@@ -1,6 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { syncDaviBossStats } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.service';
 import { formatDaviBossStatsSyncSummary } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.utils';
@@ -41,8 +41,7 @@ export class DaviSyncBossStatsCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       timeoutMs: 60_000,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, signal }) => {
         const result = await syncDaviBossStats({ signal });
         const invalidRows = result.invalidRows.slice(0, 5);

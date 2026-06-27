@@ -1,5 +1,5 @@
 import { Command } from '@sapphire/framework';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { updateLiveGameInfo } from '../modules/boss-tracking/boss-tracking.service';
 import {
@@ -59,8 +59,7 @@ export class SetGameCommand extends Command {
       interaction,
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         const game = interaction.options.getString('game', true);
         const aliases = interaction.options.getString('aliases');

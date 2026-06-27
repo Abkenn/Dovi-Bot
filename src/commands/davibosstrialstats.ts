@@ -1,6 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { BOT_GUILDS } from '../config/discord-access';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildBossTrialStatsEmbed } from '../modules/boss-trials/stats/boss-trial-stats.discord';
 import { getBossTrialStats } from '../modules/boss-trials/stats/boss-trial-stats.service';
@@ -32,8 +32,7 @@ export class DaviBossTrialStatsCommand extends Command {
     return runCommand({
       interaction,
       commandName: this.name,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply }) => {
         const stats = await getBossTrialStats(BOT_GUILDS.PROD_ENV);
 

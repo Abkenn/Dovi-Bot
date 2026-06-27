@@ -7,6 +7,7 @@ import type {
   AutocompleteInteraction,
 } from 'discord.js';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
+import { isInteractionCommandAccessible } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   getHelpTopicAutocomplete,
@@ -29,7 +30,10 @@ export class HelpTopicAutocompleteHandler extends InteractionHandler {
   }
 
   public override parse(interaction: AutocompleteInteraction) {
-    if (interaction.commandName !== COMMAND_METADATA.HELP.name) {
+    if (
+      interaction.commandName !== COMMAND_METADATA.HELP.name ||
+      !isInteractionCommandAccessible(interaction, interaction.commandName)
+    ) {
       return this.none();
     }
 

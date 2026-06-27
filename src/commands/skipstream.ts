@@ -1,6 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { Weekday } from '../generated/prisma/client';
 import {
@@ -51,8 +51,7 @@ export class SkipStreamCommand extends Command {
       interaction,
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         await skipStream({
           guildId,

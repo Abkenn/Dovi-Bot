@@ -35,7 +35,26 @@ describe('Discord command guild access', () => {
     const { COMMAND_METADATA } = await import(
       '../../src/config/discord-command-metadata'
     );
+    const { COMMAND_ACCESSES } = await import(
+      '../../src/config/discord-command-access'
+    );
     expect(COMMAND_METADATA.PING_ME.helpCategory).toBe('Misc');
+    expect(
+      Object.values(COMMAND_METADATA)
+        .filter((command) =>
+          command.guildIds.some((guildId) => guildId === 'prod'),
+        )
+        .filter((command) => command.access === COMMAND_ACCESSES.DEFAULT)
+        .map((command) => command.name),
+    ).toEqual([
+      'help',
+      'botstatus',
+      'streaminfo',
+      'showbossstats',
+      'showgamestats',
+      'bosstrialstats',
+      'gamediscussionstats',
+    ]);
   });
 
   it('respects disabled prod registration for ping-me and other commands', async () => {

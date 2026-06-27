@@ -1,6 +1,6 @@
 import { HELLO_GREETINGS } from '@data/hello-greetings';
 import { Command } from '@sapphire/framework';
-import { assertCommandGuildAccess } from '../config/discord-command-guards';
+import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { runCommand } from '../modules/command-runner/run-command';
 
@@ -30,8 +30,7 @@ export class HelloCommand extends Command {
     return runCommand({
       interaction,
       commandName: this.name,
-      beforeDefer: () =>
-        assertCommandGuildAccess(interaction, METADATA.guildIds),
+      beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply }) => {
         const greeting =
           HELLO_GREETINGS[Math.floor(Math.random() * HELLO_GREETINGS.length)] ??

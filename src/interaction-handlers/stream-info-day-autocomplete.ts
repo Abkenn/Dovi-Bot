@@ -7,6 +7,7 @@ import type {
   AutocompleteInteraction,
 } from 'discord.js';
 import { BOT_GUILDS } from '../config/discord-access';
+import { isInteractionCommandAccessible } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { getStreamInfoDayAutocomplete } from '../modules/stream-info/stream-info.service';
 
@@ -31,7 +32,10 @@ export class StreamInfoDayAutocompleteHandler extends InteractionHandler {
   }
 
   public override parse(interaction: AutocompleteInteraction) {
-    if (!STREAM_INFO_DAY_AUTOCOMPLETE_COMMANDS.has(interaction.commandName)) {
+    if (
+      !STREAM_INFO_DAY_AUTOCOMPLETE_COMMANDS.has(interaction.commandName) ||
+      !isInteractionCommandAccessible(interaction, interaction.commandName)
+    ) {
       return this.none();
     }
 
