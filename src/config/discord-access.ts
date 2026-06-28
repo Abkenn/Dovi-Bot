@@ -21,11 +21,12 @@ export const COMMAND_GUILDS = {
   HELLO: [BOT_GUILDS.STAGING_ENV],
   BOT_STATUS: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   PING_ME: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
-  POLL_HOST: [...maybeProdEnvGuild],
-  POLL_NOMINATE: [...maybeProdEnvGuild],
-  POLL_START: [...maybeProdEnvGuild],
-  POLL_STATUS: [...maybeProdEnvGuild],
-  POLL_MANAGE: [...maybeProdEnvGuild],
+
+  POLL_HOST: [BOT_GUILDS.STAGING_ENV],
+  POLL_NOMINATE: [BOT_GUILDS.STAGING_ENV],
+  POLL_START: [BOT_GUILDS.STAGING_ENV],
+  POLL_STATUS: [BOT_GUILDS.STAGING_ENV],
+  POLL_MANAGE: [BOT_GUILDS.STAGING_ENV],
 
   SET_GAME: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   SET_STREAM_INFO: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
