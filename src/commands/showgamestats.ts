@@ -62,6 +62,7 @@ export class ShowGameStatsCommand extends Command {
           return editReply({
             embeds: [
               buildShowGameStatsEmbed(
+                // TODO: if default limit is 10 either add limit in command options or reduce null limit assignment with null by default optional params
                 await getGameBossDeathRanking(gameName, { limit: null }),
                 { limit: null },
               ),
