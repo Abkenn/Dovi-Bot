@@ -33,6 +33,15 @@ describe('discord command categories', () => {
     );
   });
 
+  it('uses a distinct hot pink-purple for poll tournaments', () => {
+    expect(
+      getCommandCategoryAccentColor(COMMAND_CATEGORIES.POLL_TOURNAMENTS),
+    ).toBe(0xe843c4);
+    expect(
+      getCommandCategoryAccentColor(COMMAND_CATEGORIES.POLL_TOURNAMENTS),
+    ).not.toBe(getCommandCategoryAccentColor(COMMAND_CATEGORIES.BOSS_TRIALS));
+  });
+
   it('falls back to the bot accent color when a category has no accent color', () => {
     Object.defineProperty(
       COMMAND_CATEGORY_METADATA[COMMAND_CATEGORIES.HELP],

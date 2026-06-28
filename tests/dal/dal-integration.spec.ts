@@ -100,6 +100,18 @@ const coveredDalExports = {
     'findPingMeProfilesForSources',
     'upsertPingMeProfile',
   ],
+  '../../src/data/queries/poll-tournament': [
+    'arePollTournamentTablesPresent',
+    'attachPollTournamentAnnouncement',
+    'attachPollTournamentHostMessage',
+    'createPollTournament',
+    'findAccessibleActivePollTournaments',
+    'findManageablePollTournaments',
+    'findNominatingPollTournamentsForGuild',
+    'findPollTournamentStartCandidate',
+    'findRunningPollTournamentViews',
+    'getPollTournamentView',
+  ],
   '../../src/data/queries/stream-info': [
     'buildTargetStreamOverrideUpsertArgs',
     'deleteStreamScheduleOverrideForDate',
@@ -129,6 +141,20 @@ const coveredDalExports = {
   ],
   '../../src/data/transactions/davi-boss-stats-sync': [
     'upsertDaviSpreadsheetBossEncounter',
+  ],
+  '../../src/data/transactions/poll-tournament': [
+    'activatePollTournamentBracket',
+    'advancePollTournamentRound',
+    'claimPollTournamentFinalization',
+    'claimPollTournamentStart',
+    'completePollTournament',
+    'completePollTournamentBracket',
+    'finalizePollTournamentStart',
+    'nominatePollTournamentOptions',
+    'recoverStalePollTournamentClaims',
+    'removePollTournamentNominations',
+    'releasePollTournamentFinalization',
+    'releasePollTournamentStart',
   ],
   '../../src/data/transactions/stream-info': [
     'updateDefaultGameAndTargetStreamOverride',
@@ -1018,6 +1044,321 @@ test('enforces ping-me source guild direction in the DAL', async () => {
       sourceGuildId: 'staging',
     }),
   ).resolves.toMatchObject({ count: 1 });
+});
+
+test('covers poll tournament nomination, bracket, and recovery lifecycle', async () => {
+  const queries = await import('../../src/data/queries/poll-tournament');
+  const transactions = await import(
+    '../../src/data/transactions/poll-tournament'
+  );
+  const tournament = await queries.createPollTournament({
+    guildId,
+    hostUserId: 'poll-host',
+    hostChannelId: 'host-channel',
+    title: 'Best Game',
+    maxNominationsPerUser: 3,
+  });
+
+  await expect(queries.arePollTournamentTablesPresent()).resolves.toBe(true);
+  await queries.attachPollTournamentHostMessage({
+    tournamentId: tournament.id,
+    hostMessageId: 'host-message',
+  });
+
+  await expect(
+    transactions.nominatePollTournamentOptions({
+      tournamentId: tournament.id,
+      guildId,
+      nominatorUserId: 'nominator-1',
+      nominations: [
+        { text: 'A', normalizedText: 'a' },
+        { text: 'B', normalizedText: 'b' },
+        { text: 'C', normalizedText: 'c' },
+      ],
+    }),
+  ).resolves.toMatchObject({
+    outcome: 'SAVED',
+    usedCount: 3,
+    uniqueCount: 3,
+    nominatorCount: 1,
+  });
+  await expect(
+    transactions.nominatePollTournamentOptions({
+      tournamentId: tournament.id,
+      guildId,
+      nominatorUserId: 'nominator-1',
+      nominations: [{ text: 'G', normalizedText: 'g' }],
+    }),
+  ).resolves.toEqual({
+    outcome: 'LIMIT_REACHED',
+    usedCount: 3,
+    maxNominationsPerUser: 3,
+  });
+  await transactions.nominatePollTournamentOptions({
+    tournamentId: tournament.id,
+    guildId,
+    nominatorUserId: 'nominator-2',
+    nominations: [
+      { text: 'a', normalizedText: 'a' },
+      { text: 'D', normalizedText: 'd' },
+      { text: 'E', normalizedText: 'e' },
+    ],
+  });
+  await transactions.nominatePollTournamentOptions({
+    tournamentId: tournament.id,
+    guildId,
+    nominatorUserId: 'nominator-3',
+    nominations: [{ text: 'F', normalizedText: 'f' }],
+  });
+
+  await expect(
+    queries.findNominatingPollTournamentsForGuild(guildId),
+  ).resolves.toEqual([
+    { id: tournament.id, title: 'Best Game', hostUserId: 'poll-host' },
+  ]);
+  await expect(
+    queries.findAccessibleActivePollTournaments({
+      userId: 'someone-else',
+      canAccessAll: false,
+    }),
+  ).resolves.toEqual([]);
+  await expect(
+    queries.findAccessibleActivePollTournaments({
+      userId: 'someone-else',
+      canAccessAll: true,
+    }),
+  ).resolves.toHaveLength(1);
+  await expect(
+    queries.findManageablePollTournaments({
+      userId: 'poll-host',
+      canAccessAll: false,
+    }),
+  ).resolves.toHaveLength(1);
+
+  await transactions.removePollTournamentNominations({
+    tournamentId: tournament.id,
+    normalizedText: 'e',
+    removedByUserId: 'poll-host',
+    removedAt: now,
+  });
+  await transactions.nominatePollTournamentOptions({
+    tournamentId: tournament.id,
+    guildId,
+    nominatorUserId: 'nominator-2',
+    nominations: [{ text: 'E', normalizedText: 'e' }],
+  });
+
+  await expect(
+    transactions.claimPollTournamentStart({
+      tournamentId: tournament.id,
+      hostUserId: 'not-the-host',
+    }),
+  ).resolves.toBe(false);
+  await expect(
+    transactions.claimPollTournamentStart({
+      tournamentId: tournament.id,
+      hostUserId: 'poll-host',
+    }),
+  ).resolves.toBe(true);
+  await transactions.releasePollTournamentStart(tournament.id);
+  await transactions.claimPollTournamentStart({
+    tournamentId: tournament.id,
+    hostUserId: 'poll-host',
+  });
+
+  const optionValues = ['a', 'b', 'c', 'd', 'e', 'f'];
+  await transactions.finalizePollTournamentStart({
+    tournamentId: tournament.id,
+    plannedDurationDays: 10,
+    startedAt: now,
+    bracketStartIntervalMs: 86_400_000,
+    pollDurationMs: 259_200_000,
+    options: optionValues.map((value, index) => ({
+      text: value.toUpperCase(),
+      normalizedText: value,
+      seedOrder: index,
+      tieBreakOrder: optionValues.length - index - 1,
+    })),
+    rounds: [
+      { kind: 'ELIMINATION', bracketSizes: [3, 3] },
+      { kind: 'FINAL', bracketSizes: [2] },
+    ],
+  });
+  await queries.attachPollTournamentAnnouncement({
+    tournamentId: tournament.id,
+    announcementMessageId: 'announcement-message',
+  });
+
+  let view = await queries.getPollTournamentView(tournament.id);
+  expect(view.status).toBe('RUNNING');
+  expect(view.rounds).toHaveLength(2);
+  await expect(queries.findRunningPollTournamentViews()).resolves.toHaveLength(
+    1,
+  );
+
+  const firstRound = view.rounds[0];
+  expect(firstRound).toBeDefined();
+  const winnerOptionIds: string[] = [];
+
+  for (const [bracketIndex, bracket] of (
+    firstRound?.brackets ?? []
+  ).entries()) {
+    const startedAt = new Date(now.getTime() + bracketIndex * 86_400_000);
+    await transactions.activatePollTournamentBracket({
+      bracketId: bracket.id,
+      messageId: `bracket-message-${bracketIndex}`,
+      startedAt,
+      endsAt: new Date(startedAt.getTime() + 259_200_000),
+      bracketStartIntervalMs: 86_400_000,
+    });
+    const winningEntry = bracket.entries[0];
+    expect(winningEntry).toBeDefined();
+    winnerOptionIds.push(winningEntry?.optionId ?? 'missing');
+    await expect(
+      transactions.completePollTournamentBracket({
+        bracketId: bracket.id,
+        results: bracket.entries.map((entry, index) => ({
+          entryId: entry.id,
+          voteCount: index === 0 ? 5 : 1,
+        })),
+      }),
+    ).resolves.toBe(true);
+  }
+
+  await expect(
+    transactions.advancePollTournamentRound({
+      currentRoundId: firstRound?.id ?? 'missing',
+      winnerOptionIds,
+      nextStartsAt: new Date(now.getTime() + 432_000_000),
+      bracketStartIntervalMs: 86_400_000,
+      pollDurationMs: 259_200_000,
+    }),
+  ).resolves.toBe(true);
+  view = await queries.getPollTournamentView(tournament.id);
+  const finalBracket = view.rounds[1]?.brackets[0];
+  expect(finalBracket?.entries).toHaveLength(2);
+  await transactions.activatePollTournamentBracket({
+    bracketId: finalBracket?.id ?? 'missing',
+    messageId: 'final-message',
+    startedAt: new Date(now.getTime() + 432_000_000),
+    endsAt: new Date(now.getTime() + 691_200_000),
+    bracketStartIntervalMs: 86_400_000,
+  });
+  await transactions.completePollTournamentBracket({
+    bracketId: finalBracket?.id ?? 'missing',
+    results: (finalBracket?.entries ?? []).map((entry, index) => ({
+      entryId: entry.id,
+      voteCount: index === 0 ? 8 : 4,
+    })),
+  });
+
+  await expect(
+    transactions.claimPollTournamentFinalization(tournament.id),
+  ).resolves.toBe(true);
+  await transactions.releasePollTournamentFinalization(tournament.id);
+  await transactions.claimPollTournamentFinalization(tournament.id);
+  await transactions.recoverStalePollTournamentClaims(
+    new Date('2030-01-01T00:00:00.000Z'),
+  );
+  await expect(
+    queries.getPollTournamentView(tournament.id),
+  ).resolves.toMatchObject({ status: 'RUNNING' });
+  await transactions.claimPollTournamentFinalization(tournament.id);
+  await transactions.completePollTournament({
+    tournamentId: tournament.id,
+    completedAt: new Date('2026-06-30T00:00:00.000Z'),
+  });
+  await expect(
+    queries.getPollTournamentView(tournament.id),
+  ).resolves.toMatchObject({ status: 'COMPLETED' });
+
+  const customLimitTournament = await queries.createPollTournament({
+    guildId,
+    hostUserId: 'custom-limit-host',
+    hostChannelId: 'host-channel',
+    title: 'Five Nominations Each',
+    maxNominationsPerUser: 5,
+  });
+  await expect(
+    transactions.nominatePollTournamentOptions({
+      tournamentId: customLimitTournament.id,
+      guildId,
+      nominatorUserId: 'custom-limit-user',
+      nominations: ['one', 'two', 'three', 'four', 'five'].map((value) => ({
+        text: value,
+        normalizedText: value,
+      })),
+    }),
+  ).resolves.toMatchObject({
+    outcome: 'SAVED',
+    usedCount: 5,
+    maxNominationsPerUser: 5,
+  });
+  await expect(
+    transactions.nominatePollTournamentOptions({
+      tournamentId: customLimitTournament.id,
+      guildId,
+      nominatorUserId: 'custom-limit-user',
+      nominations: [{ text: 'six', normalizedText: 'six' }],
+    }),
+  ).resolves.toEqual({
+    outcome: 'LIMIT_REACHED',
+    usedCount: 5,
+    maxNominationsPerUser: 5,
+  });
+
+  const concurrentTournament = await queries.createPollTournament({
+    guildId,
+    hostUserId: 'concurrent-host',
+    hostChannelId: 'host-channel',
+    title: 'Concurrent Poll',
+    maxNominationsPerUser: 3,
+  });
+  const concurrentResults = await Promise.all([
+    transactions.nominatePollTournamentOptions({
+      tournamentId: concurrentTournament.id,
+      guildId,
+      nominatorUserId: 'concurrent-user',
+      nominations: [
+        { text: 'One', normalizedText: 'one' },
+        { text: 'Two', normalizedText: 'two' },
+      ],
+    }),
+    transactions.nominatePollTournamentOptions({
+      tournamentId: concurrentTournament.id,
+      guildId,
+      nominatorUserId: 'concurrent-user',
+      nominations: [
+        { text: 'Three', normalizedText: 'three' },
+        { text: 'Four', normalizedText: 'four' },
+      ],
+    }),
+  ]);
+  expect(concurrentResults.map(({ outcome }) => outcome).sort()).toEqual([
+    'LIMIT_REACHED',
+    'SAVED',
+  ]);
+  await expect(
+    queries.getPollTournamentView(concurrentTournament.id),
+  ).resolves.toMatchObject({ nominations: [{}, {}] });
+
+  const staleTournament = await queries.createPollTournament({
+    guildId,
+    hostUserId: 'stale-host',
+    hostChannelId: 'host-channel',
+    title: 'Stale Poll',
+    maxNominationsPerUser: 3,
+  });
+  await transactions.claimPollTournamentStart({
+    tournamentId: staleTournament.id,
+    hostUserId: 'stale-host',
+  });
+  await transactions.recoverStalePollTournamentClaims(
+    new Date('2030-01-01T00:00:00.000Z'),
+  );
+  await expect(
+    queries.findPollTournamentStartCandidate(staleTournament.id),
+  ).resolves.toMatchObject({ status: 'NOMINATING' });
 });
 
 test('covers command logging DAL', async () => {

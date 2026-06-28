@@ -4,6 +4,7 @@ export const COMMAND_CATEGORIES = {
   HELP: 'Help',
   GENERAL: 'General',
   MISC: 'Misc',
+  POLL_TOURNAMENTS: 'Poll Tournaments',
   STREAM_INFO: 'Stream Info',
   BOSSES: 'Bosses',
   STREAM_GAME_TRACKING_TOOLS: 'Stream Game Tracking Tools',
@@ -28,6 +29,10 @@ export const COMMAND_CATEGORY_METADATA = {
   [COMMAND_CATEGORIES.MISC]: {
     name: COMMAND_CATEGORIES.MISC,
     accentColor: 0x57f287,
+  },
+  [COMMAND_CATEGORIES.POLL_TOURNAMENTS]: {
+    name: COMMAND_CATEGORIES.POLL_TOURNAMENTS,
+    accentColor: 0xe843c4,
   },
   [COMMAND_CATEGORIES.STREAM_INFO]: {
     name: COMMAND_CATEGORIES.STREAM_INFO,

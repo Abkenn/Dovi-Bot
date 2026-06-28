@@ -1,0 +1,17 @@
+export const POLL_TOURNAMENT_CONFIG = {
+  channelId: '1520860323425554432',
+  pingRoleId: '1520860726648897536',
+  pollDurationHours: 72,
+  bracketStartIntervalHours: 24,
+  preferredDurationDays: 30,
+  maxDurationDays: 60,
+  hugeTournamentThreshold: 200,
+  hugeTournamentMaxDurationDays: 90,
+  minOptions: 3,
+  maxOptionsPerBracket: 10,
+  targetQualificationOptions: 4,
+  defaultNominationsPerUser: 3,
+  maxNominationsPerUser: 10,
+  maxOptionLength: 55,
+  maxTitleLength: 100,
+} as const;

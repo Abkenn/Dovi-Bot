@@ -1,3 +1,30 @@
+enum PollTournamentStatus {
+  NOMINATING
+  STARTING
+  RUNNING
+  FINALIZING
+  COMPLETED
+  CANCELLED
+}
+
+enum PollTournamentRoundKind {
+  QUALIFICATION
+  ELIMINATION
+  FINAL
+}
+
+enum PollTournamentRoundStatus {
+  PENDING
+  ACTIVE
+  COMPLETE
+}
+
+enum PollTournamentBracketStatus {
+  PENDING
+  ACTIVE
+  COMPLETE
+}
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -36,35 +63,35 @@ enum ScheduleStatus {
 }
 
 model GuildConfig {
-  guildId               String   @id
-  canonicalTimezone     String   @default("America/Sao_Paulo")
-  currentWindowMinutes  Int      @default(240)
-  lookaheadDays         Int      @default(21)
+  guildId              String @id
+  canonicalTimezone    String @default("America/Sao_Paulo")
+  currentWindowMinutes Int    @default(240)
+  lookaheadDays        Int    @default(21)
 
-  defaultStreamKind     StreamKind @default(GAME)
-  defaultGameName       String?
-  defaultMusicMode      MusicMode?
-  defaultTitleOverride  String?
+  defaultStreamKind    StreamKind @default(GAME)
+  defaultGameName      String?
+  defaultMusicMode     MusicMode?
+  defaultTitleOverride String?
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   defaults  StreamScheduleDefault[]
   overrides StreamScheduleOverride[]
 }
 
 model StreamScheduleDefault {
-  id              String   @id @default(cuid())
+  id              String  @id @default(cuid())
   guildId         String
   weekday         Weekday
   startMinutes    Int
-  isEnabled       Boolean  @default(true)
-  durationMinutes Int      @default(240)
+  isEnabled       Boolean @default(true)
+  durationMinutes Int     @default(240)
 
-  streamKind      StreamKind?
-  musicMode       MusicMode?
-  titleOverride   String?
-  gameName        String?
+  streamKind    StreamKind?
+  musicMode     MusicMode?
+  titleOverride String?
+  gameName      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,13 +111,13 @@ model StreamScheduleOverride {
   startAtUtc          DateTime?
   durationMinutes     Int?
 
-  streamKind          StreamKind?
-  musicMode           MusicMode?
-  titleOverride       String?
-  gameName            String?
+  streamKind    StreamKind?
+  musicMode     MusicMode?
+  titleOverride String?
+  gameName      String?
 
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
 
@@ -186,19 +213,19 @@ enum BossTopicTermKind {
 }
 
 model CommandExecutionLog {
-  id              String                 @id @default(cuid())
-  guildId         String?
-  channelId       String?
-  userId          String
-  username        String?
-  commandName     String
-  optionsJson     Json?
-  status          CommandExecutionStatus
-  note            String?
-  durationMs      Int?
-  createdAt       DateTime               @default(now())
+  id          String                 @id @default(cuid())
+  guildId     String?
+  channelId   String?
+  userId      String
+  username    String?
+  commandName String
+  optionsJson Json?
+  status      CommandExecutionStatus
+  note        String?
+  durationMs  Int?
+  createdAt   DateTime               @default(now())
 
-  errorLog        CommandErrorLog?
+  errorLog CommandErrorLog?
 
   @@index([createdAt])
   @@index([commandName, createdAt])
@@ -207,17 +234,17 @@ model CommandExecutionLog {
 }
 
 model CommandErrorLog {
-  id                 String              @id @default(cuid())
-  commandExecutionId String              @unique
+  id                 String   @id @default(cuid())
+  commandExecutionId String   @unique
   errorName          String?
   errorMessage       String?
   stack              String?
   discordCode        Int?
   httpStatus         Int?
   rawJson            Json?
-  createdAt          DateTime            @default(now())
+  createdAt          DateTime @default(now())
 
-  commandExecution   CommandExecutionLog @relation(fields: [commandExecutionId], references: [id], onDelete: Cascade)
+  commandExecution CommandExecutionLog @relation(fields: [commandExecutionId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
 }
@@ -244,7 +271,7 @@ model Boss {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  game             BossGame               @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game             BossGame              @relation(fields: [gameId], references: [id], onDelete: Cascade)
   stats            BossEncounterStat[]
   trials           BossTrial[]
   trackingSessions BossTrackingSession[]
@@ -255,21 +282,21 @@ model Boss {
 }
 
 model BossEncounterStat {
-  id                       String              @id @default(cuid())
-  bossId                   String
-  playerDiscordUserId      String
-  source                   BossEncounterSource
-  deaths                   Int?
-  totalAttemptTimeSeconds  Int?
+  id                        String              @id @default(cuid())
+  bossId                    String
+  playerDiscordUserId       String
+  source                    BossEncounterSource
+  deaths                    Int?
+  totalAttemptTimeSeconds   Int?
   winningAttemptTimeSeconds Int?
-  difficultyCoefficient    Decimal?            @db.Decimal(10, 3)
-  rawTotalAttemptTime      String?
-  rawWinningAttemptTime    String?
-  rawDifficultyCoefficient String?
-  sourceRowNumber          Int?
-  syncedAt                 DateTime            @default(now())
-  createdAt                DateTime            @default(now())
-  updatedAt                DateTime            @updatedAt
+  difficultyCoefficient     Decimal?            @db.Decimal(10, 3)
+  rawTotalAttemptTime       String?
+  rawWinningAttemptTime     String?
+  rawDifficultyCoefficient  String?
+  sourceRowNumber           Int?
+  syncedAt                  DateTime            @default(now())
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
 
   boss Boss @relation(fields: [bossId], references: [id], onDelete: Cascade)
 
@@ -278,27 +305,27 @@ model BossEncounterStat {
 }
 
 model BossTrial {
-  id                       String          @id @default(cuid())
-  guildId                  String
-  channelId                String
-  messageId                String?         @unique
-  requesterUserId          String
-  gameId                   String
-  bossId                   String
-  durationMinutes          Int
+  id                        String            @id @default(cuid())
+  guildId                   String
+  channelId                 String
+  messageId                 String?           @unique
+  requesterUserId           String
+  gameId                    String
+  bossId                    String
+  durationMinutes           Int
   voteVisibilityHiddenUntil DateTime
-  endsAt                   DateTime
-  bumpMode                 BossTrialBumpMode @default(DEFAULT)
-  liveResultsPublishedAt   DateTime?
-  automaticBumpPostedAt    DateTime?
-  finalResultsPostedAt     DateTime?
-  status                   BossTrialStatus @default(ACTIVE)
-  createdAt                DateTime        @default(now())
-  updatedAt                DateTime        @updatedAt
+  endsAt                    DateTime
+  bumpMode                  BossTrialBumpMode @default(DEFAULT)
+  liveResultsPublishedAt    DateTime?
+  automaticBumpPostedAt     DateTime?
+  finalResultsPostedAt      DateTime?
+  status                    BossTrialStatus   @default(ACTIVE)
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
 
-  game  BossGame        @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  boss  Boss            @relation(fields: [bossId], references: [id], onDelete: Cascade)
-  votes BossTrialVote[]
+  game         BossGame               @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  boss         Boss                   @relation(fields: [bossId], references: [id], onDelete: Cascade)
+  votes        BossTrialVote[]
   bumpMessages BossTrialBumpMessage[]
 
   @@index([guildId, channelId])
@@ -321,13 +348,13 @@ model BossTrialBumpMessage {
 }
 
 model BossTrialVote {
-  id        String                @id @default(cuid())
+  id        String               @id @default(cuid())
   trialId   String
   userId    String
   verdict   BossTrialVoteVerdict
-  votedAt   DateTime              @default(now())
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  votedAt   DateTime             @default(now())
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
 
   trial BossTrial @relation(fields: [trialId], references: [id], onDelete: Cascade)
 
@@ -337,32 +364,32 @@ model BossTrialVote {
 }
 
 model BossTrackingSession {
-  id                 String                    @id @default(cuid())
-  guildId            String
-  channelId          String
-  trackerUserId      String
-  gameId             String
-  bossId             String
-  status             BossTrackingSessionStatus @default(ACTIVE)
-  startDeaths        Int                       @default(0)
-  deathCount         Int                       @default(0)
-  recordedDeathCount Int                       @default(0)
-  finalDeaths        Int?
+  id                   String                          @id @default(cuid())
+  guildId              String
+  channelId            String
+  trackerUserId        String
+  gameId               String
+  bossId               String
+  status               BossTrackingSessionStatus       @default(ACTIVE)
+  startDeaths          Int                             @default(0)
+  deathCount           Int                             @default(0)
+  recordedDeathCount   Int                             @default(0)
+  finalDeaths          Int?
   manualTrackedSeconds Int?
-  vodLabel           String?
-  vodStartSeconds    Int?
-  vodEndSeconds      Int?
-  attemptTimingStatus BossTrackingAttemptTimingStatus @default(TRUSTED)
-  reconciliationNote String?
-  totalPausedSeconds Int                       @default(0)
-  pausedAt           DateTime?
-  startedAt          DateTime                  @default(now())
-  focusedAt          DateTime                  @default(now())
-  endedAt            DateTime?
-  endResult          BossTrackingEndResult?
-  notes              String?
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @updatedAt
+  vodLabel             String?
+  vodStartSeconds      Int?
+  vodEndSeconds        Int?
+  attemptTimingStatus  BossTrackingAttemptTimingStatus @default(TRUSTED)
+  reconciliationNote   String?
+  totalPausedSeconds   Int                             @default(0)
+  pausedAt             DateTime?
+  startedAt            DateTime                        @default(now())
+  focusedAt            DateTime                        @default(now())
+  endedAt              DateTime?
+  endResult            BossTrackingEndResult?
+  notes                String?
+  createdAt            DateTime                        @default(now())
+  updatedAt            DateTime                        @updatedAt
 
   game     BossGame              @relation(fields: [gameId], references: [id], onDelete: Cascade)
   boss     Boss                  @relation(fields: [bossId], references: [id], onDelete: Cascade)
@@ -376,17 +403,17 @@ model BossTrackingSession {
 }
 
 model BossTrackingAttempt {
-  id            String                    @id @default(cuid())
-  sessionId     String
-  attemptNumber Int
-  startedAt     DateTime                  @default(now())
-  endedAt       DateTime?
+  id              String                    @id @default(cuid())
+  sessionId       String
+  attemptNumber   Int
+  startedAt       DateTime                  @default(now())
+  endedAt         DateTime?
   vodStartSeconds Int?
-  vodEndSeconds Int?
-  runbackSeconds Int?
-  result        BossTrackingAttemptResult @default(IN_PROGRESS)
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  vodEndSeconds   Int?
+  runbackSeconds  Int?
+  result          BossTrackingAttemptResult @default(IN_PROGRESS)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
 
   session BossTrackingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -395,15 +422,15 @@ model BossTrackingAttempt {
 }
 
 model BossTrackingPause {
-  id        String   @id @default(cuid())
-  sessionId String
-  startedAt DateTime @default(now())
-  endedAt   DateTime?
-  reason    String?
-  vodLabel  String?
+  id               String    @id @default(cuid())
+  sessionId        String
+  startedAt        DateTime  @default(now())
+  endedAt          DateTime?
+  reason           String?
+  vodLabel         String?
   vodResumeSeconds Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   session BossTrackingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -411,14 +438,14 @@ model BossTrackingPause {
 }
 
 model BossTopicTerm {
-  id             String            @id @default(cuid())
-  bossId         String
-  kind           BossTopicTermKind
-  value          String
+  id              String            @id @default(cuid())
+  bossId          String
+  kind            BossTopicTermKind
+  value           String
   normalizedValue String
   createdByUserId String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   boss Boss @relation(fields: [bossId], references: [id], onDelete: Cascade)
 
@@ -427,14 +454,14 @@ model BossTopicTerm {
 }
 
 model BossGameTopicTerm {
-  id             String            @id @default(cuid())
-  gameId         String
-  kind           BossTopicTermKind
-  value          String
+  id              String            @id @default(cuid())
+  gameId          String
+  kind            BossTopicTermKind
+  value           String
   normalizedValue String
   createdByUserId String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   game BossGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
@@ -490,4 +517,119 @@ model CommunityTopicSignal {
   @@index([guildId, entityKey, messageCreatedAt])
   @@index([guildId, authorUserId, messageCreatedAt])
   @@index([guildId, topicKind, entityKey, messageCreatedAt])
+}
+
+model PollTournament {
+  id                    String               @id @default(cuid())
+  guildId               String
+  hostUserId            String
+  title                 String
+  maxNominationsPerUser Int                  @default(3)
+  status                PollTournamentStatus @default(NOMINATING)
+  hostChannelId         String
+  hostMessageId         String?              @unique
+  announcementMessageId String?              @unique
+  plannedDurationDays   Int?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  nominations PollTournamentNomination[]
+  options     PollTournamentOption[]
+  rounds      PollTournamentRound[]
+
+  @@index([guildId, status, createdAt])
+  @@index([hostUserId, status, createdAt])
+}
+
+model PollTournamentNomination {
+  id              String    @id @default(cuid())
+  tournamentId    String
+  nominatorUserId String
+  text            String
+  normalizedText  String
+  removedAt       DateTime?
+  removedByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tournament PollTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, nominatorUserId, normalizedText])
+  @@index([tournamentId, normalizedText])
+  @@index([tournamentId, nominatorUserId, removedAt])
+}
+
+model PollTournamentOption {
+  id             String   @id @default(cuid())
+  tournamentId   String
+  text           String
+  normalizedText String
+  seedOrder      Int
+  tieBreakOrder  Int
+  totalVotes     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tournament PollTournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  entries    PollTournamentEntry[]
+
+  @@unique([tournamentId, normalizedText])
+  @@unique([tournamentId, seedOrder])
+  @@unique([tournamentId, tieBreakOrder])
+  @@index([tournamentId])
+}
+
+model PollTournamentRound {
+  id           String                    @id @default(cuid())
+  tournamentId String
+  roundNumber  Int
+  kind         PollTournamentRoundKind
+  status       PollTournamentRoundStatus @default(PENDING)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  tournament PollTournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  brackets   PollTournamentBracket[]
+
+  @@unique([tournamentId, roundNumber])
+  @@index([tournamentId, status, roundNumber])
+}
+
+model PollTournamentBracket {
+  id            String                      @id @default(cuid())
+  roundId       String
+  bracketNumber Int
+  optionCount   Int
+  status        PollTournamentBracketStatus @default(PENDING)
+  messageId     String?                     @unique
+  startsAt      DateTime?
+  endsAt        DateTime?
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  round   PollTournamentRound   @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  entries PollTournamentEntry[]
+
+  @@unique([roundId, bracketNumber])
+  @@index([status, startsAt])
+  @@index([status, endsAt])
+}
+
+model PollTournamentEntry {
+  id        String   @id @default(cuid())
+  bracketId String
+  optionId  String
+  position  Int
+  voteCount Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bracket PollTournamentBracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  option  PollTournamentOption  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([bracketId, optionId])
+  @@unique([bracketId, position])
+  @@index([optionId])
 }

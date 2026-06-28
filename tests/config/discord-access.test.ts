@@ -20,13 +20,14 @@ describe('Discord command guild access', () => {
     mockedEnv.value.ENABLE_PROD_GUILD_COMMAND_REGISTRATION = true;
   });
 
-  it('registers ping-me on prod when prod registration is enabled', async () => {
+  it('registers prod commands when prod registration is enabled', async () => {
     const { COMMAND_GUILDS, isAllowedGuildForCommand } = await import(
       '../../src/config/discord-access'
     );
 
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
+    expect(COMMAND_GUILDS.POLL_HOST).toEqual(['prod']);
     expect(isAllowedGuildForCommand('staging', COMMAND_GUILDS.PING_ME)).toBe(
       true,
     );
@@ -49,6 +50,9 @@ describe('Discord command guild access', () => {
     ).toEqual([
       'help',
       'botstatus',
+      'poll-nominate',
+      'poll-status',
+      'poll-manage',
       'streaminfo',
       'showbossstats',
       'showgamestats',
@@ -63,5 +67,6 @@ describe('Discord command guild access', () => {
 
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging']);
+    expect(COMMAND_GUILDS.POLL_HOST).toEqual([]);
   });
 });

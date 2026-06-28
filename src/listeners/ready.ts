@@ -7,6 +7,7 @@ import {
 } from '../app/uptime-status-monitor';
 import { startDaviBossStatsSyncScheduler } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.scheduler';
 import { startBossTrialLifecycleScheduler } from '../modules/boss-trials/poll/boss-trial.scheduler';
+import { startPollTournamentScheduler } from '../modules/poll-tournaments/poll-tournament.scheduler';
 import { startStreamInfoMessageUpdater } from '../modules/stream-info/stream-info-message-updater.scheduler';
 
 export class ReadyListener extends Listener {
@@ -38,6 +39,7 @@ export class ReadyListener extends Listener {
 
     startDaviBossStatsSyncScheduler();
     startBossTrialLifecycleScheduler(this.container.client);
+    startPollTournamentScheduler(this.container.client);
     startStreamInfoMessageUpdater(this.container.client);
     startUptimeStatusMonitor(this.container.client);
     startHealthCheckMonitor(this.container.client);
