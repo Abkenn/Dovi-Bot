@@ -100,9 +100,10 @@ describe('davi-say service', () => {
     expect(
       getDaviSayStickerAutocomplete({
         stickers: [
-          { id: 'davi-wave', name: 'Davi Wave' },
-          { id: 'davi-sus', name: 'Davi Sus' },
-          { id: 'other', name: 'Bonk' },
+          { id: 'davi-wave', name: 'Davi Wave', available: true },
+          { id: 'davi-sus', name: 'Davi Sus', available: true },
+          { id: 'other', name: 'Bonk', available: true },
+          { id: 'unavailable', name: 'Davi Sus Old', available: false },
         ],
         query: 'sus',
       }),
@@ -149,7 +150,11 @@ describe('davi-say service', () => {
   });
 
   it('requires a message or sticker', async () => {
-    const client = { channels: { fetch: vi.fn() } };
+    const client = {
+      channels: {
+        fetch: vi.fn(),
+      },
+    };
 
     await expect(
       sendDaviSayMessage({

@@ -29,6 +29,7 @@ export type DaviSayChannelAutocompleteOptions = {
 export type DaviSayStickerSummary = {
   id: string;
   name: string;
+  available: boolean;
 };
 
 export type DaviSayStickerAutocompleteOptions = {

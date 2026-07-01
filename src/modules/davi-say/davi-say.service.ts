@@ -148,6 +148,7 @@ export const getDaviSayStickerAutocomplete = ({
   query,
 }: DaviSayStickerAutocompleteOptions): DaviSayAutocompleteChoice[] =>
   stickers
+    .filter((sticker) => sticker.available)
     .filter((sticker) => matchesQuery(sticker.name, query))
     .sort((first, second) => first.name.localeCompare(second.name))
     .slice(0, AUTOCOMPLETE_LIMIT)
@@ -187,6 +188,7 @@ export const fetchDaviSayStickers = async (
   return [...stickers.values()].map((sticker) => ({
     id: sticker.id,
     name: sticker.name,
+    available: sticker.available !== false,
   }));
 };
 
