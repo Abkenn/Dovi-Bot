@@ -22,7 +22,9 @@
     "boss-discussion:backfill": "tsx scripts/boss-discussion-backfill.ts",
     "boss-discussion:backfill:dry-run": "tsx scripts/boss-discussion-backfill.ts --dry-run",
     "community-topics:seed": "tsx scripts/community-topic-seed.ts",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "hook:pre-commit": "node scripts/hooks/pre-commit.mjs",
+    "hook:pre-push": "node scripts/hooks/pre-push.mjs"
   },
   "keywords": [],
   "author": "Abken",

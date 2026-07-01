@@ -1,1 +1,1 @@
-pnpm run verify:push
+pnpm run hook:pre-push
