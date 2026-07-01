@@ -11,6 +11,7 @@ import {
 import { runCommand } from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.SHOW_GAME_STATS;
+const ALL_BOSS_STATS_OPTIONS = { limit: null } as const;
 
 export class ShowGameStatsCommand extends Command {
   public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -62,9 +63,8 @@ export class ShowGameStatsCommand extends Command {
           return editReply({
             embeds: [
               buildShowGameStatsEmbed(
-                // TODO: if default limit is 10 either add limit in command options or reduce null limit assignment with null by default optional params
-                await getGameBossDeathRanking(gameName, { limit: null }),
-                { limit: null },
+                await getGameBossDeathRanking(gameName, ALL_BOSS_STATS_OPTIONS),
+                ALL_BOSS_STATS_OPTIONS,
               ),
             ],
           });
