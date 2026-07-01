@@ -11,10 +11,16 @@ export const advanceReactionEchoCounter = async ({
 }: AdvanceReactionEchoCounterInput) => {
   const rows = await prisma.$queryRaw<ReactionEchoCounterRow[]>`
     INSERT INTO "ReactionEchoCounter" ("ruleId", "count", "updatedAt")
-    VALUES (${ruleId}, ${incrementBy} % ${every}, NOW())
+    VALUES (
+      ${ruleId},
+      CAST(${incrementBy} AS INTEGER) % CAST(${every} AS INTEGER),
+      NOW()
+    )
     ON CONFLICT ("ruleId") DO UPDATE
     SET
-      "count" = ("ReactionEchoCounter"."count" + ${incrementBy}) % ${every},
+      "count" = (
+        "ReactionEchoCounter"."count" + CAST(${incrementBy} AS INTEGER)
+      ) % CAST(${every} AS INTEGER),
       "updatedAt" = NOW()
     RETURNING "count"
   `;
