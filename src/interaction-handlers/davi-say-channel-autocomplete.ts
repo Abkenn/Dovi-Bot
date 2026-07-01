@@ -10,7 +10,9 @@ import { isInteractionCommandAccessible } from '../config/discord-command-guards
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   fetchDaviSayChannels,
+  fetchDaviSayStickers,
   getDaviSayChannelAutocomplete,
+  getDaviSayStickerAutocomplete,
   getDaviSayTargetGuildId,
 } from '../modules/davi-say/davi-say.service';
 import type { DaviSayEnvironment } from '../modules/davi-say/davi-say.types';
@@ -18,7 +20,7 @@ import type { DaviSayEnvironment } from '../modules/davi-say/davi-say.types';
 const isDaviSayEnvironment = (value: string): value is DaviSayEnvironment =>
   value === 'prod' || value === 'staging';
 
-type DaviSayChannelAutocompleteParseData = {
+type DaviSayAutocompleteParseData = {
   focusedOption: AutocompleteFocusedOption;
 };
 
@@ -43,13 +45,13 @@ export class DaviSayChannelAutocompleteHandler extends InteractionHandler {
 
     const focusedOption = interaction.options.getFocused(true);
 
-    if (focusedOption.name !== 'channel') {
+    if (!['channel', 'sticker'].includes(focusedOption.name)) {
       return this.none();
     }
 
     return this.some({
       focusedOption,
-    } satisfies DaviSayChannelAutocompleteParseData);
+    } satisfies DaviSayAutocompleteParseData);
   }
 
   public override async run(
@@ -61,18 +63,25 @@ export class DaviSayChannelAutocompleteHandler extends InteractionHandler {
       environmentOption && isDaviSayEnvironment(environmentOption)
         ? environmentOption
         : 'prod';
+    const guildId = getDaviSayTargetGuildId(environment);
+    const query = String(focusedOption.value);
 
     try {
-      const channels = await fetchDaviSayChannels(
-        interaction.client,
-        getDaviSayTargetGuildId(environment),
-      );
+      if (focusedOption.name === 'sticker') {
+        const stickers = await fetchDaviSayStickers(
+          interaction.client,
+          guildId,
+        );
+
+        return interaction.respond(
+          getDaviSayStickerAutocomplete({ stickers, query }),
+        );
+      }
+
+      const channels = await fetchDaviSayChannels(interaction.client, guildId);
 
       return interaction.respond(
-        getDaviSayChannelAutocomplete({
-          channels,
-          query: String(focusedOption.value),
-        }),
+        getDaviSayChannelAutocomplete({ channels, query }),
       );
     } catch {
       return interaction.respond([]);

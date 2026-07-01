@@ -38,8 +38,7 @@ export class DaviSayCommand extends Command {
             option
               .setName('message')
               .setDescription('Message for Davi to send')
-              .setMaxLength(2000)
-              .setRequired(true),
+              .setMaxLength(2000),
           )
           .addStringOption((option) =>
             option
@@ -54,6 +53,12 @@ export class DaviSayCommand extends Command {
             option
               .setName('channel')
               .setDescription('Channel or active thread ID')
+              .setAutocomplete(true),
+          )
+          .addStringOption((option) =>
+            option
+              .setName('sticker')
+              .setDescription('Server sticker for Davi to send')
               .setAutocomplete(true),
           ),
       {
@@ -71,8 +76,9 @@ export class DaviSayCommand extends Command {
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply }) => {
-        const message = interaction.options.getString('message', true);
+        const message = interaction.options.getString('message');
         const channelId = interaction.options.getString('channel');
+        const stickerId = interaction.options.getString('sticker');
         const environmentOption = interaction.options.getString('env');
         const selectedEnvironment =
           environmentOption && isDaviSayEnvironment(environmentOption)
@@ -88,6 +94,7 @@ export class DaviSayCommand extends Command {
           client: interaction.client,
           channelId: destination.channelId,
           message,
+          stickerId,
         });
 
         return editReply({

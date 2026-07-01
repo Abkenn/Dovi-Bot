@@ -1,4 +1,4 @@
-import type { ChannelType } from 'discord.js';
+import type { ChannelType, Client } from 'discord.js';
 
 export const DAVI_SAY_ENVIRONMENTS = ['prod', 'staging'] as const;
 
@@ -26,7 +26,26 @@ export type DaviSayChannelAutocompleteOptions = {
   query: string;
 };
 
+export type DaviSayStickerSummary = {
+  id: string;
+  name: string;
+};
+
+export type DaviSayStickerAutocompleteOptions = {
+  stickers: readonly DaviSayStickerSummary[];
+  query: string;
+};
+
 export type DaviSayAutocompleteChoice = {
   name: string;
   value: string;
+};
+
+export type DaviSaySendClient = Pick<Client, 'channels'>;
+
+export type SendDaviSayMessageOptions = {
+  client: DaviSaySendClient;
+  channelId: string;
+  message: string | null;
+  stickerId: string | null;
 };

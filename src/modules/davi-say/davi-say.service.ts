@@ -3,6 +3,7 @@ import {
   type Client,
   type Guild,
   type GuildBasedChannel,
+  type MessageCreateOptions,
   type ThreadChannel,
 } from 'discord.js';
 import { BOT_GUILDS, type BotGuildId } from '../../config/discord-access';
@@ -12,7 +13,10 @@ import type {
   DaviSayChannelSummary,
   DaviSayDestination,
   DaviSayEnvironment,
+  DaviSayStickerAutocompleteOptions,
+  DaviSayStickerSummary,
   ResolveDaviSayDestinationOptions,
+  SendDaviSayMessageOptions,
 } from './davi-say.types';
 
 export const DAVI_SAY_DEFAULT_STAGING_CHANNEL_ID = '1482741535610110163';
@@ -61,16 +65,12 @@ const getChannelChoiceName = (channel: DaviSayChannelSummary) => {
   return truncateChoiceName(`#${path} [${getChannelTypeLabel(channel.type)}]`);
 };
 
-const matchesChannelQuery = (channel: DaviSayChannelSummary, query: string) => {
+const matchesQuery = (value: string, query: string) => {
   const normalizedQuery = query.trim().toLocaleLowerCase();
 
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  return getChannelChoiceName(channel)
-    .toLocaleLowerCase()
-    .includes(normalizedQuery);
+  return (
+    !normalizedQuery || value.toLocaleLowerCase().includes(normalizedQuery)
+  );
 };
 
 const compareChannelSummaries = (
@@ -135,12 +135,25 @@ export const getDaviSayChannelAutocomplete = ({
   query,
 }: DaviSayChannelAutocompleteOptions): DaviSayAutocompleteChoice[] =>
   channels
-    .filter((channel) => matchesChannelQuery(channel, query))
+    .filter((channel) => matchesQuery(getChannelChoiceName(channel), query))
     .sort(compareChannelSummaries)
     .slice(0, AUTOCOMPLETE_LIMIT)
     .map((channel) => ({
       name: getChannelChoiceName(channel),
       value: channel.id,
+    }));
+
+export const getDaviSayStickerAutocomplete = ({
+  stickers,
+  query,
+}: DaviSayStickerAutocompleteOptions): DaviSayAutocompleteChoice[] =>
+  stickers
+    .filter((sticker) => matchesQuery(sticker.name, query))
+    .sort((first, second) => first.name.localeCompare(second.name))
+    .slice(0, AUTOCOMPLETE_LIMIT)
+    .map((sticker) => ({
+      name: truncateChoiceName(sticker.name),
+      value: sticker.id,
     }));
 
 export const fetchDaviSayChannels = async (
@@ -164,6 +177,19 @@ export const fetchDaviSayChannels = async (
   return [...guildChannels, ...activeThreads];
 };
 
+export const fetchDaviSayStickers = async (
+  client: Client,
+  guildId: BotGuildId,
+): Promise<DaviSayStickerSummary[]> => {
+  const guild = await client.guilds.fetch(guildId);
+  const stickers = await guild.stickers.fetch();
+
+  return [...stickers.values()].map((sticker) => ({
+    id: sticker.id,
+    name: sticker.name,
+  }));
+};
+
 const fetchActiveThreadSummaries = async (
   guild: Guild,
 ): Promise<DaviSayChannelSummary[]> => {
@@ -184,18 +210,27 @@ export const sendDaviSayMessage = async ({
   client,
   channelId,
   message,
-}: {
-  client: Client;
-  channelId: string;
-  message: string;
-}) => {
+  stickerId,
+}: SendDaviSayMessageOptions) => {
+  if (!message && !stickerId) {
+    throw new Error('Choose a message, a sticker, or both.');
+  }
+
   const channel = await client.channels.fetch(channelId);
 
   if (!channel || !channel.isSendable()) {
     throw new Error('Davi cannot send messages in that channel.');
   }
 
-  await channel.send({
-    content: message,
-  });
+  const payload: MessageCreateOptions = {};
+
+  if (message) {
+    payload.content = message;
+  }
+
+  if (stickerId) {
+    payload.stickers = [stickerId];
+  }
+
+  await channel.send(payload);
 };
