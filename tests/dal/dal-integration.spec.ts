@@ -112,6 +112,7 @@ const coveredDalExports = {
     'findRunningPollTournamentViews',
     'getPollTournamentView',
   ],
+  '../../src/data/queries/reaction-echo': ['advanceReactionEchoCounter'],
   '../../src/data/queries/stream-info': [
     'buildTargetStreamOverrideUpsertArgs',
     'deleteStreamScheduleOverrideForDate',
@@ -1388,4 +1389,36 @@ test('covers command logging DAL', async () => {
   });
 
   expect(error.commandExecutionId).toBe(execution.id);
+});
+
+test('atomically advances and resets reaction echo counters', async () => {
+  const { advanceReactionEchoCounter } = await import(
+    '../../src/data/queries/reaction-echo'
+  );
+  const results = await Promise.all(
+    Array.from({ length: 20 }, () =>
+      advanceReactionEchoCounter({
+        ruleId: 'choccy-milk-sticker',
+        every: 20,
+        incrementBy: 1,
+      }),
+    ),
+  );
+
+  expect(results.filter(Boolean)).toHaveLength(1);
+  await expect(
+    advanceReactionEchoCounter({
+      ruleId: 'choccy-milk-sticker',
+      every: 20,
+      incrementBy: 1,
+    }),
+  ).resolves.toBe(false);
+
+  const { prisma } = await import('../../src/lib/prisma');
+  await expect(
+    prisma.reactionEchoCounter.findUnique({
+      where: { ruleId: 'choccy-milk-sticker' },
+      select: { count: true },
+    }),
+  ).resolves.toEqual({ count: 1 });
 });
