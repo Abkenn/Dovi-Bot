@@ -28,6 +28,7 @@ describe('Discord command guild access', () => {
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.POLL_HOST).toEqual(['staging']);
+    expect(COMMAND_GUILDS.DAVI_SAY).toEqual(['staging']);
     expect(isAllowedGuildForCommand('staging', COMMAND_GUILDS.PING_ME)).toBe(
       true,
     );
@@ -65,5 +66,6 @@ describe('Discord command guild access', () => {
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging']);
     expect(COMMAND_GUILDS.POLL_HOST).toEqual(['staging']);
+    expect(COMMAND_GUILDS.DAVI_SAY).toEqual(['staging']);
   });
 });

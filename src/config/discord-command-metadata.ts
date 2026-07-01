@@ -280,6 +280,14 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.ADMIN,
     helpCategory: COMMAND_CATEGORIES.STAGING,
   },
+  DAVI_SAY: {
+    name: 'davi-say',
+    description: 'Sends a message through Dovi from staging.',
+    guildIds: COMMAND_GUILDS.DAVI_SAY,
+    access: COMMAND_ACCESSES.REGULAR,
+    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpCategory: COMMAND_CATEGORIES.STAGING,
+  },
   DAVI_SET_GAME: {
     name: 'davisetgame',
     description: 'Sets the prod env default game from staging.',
