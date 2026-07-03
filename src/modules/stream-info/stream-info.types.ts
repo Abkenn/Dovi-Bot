@@ -14,6 +14,7 @@ export type StreamOccurrence = {
   title: string | null;
   gameName: string | null;
   streamUrl?: string | undefined;
+  videoTitle?: string | undefined;
   isOverride: boolean;
 };
 

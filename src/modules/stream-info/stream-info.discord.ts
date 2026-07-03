@@ -35,13 +35,18 @@ const buildOccurrenceValue = (
     relativePrefix = startsInFuture ? 'starts ' : 'started ';
   }
 
-  const lines = [
-    occurrence.title ?? 'Stream',
+  const lines = [occurrence.title ?? 'Stream'];
+
+  if (occurrence.videoTitle?.trim() && occurrence.streamUrl) {
+    lines.push(`[${occurrence.videoTitle.trim()}](${occurrence.streamUrl})`);
+  }
+
+  lines.push(
     `${discordTs(occurrence.startAt, 'F')} (${relativePrefix}${discordTs(
       occurrence.startAt,
       'R',
     )})`,
-  ];
+  );
 
   if (shouldShowGame(occurrence) && occurrence.gameName?.trim()) {
     lines.push(`Game: ${occurrence.gameName}`);

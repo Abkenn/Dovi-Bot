@@ -3,8 +3,8 @@ import { InteractionContextType } from 'discord.js';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { CommandDeniedError } from '../modules/command-logging/command-denied';
 import { runCommand } from '../modules/command-runner/run-command';
-import { buildPollTournamentStatusPages } from '../modules/poll-tournaments/poll-tournament-status.discord';
 import { getAccessiblePollTournaments } from '../modules/poll-tournaments/poll-tournament.service';
+import { buildPollTournamentStatusPages } from '../modules/poll-tournaments/poll-tournament-status.discord';
 
 const METADATA = COMMAND_METADATA.POLL_STATUS;
 

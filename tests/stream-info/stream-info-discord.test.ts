@@ -42,6 +42,7 @@ describe('stream info discord output', () => {
       timezone: 'America/Sao_Paulo',
       current: makeOccurrence({
         streamUrl: 'https://youtube.test/watch?v=stream',
+        videoTitle: 'Dark Souls III but the bosses are unionizing',
       }),
       next: null,
     });
@@ -53,11 +54,29 @@ describe('stream info discord output', () => {
 
     expect(embedJson(embed).title).toBe('Stream Info');
     expect(currentValue).toContain('Game Stream');
+    expect(currentValue).toContain(
+      '[Dark Souls III but the bosses are unionizing](https://youtube.test/watch?v=stream)',
+    );
     expect(currentValue).toContain('(starts <t:1781287800:R>)');
     expect(currentValue).toContain('Game: Test Game');
     expect(getEmbedFieldValue(embed, 'Next stream')).toBe(
       'No upcoming stream found.',
     );
+  });
+
+  it('does not add an unlabeled video title when the YouTube title is absent', () => {
+    const value = getEmbedFieldValue(
+      buildStreamInfoEmbed({
+        timezone: 'America/Sao_Paulo',
+        current: makeOccurrence({
+          streamUrl: 'https://youtube.test/watch?v=stream',
+        }),
+        next: null,
+      }),
+      '[Current stream](https://youtube.test/watch?v=stream)',
+    );
+
+    expect(value).not.toContain('[](');
   });
 
   it('marks already-started current streams with started relative text', () => {

@@ -71,6 +71,7 @@ describe('stream info YouTube lifecycle', () => {
     expect(resolution.current?.streamUrl).toBe(
       'https://www.youtube.com/watch?v=video-1',
     );
+    expect(resolution.current?.videoTitle).toBe('Live Stream');
   });
 
   it('keeps the ended stream link during the 10 minute grace window', () => {
