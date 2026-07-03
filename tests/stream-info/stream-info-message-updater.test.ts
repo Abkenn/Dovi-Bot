@@ -6,6 +6,7 @@ const streamInfoMessageQueries = vi.hoisted(() => ({
   deleteLastStreamInfoMessage: vi.fn(),
   findLatestStreamInfoCommandTargets: vi.fn(),
   findLastStreamInfoMessages: vi.fn(),
+  findLastStreamInfoMessagesForGuild: vi.fn(),
   upsertLastStreamInfoMessage: vi.fn(),
 }));
 
@@ -31,6 +32,8 @@ vi.mock('@data/queries/stream-info-message', () => ({
     streamInfoMessageQueries.findLatestStreamInfoCommandTargets,
   findLastStreamInfoMessages:
     streamInfoMessageQueries.findLastStreamInfoMessages,
+  findLastStreamInfoMessagesForGuild:
+    streamInfoMessageQueries.findLastStreamInfoMessagesForGuild,
   upsertLastStreamInfoMessage:
     streamInfoMessageQueries.upsertLastStreamInfoMessage,
 }));
@@ -50,6 +53,7 @@ vi.mock('../../src/modules/stream-info/stream-reminder.service', () => ({
 
 import {
   adoptLastStreamInfoMessage,
+  refreshGuildStreamInfoMessages,
   refreshLastStreamInfoMessages,
   refreshStreamInfoMessage,
   registerLastStreamInfoMessage,
@@ -93,6 +97,9 @@ describe('stream info message updater', () => {
       undefined,
     );
     streamInfoMessageQueries.findLastStreamInfoMessages.mockResolvedValue([]);
+    streamInfoMessageQueries.findLastStreamInfoMessagesForGuild.mockResolvedValue(
+      [],
+    );
     streamInfoMessageQueries.upsertLastStreamInfoMessage.mockResolvedValue(
       undefined,
     );
@@ -323,6 +330,40 @@ describe('stream info message updater', () => {
     expect(
       streamInfoMessageQueries.findLastStreamInfoMessages,
     ).toHaveBeenCalledWith(expect.any(Date));
+    expect(message.edit).toHaveBeenCalledTimes(2);
+  });
+
+  it('immediately refreshes every stored stream info message for one guild', async () => {
+    const message = makeMessage();
+    const channel = {
+      messages: { fetch: vi.fn().mockResolvedValue(message) },
+    };
+    streamInfoMessageQueries.findLastStreamInfoMessagesForGuild.mockResolvedValue(
+      [
+        {
+          guildId: 'guild-1',
+          channelId: 'channel-1',
+          messageId: 'message-1',
+        },
+        {
+          guildId: 'guild-1',
+          channelId: 'channel-2',
+          messageId: 'message-2',
+        },
+      ],
+    );
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
+      new EmbedBuilder().setTitle('Stream Info'),
+    );
+
+    await refreshGuildStreamInfoMessages({
+      client: makeClient({ channel }),
+      guildId: 'guild-1',
+    });
+
+    expect(
+      streamInfoMessageQueries.findLastStreamInfoMessagesForGuild,
+    ).toHaveBeenCalledWith('guild-1', expect.any(Date));
     expect(message.edit).toHaveBeenCalledTimes(2);
   });
 

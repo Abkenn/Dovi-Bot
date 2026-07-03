@@ -38,6 +38,18 @@ export const findLastStreamInfoMessages = (since: Date) =>
     },
   });
 
+export const findLastStreamInfoMessagesForGuild = (
+  guildId: string,
+  since: Date,
+) =>
+  prisma.streamInfoMessage.findMany({
+    where: {
+      guildId,
+      updatedAt: { gte: since },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
 export const deleteLastStreamInfoMessage = (messageId: string) =>
   prisma.streamInfoMessage.deleteMany({
     where: {

@@ -9,6 +9,7 @@ import {
 } from '../modules/command-runner/run-command';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { skipStream } from '../modules/stream-info/stream-info.service';
+import { refreshGuildStreamInfoMessages } from '../modules/stream-info/stream-info-message-updater.service';
 
 const METADATA = COMMAND_METADATA.DAVI_SKIP_STREAM;
 
@@ -58,6 +59,10 @@ export class DaviSkipStreamCommand extends Command {
         await skipStream({
           guildId: targetGuildId,
           targetWeekday: interaction.options.getString('day') as Weekday | null,
+        });
+        await refreshGuildStreamInfoMessages({
+          client: this.container.client,
+          guildId: targetGuildId,
         });
 
         return editReply({

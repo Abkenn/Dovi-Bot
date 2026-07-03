@@ -2,6 +2,7 @@ import {
   deleteExpiredStreamInfoMessages,
   deleteLastStreamInfoMessage,
   findLastStreamInfoMessages,
+  findLastStreamInfoMessagesForGuild,
   findLatestStreamInfoCommandTargets,
   upsertLastStreamInfoMessage,
 } from '@data/queries/stream-info-message';
@@ -265,5 +266,25 @@ export const refreshLastStreamInfoMessages = async (client: Client) => {
       client,
       pointer: target,
     });
+  }
+};
+
+export const refreshGuildStreamInfoMessages = async ({
+  client,
+  guildId,
+}: {
+  client: Client;
+  guildId: string;
+}) => {
+  const pointers = await findLastStreamInfoMessagesForGuild(
+    guildId,
+    getRecentMessageCutoff(),
+  ).catch((error) => {
+    console.error('Failed to load stored stream info messages', error);
+    return [];
+  });
+
+  for (const pointer of pointers) {
+    await refreshStreamInfoMessage({ client, pointer });
   }
 };
