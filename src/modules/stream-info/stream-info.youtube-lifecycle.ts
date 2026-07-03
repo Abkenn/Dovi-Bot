@@ -85,6 +85,7 @@ const applyYouTubeStreamStatus = (
     title: isMatchedOccurrence ? occurrence.title : status.title,
     streamUrl: status.url,
     videoTitle: status.title,
+    streamIsLive: status.isLive,
   };
 };
 

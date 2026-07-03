@@ -145,6 +145,22 @@ model StreamInfoMessage {
   @@index([updatedAt])
 }
 
+model StreamReminder {
+  id               String    @id @default(cuid())
+  guildId          String
+  userId           String
+  streamDateKey    String
+  streamUrl        String
+  videoTitle       String
+  scheduledStartAt DateTime
+  notifiedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, streamUrl])
+  @@index([guildId, streamUrl, notifiedAt])
+}
+
 model PingMeSubscription {
   id            String   @id @default(cuid())
   userId        String

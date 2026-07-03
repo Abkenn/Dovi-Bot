@@ -10,7 +10,16 @@ const streamInfoMessageQueries = vi.hoisted(() => ({
 }));
 
 const streamInfoDiscord = vi.hoisted(() => ({
-  getStreamInfoEmbed: vi.fn(),
+  buildStreamInfoEmbed: vi.fn(),
+  buildStreamReminderButton: vi.fn(),
+}));
+
+const streamInfoService = vi.hoisted(() => ({
+  getStreamInfo: vi.fn(),
+}));
+
+const streamReminderService = vi.hoisted(() => ({
+  deliverStreamReminders: vi.fn(),
 }));
 
 vi.mock('@data/queries/stream-info-message', () => ({
@@ -27,7 +36,16 @@ vi.mock('@data/queries/stream-info-message', () => ({
 }));
 
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
-  getStreamInfoEmbed: streamInfoDiscord.getStreamInfoEmbed,
+  buildStreamInfoEmbed: streamInfoDiscord.buildStreamInfoEmbed,
+  buildStreamReminderButton: streamInfoDiscord.buildStreamReminderButton,
+}));
+
+vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
+  getStreamInfo: streamInfoService.getStreamInfo,
+}));
+
+vi.mock('../../src/modules/stream-info/stream-reminder.service', () => ({
+  deliverStreamReminders: streamReminderService.deliverStreamReminders,
 }));
 
 import {
@@ -64,6 +82,13 @@ describe('stream info message updater', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next: null,
+    });
+    streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
+    streamReminderService.deliverStreamReminders.mockResolvedValue(undefined);
     streamInfoMessageQueries.deleteExpiredStreamInfoMessages.mockResolvedValue(
       undefined,
     );
@@ -133,7 +158,7 @@ describe('stream info message updater', () => {
         fetch: vi.fn().mockResolvedValue(message),
       },
     };
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder()
         .setTitle('Stream Info')
         .addFields({ name: 'Current stream', value: 'Live now' }),
@@ -153,6 +178,50 @@ describe('stream info message updater', () => {
       expect.objectContaining({
         allowedMentions: { parse: [] },
         components: expect.any(Array),
+      }),
+    );
+  });
+
+  it('removes the reminder row when the announced stream becomes live', async () => {
+    const message = makeMessage();
+    const channel = {
+      messages: {
+        fetch: vi.fn().mockResolvedValue(message),
+      },
+    };
+    const liveOccurrence = {
+      dateKey: '2026-07-03',
+      streamUrl: 'https://youtube.test/watch?v=stream',
+      videoTitle: 'Davi is live',
+      streamIsLive: true,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: liveOccurrence,
+      next: null,
+    });
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
+      new EmbedBuilder()
+        .setTitle('Stream Info')
+        .addFields({ name: 'Current stream', value: 'Live now' }),
+    );
+    streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
+
+    await refreshStreamInfoMessage({
+      client: makeClient({ channel }),
+      pointer: {
+        guildId: 'guild-1',
+        channelId: 'channel-1',
+        messageId: 'message-1',
+      },
+    });
+
+    expect(streamInfoDiscord.buildStreamReminderButton).toHaveBeenCalledWith(
+      liveOccurrence,
+    );
+    expect(message.edit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: [expect.objectContaining({ type: 17 })],
       }),
     );
   });
@@ -242,7 +311,7 @@ describe('stream info message updater', () => {
         messageId: 'message-2',
       },
     ]);
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
 
@@ -279,7 +348,7 @@ describe('stream info message updater', () => {
         fetch,
       },
     };
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
 
@@ -322,7 +391,7 @@ describe('stream info message updater', () => {
     streamInfoMessageQueries.upsertLastStreamInfoMessage.mockRejectedValue(
       new Error('missing StreamInfoMessage table'),
     );
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
 
@@ -458,7 +527,7 @@ describe('stream info message updater', () => {
         },
       ],
     );
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
 
@@ -527,7 +596,7 @@ describe('stream info message updater', () => {
         },
       ],
     );
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
 
@@ -597,7 +666,7 @@ describe('stream info message updater', () => {
         },
       ],
     );
-    streamInfoDiscord.getStreamInfoEmbed.mockResolvedValue(
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
 

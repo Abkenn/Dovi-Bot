@@ -17,8 +17,13 @@ import {
 import { DateTime } from 'luxon';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
-import { getStreamInfoEmbed } from './stream-info.discord';
+import {
+  buildStreamInfoEmbed,
+  buildStreamReminderButton,
+} from './stream-info.discord';
+import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
+import { deliverStreamReminders } from './stream-reminder.service';
 
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
@@ -97,26 +102,39 @@ const findRecentStreamInfoMessage = async ({
   );
 };
 
-const buildStreamInfoMessageEdit = async (guildId: string) => {
-  const embed = await getStreamInfoEmbed(guildId);
+const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
+  const streamInfo = await getStreamInfo(guildId);
+  await deliverStreamReminders({
+    client,
+    guildId,
+    occurrence: streamInfo.current,
+  });
+  const embed = buildStreamInfoEmbed(streamInfo);
+  const reminderButton = buildStreamReminderButton(streamInfo.current);
   const { flags: _flags, ...componentMessage } =
     buildComponentEmbedMessageFromEmbeds([embed]);
 
   return {
     ...componentMessage,
+    components: [
+      ...(componentMessage.components ?? []),
+      ...(reminderButton ? [reminderButton] : []),
+    ],
     allowedMentions: { parse: [] },
     flags: MessageFlags.IsComponentsV2,
   } satisfies MessageEditOptions;
 };
 
 const editStreamInfoMessage = async ({
+  client,
   guildId,
   message,
 }: {
+  client: Client;
   guildId: string;
   message: Message;
 }) => {
-  await message.edit(await buildStreamInfoMessageEdit(guildId));
+  await message.edit(await buildStreamInfoMessageEdit(guildId, client));
 };
 
 export const registerLastStreamInfoMessage = async ({
@@ -157,6 +175,7 @@ export const refreshStreamInfoMessage = async ({
 
     const message = await channel.messages.fetch(pointer.messageId);
     await editStreamInfoMessage({
+      client,
       guildId: pointer.guildId,
       message,
     });
@@ -202,6 +221,7 @@ export const adoptLastStreamInfoMessage = async ({
     };
 
     await editStreamInfoMessage({
+      client,
       guildId: pointer.guildId,
       message,
     });

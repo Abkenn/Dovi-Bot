@@ -72,6 +72,7 @@ describe('stream info YouTube lifecycle', () => {
       'https://www.youtube.com/watch?v=video-1',
     );
     expect(resolution.current?.videoTitle).toBe('Live Stream');
+    expect(resolution.current?.streamIsLive).toBe(true);
   });
 
   it('keeps the ended stream link during the 10 minute grace window', () => {

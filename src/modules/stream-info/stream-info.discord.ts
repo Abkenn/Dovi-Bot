@@ -1,4 +1,14 @@
-import { EmbedBuilder } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type ComponentInContainerData,
+  ComponentType,
+  EmbedBuilder,
+  type MessageCreateOptions,
+  MessageFlags,
+  type TopLevelComponentData,
+} from 'discord.js';
 import {
   COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
@@ -6,6 +16,8 @@ import {
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
+
+export const STREAM_REMINDER_CUSTOM_ID_PREFIX = 'stream-reminder';
 
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
   const unix = Math.floor(date.getTime() / 1000);
@@ -84,6 +96,60 @@ export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
   });
 
   return embed;
+};
+
+export const buildStreamReminderButton = (
+  occurrence: StreamOccurrence | null,
+): ActionRowBuilder<ButtonBuilder> | null => {
+  if (
+    !occurrence?.streamUrl ||
+    !occurrence.videoTitle?.trim() ||
+    occurrence.streamIsLive !== false
+  ) {
+    return null;
+  }
+
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`${STREAM_REMINDER_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`)
+      .setLabel('Remind Me')
+      .setEmoji('⏰')
+      .setStyle(ButtonStyle.Primary),
+  );
+};
+
+export const buildStreamLiveReminderMessage = (
+  videoTitle: string,
+  streamUrl: string,
+): MessageCreateOptions => {
+  const components: ComponentInContainerData[] = [
+    {
+      type: ComponentType.TextDisplay,
+      content: `# 🔴 Davi is live!\n[${videoTitle}](${streamUrl})`,
+    },
+    {
+      type: ComponentType.ActionRow,
+      components: [
+        {
+          type: ComponentType.Button,
+          style: ButtonStyle.Link,
+          label: 'Watch Stream',
+          emoji: { name: '▶️' },
+          url: streamUrl,
+        },
+      ],
+    },
+  ];
+  const container: TopLevelComponentData = {
+    type: ComponentType.Container,
+    accentColor: 0xff3131,
+    components,
+  };
+
+  return {
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  };
 };
 
 export const getStreamInfoEmbed = async (

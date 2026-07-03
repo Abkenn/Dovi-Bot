@@ -6,7 +6,10 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
   getStreamInfo: vi.fn(),
 }));
 
-import { buildStreamInfoEmbed } from '../../src/modules/stream-info/stream-info.discord';
+import {
+  buildStreamInfoEmbed,
+  buildStreamReminderButton,
+} from '../../src/modules/stream-info/stream-info.discord';
 import type {
   StreamInfoResult,
   StreamOccurrence,
@@ -62,6 +65,26 @@ describe('stream info discord output', () => {
     expect(getEmbedFieldValue(embed, 'Next stream')).toBe(
       'No upcoming stream found.',
     );
+  });
+
+  it('offers a reminder button only while an announced stream is upcoming', () => {
+    const upcoming = makeOccurrence({
+      streamUrl: 'https://youtube.test/watch?v=stream',
+      videoTitle: 'Upcoming Stream',
+      streamIsLive: false,
+    });
+
+    expect(buildStreamReminderButton(upcoming)?.toJSON()).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-reminder:2026-06-12',
+          label: 'Remind Me',
+        },
+      ],
+    });
+    expect(
+      buildStreamReminderButton({ ...upcoming, streamIsLive: true }),
+    ).toBeNull();
   });
 
   it('does not add an unlabeled video title when the YouTube title is absent', () => {
