@@ -5,7 +5,11 @@ const data = vi.hoisted(() => ({
 }));
 
 vi.mock('../../src/data/queries/reaction-echo', () => data);
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: { STAGING_ENV: 'staging', PROD_ENV: 'prod' },
+}));
 
+import { TRACKABLE_REACTION_ECHOES } from '../../src/modules/reaction-echo/reaction-echo.config';
 import { processReactionEchoMessage } from '../../src/modules/reaction-echo/reaction-echo.service';
 import type { ReactionEchoRule } from '../../src/modules/reaction-echo/reaction-echo.types';
 
@@ -14,12 +18,16 @@ const choccyMilkRule = {
   guildIds: ['prod'],
   trigger: { kind: 'STICKER', stickerId: 'choccy' },
   response: { kind: 'STICKER', stickerId: 'choccy' },
-  every: 20,
+  threshold: 20,
 } as const satisfies ReactionEchoRule;
 
 describe('reaction echo service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+  });
+
+  it('echoes the Dovi emoji every 20 matching uses', () => {
+    expect(TRACKABLE_REACTION_ECHOES.doviEmoji.threshold).toBe(20);
   });
 
   it('ignores bot messages and messages that do not match a rule', async () => {
@@ -93,7 +101,7 @@ describe('reaction echo service', () => {
       channelIds: ['general'],
       trigger: { kind: 'CUSTOM_EMOJI', emojiId: '123' },
       response: { kind: 'REACTION', emojiId: '123' },
-      every: 40,
+      threshold: 40,
     } as const satisfies ReactionEchoRule;
 
     await processReactionEchoMessage({

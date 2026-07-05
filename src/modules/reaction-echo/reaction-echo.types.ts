@@ -12,7 +12,7 @@ export type ReactionEchoRule = {
   channelIds?: readonly string[];
   trigger: ReactionEchoTrigger;
   response: ReactionEchoResponse;
-  every: number;
+  threshold: number;
 };
 
 export type ReactionEchoMessage = {

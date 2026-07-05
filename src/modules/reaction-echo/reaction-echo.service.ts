@@ -57,7 +57,7 @@ export const processReactionEchoMessage = async ({
 
     const shouldEcho = await advanceReactionEchoCounter({
       ruleId: rule.id,
-      every: rule.every,
+      every: rule.threshold,
       incrementBy,
     });
 
