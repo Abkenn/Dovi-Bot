@@ -45,6 +45,11 @@ type GameTrackingStatusStats = {
   bosses: GameBossWithTrackedSessions[];
 };
 
+type RecentBossEncounterStats = {
+  name: string;
+  trackingSessions: BossTrackingSessionView[];
+};
+
 export const getTrackedBossDeathCount = (sessions: { deathCount: number }[]) =>
   sessions.reduce((sum, session) => sum + session.deathCount, 0);
 
@@ -191,3 +196,28 @@ export const summarizeTrackedGameStatus = (game: GameTrackingStatusStats) => {
     pendingBossCount: trackedBosses.length - killedBosses.length,
   };
 };
+
+export const summarizeRecentBossEncounters = (
+  bosses: RecentBossEncounterStats[],
+) =>
+  bosses
+    .filter((boss) => boss.trackingSessions.length > 0)
+    .sort((left, right) => {
+      const leftFocusedAt = left.trackingSessions[0]?.focusedAt.getTime() ?? 0;
+      const rightFocusedAt =
+        right.trackingSessions[0]?.focusedAt.getTime() ?? 0;
+
+      return rightFocusedAt - leftFocusedAt;
+    })
+    .slice(0, 3)
+    .map((boss) => {
+      const summary = summarizeBossTrackingSessions(boss.trackingSessions);
+      const killed = hasTrackedBossKill(boss.trackingSessions);
+
+      return {
+        bossName: boss.name,
+        deaths: getTrackedBossDeathCount(boss.trackingSessions),
+        averageAttemptSeconds: summary.averageAttemptSeconds,
+        winningAttemptSeconds: killed ? summary.winningAttemptSeconds : null,
+      };
+    });

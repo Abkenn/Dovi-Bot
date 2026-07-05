@@ -132,10 +132,8 @@ export const findTrackedGameStatus = (normalizedGameName: string) =>
             where: {
               status: { not: BossTrackingSessionStatus.CANCELLED },
             },
-            select: {
-              deathCount: true,
-              endResult: true,
-            },
+            include: bossTrackingSessionInclude,
+            orderBy: { focusedAt: 'desc' },
           },
         },
       },

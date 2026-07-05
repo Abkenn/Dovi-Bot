@@ -6,7 +6,6 @@ import { buildShowGameStatsEmbed } from '../modules/boss-encounter-stats/game/ga
 import {
   getBossView,
   getGameBossDeathRanking,
-  isGameStatsAllBossesValue,
 } from '../modules/bosses/bosses.service';
 import { runCommand } from '../modules/command-runner/run-command';
 
@@ -41,6 +40,16 @@ export class ShowGameStatsCommand extends Command {
               .setDescription('Optional boss name')
               .setRequired(false)
               .setAutocomplete(true),
+          )
+          .addStringOption((option) =>
+            option
+              .setName('results')
+              .setDescription('Show the top 10 bosses or every boss')
+              .setRequired(false)
+              .addChoices(
+                { name: 'Top 10', value: 'top10' },
+                { name: 'All', value: 'all' },
+              ),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -58,17 +67,7 @@ export class ShowGameStatsCommand extends Command {
       run: async ({ editReply }) => {
         const gameName = interaction.options.getString('game', true);
         const bossName = interaction.options.getString('boss');
-
-        if (isGameStatsAllBossesValue(bossName)) {
-          return editReply({
-            embeds: [
-              buildShowGameStatsEmbed(
-                await getGameBossDeathRanking(gameName, ALL_BOSS_STATS_OPTIONS),
-                ALL_BOSS_STATS_OPTIONS,
-              ),
-            ],
-          });
-        }
+        const results = interaction.options.getString('results') ?? 'top10';
 
         if (bossName) {
           const boss = await getBossView({
@@ -78,6 +77,17 @@ export class ShowGameStatsCommand extends Command {
 
           return editReply({
             embeds: [buildShowBossStatsEmbed(boss)],
+          });
+        }
+
+        if (results === 'all') {
+          return editReply({
+            embeds: [
+              buildShowGameStatsEmbed(
+                await getGameBossDeathRanking(gameName, ALL_BOSS_STATS_OPTIONS),
+                ALL_BOSS_STATS_OPTIONS,
+              ),
+            ],
           });
         }
 

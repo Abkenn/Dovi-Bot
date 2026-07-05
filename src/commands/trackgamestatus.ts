@@ -1,8 +1,8 @@
 import { Command } from '@sapphire/framework';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { buildGameTrackingStatusEmbed } from '../modules/boss-tracking/boss-tracking.discord';
 import { getLiveGameTrackingStatus } from '../modules/boss-tracking/boss-tracking.service';
+import { buildGameTrackingStatusEmbed } from '../modules/boss-tracking/boss-tracking-game-status.discord';
 import { runCommand } from '../modules/command-runner/run-command';
 
 const METADATA = COMMAND_METADATA.TRACK_GAME_STATUS;

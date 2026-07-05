@@ -4,10 +4,7 @@ import {
   getCommandCategoryAccentColor,
 } from '../../config/discord-command-categories';
 import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
-import type {
-  BossTrackingSessionView,
-  GameTrackingStatusView,
-} from './boss-tracking.types';
+import type { BossTrackingSessionView } from './boss-tracking.types';
 import { calculateBossTrackingAverageAttemptTime } from './boss-tracking-stats';
 
 type BossTrackingEmbedField = {
@@ -107,21 +104,3 @@ export const buildBossTrackingEmbed = ({
         : []),
     );
 };
-
-export const buildGameTrackingStatusEmbed = (status: GameTrackingStatusView) =>
-  new EmbedBuilder()
-    .setTitle('Game Tracking Status')
-    .setColor(
-      getCommandCategoryAccentColor(
-        COMMAND_CATEGORIES.STREAM_GAME_TRACKING_TOOLS,
-      ),
-    )
-    .addFields(
-      { name: 'Game', value: status.gameName, inline: true },
-      { name: 'Deaths', value: String(status.deaths), inline: true },
-      {
-        name: 'Bosses',
-        value: `${status.killedBossCount} killed / ${status.pendingBossCount} pending`,
-        inline: false,
-      },
-    );

@@ -20,7 +20,10 @@ import {
   addBossStatsField,
   addBotTrackedBossStatsField,
 } from '../../src/modules/bosses/bosses.discord';
-import { summarizeTrackedGameStatus } from '../../src/modules/bosses/bosses.stats';
+import {
+  summarizeRecentBossEncounters,
+  summarizeTrackedGameStatus,
+} from '../../src/modules/bosses/bosses.stats';
 import { embedFieldToLabelValueRows } from '../utils/discord-output';
 
 type AttemptCommand = {
@@ -524,6 +527,48 @@ describe('boss tracking stats', () => {
       killedBossCount: 1,
       pendingBossCount: 0,
     });
+  });
+
+  it('summarizes the three most recently fought distinct bosses', () => {
+    const oldest = oneDeathRunbackScenario();
+    const middle = multiDeathPausedScenario();
+    const newest = gameDeathsCorrectionScenario();
+    const latestPending = {
+      ...vodPauseThenLiveScenario(),
+      focusedAt: commandTime('2026-06-14 19:04:02.653'),
+      endResult: BossTrackingEndResult.ABANDONED,
+    };
+
+    expect(
+      summarizeRecentBossEncounters([
+        { name: oldest.boss.name, trackingSessions: [oldest] },
+        { name: middle.boss.name, trackingSessions: [middle] },
+        { name: newest.boss.name, trackingSessions: [newest] },
+        {
+          name: latestPending.boss.name,
+          trackingSessions: [latestPending],
+        },
+      ]),
+    ).toEqual([
+      {
+        bossName: latestPending.boss.name,
+        deaths: 8,
+        averageAttemptSeconds: 344,
+        winningAttemptSeconds: null,
+      },
+      {
+        bossName: newest.boss.name,
+        deaths: 7,
+        averageAttemptSeconds: 83,
+        winningAttemptSeconds: 207,
+      },
+      {
+        bossName: middle.boss.name,
+        deaths: 10,
+        averageAttemptSeconds: 96,
+        winningAttemptSeconds: 127,
+      },
+    ]);
   });
 
   it('falls back to recorded deaths for attempt count when attempts are absent', () => {

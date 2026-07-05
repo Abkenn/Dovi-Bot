@@ -148,6 +148,14 @@ export type GameTrackingStatusView = {
   deaths: number;
   killedBossCount: number;
   pendingBossCount: number;
+  recentBossEncounters: RecentBossEncounterView[];
+};
+
+export type RecentBossEncounterView = {
+  bossName: string;
+  deaths: number;
+  averageAttemptSeconds: number | null;
+  winningAttemptSeconds: number | null;
 };
 
 export type GetLiveGameTrackingStatusInput = {

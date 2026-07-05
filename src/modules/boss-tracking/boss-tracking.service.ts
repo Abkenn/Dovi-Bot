@@ -21,7 +21,10 @@ import {
   BossTopicTermKind,
   BossTrackingEndResult,
 } from '../../generated/prisma/enums';
-import { summarizeTrackedGameStatus } from '../bosses/bosses.stats';
+import {
+  summarizeRecentBossEncounters,
+  summarizeTrackedGameStatus,
+} from '../bosses/bosses.stats';
 import { normalizeBossName } from '../bosses/bosses.utils';
 import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
 import type {
@@ -384,10 +387,14 @@ export const getLiveGameTrackingStatus = async ({
       deaths: 0,
       killedBossCount: 0,
       pendingBossCount: 0,
+      recentBossEncounters: [],
     };
   }
 
-  return summarizeTrackedGameStatus(game);
+  return {
+    ...summarizeTrackedGameStatus(game),
+    recentBossEncounters: summarizeRecentBossEncounters(game.bosses),
+  };
 };
 
 export const getOpenBossTrackingBossAutocomplete = async ({
