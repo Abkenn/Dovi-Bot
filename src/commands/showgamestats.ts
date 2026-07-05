@@ -7,7 +7,9 @@ import {
   getBossView,
   getGameBossDeathRanking,
 } from '../modules/bosses/bosses.service';
+import { resolveGameStatsGameName } from '../modules/bosses/bosses.utils';
 import { runCommand } from '../modules/command-runner/run-command';
+import { getDefaultStreamGameName } from '../modules/stream-info/stream-info.service';
 
 const METADATA = COMMAND_METADATA.SHOW_GAME_STATS;
 const ALL_BOSS_STATS_OPTIONS = { limit: null } as const;
@@ -30,8 +32,8 @@ export class ShowGameStatsCommand extends Command {
           .addStringOption((option) =>
             option
               .setName('game')
-              .setDescription('Game name')
-              .setRequired(true)
+              .setDescription('Game name, defaults to the stream game')
+              .setRequired(false)
               .setAutocomplete(true),
           )
           .addStringOption((option) =>
@@ -64,8 +66,16 @@ export class ShowGameStatsCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
-      run: async ({ editReply }) => {
-        const gameName = interaction.options.getString('game', true);
+      run: async ({ editReply, preflight: guildId }) => {
+        const selectedGameName =
+          interaction.options.getString('game')?.trim() || null;
+        const defaultGameName = selectedGameName
+          ? null
+          : await getDefaultStreamGameName(guildId);
+        const gameName = resolveGameStatsGameName(
+          selectedGameName,
+          defaultGameName,
+        );
         const bossName = interaction.options.getString('boss');
         const results = interaction.options.getString('results') ?? 'top10';
 

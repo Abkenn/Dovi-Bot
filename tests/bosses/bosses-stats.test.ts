@@ -7,8 +7,28 @@ import {
   summarizeCombinedBossStats,
   summarizeTrackedGameStatus,
 } from '../../src/modules/bosses/bosses.stats';
+import {
+  normalizeBossName,
+  resolveGameStatsGameName,
+} from '../../src/modules/bosses/bosses.utils';
 
 describe('bosses stats', () => {
+  it('uses an explicit game or falls back to the current stream game', () => {
+    expect(resolveGameStatsGameName(' Elden Ring ', 'Dark Souls III')).toBe(
+      'Elden Ring',
+    );
+    expect(resolveGameStatsGameName(null, ' Dark Souls III ')).toBe(
+      'Dark Souls III',
+    );
+    expect(() => resolveGameStatsGameName(null, null)).toThrow(
+      'Set the stream game first, or pass game in this command.',
+    );
+  });
+
+  it('normalizes boss names for lookups', () => {
+    expect(normalizeBossName('  Abyss   Watchers ')).toBe('abyss watchers');
+  });
+
   it('counts tracked boss deaths and kills', () => {
     const sessions = [
       { deathCount: 2, endResult: BossTrackingEndResult.ABANDONED },
