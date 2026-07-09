@@ -5,6 +5,7 @@ import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { STREAM_REMINDER_CUSTOM_ID_PREFIX } from '../modules/stream-info/stream-info.discord';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
 import { subscribeToStreamReminder } from '../modules/stream-info/stream-reminder.service';
+import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
 
 export class StreamReminderButtonsListener extends Listener {
   public constructor(
@@ -43,7 +44,7 @@ export class StreamReminderButtonsListener extends Listener {
     try {
       const dateKey = interaction.customId.slice(prefix.length);
       const streamInfo = await getStreamInfo(guildId);
-      const occurrence = streamInfo.current;
+      const occurrence = getStreamReminderOccurrence(streamInfo);
 
       if (!occurrence || occurrence.dateKey !== dateKey) {
         throw new Error('That stream is no longer available for reminders.');

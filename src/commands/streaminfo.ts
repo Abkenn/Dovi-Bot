@@ -8,6 +8,7 @@ import {
 } from '../modules/stream-info/stream-info.discord';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
 import { registerLastStreamInfoMessage } from '../modules/stream-info/stream-info-message-updater.service';
+import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
 
 const METADATA = COMMAND_METADATA.STREAM_INFO;
 
@@ -38,7 +39,9 @@ export class StreamInfoCommand extends Command {
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         const streamInfo = await getStreamInfo(guildId);
-        const reminderButton = buildStreamReminderButton(streamInfo.current);
+        const reminderButton = buildStreamReminderButton(
+          getStreamReminderOccurrence(streamInfo),
+        );
         const message = await editReply({
           embeds: [buildStreamInfoEmbed(streamInfo)],
           components: reminderButton ? [reminderButton] : [],

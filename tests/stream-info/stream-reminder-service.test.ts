@@ -1,5 +1,5 @@
 import type { Client } from 'discord.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StreamKind } from '../../src/generated/prisma/client';
 
 const queries = vi.hoisted(() => ({
@@ -39,7 +39,14 @@ describe('stream reminders', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('stores an upcoming YouTube stream reminder', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T16:10:00.000Z'));
+
     await subscribeToStreamReminder({
       guildId: 'guild-1',
       userId: 'user-1',

@@ -25,6 +25,7 @@ import {
 import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
 import { deliverStreamReminders } from './stream-reminder.service';
+import { getStreamReminderOccurrence } from './stream-reminder.utils';
 
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
@@ -111,7 +112,9 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
     occurrence: streamInfo.current,
   });
   const embed = buildStreamInfoEmbed(streamInfo);
-  const reminderButton = buildStreamReminderButton(streamInfo.current);
+  const reminderButton = buildStreamReminderButton(
+    getStreamReminderOccurrence(streamInfo),
+  );
   const { flags: _flags, ...componentMessage } =
     buildComponentEmbedMessageFromEmbeds([embed]);
 

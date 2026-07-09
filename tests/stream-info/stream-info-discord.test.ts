@@ -67,7 +67,10 @@ describe('stream info discord output', () => {
     );
   });
 
-  it('offers a reminder button only while an announced stream is upcoming', () => {
+  it('offers a reminder button while an announced stream starts within two hours', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-12T16:10:00.000Z'));
+
     const upcoming = makeOccurrence({
       streamUrl: 'https://youtube.test/watch?v=stream',
       videoTitle: 'Upcoming Stream',
@@ -84,6 +87,21 @@ describe('stream info discord output', () => {
     });
     expect(
       buildStreamReminderButton({ ...upcoming, streamIsLive: true }),
+    ).toBeNull();
+  });
+
+  it('hides the reminder button before the two hour reminder window', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-12T16:09:59.000Z'));
+
+    expect(
+      buildStreamReminderButton(
+        makeOccurrence({
+          streamUrl: 'https://youtube.test/watch?v=stream',
+          videoTitle: 'Upcoming Stream',
+          streamIsLive: false,
+        }),
+      ),
     ).toBeNull();
   });
 

@@ -16,6 +16,7 @@ import {
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
+import { isStreamReminderEligible } from './stream-reminder.utils';
 
 export const STREAM_REMINDER_CUSTOM_ID_PREFIX = 'stream-reminder';
 
@@ -101,11 +102,7 @@ export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
 export const buildStreamReminderButton = (
   occurrence: StreamOccurrence | null,
 ): ActionRowBuilder<ButtonBuilder> | null => {
-  if (
-    !occurrence?.streamUrl ||
-    !occurrence.videoTitle?.trim() ||
-    occurrence.streamIsLive !== false
-  ) {
+  if (!isStreamReminderEligible(occurrence)) {
     return null;
   }
 

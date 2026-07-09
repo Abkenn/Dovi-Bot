@@ -224,7 +224,7 @@ describe('stream info message updater', () => {
     });
 
     expect(streamInfoDiscord.buildStreamReminderButton).toHaveBeenCalledWith(
-      liveOccurrence,
+      null,
     );
     expect(message.edit).toHaveBeenCalledWith(
       expect.objectContaining({

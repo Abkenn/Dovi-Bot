@@ -6,6 +6,7 @@ import {
 import type { Client } from 'discord.js';
 import { buildStreamLiveReminderMessage } from './stream-info.discord';
 import type { StreamOccurrence } from './stream-info.types';
+import { isStreamReminderEligible } from './stream-reminder.utils';
 
 export const subscribeToStreamReminder = async ({
   guildId,
@@ -16,11 +17,7 @@ export const subscribeToStreamReminder = async ({
   userId: string;
   occurrence: StreamOccurrence;
 }) => {
-  if (
-    !occurrence.streamUrl ||
-    !occurrence.videoTitle?.trim() ||
-    occurrence.streamIsLive !== false
-  ) {
+  if (!isStreamReminderEligible(occurrence)) {
     throw new Error('That stream is no longer available for reminders.');
   }
 
