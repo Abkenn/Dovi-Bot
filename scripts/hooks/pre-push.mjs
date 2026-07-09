@@ -42,6 +42,16 @@ const getDockerCommand = () => {
 const dockerCommand = getDockerCommand() ?? 'docker';
 
 try {
+  run('pnpm', ['run', 'db:migrate:status'], 30_000);
+  run('pnpm', ['run', 'db:schema:diff'], 30_000);
+} catch {
+  console.error(
+    'Supabase has pending migrations or schema drift. Run pnpm run db:migrate:deploy, then retry.',
+  );
+  process.exit(1);
+}
+
+try {
   run(dockerCommand, ['info'], 5_000);
 } catch {
   console.error('docker not running');
