@@ -10,7 +10,7 @@ export type ReactionEchoRule = {
   id: string;
   guildIds: readonly string[];
   channelIds?: readonly string[];
-  trigger: ReactionEchoTrigger;
+  triggers: readonly ReactionEchoTrigger[];
   response: ReactionEchoResponse;
   threshold: number;
 };

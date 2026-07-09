@@ -4,10 +4,22 @@ import type {
   ReactionEchoMessage,
   ReactionEchoResponse,
   ReactionEchoRule,
+  ReactionEchoTrigger,
 } from './reaction-echo.types';
 
 const hasCustomEmoji = (content: string, emojiId: string) =>
   content.includes(`:${emojiId}>`);
+
+const hasTriggerMatch = (
+  message: ReactionEchoMessage,
+  trigger: ReactionEchoTrigger,
+) => {
+  if (trigger.kind === 'STICKER') {
+    return message.stickerIds.includes(trigger.stickerId);
+  }
+
+  return hasCustomEmoji(message.content, trigger.emojiId);
+};
 
 const countRuleMatches = (
   message: ReactionEchoMessage,
@@ -21,11 +33,9 @@ const countRuleMatches = (
     return 0;
   }
 
-  if (rule.trigger.kind === 'STICKER') {
-    return message.stickerIds.includes(rule.trigger.stickerId) ? 1 : 0;
-  }
-
-  return hasCustomEmoji(message.content, rule.trigger.emojiId) ? 1 : 0;
+  return rule.triggers.some((trigger) => hasTriggerMatch(message, trigger))
+    ? 1
+    : 0;
 };
 
 const sendResponse = async (

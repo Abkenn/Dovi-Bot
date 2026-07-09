@@ -16,7 +16,10 @@ import type { ReactionEchoRule } from '../../src/modules/reaction-echo/reaction-
 const choccyMilkRule = {
   id: 'choccy-milk-sticker',
   guildIds: ['prod'],
-  trigger: { kind: 'STICKER', stickerId: 'choccy' },
+  triggers: [
+    { kind: 'STICKER', stickerId: 'choccy-sticker' },
+    { kind: 'CUSTOM_EMOJI', emojiId: 'choccy-emoji' },
+  ],
   response: { kind: 'STICKER', stickerId: 'choccy' },
   threshold: 20,
 } as const satisfies ReactionEchoRule;
@@ -39,7 +42,7 @@ describe('reaction echo service', () => {
         channelId: 'general',
         authorIsBot: true,
         content: '',
-        stickerIds: ['choccy'],
+        stickerIds: ['choccy-sticker'],
         sendSticker,
         addReaction: vi.fn(),
       },
@@ -62,25 +65,39 @@ describe('reaction echo service', () => {
     expect(sendSticker).not.toHaveBeenCalled();
   });
 
-  it('echoes the sticker only when the durable counter reaches the interval', async () => {
+  it('echoes the sticker only when the durable counter reaches the interval for sticker or emoji uses', async () => {
     const sendSticker = vi.fn();
     data.advanceReactionEchoCounter
       .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
-    const message = {
+    const stickerMessage = {
       guildId: 'prod',
       channelId: 'general',
       authorIsBot: false,
       content: '',
-      stickerIds: ['choccy'],
+      stickerIds: ['choccy-sticker'],
       sendSticker,
       addReaction: vi.fn(),
     };
+    const emojiMessage = {
+      ...stickerMessage,
+      content: '<:choccy:choccy-emoji>',
+      stickerIds: [],
+    };
 
-    await processReactionEchoMessage({ message, rules: [choccyMilkRule] });
-    await processReactionEchoMessage({ message, rules: [choccyMilkRule] });
-    await processReactionEchoMessage({ message, rules: [choccyMilkRule] });
+    await processReactionEchoMessage({
+      message: stickerMessage,
+      rules: [choccyMilkRule],
+    });
+    await processReactionEchoMessage({
+      message: emojiMessage,
+      rules: [choccyMilkRule],
+    });
+    await processReactionEchoMessage({
+      message: stickerMessage,
+      rules: [choccyMilkRule],
+    });
 
     expect(data.advanceReactionEchoCounter).toHaveBeenCalledTimes(3);
     expect(data.advanceReactionEchoCounter).toHaveBeenCalledWith({
@@ -99,7 +116,7 @@ describe('reaction echo service', () => {
       id: 'wave-emoji',
       guildIds: ['prod'],
       channelIds: ['general'],
-      trigger: { kind: 'CUSTOM_EMOJI', emojiId: '123' },
+      triggers: [{ kind: 'CUSTOM_EMOJI', emojiId: '123' }],
       response: { kind: 'REACTION', emojiId: '123' },
       threshold: 40,
     } as const satisfies ReactionEchoRule;
