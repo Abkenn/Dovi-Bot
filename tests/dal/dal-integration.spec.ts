@@ -83,6 +83,13 @@ const coveredDalExports = {
     'createCommandErrorLog',
     'createCommandExecutionLog',
   ],
+  '../../src/data/queries/message-logging': [
+    'DELETED_MESSAGE_LIMIT_PER_GUILD',
+    'RECENT_MESSAGE_LIMIT_PER_CHANNEL',
+    'findRecentLog',
+    'recordDeletedLog',
+    'recordRecentLog',
+  ],
   '../../src/data/queries/community-topic-catalog': [
     'areCommunityTopicCatalogTablesPresent',
     'findCommunityTopicCatalog',
@@ -1389,6 +1396,80 @@ test('covers command logging DAL', async () => {
   });
 
   expect(error.commandExecutionId).toBe(execution.id);
+});
+
+test('keeps rolling recent and deleted message logs', async () => {
+  const { recordDeletedLog, recordRecentLog } = await import(
+    '../../src/data/queries/message-logging'
+  );
+  const { prisma } = await import('../../src/lib/prisma');
+
+  for (let index = 0; index < 25; index += 1) {
+    await recordRecentLog({
+      guildId,
+      channelId: 'channel-1',
+      channelName: 'general',
+      messageId: `recent-message-${index}`,
+      authorUserId: 'user',
+      authorUsername: 'User',
+      content: `message ${index}`,
+      messageCreatedAt: new Date(now.getTime() + index),
+    });
+  }
+  await recordRecentLog({
+    guildId,
+    channelId: 'channel-2',
+    channelName: 'gaming-talk',
+    messageId: 'other-channel-message',
+    authorUserId: 'user',
+    authorUsername: 'User',
+    content: 'other channel',
+    messageCreatedAt: now,
+  });
+
+  await expect(
+    prisma.recentLog.findMany({
+      where: { guildId, channelId: 'channel-1' },
+      orderBy: { messageCreatedAt: 'asc' },
+      select: { messageId: true },
+    }),
+  ).resolves.toEqual(
+    Array.from({ length: 20 }, (_, index) => ({
+      messageId: `recent-message-${index + 5}`,
+    })),
+  );
+  await expect(
+    prisma.recentLog.count({
+      where: { guildId, channelId: 'channel-2' },
+    }),
+  ).resolves.toBe(1);
+
+  for (let index = 0; index < 12; index += 1) {
+    await recordDeletedLog({
+      guildId,
+      channelId: index % 2 === 0 ? 'channel-1' : 'channel-2',
+      channelName: index % 2 === 0 ? 'general' : 'gaming-talk',
+      messageId: `deleted-message-${index}`,
+      authorUserId: 'user',
+      authorUsername: 'User',
+      content: `deleted ${index}`,
+      messageCreatedAt: new Date(now.getTime() + index),
+      deletedAt: new Date(now.getTime() + index),
+    });
+  }
+
+  await expect(
+    prisma.deletedLog.findMany({
+      where: { guildId },
+      orderBy: { deletedAt: 'asc' },
+      select: { messageId: true, channelName: true },
+    }),
+  ).resolves.toEqual(
+    Array.from({ length: 10 }, (_, index) => ({
+      messageId: `deleted-message-${index + 2}`,
+      channelName: index % 2 === 0 ? 'general' : 'gaming-talk',
+    })),
+  );
 });
 
 test('atomically advances and resets reaction echo counters', async () => {
