@@ -145,7 +145,7 @@ describe('stream info discord output', () => {
     ).toBeNull();
   });
 
-  it('lets a pre-stream subscriber disable the later live alert', () => {
+  it('lets a pre-stream subscriber disable the later live reminder', () => {
     expect(
       buildStreamAnnouncementReminderMessage(
         'https://youtube.test/watch?v=stream',
@@ -166,7 +166,7 @@ describe('stream info discord output', () => {
                 expect.objectContaining({ label: 'Open Stream' }),
                 expect.objectContaining({
                   customId: 'stream-live-alert-disable:reminder-1',
-                  label: 'Skip Live Reminder',
+                  label: 'Disable Live Reminder',
                 }),
               ],
             },
@@ -176,7 +176,7 @@ describe('stream info discord output', () => {
     });
   });
 
-  it('shows the disabled state after opting out of the live alert', () => {
+  it('lets the subscriber re-enable the live reminder', () => {
     expect(
       buildStreamAnnouncementReminderMessage(
         'https://youtube.test/watch?v=stream',
@@ -193,7 +193,13 @@ describe('stream info discord output', () => {
                 '# Stream starts <t:1781287800:R>\n**Live reminder: Off**',
             },
             {
-              components: [expect.objectContaining({ label: 'Open Stream' })],
+              components: [
+                expect.objectContaining({ label: 'Open Stream' }),
+                expect.objectContaining({
+                  customId: 'stream-live-alert-enable:reminder-1',
+                  label: 'Enable Live Reminder',
+                }),
+              ],
             },
           ],
         },

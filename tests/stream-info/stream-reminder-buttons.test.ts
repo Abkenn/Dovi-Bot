@@ -2,7 +2,7 @@ import type { Interaction } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const reminderService = vi.hoisted(() => ({
-  disableLiveReminder: vi.fn(),
+  setLiveReminderEnabled: vi.fn(),
   subscribeToStreamReminder: vi.fn(),
 }));
 
@@ -27,8 +27,8 @@ describe('stream reminder DM buttons', () => {
     vi.clearAllMocks();
   });
 
-  it('opts out the owner and updates the pre-stream DM in place', async () => {
-    reminderService.disableLiveReminder.mockResolvedValue({
+  it('toggles the owner preference and updates the pre-stream DM in place', async () => {
+    reminderService.setLiveReminderEnabled.mockResolvedValue({
       reminderId: 'reminder-1',
       streamUrl: 'https://youtube.test/watch?v=stream',
       scheduledStartAt: new Date('2026-07-10T18:10:00.000Z'),
@@ -48,7 +48,8 @@ describe('stream reminder DM buttons', () => {
       interaction,
     );
 
-    expect(reminderService.disableLiveReminder).toHaveBeenCalledWith({
+    expect(reminderService.setLiveReminderEnabled).toHaveBeenCalledWith({
+      enabled: false,
       reminderId: 'reminder-1',
       userId: 'user-1',
     });
@@ -67,5 +68,45 @@ describe('stream reminder DM buttons', () => {
       }),
     );
     expect(reply).not.toHaveBeenCalled();
+  });
+
+  it('re-enables the live reminder from the same DM', async () => {
+    reminderService.setLiveReminderEnabled.mockResolvedValue({
+      reminderId: 'reminder-1',
+      streamUrl: 'https://youtube.test/watch?v=stream',
+      scheduledStartAt: new Date('2026-07-10T18:10:00.000Z'),
+    });
+    const update = vi.fn().mockResolvedValue(undefined);
+    const interaction = {
+      customId: 'stream-live-alert-enable:reminder-1',
+      isButton: () => true,
+      update,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      interaction,
+    );
+
+    expect(reminderService.setLiveReminderEnabled).toHaveBeenCalledWith({
+      enabled: true,
+      reminderId: 'reminder-1',
+      userId: 'user-1',
+    });
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: [
+          expect.objectContaining({
+            components: [
+              expect.objectContaining({
+                content: expect.stringContaining('Live reminder: On'),
+              }),
+              expect.any(Object),
+            ],
+          }),
+        ],
+      }),
+    );
   });
 });

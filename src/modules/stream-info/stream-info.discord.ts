@@ -22,6 +22,8 @@ import { isStreamReminderEligible } from './stream-reminder.utils';
 export const STREAM_REMINDER_CUSTOM_ID_PREFIX = 'stream-reminder';
 export const STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX =
   'stream-live-alert-disable';
+export const STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX =
+  'stream-live-alert-enable';
 export const EMBEDDED_APP_STATS_CUSTOM_ID = 'embedded-app-stats';
 
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
@@ -185,14 +187,15 @@ export const buildStreamAnnouncementReminderMessage = (
       url: streamUrl,
     },
   ];
-  if (liveAlertEnabled) {
-    buttons.push({
-      type: ComponentType.Button,
-      style: ButtonStyle.Secondary,
-      customId: `${STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX}:${reminderId}`,
-      label: 'Skip Live Reminder',
-    });
-  }
+  const togglePrefix = liveAlertEnabled
+    ? STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX
+    : STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX;
+  buttons.push({
+    type: ComponentType.Button,
+    style: ButtonStyle.Secondary,
+    customId: `${togglePrefix}:${reminderId}`,
+    label: liveAlertEnabled ? 'Disable Live Reminder' : 'Enable Live Reminder',
+  });
 
   const components: ComponentInContainerData[] = [
     {

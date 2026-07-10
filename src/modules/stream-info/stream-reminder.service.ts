@@ -1,9 +1,9 @@
 import {
-  disableStreamLiveReminder,
   findAnnouncedStreamReminders,
   findPendingStreamReminders,
   markStreamReminderAnnouncementNotified,
   markStreamReminderNotified,
+  setStreamLiveReminderEnabled,
   updateStreamReminderAnnouncement,
   upsertStreamReminder,
 } from '@data/queries/stream-reminder';
@@ -38,14 +38,20 @@ export const subscribeToStreamReminder = async ({
   });
 };
 
-export const disableLiveReminder = async ({
+export const setLiveReminderEnabled = async ({
+  enabled,
   reminderId,
   userId,
 }: {
+  enabled: boolean;
   reminderId: string;
   userId: string;
 }) => {
-  const reminder = await disableStreamLiveReminder({ reminderId, userId });
+  const reminder = await setStreamLiveReminderEnabled({
+    enabled,
+    reminderId,
+    userId,
+  });
   if (!reminder.streamUrl) {
     throw new Error('This live alert is no longer available.');
   }

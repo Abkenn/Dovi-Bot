@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import type {
-  DisableStreamLiveReminderInput,
+  SetStreamLiveReminderEnabledInput,
   UpdateStreamReminderAnnouncementInput,
   UpsertStreamReminderInput,
 } from './stream-reminder.types';
@@ -20,6 +20,7 @@ export const upsertStreamReminder = (input: UpsertStreamReminderInput) =>
       streamUrl: input.streamUrl,
       videoTitle: input.videoTitle,
       scheduledStartAt: input.scheduledStartAt,
+      liveReminderDisabledAt: null,
     },
     create: input,
   });
@@ -59,8 +60,8 @@ export const markStreamReminderAnnouncementNotified = (id: string) =>
     data: { announcementNotifiedAt: new Date() },
   });
 
-export const disableStreamLiveReminder = (
-  input: DisableStreamLiveReminderInput,
+export const setStreamLiveReminderEnabled = (
+  input: SetStreamLiveReminderEnabledInput,
 ) =>
   prisma.streamReminder.update({
     where: {
@@ -68,7 +69,7 @@ export const disableStreamLiveReminder = (
       userId: input.userId,
       notifiedAt: null,
     },
-    data: { liveReminderDisabledAt: new Date() },
+    data: { liveReminderDisabledAt: input.enabled ? null : new Date() },
     select: {
       id: true,
       scheduledStartAt: true,

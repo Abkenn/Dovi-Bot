@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StreamKind } from '../../src/generated/prisma/client';
 
 const queries = vi.hoisted(() => ({
-  disableStreamLiveReminder: vi.fn(),
+  setStreamLiveReminderEnabled: vi.fn(),
   findAnnouncedStreamReminders: vi.fn(),
   findPendingStreamReminders: vi.fn(),
   markStreamReminderAnnouncementNotified: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 import type { StreamOccurrence } from '../../src/modules/stream-info/stream-info.types';
 import {
   deliverStreamReminders,
-  disableLiveReminder,
+  setLiveReminderEnabled,
   subscribeToStreamReminder,
 } from '../../src/modules/stream-info/stream-reminder.service';
 
@@ -122,23 +122,28 @@ describe('stream reminders', () => {
     expect(queries.markStreamReminderNotified).not.toHaveBeenCalled();
   });
 
-  it('disables the live alert only for the reminder owner', async () => {
-    queries.disableStreamLiveReminder.mockResolvedValue({
+  it('updates the live reminder state only for its owner', async () => {
+    queries.setStreamLiveReminderEnabled.mockResolvedValue({
       id: 'reminder-1',
       streamUrl: occurrence.streamUrl,
       scheduledStartAt: occurrence.startAt,
     });
 
     await expect(
-      disableLiveReminder({ reminderId: 'reminder-1', userId: 'user-1' }),
+      setLiveReminderEnabled({
+        reminderId: 'reminder-1',
+        userId: 'user-1',
+        enabled: true,
+      }),
     ).resolves.toEqual({
       reminderId: 'reminder-1',
       scheduledStartAt: occurrence.startAt,
       streamUrl: occurrence.streamUrl,
     });
-    expect(queries.disableStreamLiveReminder).toHaveBeenCalledWith({
+    expect(queries.setStreamLiveReminderEnabled).toHaveBeenCalledWith({
       reminderId: 'reminder-1',
       userId: 'user-1',
+      enabled: true,
     });
   });
 

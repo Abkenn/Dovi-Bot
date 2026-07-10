@@ -14,7 +14,8 @@ export type UpdateStreamReminderAnnouncementInput = {
   videoTitle: string;
 };
 
-export type DisableStreamLiveReminderInput = {
+export type SetStreamLiveReminderEnabledInput = {
+  enabled: boolean;
   reminderId: string;
   userId: string;
 };

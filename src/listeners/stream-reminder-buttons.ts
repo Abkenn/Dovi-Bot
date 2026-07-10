@@ -5,11 +5,12 @@ import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   buildStreamAnnouncementReminderMessage,
   STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX,
+  STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX,
   STREAM_REMINDER_CUSTOM_ID_PREFIX,
 } from '../modules/stream-info/stream-info.discord';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
 import {
-  disableLiveReminder,
+  setLiveReminderEnabled,
   subscribeToStreamReminder,
 } from '../modules/stream-info/stream-reminder.service';
 import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
@@ -31,10 +32,16 @@ export class StreamReminderButtonsListener extends Listener {
     }
 
     const disablePrefix = `${STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX}:`;
-    if (interaction.customId.startsWith(disablePrefix)) {
+    const enablePrefix = `${STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX}:`;
+    const isDisable = interaction.customId.startsWith(disablePrefix);
+    const isEnable = interaction.customId.startsWith(enablePrefix);
+    if (isDisable || isEnable) {
       try {
-        const reminder = await disableLiveReminder({
-          reminderId: interaction.customId.slice(disablePrefix.length),
+        const prefix = isDisable ? disablePrefix : enablePrefix;
+        const enabled = isEnable;
+        const reminder = await setLiveReminderEnabled({
+          enabled,
+          reminderId: interaction.customId.slice(prefix.length),
           userId: interaction.user.id,
         });
 
@@ -43,7 +50,7 @@ export class StreamReminderButtonsListener extends Listener {
             reminder.streamUrl,
             reminder.scheduledStartAt,
             reminder.reminderId,
-            false,
+            enabled,
           ),
         );
       } catch {
@@ -84,9 +91,7 @@ export class StreamReminderButtonsListener extends Listener {
         occurrence,
       });
 
-      return interaction.editReply(
-        'Reminder set. I’ll notify you when live.',
-      );
+      return interaction.editReply('Reminder set. I’ll notify you when live.');
     } catch (error) {
       const message =
         error instanceof Error
