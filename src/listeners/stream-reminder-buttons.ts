@@ -2,9 +2,16 @@ import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { STREAM_REMINDER_CUSTOM_ID_PREFIX } from '../modules/stream-info/stream-info.discord';
+import {
+  buildStreamAnnouncementReminderMessage,
+  STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX,
+  STREAM_REMINDER_CUSTOM_ID_PREFIX,
+} from '../modules/stream-info/stream-info.discord';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
-import { subscribeToStreamReminder } from '../modules/stream-info/stream-reminder.service';
+import {
+  disableLiveReminder,
+  subscribeToStreamReminder,
+} from '../modules/stream-info/stream-reminder.service';
 import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
 
 export class StreamReminderButtonsListener extends Listener {
@@ -21,6 +28,27 @@ export class StreamReminderButtonsListener extends Listener {
   public override async run(interaction: Interaction) {
     if (!interaction.isButton()) {
       return;
+    }
+
+    const disablePrefix = `${STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX}:`;
+    if (interaction.customId.startsWith(disablePrefix)) {
+      try {
+        const reminder = await disableLiveReminder({
+          reminderId: interaction.customId.slice(disablePrefix.length),
+          userId: interaction.user.id,
+        });
+
+        return interaction.update(
+          buildStreamAnnouncementReminderMessage(
+            reminder.streamUrl,
+            reminder.scheduledStartAt,
+            reminder.reminderId,
+            false,
+          ),
+        );
+      } catch {
+        return interaction.deferUpdate();
+      }
     }
 
     const prefix = `${STREAM_REMINDER_CUSTOM_ID_PREFIX}:`;
@@ -57,7 +85,7 @@ export class StreamReminderButtonsListener extends Listener {
       });
 
       return interaction.editReply(
-        '⏰ Reminder set! I’ll DM you as soon as Davi goes live.',
+        'Reminder set. I’ll notify you when live.',
       );
     } catch (error) {
       const message =

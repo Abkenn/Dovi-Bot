@@ -8,6 +8,7 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 
 import {
   buildEmbeddedAppStatsButton,
+  buildStreamAnnouncementReminderMessage,
   buildStreamInfoEmbed,
   buildStreamReminderButton,
 } from '../../src/modules/stream-info/stream-info.discord';
@@ -91,6 +92,28 @@ describe('stream info discord output', () => {
     ).toBeNull();
   });
 
+  it('offers the same reminder button before a scheduled stream has a URL', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-12T16:10:00.000Z'));
+
+    expect(
+      buildStreamReminderButton(
+        makeOccurrence({
+          streamUrl: undefined,
+          videoTitle: undefined,
+          streamIsLive: undefined,
+        }),
+      )?.toJSON(),
+    ).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-reminder:2026-06-12',
+          label: 'Remind Me',
+        },
+      ],
+    });
+  });
+
   it('hides the reminder button before the two hour reminder window', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-12T16:09:59.000Z'));
@@ -120,6 +143,62 @@ describe('stream info discord output', () => {
     expect(
       buildEmbeddedAppStatsButton('production-guild', 'staging-guild'),
     ).toBeNull();
+  });
+
+  it('lets a pre-stream subscriber disable the later live alert', () => {
+    expect(
+      buildStreamAnnouncementReminderMessage(
+        'https://youtube.test/watch?v=stream',
+        new Date('2026-06-12T18:10:00.000Z'),
+        'reminder-1',
+        true,
+      ),
+    ).toMatchObject({
+      components: [
+        {
+          components: [
+            {
+              content:
+                '# Stream starts <t:1781287800:R>\n**Live reminder: On**',
+            },
+            {
+              components: [
+                expect.objectContaining({ label: 'Open Stream' }),
+                expect.objectContaining({
+                  customId: 'stream-live-alert-disable:reminder-1',
+                  label: 'Skip Live Reminder',
+                }),
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('shows the disabled state after opting out of the live alert', () => {
+    expect(
+      buildStreamAnnouncementReminderMessage(
+        'https://youtube.test/watch?v=stream',
+        new Date('2026-06-12T18:10:00.000Z'),
+        'reminder-1',
+        false,
+      ),
+    ).toMatchObject({
+      components: [
+        {
+          components: [
+            {
+              content:
+                '# Stream starts <t:1781287800:R>\n**Live reminder: Off**',
+            },
+            {
+              components: [expect.objectContaining({ label: 'Open Stream' })],
+            },
+          ],
+        },
+      ],
+    });
   });
 
   it('does not add an unlabeled video title when the YouTube title is absent', () => {

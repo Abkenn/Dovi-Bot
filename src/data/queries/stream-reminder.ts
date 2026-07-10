@@ -1,32 +1,90 @@
 import { prisma } from '../../lib/prisma';
-import type { UpsertStreamReminderInput } from './stream-reminder.types';
+import type {
+  DisableStreamLiveReminderInput,
+  UpdateStreamReminderAnnouncementInput,
+  UpsertStreamReminderInput,
+} from './stream-reminder.types';
 
 export const upsertStreamReminder = (input: UpsertStreamReminderInput) =>
   prisma.streamReminder.upsert({
     where: {
-      userId_streamUrl: {
+      guildId_userId_streamDateKey: {
+        guildId: input.guildId,
         userId: input.userId,
-        streamUrl: input.streamUrl,
+        streamDateKey: input.streamDateKey,
       },
     },
     update: {
       guildId: input.guildId,
       streamDateKey: input.streamDateKey,
+      streamUrl: input.streamUrl,
       videoTitle: input.videoTitle,
       scheduledStartAt: input.scheduledStartAt,
-      notifiedAt: null,
     },
     create: input,
   });
 
-export const findPendingStreamReminders = (
+export const updateStreamReminderAnnouncement = (
+  input: UpdateStreamReminderAnnouncementInput,
+) =>
+  prisma.streamReminder.updateMany({
+    where: {
+      guildId: input.guildId,
+      streamDateKey: input.streamDateKey,
+      notifiedAt: null,
+    },
+    data: {
+      streamUrl: input.streamUrl,
+      videoTitle: input.videoTitle,
+    },
+  });
+
+export const findAnnouncedStreamReminders = (
   guildId: string,
-  streamUrl: string,
+  streamDateKey: string,
 ) =>
   prisma.streamReminder.findMany({
     where: {
       guildId,
-      streamUrl,
+      streamDateKey,
+      announcementNotifiedAt: null,
+      notifiedAt: null,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+export const markStreamReminderAnnouncementNotified = (id: string) =>
+  prisma.streamReminder.updateMany({
+    where: { id, announcementNotifiedAt: null, notifiedAt: null },
+    data: { announcementNotifiedAt: new Date() },
+  });
+
+export const disableStreamLiveReminder = (
+  input: DisableStreamLiveReminderInput,
+) =>
+  prisma.streamReminder.update({
+    where: {
+      id: input.reminderId,
+      userId: input.userId,
+      notifiedAt: null,
+    },
+    data: { liveReminderDisabledAt: new Date() },
+    select: {
+      id: true,
+      scheduledStartAt: true,
+      streamUrl: true,
+    },
+  });
+
+export const findPendingStreamReminders = (
+  guildId: string,
+  streamDateKey: string,
+) =>
+  prisma.streamReminder.findMany({
+    where: {
+      guildId,
+      streamDateKey,
+      liveReminderDisabledAt: null,
       notifiedAt: null,
     },
     orderBy: { createdAt: 'asc' },

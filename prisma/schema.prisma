@@ -150,15 +150,18 @@ model StreamReminder {
   guildId          String
   userId           String
   streamDateKey    String
-  streamUrl        String
-  videoTitle       String
+  streamUrl        String?
+  videoTitle       String?
   scheduledStartAt DateTime
+  announcementNotifiedAt DateTime?
+  liveReminderDisabledAt DateTime?
   notifiedAt       DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  @@unique([userId, streamUrl])
-  @@index([guildId, streamUrl, notifiedAt])
+  @@unique([guildId, userId, streamDateKey])
+  @@index([guildId, streamDateKey, announcementNotifiedAt])
+  @@index([guildId, streamDateKey, notifiedAt])
 }
 
 model PingMeSubscription {

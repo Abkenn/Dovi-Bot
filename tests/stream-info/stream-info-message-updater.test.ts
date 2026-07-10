@@ -199,6 +199,47 @@ describe('stream info message updater', () => {
     );
   });
 
+  it('processes a next-stream announcement before the scheduled start', async () => {
+    const message = makeMessage();
+    const channel = {
+      messages: {
+        fetch: vi.fn().mockResolvedValue(message),
+      },
+    };
+    const nextOccurrence = {
+      dateKey: '2026-07-10',
+      streamUrl: 'https://youtube.test/watch?v=stream',
+      videoTitle: 'Upcoming stream',
+      streamIsLive: false,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next: nextOccurrence,
+    });
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
+      new EmbedBuilder()
+        .setTitle('Stream Info')
+        .addFields({ name: 'Next stream', value: 'Soon' }),
+    );
+
+    const client = makeClient({ channel });
+    await refreshStreamInfoMessage({
+      client,
+      pointer: {
+        guildId: 'guild-1',
+        channelId: 'channel-1',
+        messageId: 'message-1',
+      },
+    });
+
+    expect(streamReminderService.deliverStreamReminders).toHaveBeenCalledWith({
+      client,
+      guildId: 'guild-1',
+      occurrence: nextOccurrence,
+    });
+  });
+
   it('removes the reminder row when the announced stream becomes live', async () => {
     const message = makeMessage();
     const channel = {

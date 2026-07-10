@@ -4,21 +4,11 @@ import { STREAM_REMINDER_EARLY_WINDOW_MINUTES } from './stream-schedule.config';
 const STREAM_REMINDER_EARLY_WINDOW_MS =
   STREAM_REMINDER_EARLY_WINDOW_MINUTES * 60 * 1000;
 
-export type StreamReminderOccurrence = StreamOccurrence & {
-  streamUrl: string;
-  videoTitle: string;
-  streamIsLive: false;
-};
-
 export const isStreamReminderEligible = (
   occurrence: StreamOccurrence | null,
   now = new Date(),
-): occurrence is StreamReminderOccurrence => {
-  if (
-    !occurrence?.streamUrl ||
-    !occurrence.videoTitle?.trim() ||
-    occurrence.streamIsLive !== false
-  ) {
+): occurrence is StreamOccurrence => {
+  if (!occurrence || occurrence.streamIsLive === true) {
     return false;
   }
 

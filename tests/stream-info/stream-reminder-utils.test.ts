@@ -37,6 +37,19 @@ describe('stream reminder utils', () => {
     ).toBe(true);
   });
 
+  it('allows reminder signup two hours before the usual schedule without an announcement', () => {
+    expect(
+      isStreamReminderEligible(
+        makeOccurrence({
+          streamUrl: undefined,
+          videoTitle: undefined,
+          streamIsLive: undefined,
+        }),
+        new Date('2026-07-10T16:10:00.000Z'),
+      ),
+    ).toBe(true);
+  });
+
   it('rejects reminder signup before the two hour window', () => {
     expect(
       isStreamReminderEligible(
@@ -46,8 +59,12 @@ describe('stream reminder utils', () => {
     ).toBe(false);
   });
 
-  it('uses the next stream as the reminder target when it is announced within two hours', () => {
-    const next = makeOccurrence();
+  it('uses the next scheduled stream as the reminder target within two hours', () => {
+    const next = makeOccurrence({
+      streamUrl: undefined,
+      videoTitle: undefined,
+      streamIsLive: undefined,
+    });
     const data: StreamInfoResult = {
       timezone: 'America/Sao_Paulo',
       current: null,

@@ -111,7 +111,7 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
   await deliverStreamReminders({
     client,
     guildId,
-    occurrence: streamInfo.current,
+    occurrence: streamInfo.current ?? streamInfo.next,
   });
   const embed = buildStreamInfoEmbed(streamInfo);
   const reminderButton = buildStreamReminderButton(

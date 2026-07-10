@@ -1,6 +1,7 @@
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  type ButtonComponentData,
   ButtonStyle,
   type ComponentInContainerData,
   ComponentType,
@@ -19,6 +20,8 @@ import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 import { isStreamReminderEligible } from './stream-reminder.utils';
 
 export const STREAM_REMINDER_CUSTOM_ID_PREFIX = 'stream-reminder';
+export const STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX =
+  'stream-live-alert-disable';
 export const EMBEDDED_APP_STATS_CUSTOM_ID = 'embedded-app-stats';
 
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
@@ -165,6 +168,53 @@ export const buildStreamLiveReminderMessage = (
     components: [container],
     flags: MessageFlags.IsComponentsV2,
   };
+};
+
+export const buildStreamAnnouncementReminderMessage = (
+  streamUrl: string,
+  scheduledStartAt: Date,
+  reminderId: string,
+  liveAlertEnabled: boolean,
+) => {
+  const liveReminderStatus = liveAlertEnabled ? 'On' : 'Off';
+  const buttons: ButtonComponentData[] = [
+    {
+      type: ComponentType.Button,
+      style: ButtonStyle.Link,
+      label: 'Open Stream',
+      url: streamUrl,
+    },
+  ];
+  if (liveAlertEnabled) {
+    buttons.push({
+      type: ComponentType.Button,
+      style: ButtonStyle.Secondary,
+      customId: `${STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX}:${reminderId}`,
+      label: 'Skip Live Reminder',
+    });
+  }
+
+  const components: ComponentInContainerData[] = [
+    {
+      type: ComponentType.TextDisplay,
+      content: `# Stream starts ${discordTs(scheduledStartAt, 'R')}\n**Live reminder: ${liveReminderStatus}**`,
+    },
+    {
+      type: ComponentType.ActionRow,
+      components: buttons,
+    },
+  ];
+
+  return {
+    components: [
+      {
+        type: ComponentType.Container,
+        accentColor: 0xff3131,
+        components,
+      },
+    ],
+    flags: MessageFlags.IsComponentsV2,
+  } satisfies MessageCreateOptions;
 };
 
 export const getStreamInfoEmbed = async (
