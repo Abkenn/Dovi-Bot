@@ -16,9 +16,11 @@ import {
   type Snowflake,
 } from 'discord.js';
 import { DateTime } from 'luxon';
+import { BOT_GUILDS } from '../../config/discord-access';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
 import {
+  buildEmbeddedAppStatsButton,
   buildStreamInfoEmbed,
   buildStreamReminderButton,
 } from './stream-info.discord';
@@ -115,6 +117,10 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
   const reminderButton = buildStreamReminderButton(
     getStreamReminderOccurrence(streamInfo),
   );
+  const statsButton = buildEmbeddedAppStatsButton(
+    guildId,
+    BOT_GUILDS.STAGING_ENV,
+  );
   const { flags: _flags, ...componentMessage } =
     buildComponentEmbedMessageFromEmbeds([embed]);
 
@@ -123,6 +129,7 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
     components: [
       ...(componentMessage.components ?? []),
       ...(reminderButton ? [reminderButton] : []),
+      ...(statsButton ? [statsButton] : []),
     ],
     allowedMentions: { parse: [] },
     flags: MessageFlags.IsComponentsV2,

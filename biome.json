@@ -5,6 +5,7 @@
       "**",
       "!src/generated",
       "!dist",
+      "!embedded-app/dist",
       "!node_modules",
       "!.local",
       "!coverage",
@@ -25,6 +26,11 @@
   "json": {
     "formatter": {
       "enabled": true
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "linter": {

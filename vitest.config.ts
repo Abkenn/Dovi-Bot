@@ -7,6 +7,7 @@ export default defineConfig({
       '**/dist/**',
       '**/coverage/**',
       'tests/dal/**',
+      'embedded-app/**',
     ],
     coverage: {
       exclude: [
@@ -15,6 +16,7 @@ export default defineConfig({
         '**/coverage/**',
         'src/generated/**',
         'tests/**',
+        'embedded-app/**',
       ],
       thresholds: {
         statements: 80,

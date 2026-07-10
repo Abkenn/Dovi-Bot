@@ -19,6 +19,7 @@ import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 import { isStreamReminderEligible } from './stream-reminder.utils';
 
 export const STREAM_REMINDER_CUSTOM_ID_PREFIX = 'stream-reminder';
+export const EMBEDDED_APP_STATS_CUSTOM_ID = 'embedded-app-stats';
 
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
   const unix = Math.floor(date.getTime() / 1000);
@@ -112,6 +113,23 @@ export const buildStreamReminderButton = (
       .setLabel('Remind Me')
       .setEmoji('⏰')
       .setStyle(ButtonStyle.Primary),
+  );
+};
+
+export const buildEmbeddedAppStatsButton = (
+  guildId: string,
+  stagingGuildId: string,
+): ActionRowBuilder<ButtonBuilder> | null => {
+  if (guildId !== stagingGuildId) {
+    return null;
+  }
+
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(EMBEDDED_APP_STATS_CUSTOM_ID)
+      .setLabel('Stats')
+      .setEmoji('📊')
+      .setStyle(ButtonStyle.Secondary),
   );
 };
 

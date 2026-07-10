@@ -6,7 +6,10 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
-import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
+import {
+  buildEmbeddedAppStatsButton,
+  getStreamInfoEmbed,
+} from '../modules/stream-info/stream-info.discord';
 
 const METADATA = COMMAND_METADATA.DAVI_STREAM_INFO;
 
@@ -40,10 +43,17 @@ export class DaviStreamInfoCommand extends Command {
       commandName: this.name,
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
-      run: async ({ editReply }) =>
-        editReply({
+      run: async ({ editReply, preflight: guildId }) => {
+        const statsButton = buildEmbeddedAppStatsButton(
+          guildId,
+          BOT_GUILDS.STAGING_ENV,
+        );
+
+        return editReply({
           embeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],
-        }),
+          components: statsButton ? [statsButton] : [],
+        });
+      },
     });
   }
 }

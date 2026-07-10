@@ -1,8 +1,10 @@
 import { Command } from '@sapphire/framework';
+import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { runCommand } from '../modules/command-runner/run-command';
 import {
+  buildEmbeddedAppStatsButton,
   buildStreamInfoEmbed,
   buildStreamReminderButton,
 } from '../modules/stream-info/stream-info.discord';
@@ -42,9 +44,16 @@ export class StreamInfoCommand extends Command {
         const reminderButton = buildStreamReminderButton(
           getStreamReminderOccurrence(streamInfo),
         );
+        const statsButton = buildEmbeddedAppStatsButton(
+          guildId,
+          BOT_GUILDS.STAGING_ENV,
+        );
         const message = await editReply({
           embeds: [buildStreamInfoEmbed(streamInfo)],
-          components: reminderButton ? [reminderButton] : [],
+          components: [
+            ...(reminderButton ? [reminderButton] : []),
+            ...(statsButton ? [statsButton] : []),
+          ],
         });
 
         await registerLastStreamInfoMessage({

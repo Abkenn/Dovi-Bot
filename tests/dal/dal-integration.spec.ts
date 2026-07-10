@@ -65,6 +65,7 @@ const coveredDalExports = {
     'findOpenBossTrackingBossesForAutocomplete',
     'findTrackedGameStatus',
   ],
+  '../../src/data/queries/embedded-app-stats': ['findEmbeddedAppGameStats'],
   '../../src/data/queries/boss-trial': [
     'areBossTrialTablesPresent',
     'attachBossTrialBumpMessage',
@@ -570,6 +571,9 @@ test('covers boss tracking transactions and queries', async () => {
     '../../src/data/transactions/boss-tracking'
   );
   const trackingQueries = await import('../../src/data/queries/boss-tracking');
+  const embeddedAppQueries = await import(
+    '../../src/data/queries/embedded-app-stats'
+  );
 
   const started = await trackingTransactions.startBossTrackingSession({
     guildId,
@@ -700,6 +704,16 @@ test('covers boss tracking transactions and queries', async () => {
     name: 'Tracking Game',
     trackingSessions: [{ finalDeaths: 12 }],
   });
+
+  const embeddedStats =
+    await embeddedAppQueries.findEmbeddedAppGameStats(guildId);
+  expect(embeddedStats).toMatchObject({
+    game: { name: 'Tracking Game' },
+    gameDeaths: 12,
+  });
+  expect(
+    embeddedStats?.sessions.every((session) => session.guildId === guildId),
+  ).toBe(true);
 
   await expect(
     trackingTransactions.updateBossTrackingInfo({

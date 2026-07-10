@@ -7,6 +7,7 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 }));
 
 import {
+  buildEmbeddedAppStatsButton,
   buildStreamInfoEmbed,
   buildStreamReminderButton,
 } from '../../src/modules/stream-info/stream-info.discord';
@@ -102,6 +103,22 @@ describe('stream info discord output', () => {
           streamIsLive: false,
         }),
       ),
+    ).toBeNull();
+  });
+
+  it('offers the embedded stats app only from staging stream info', () => {
+    expect(
+      buildEmbeddedAppStatsButton('staging-guild', 'staging-guild')?.toJSON(),
+    ).toMatchObject({
+      components: [
+        {
+          custom_id: 'embedded-app-stats',
+          label: 'Stats',
+        },
+      ],
+    });
+    expect(
+      buildEmbeddedAppStatsButton('production-guild', 'staging-guild'),
     ).toBeNull();
   });
 

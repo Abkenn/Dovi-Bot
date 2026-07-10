@@ -11,6 +11,7 @@ const streamInfoMessageQueries = vi.hoisted(() => ({
 }));
 
 const streamInfoDiscord = vi.hoisted(() => ({
+  buildEmbeddedAppStatsButton: vi.fn(),
   buildStreamInfoEmbed: vi.fn(),
   buildStreamReminderButton: vi.fn(),
 }));
@@ -38,7 +39,15 @@ vi.mock('@data/queries/stream-info-message', () => ({
     streamInfoMessageQueries.upsertLastStreamInfoMessage,
 }));
 
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: {
+    STAGING_ENV: 'staging-guild',
+    PROD_ENV: 'production-guild',
+  },
+}));
+
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
+  buildEmbeddedAppStatsButton: streamInfoDiscord.buildEmbeddedAppStatsButton,
   buildStreamInfoEmbed: streamInfoDiscord.buildStreamInfoEmbed,
   buildStreamReminderButton: streamInfoDiscord.buildStreamReminderButton,
 }));
@@ -92,6 +101,7 @@ describe('stream info message updater', () => {
       next: null,
     });
     streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
+    streamInfoDiscord.buildEmbeddedAppStatsButton.mockReturnValue(null);
     streamReminderService.deliverStreamReminders.mockResolvedValue(undefined);
     streamInfoMessageQueries.deleteExpiredStreamInfoMessages.mockResolvedValue(
       undefined,
