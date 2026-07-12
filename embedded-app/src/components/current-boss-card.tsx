@@ -1,5 +1,4 @@
 import { Pause, Radio } from 'lucide-react';
-import type { CurrentBoss } from '@/api.types';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -9,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useElapsedSeconds } from '@/hooks/use-elapsed-seconds';
+import type { CurrentBoss } from '@/live-stats.types';
 
 const formatDuration = (seconds: number | null) => {
   if (seconds === null) {

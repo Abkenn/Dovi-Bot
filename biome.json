@@ -6,6 +6,7 @@
       "!src/generated",
       "!dist",
       "!embedded-app/dist",
+      "!embedded-app/src/routeTree.gen.ts",
       "!node_modules",
       "!.local",
       "!coverage",

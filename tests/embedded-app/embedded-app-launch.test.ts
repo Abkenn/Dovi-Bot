@@ -44,4 +44,12 @@ describe('embedded app launch', () => {
       'Discord unavailable',
     );
   });
+
+  it('ignores an expired interaction while explaining missing Activities', async () => {
+    const { interaction, launchActivity, reply } = makeInteraction();
+    launchActivity.mockRejectedValue({ code: 50234 });
+    reply.mockRejectedValue({ code: 10062 });
+
+    await expect(launchEmbeddedAppStats(interaction)).resolves.toBeUndefined();
+  });
 });

@@ -1,9 +1,9 @@
 import { Radio, Skull, Trophy } from 'lucide-react';
-import type { LiveStats } from '@/api.types';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import type { LiveStats } from '@/live-stats.types';
 
 const TotalCard = ({
   icon,

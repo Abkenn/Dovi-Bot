@@ -1,8 +1,6 @@
-import type { BossTrackingSessionStatus } from '../../generated/prisma/enums';
-
 export type EmbeddedAppCurrentBoss = {
   name: string;
-  status: BossTrackingSessionStatus;
+  status: 'ACTIVE' | 'PAUSED';
   deaths: number;
   attemptNumber: number | null;
   attemptStartedAt: string | null;

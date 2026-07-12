@@ -9,7 +9,10 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
       guildId,
       status: { in: OPEN_BOSS_TRACKING_SESSION_STATUSES },
     },
-    select: { gameId: true },
+    select: {
+      gameId: true,
+      game: { select: { id: true, name: true } },
+    },
     orderBy: { focusedAt: 'desc' },
   });
   const fallbackSession = latestSession
@@ -19,32 +22,27 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
           guildId,
           status: { not: BossTrackingSessionStatus.CANCELLED },
         },
-        select: { gameId: true },
+        select: {
+          gameId: true,
+          game: { select: { id: true, name: true } },
+        },
         orderBy: { focusedAt: 'desc' },
       });
-  const gameId = latestSession?.gameId ?? fallbackSession?.gameId;
+  const targetSession = latestSession ?? fallbackSession;
 
-  if (!gameId) {
+  if (!targetSession) {
     return null;
   }
 
-  const game = await prisma.bossGame.findUnique({
-    where: { id: gameId },
-    select: { id: true, name: true },
-  });
   const sessions = await prisma.bossTrackingSession.findMany({
     where: {
       guildId,
-      gameId,
+      gameId: targetSession.gameId,
       status: { not: BossTrackingSessionStatus.CANCELLED },
     },
     include: bossTrackingSessionInclude,
     orderBy: { focusedAt: 'desc' },
   });
-
-  if (!game) {
-    return null;
-  }
 
   const latestGameSession = sessions[0] ?? null;
   const gameDeaths = latestGameSession
@@ -52,5 +50,5 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
       latestGameSession.startDeaths + latestGameSession.deathCount)
     : 0;
 
-  return { game, gameDeaths, sessions };
+  return { game: targetSession.game, gameDeaths, sessions };
 };

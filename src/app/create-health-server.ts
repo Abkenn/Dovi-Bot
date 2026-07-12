@@ -1,9 +1,11 @@
 import { pingDatabase } from '@data/queries/database-health';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
-import { BOT_GUILDS } from '../config/discord-access';
-import { getCachedEmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats-cache.service';
 import { getRuntimeHealth } from './runtime-health';
+import {
+  fetchEmbeddedApp,
+  registerEmbeddedAppStatsLoader,
+} from './tanstack-start-server';
 
 const DATABASE_HEALTH_CACHE_MS = 60_000;
 
@@ -47,25 +49,8 @@ const getDatabaseHealth = async () => {
 
 export function createHealthServer() {
   const app = new Hono();
+  registerEmbeddedAppStatsLoader();
 
-  app.get('/api/embedded-app/stats', async (c) => {
-    c.header('Cache-Control', 'no-store');
-    return c.json(await getCachedEmbeddedAppStats(BOT_GUILDS.STAGING_ENV));
-  });
-
-  app.get('/embedded-app', (c) => c.redirect('/embedded-app/'));
-  app.use(
-    '/embedded-app/*',
-    serveStatic({
-      root: './embedded-app/dist',
-      rewriteRequestPath: (path) => path.slice('/embedded-app'.length),
-      onFound: (_path, c) => {
-        c.header('Cache-Control', 'public, max-age=3600');
-      },
-    }),
-  );
-
-  app.get('/', (c) => c.text('ok'));
   app.get('/health', async (c) => {
     const runtimeHealth = getRuntimeHealth();
     const isDiscordReady = runtimeHealth.discord.status === 'ready';
@@ -80,6 +65,17 @@ export function createHealthServer() {
       isDiscordReady ? 200 : 503,
     );
   });
+
+  app.use(
+    '*',
+    serveStatic({
+      root: './embedded-app/dist/client',
+      onFound: (_path, c) => {
+        c.header('Cache-Control', 'public, max-age=3600');
+      },
+    }),
+  );
+  app.all('*', (c) => fetchEmbeddedApp(c.req.raw));
 
   return app;
 }

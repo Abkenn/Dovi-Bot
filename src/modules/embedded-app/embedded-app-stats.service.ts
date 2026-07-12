@@ -38,7 +38,10 @@ const toCurrentBoss = (
 
   return {
     name: session.boss.name,
-    status: session.status,
+    status:
+      session.status === BossTrackingSessionStatus.PAUSED
+        ? BossTrackingSessionStatus.PAUSED
+        : BossTrackingSessionStatus.ACTIVE,
     deaths: session.deathCount,
     attemptNumber: attempt?.attemptNumber ?? null,
     attemptStartedAt: attempt?.startedAt.toISOString() ?? null,

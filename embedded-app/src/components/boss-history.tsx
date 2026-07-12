@@ -1,5 +1,4 @@
 import { Check, Skull } from 'lucide-react';
-import type { KilledBoss } from '@/api.types';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -9,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import type { KilledBoss } from '@/live-stats.types';
 
 export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
   <Card>
