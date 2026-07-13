@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:embedded-app": "rsbuild dev --root embedded-app",
-    "start": "node --import tsx src/index.ts",
+    "start": "tsx src/index.ts",
     "build": "prisma generate && pnpm run build:embedded-app && tsc --noEmit -p tsconfig.json",
     "build:embedded-app": "rsbuild build --root embedded-app && tsc --noEmit -p embedded-app/tsconfig.json",
     "db:migrate:dev": "prisma migrate dev",
