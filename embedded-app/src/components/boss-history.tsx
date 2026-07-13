@@ -1,4 +1,5 @@
 import { Check, Skull } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -32,9 +33,23 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
           <p>No defeated bosses recorded for this game yet.</p>
         </div>
       ) : (
-        <ol>
+        <motion.ol
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.025 } },
+          }}
+        >
           {bosses.map((boss, index) => (
-            <li key={boss.name}>
+            <motion.li
+              key={boss.name}
+              layout="position"
+              variants={{
+                hidden: { opacity: 0, x: -8 },
+                visible: { opacity: 1, x: 0 },
+              }}
+            >
               {index > 0 ? <Separator /> : null}
               <div className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-2 py-3 sm:grid-cols-[2rem_1fr_auto] sm:gap-3 sm:py-4">
                 <span className="text-muted-foreground text-sm tabular-nums">
@@ -54,9 +69,9 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
                   <Check className="size-4" aria-hidden="true" />
                 </span>
               </div>
-            </li>
+            </motion.li>
           ))}
-        </ol>
+        </motion.ol>
       )}
     </CardContent>
   </Card>

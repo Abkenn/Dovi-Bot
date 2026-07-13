@@ -1,11 +1,88 @@
 import {
+  BossEncounterSource,
   BossTrackingAttemptResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 import { OPEN_BOSS_TRACKING_SESSION_STATUSES } from '../boss-tracking.constants';
 
+const findEmbeddedAppArchiveGames = () =>
+  prisma.bossGame.findMany({
+    where: {
+      bosses: {
+        some: {
+          OR: [
+            {
+              stats: {
+                some: {
+                  source: BossEncounterSource.DAVI_SPREADSHEET,
+                  deaths: { not: null },
+                },
+              },
+            },
+            {
+              trackingSessions: {
+                some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+              },
+            },
+          ],
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      trackingSessions: {
+        where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+        orderBy: { focusedAt: 'desc' },
+        take: 1,
+        select: {
+          startDeaths: true,
+          deathCount: true,
+          finalDeaths: true,
+        },
+      },
+      bosses: {
+        where: {
+          OR: [
+            {
+              stats: {
+                some: {
+                  source: BossEncounterSource.DAVI_SPREADSHEET,
+                  deaths: { not: null },
+                },
+              },
+            },
+            {
+              trackingSessions: {
+                some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+              },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          stats: {
+            where: {
+              source: BossEncounterSource.DAVI_SPREADSHEET,
+              deaths: { not: null },
+            },
+            take: 1,
+            select: { deaths: true },
+          },
+          trackingSessions: {
+            where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+            select: { deathCount: true, endResult: true },
+          },
+        },
+      },
+    },
+  });
+
 export const findEmbeddedAppGameStats = async (guildId: string) => {
+  const archiveGamesPromise = findEmbeddedAppArchiveGames();
   const latestSession = await prisma.bossTrackingSession.findFirst({
     where: {
       guildId,
@@ -33,7 +110,12 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
   const targetSession = latestSession ?? fallbackSession;
 
   if (!targetSession) {
-    return null;
+    return {
+      game: null,
+      gameDeaths: 0,
+      sessions: [],
+      archiveGames: await archiveGamesPromise,
+    };
   }
 
   const sessions = await prisma.bossTrackingSession.findMany({
@@ -76,5 +158,10 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
       latestGameSession.startDeaths + latestGameSession.deathCount)
     : 0;
 
-  return { game: targetSession.game, gameDeaths, sessions };
+  return {
+    game: targetSession.game,
+    gameDeaths,
+    sessions,
+    archiveGames: await archiveGamesPromise,
+  };
 };

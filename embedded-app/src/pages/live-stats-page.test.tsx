@@ -11,6 +11,9 @@ vi.mock('../components/boss-history', () => ({
 vi.mock('../components/stream-encounters', () => ({
   StreamEncounters: () => <div>Stream encounters</div>,
 }));
+vi.mock('../components/game-switcher', () => ({
+  GameSwitcher: () => <div>Game switcher</div>,
+}));
 
 describe('LiveStatsPage', () => {
   it('shows game totals and dashboard sections', () => {
@@ -27,6 +30,7 @@ describe('LiveStatsPage', () => {
           currentStreamWindow: null,
           streamEncounters: [],
           killedBosses: [],
+          games: [],
         }}
       />,
     );
@@ -37,10 +41,11 @@ describe('LiveStatsPage', () => {
     expect(screen.getByText('127')).toBeInTheDocument();
     expect(screen.getByText('Current boss card')).toBeInTheDocument();
     expect(screen.getByText('Stream encounters')).toBeInTheDocument();
+    expect(screen.getByText('Game switcher')).toBeInTheDocument();
     expect(screen.getByText('Boss history')).toBeInTheDocument();
   });
 
-  it('shows the no-tracking state', () => {
+  it('keeps archived games reachable from the no-tracking state', () => {
     render(
       <LiveStatsPage
         stats={{
@@ -49,11 +54,21 @@ describe('LiveStatsPage', () => {
           currentStreamWindow: null,
           streamEncounters: [],
           killedBosses: [],
+          games: [
+            {
+              id: 'game-1',
+              name: 'Dark Souls III',
+              deaths: 127,
+              killedBossCount: 4,
+              killedBosses: [],
+            },
+          ],
         }}
       />,
     );
     expect(
       screen.getByRole('heading', { name: 'No tracked game yet' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('Game switcher')).toBeInTheDocument();
   });
 });

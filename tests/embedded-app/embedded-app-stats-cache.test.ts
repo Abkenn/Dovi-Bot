@@ -12,6 +12,7 @@ const emptyStats = {
   currentStreamWindow: null,
   streamEncounters: [],
   killedBosses: [],
+  games: [],
 };
 
 describe('embedded app stats cache', () => {

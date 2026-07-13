@@ -7,7 +7,6 @@ import {
 
 const queries = vi.hoisted(() => ({
   findEmbeddedAppGameStats: vi.fn(),
-  getGameBossDeathRanking: vi.fn(),
   getStreamInfo: vi.fn(),
 }));
 
@@ -15,9 +14,6 @@ vi.mock('../../src/data/queries/embedded-app-stats', () => ({
   findEmbeddedAppGameStats: queries.findEmbeddedAppGameStats,
 }));
 
-vi.mock('../../src/modules/bosses/bosses.service', () => ({
-  getGameBossDeathRanking: queries.getGameBossDeathRanking,
-}));
 vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
   getStreamInfo: queries.getStreamInfo,
 }));
@@ -131,25 +127,48 @@ describe('embedded app stats', () => {
       game: { id: 'game-1', name: 'Dark Souls III' },
       gameDeaths: 10,
       sessions: [current, killed, previousStream],
-    });
-    queries.getGameBossDeathRanking.mockResolvedValue({
-      game: { id: 'game-1', name: 'Dark Souls III' },
-      stats: Array.from({ length: 19 }, (_, index) => ({
-        deaths: 19 - index,
-        boss: { id: `imported-${index}`, name: `Imported Boss ${index + 1}` },
-      })),
-      trackedBosses: [
+      archiveGames: [
         {
-          id: 'boss-killed',
-          name: 'Iudex Gundyr',
+          id: 'game-1',
+          name: 'Dark Souls III',
           trackingSessions: [
-            { deathCount: 7, endResult: BossTrackingEndResult.KILLED },
+            { startDeaths: 0, deathCount: 10, finalDeaths: null },
+          ],
+          bosses: [
+            ...Array.from({ length: 19 }, (_, index) => ({
+              id: `imported-${index}`,
+              name: `Imported Boss ${index + 1}`,
+              stats: [{ deaths: 19 - index }],
+              trackingSessions: [],
+            })),
+            {
+              id: 'boss-killed',
+              name: 'Iudex Gundyr',
+              stats: [],
+              trackingSessions: [
+                { deathCount: 7, endResult: BossTrackingEndResult.KILLED },
+              ],
+            },
+            {
+              id: 'boss-current',
+              name: 'Vordt',
+              stats: [],
+              trackingSessions: [{ deathCount: 3, endResult: null }],
+            },
           ],
         },
         {
-          id: 'boss-current',
-          name: 'Vordt',
-          trackingSessions: [{ deathCount: 3, endResult: null }],
+          id: 'game-0',
+          name: 'Dark Souls II',
+          trackingSessions: [],
+          bosses: [
+            {
+              id: 'old-boss',
+              name: 'Old Boss',
+              stats: [{ deaths: 12 }],
+              trackingSessions: [],
+            },
+          ],
         },
       ],
     });
@@ -185,6 +204,21 @@ describe('embedded app stats', () => {
         { name: 'Iudex Gundyr', deaths: 7, outcome: 'KILLED' },
         { name: 'Vordt', deaths: 3, outcome: 'ACTIVE' },
       ],
+      games: [
+        expect.objectContaining({
+          id: 'game-1',
+          name: 'Dark Souls III',
+          deaths: 10,
+          killedBossCount: 20,
+        }),
+        {
+          id: 'game-0',
+          name: 'Dark Souls II',
+          deaths: 12,
+          killedBossCount: 1,
+          killedBosses: [{ name: 'Old Boss', deaths: 12 }],
+        },
+      ],
     });
     expect(stats.killedBosses).toHaveLength(20);
     expect(stats.killedBosses).toContainEqual({
@@ -193,10 +227,6 @@ describe('embedded app stats', () => {
     });
     expect(stats.killedBosses).not.toContainEqual(
       expect.objectContaining({ name: 'Vordt' }),
-    );
-    expect(queries.getGameBossDeathRanking).toHaveBeenCalledWith(
-      'Dark Souls III',
-      { limit: null },
     );
   });
 
@@ -214,16 +244,22 @@ describe('embedded app stats', () => {
       game: { id: 'game-1', name: 'Dark Souls III' },
       gameDeaths: 10,
       sessions: [lastStreamBoss],
-    });
-    queries.getGameBossDeathRanking.mockResolvedValue({
-      game: { id: 'game-1', name: 'Dark Souls III' },
-      stats: [],
-      trackedBosses: [
+      archiveGames: [
         {
-          id: 'boss-last-stream',
-          name: 'Abyss Watchers',
+          id: 'game-1',
+          name: 'Dark Souls III',
           trackingSessions: [
-            { deathCount: 10, endResult: BossTrackingEndResult.KILLED },
+            { startDeaths: 0, deathCount: 10, finalDeaths: null },
+          ],
+          bosses: [
+            {
+              id: 'boss-last-stream',
+              name: 'Abyss Watchers',
+              stats: [],
+              trackingSessions: [
+                { deathCount: 10, endResult: BossTrackingEndResult.KILLED },
+              ],
+            },
           ],
         },
       ],
@@ -243,7 +279,12 @@ describe('embedded app stats', () => {
   });
 
   it('returns an empty state when staging has no tracking history', async () => {
-    queries.findEmbeddedAppGameStats.mockResolvedValue(null);
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game: null,
+      gameDeaths: 0,
+      sessions: [],
+      archiveGames: [],
+    });
 
     await expect(getEmbeddedAppStats('staging-guild')).resolves.toEqual({
       game: null,
@@ -251,6 +292,7 @@ describe('embedded app stats', () => {
       currentStreamWindow: null,
       streamEncounters: [],
       killedBosses: [],
+      games: [],
     });
   });
 });

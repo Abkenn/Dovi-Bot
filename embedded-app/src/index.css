@@ -64,3 +64,32 @@
     );
   }
 }
+
+::view-transition-old(game-title) {
+  animation: 180ms ease-in both game-title-out;
+}
+
+::view-transition-new(game-title) {
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both game-title-in;
+}
+
+@keyframes game-title-out {
+  to {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.98);
+  }
+}
+
+@keyframes game-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(game-title),
+  ::view-transition-new(game-title) {
+    animation-duration: 1ms;
+  }
+}

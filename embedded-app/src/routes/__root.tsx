@@ -4,10 +4,24 @@ import {
   Outlet,
   Scripts,
 } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import { LayoutGroup, MotionConfig } from 'motion/react';
+import { type ReactNode, ViewTransition } from 'react';
+import {
+  ActivityErrorState,
+  ActivityLoadingState,
+} from '@/components/activity-state';
+import { useDiscordSdk } from '@/hooks/use-discord-sdk';
+import { getLiveStats } from '@/live-stats.functions';
 import appCss from '../index.css?url';
 
 export const Route = createRootRoute({
+  loader: () => getLiveStats(),
+  pendingComponent: ActivityLoadingState,
+  errorComponent: ({ error }) => (
+    <ActivityErrorState
+      message={error.message || 'Live stats are unavailable.'}
+    />
+  ),
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -24,6 +38,9 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const { discordClientId } = Route.useLoaderData();
+  useDiscordSdk(discordClientId);
+
   return (
     <RootDocument>
       <Outlet />
@@ -38,7 +55,14 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <MotionConfig
+          reducedMotion="user"
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <LayoutGroup id="game-stats-navigation">
+            <ViewTransition>{children}</ViewTransition>
+          </LayoutGroup>
+        </MotionConfig>
         <Scripts />
       </body>
     </html>

@@ -1,6 +1,9 @@
 import { Radio, Skull, Trophy } from 'lucide-react';
+import { motion } from 'motion/react';
+import { ViewTransition } from 'react';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
+import { GameSwitcher } from '@/components/game-switcher';
 import { StreamEncounters } from '@/components/stream-encounters';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,33 +38,46 @@ const TotalCard = ({
 export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
   if (!stats.game) {
     return (
-      <main className="grid min-h-svh place-content-center px-6 text-center">
-        <div className="mx-auto max-w-lg space-y-4">
-          <Skull className="mx-auto size-12 text-primary" aria-hidden="true" />
-          <p className="text-xs font-bold tracking-[0.24em] text-primary uppercase">
-            Dovi
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight">
-            No tracked game yet
-          </h1>
-          <p className="text-muted-foreground">
-            Start a boss tracking session in staging to light up this dashboard.
-          </p>
+      <main className="mx-auto min-h-svh w-full max-w-5xl space-y-6 px-3 py-3 sm:px-8 sm:py-12">
+        <GameSwitcher games={stats.games} selectedGameId={null} />
+        <div className="grid min-h-[70svh] place-content-center px-6 text-center">
+          <div className="mx-auto max-w-lg space-y-4">
+            <Skull
+              className="mx-auto size-12 text-primary"
+              aria-hidden="true"
+            />
+            <p className="text-xs font-bold tracking-[0.24em] text-primary uppercase">
+              Dovi
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              No tracked game yet
+            </h1>
+            <p className="text-muted-foreground">
+              Start a boss tracking session in staging to light up this
+              dashboard.
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12">
+    <motion.main
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12"
+    >
       <header className="flex items-start justify-between gap-2 sm:gap-5 sm:pb-3">
         <div className="min-w-0 space-y-1 sm:space-y-2">
           <p className="text-[0.65rem] font-bold tracking-[0.2em] text-primary uppercase sm:text-xs sm:tracking-[0.24em]">
             Dovi Live Stats
           </p>
-          <h1 className="text-2xl leading-none font-bold tracking-tight sm:text-6xl">
-            {stats.game.name}
-          </h1>
+          <ViewTransition name="game-title">
+            <h1 className="text-2xl leading-none font-bold tracking-tight sm:text-6xl">
+              {stats.game.name}
+            </h1>
+          </ViewTransition>
         </div>
         <Badge
           variant="outline"
@@ -72,7 +88,14 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
           <span className="min-[420px]:hidden">Live</span>
         </Badge>
       </header>
-      <section className="grid grid-cols-2 gap-3" aria-label="Game totals">
+      <GameSwitcher games={stats.games} selectedGameId={null} />
+      <motion.section
+        className="grid grid-cols-2 gap-3"
+        aria-label="Game totals"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
         <TotalCard
           icon={<Skull aria-hidden="true" />}
           value={stats.game.deaths}
@@ -83,7 +106,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
           value={stats.game.killedBossCount}
           label="Bosses killed"
         />
-      </section>
+      </motion.section>
       <CurrentBossCard boss={stats.currentBoss} />
       <StreamEncounters
         encounters={stats.streamEncounters}
@@ -93,6 +116,6 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
       <footer className="py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
         Anonymous view · Refreshes every 5 seconds
       </footer>
-    </main>
+    </motion.main>
   );
 };

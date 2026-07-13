@@ -3,13 +3,13 @@ import {
   BossTrackingEndResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
-import { getGameBossDeathRanking } from '../bosses/bosses.service';
 import {
   getGameBossStatsRows,
   hasTrackedBossKill,
 } from '../bosses/bosses.stats';
 import { getStreamInfo } from '../stream-info/stream-info.service';
 import type {
+  EmbeddedAppArchivedGame,
   EmbeddedAppCurrentBoss,
   EmbeddedAppStats,
   EmbeddedAppStreamEncounter,
@@ -54,8 +54,23 @@ const toCurrentBoss = (
   };
 };
 
-const getKilledBosses = async (gameName: string) => {
-  const gameStats = await getGameBossDeathRanking(gameName, { limit: null });
+const toArchivedGame = (
+  game: EmbeddedAppStatsQuery['archiveGames'][number],
+): EmbeddedAppArchivedGame => {
+  const gameStats = {
+    game: { name: game.name },
+    stats: game.bosses.flatMap((boss) =>
+      boss.stats.map((stat) => ({
+        deaths: stat.deaths,
+        boss: { id: boss.id, name: boss.name },
+      })),
+    ),
+    trackedBosses: game.bosses.map((boss) => ({
+      id: boss.id,
+      name: boss.name,
+      trackingSessions: boss.trackingSessions,
+    })),
+  };
   const killedGameStats = {
     ...gameStats,
     trackedBosses: gameStats.trackedBosses.filter((boss) =>
@@ -63,9 +78,22 @@ const getKilledBosses = async (gameName: string) => {
     ),
   };
 
-  return getGameBossStatsRows(killedGameStats, { limit: null }).map(
-    ({ name, deaths }) => ({ name, deaths }),
-  );
+  const killedBosses = getGameBossStatsRows(killedGameStats, {
+    limit: null,
+  }).map(({ name, deaths }) => ({ name, deaths }));
+  const latestSession = game.trackingSessions[0];
+  const deaths = latestSession
+    ? (latestSession.finalDeaths ??
+      latestSession.startDeaths + latestSession.deathCount)
+    : killedBosses.reduce((total, boss) => total + boss.deaths, 0);
+
+  return {
+    id: game.id,
+    name: game.name,
+    deaths,
+    killedBossCount: killedBosses.length,
+    killedBosses,
+  };
 };
 
 const toLatestStreamEncounters = (
@@ -137,25 +165,34 @@ export const getEmbeddedAppStats = async (
   guildId: string,
 ): Promise<EmbeddedAppStats> => {
   const result = await findEmbeddedAppGameStats(guildId);
+  const games = result.archiveGames.map(toArchivedGame).sort((left, right) => {
+    if (left.id === result.game?.id) {
+      return -1;
+    }
+    if (right.id === result.game?.id) {
+      return 1;
+    }
+    return left.name.localeCompare(right.name);
+  });
 
-  if (!result) {
+  if (!result.game) {
     return {
       game: null,
       currentBoss: null,
       currentStreamWindow: null,
       streamEncounters: [],
       killedBosses: [],
+      games,
     };
   }
 
-  const [killedBosses, streamInfo] = await Promise.all([
-    getKilledBosses(result.game.name),
-    getStreamInfo(guildId),
-  ]);
+  const streamInfo = await getStreamInfo(guildId);
   const currentStream = streamInfo.current;
   const streamEncounters = currentStream
     ? toCurrentStreamEncounters(result.sessions, currentStream)
     : toLatestStreamEncounters(result.sessions);
+  const currentGameArchive = games.find((game) => game.id === result.game?.id);
+  const killedBosses = currentGameArchive?.killedBosses ?? [];
 
   return {
     game: {
@@ -173,5 +210,6 @@ export const getEmbeddedAppStats = async (
       : null,
     streamEncounters,
     killedBosses,
+    games,
   };
 };

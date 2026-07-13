@@ -7,6 +7,7 @@ const emptyStats = {
   currentStreamWindow: null,
   streamEncounters: [],
   killedBosses: [],
+  games: [],
 };
 
 describe('live stats server adapter', () => {

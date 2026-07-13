@@ -16,6 +16,7 @@ const emptyStats = {
   currentStreamWindow: null,
   streamEncounters: [],
   killedBosses: [],
+  games: [],
 };
 
 type WorkerMessage = {

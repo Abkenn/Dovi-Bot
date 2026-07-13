@@ -90,8 +90,9 @@
     "hono": "^4.12.25",
     "lucide-react": "^1.24.0",
     "luxon": "^3.7.2",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "motion": "12.42.2",
+    "react": "19.3.0-canary-c0c39a6b-20260709",
+    "react-dom": "19.3.0-canary-c0c39a6b-20260709",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.3.6"
   },
