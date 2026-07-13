@@ -43,6 +43,18 @@ describe('LiveStatsPage', () => {
     expect(screen.getByText('Stream encounters')).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
     expect(screen.getByText('Boss history')).toBeInTheDocument();
+    expect(screen.getByText('Game switcher').parentElement).toHaveClass(
+      'activity-compact:hidden',
+    );
+    expect(screen.getByText('Current boss card').parentElement).toHaveClass(
+      'activity-compact:hidden',
+    );
+    expect(screen.getByText('Stream encounters').parentElement).toHaveClass(
+      'activity-compact:hidden',
+    );
+    expect(screen.getByText('Boss history').parentElement).toHaveClass(
+      'activity-compact:hidden',
+    );
   });
 
   it('keeps archived games reachable from the no-tracking state', () => {

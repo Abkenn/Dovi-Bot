@@ -28,6 +28,7 @@ export type EmbeddedAppArchivedGame = {
 };
 
 export type EmbeddedAppStats = {
+  initialGameName?: string | null;
   game: {
     id: string;
     name: string;

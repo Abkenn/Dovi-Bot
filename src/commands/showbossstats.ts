@@ -4,6 +4,7 @@ import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildShowBossStatsEmbed } from '../modules/boss-encounter-stats/boss/boss-encounter-stats.discord';
 import { getBossView } from '../modules/bosses/bosses.service';
 import { runCommand } from '../modules/command-runner/run-command';
+import { buildEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
 
 const METADATA = COMMAND_METADATA.SHOW_BOSS_STATS;
 
@@ -42,13 +43,18 @@ export class ShowBossStatsCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
-      run: async ({ editReply }) => {
+      run: async ({ editReply, preflight: guildId }) => {
         const boss = await getBossView({
           bossName: interaction.options.getString('boss', true),
         });
+        const statsButton = buildEmbeddedAppStatsButton(
+          guildId,
+          boss.game.name,
+        );
 
         return editReply({
           embeds: [buildShowBossStatsEmbed(boss)],
+          components: statsButton ? [statsButton] : [],
         });
       },
     });

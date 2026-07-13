@@ -9,6 +9,7 @@ import {
 } from '../modules/bosses/bosses.service';
 import { resolveGameStatsGameName } from '../modules/bosses/bosses.utils';
 import { runCommand } from '../modules/command-runner/run-command';
+import { buildEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
 import { getDefaultStreamGameName } from '../modules/stream-info/stream-info.service';
 
 const METADATA = COMMAND_METADATA.SHOW_GAME_STATS;
@@ -78,6 +79,8 @@ export class ShowGameStatsCommand extends Command {
         );
         const bossName = interaction.options.getString('boss');
         const results = interaction.options.getString('results') ?? 'top10';
+        const statsButton = buildEmbeddedAppStatsButton(guildId, gameName);
+        const components = statsButton ? [statsButton] : [];
 
         if (bossName) {
           const boss = await getBossView({
@@ -87,6 +90,7 @@ export class ShowGameStatsCommand extends Command {
 
           return editReply({
             embeds: [buildShowBossStatsEmbed(boss)],
+            components,
           });
         }
 
@@ -98,6 +102,7 @@ export class ShowGameStatsCommand extends Command {
                 ALL_BOSS_STATS_OPTIONS,
               ),
             ],
+            components,
           });
         }
 
@@ -105,6 +110,7 @@ export class ShowGameStatsCommand extends Command {
           embeds: [
             buildShowGameStatsEmbed(await getGameBossDeathRanking(gameName)),
           ],
+          components,
         });
       },
     });

@@ -198,7 +198,7 @@ export const getEmbeddedAppStats = async (
     game: {
       id: result.game.id,
       name: result.game.name,
-      deaths: result.gameDeaths,
+      deaths: currentGameArchive?.deaths ?? result.gameDeaths,
       killedBossCount: killedBosses.length,
     },
     currentBoss: toCurrentBoss(result.sessions),

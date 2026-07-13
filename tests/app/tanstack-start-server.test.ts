@@ -1,14 +1,31 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const services = vi.hoisted(() => ({
+  getCachedEmbeddedAppStats: vi.fn(),
+  getEmbeddedAppLaunchTarget: vi.fn(),
+}));
 
 vi.mock('../../src/config/discord-access', () => ({
-  BOT_GUILDS: { STAGING_ENV: 'staging-guild' },
+  BOT_GUILDS: {
+    STAGING_ENV: 'staging-guild',
+    PROD_ENV: 'production-guild',
+  },
 }));
 vi.mock(
   '../../src/modules/embedded-app/embedded-app-stats-cache.service',
-  () => ({ getCachedEmbeddedAppStats: vi.fn() }),
+  () => ({ getCachedEmbeddedAppStats: services.getCachedEmbeddedAppStats }),
+);
+vi.mock(
+  '../../src/modules/embedded-app/embedded-app-launch-target.service',
+  () => ({
+    getEmbeddedAppLaunchTarget: services.getEmbeddedAppLaunchTarget,
+  }),
 );
 
-import { createEmbeddedAppWorkerFetcher } from '../../src/app/tanstack-start-server';
+import {
+  createEmbeddedAppWorkerFetcher,
+  loadEmbeddedAppStatsForRequest,
+} from '../../src/app/tanstack-start-server';
 
 const emptyStats = {
   game: null,
@@ -85,6 +102,52 @@ const createFakeWorker = (
 };
 
 describe('TanStack Start SSR worker integration', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('adds a short-lived Activity instance game target to the SSR payload', async () => {
+    services.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);
+    services.getEmbeddedAppLaunchTarget.mockReturnValue('UNDERTALE');
+
+    await expect(
+      loadEmbeddedAppStatsForRequest(
+        new Request('https://dovi.test/?instance_id=instance-1'),
+      ),
+    ).resolves.toEqual({ ...emptyStats, initialGameName: 'UNDERTALE' });
+    expect(services.getEmbeddedAppLaunchTarget).toHaveBeenCalledWith(
+      'instance-1',
+    );
+  });
+
+  it('leaves ordinary Activity SSR payloads unchanged', async () => {
+    services.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);
+
+    await expect(
+      loadEmbeddedAppStatsForRequest(new Request('https://dovi.test/')),
+    ).resolves.toBe(emptyStats);
+    expect(services.getEmbeddedAppLaunchTarget).not.toHaveBeenCalled();
+  });
+
+  it('loads production stats for a production Activity launch', async () => {
+    services.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);
+
+    await loadEmbeddedAppStatsForRequest(
+      new Request('https://dovi.test/?guild_id=production-guild'),
+    );
+
+    expect(services.getCachedEmbeddedAppStats).toHaveBeenCalledWith(
+      'production-guild',
+    );
+  });
+
+  it('rejects Activity launches from an unknown guild', async () => {
+    await expect(
+      loadEmbeddedAppStatsForRequest(
+        new Request('https://dovi.test/?guild_id=unknown-guild'),
+      ),
+    ).rejects.toThrow('unsupported guild');
+    expect(services.getCachedEmbeddedAppStats).not.toHaveBeenCalled();
+  });
+
   it('renders requests in one isolated worker with cached stats', async () => {
     const fake = createFakeWorker();
     const createWorker = vi.fn(() => fake.worker);

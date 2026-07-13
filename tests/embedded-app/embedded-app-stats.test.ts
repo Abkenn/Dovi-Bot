@@ -125,14 +125,14 @@ describe('embedded app stats', () => {
     });
     queries.findEmbeddedAppGameStats.mockResolvedValue({
       game: { id: 'game-1', name: 'Dark Souls III' },
-      gameDeaths: 10,
+      gameDeaths: 130,
       sessions: [current, killed, previousStream],
       archiveGames: [
         {
           id: 'game-1',
           name: 'Dark Souls III',
           trackingSessions: [
-            { startDeaths: 0, deathCount: 10, finalDeaths: null },
+            { startDeaths: 0, deathCount: 178, finalDeaths: 178 },
           ],
           bosses: [
             ...Array.from({ length: 19 }, (_, index) => ({
@@ -187,7 +187,7 @@ describe('embedded app stats', () => {
       game: {
         id: 'game-1',
         name: 'Dark Souls III',
-        deaths: 10,
+        deaths: 178,
         killedBossCount: 20,
       },
       currentBoss: {
@@ -208,7 +208,7 @@ describe('embedded app stats', () => {
         expect.objectContaining({
           id: 'game-1',
           name: 'Dark Souls III',
-          deaths: 10,
+          deaths: 178,
           killedBossCount: 20,
         }),
         {
@@ -228,6 +228,12 @@ describe('embedded app stats', () => {
     expect(stats.killedBosses).not.toContainEqual(
       expect.objectContaining({ name: 'Vordt' }),
     );
+    const currentGame = stats.games.find((game) => game.id === stats.game?.id);
+    expect(stats.game).toMatchObject({
+      deaths: currentGame?.deaths,
+      killedBossCount: currentGame?.killedBossCount,
+    });
+    expect(stats.killedBosses).toEqual(currentGame?.killedBosses);
   });
 
   it('uses the latest tracking run when no stream is currently happening', async () => {

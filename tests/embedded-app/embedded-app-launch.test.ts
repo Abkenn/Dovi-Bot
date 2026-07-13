@@ -1,5 +1,18 @@
 import type { ButtonInteraction } from 'discord.js';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const launchTargets = vi.hoisted(() => ({
+  registerEmbeddedAppLaunchTarget: vi.fn(),
+}));
+
+vi.mock(
+  '../../src/modules/embedded-app/embedded-app-launch-target.service',
+  () => ({
+    registerEmbeddedAppLaunchTarget:
+      launchTargets.registerEmbeddedAppLaunchTarget,
+  }),
+);
+
 import { launchEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-app-launch.service';
 
 const makeInteraction = () => {
@@ -11,13 +24,21 @@ const makeInteraction = () => {
 };
 
 describe('embedded app launch', () => {
-  it('launches the configured Discord Activity', async () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('launches the configured Discord Activity and binds its game target', async () => {
     const { interaction, launchActivity, reply } = makeInteraction();
-    launchActivity.mockResolvedValue(undefined);
+    launchActivity.mockResolvedValue({
+      interaction: { activityInstanceId: 'instance-1' },
+    });
 
-    await launchEmbeddedAppStats(interaction);
+    await launchEmbeddedAppStats(interaction, 'UNDERTALE');
 
-    expect(launchActivity).toHaveBeenCalledOnce();
+    expect(launchActivity).toHaveBeenCalledWith({ withResponse: true });
+    expect(launchTargets.registerEmbeddedAppLaunchTarget).toHaveBeenCalledWith(
+      'instance-1',
+      'UNDERTALE',
+    );
     expect(reply).not.toHaveBeenCalled();
   });
 

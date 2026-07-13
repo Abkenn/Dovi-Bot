@@ -3,14 +3,16 @@ import {
   HeadContent,
   Outlet,
   Scripts,
+  useNavigate,
 } from '@tanstack/react-router';
 import { LayoutGroup, MotionConfig } from 'motion/react';
-import { type ReactNode, ViewTransition } from 'react';
+import { type ReactNode, useEffect, useRef, ViewTransition } from 'react';
 import {
   ActivityErrorState,
   ActivityLoadingState,
 } from '@/components/activity-state';
 import { useDiscordSdk } from '@/hooks/use-discord-sdk';
+import { resolveActivityTargetGame } from '@/lib/activity-target';
 import { getLiveStats } from '@/live-stats.functions';
 import appCss from '../index.css?url';
 
@@ -38,8 +40,32 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const { discordClientId } = Route.useLoaderData();
-  useDiscordSdk(discordClientId);
+  const { discordClientId, stats } = Route.useLoaderData();
+  const customId = useDiscordSdk(discordClientId);
+  const navigate = useNavigate();
+  const handledCustomId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const requestedGameName = stats.initialGameName ?? customId;
+
+    if (!requestedGameName || handledCustomId.current === requestedGameName) {
+      return;
+    }
+
+    handledCustomId.current = requestedGameName;
+    const targetGame = resolveActivityTargetGame(
+      stats.games,
+      requestedGameName,
+    );
+
+    if (targetGame) {
+      void navigate({
+        to: '/games/$gameId',
+        params: { gameId: targetGame.id },
+        replace: true,
+      });
+    }
+  }, [customId, navigate, stats.games, stats.initialGameName]);
 
   return (
     <RootDocument>
@@ -54,7 +80,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="activity-compact:overflow-hidden">
         <MotionConfig
           reducedMotion="user"
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}

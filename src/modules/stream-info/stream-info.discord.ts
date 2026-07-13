@@ -24,8 +24,6 @@ export const STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX =
   'stream-live-alert-disable';
 export const STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX =
   'stream-live-alert-enable';
-export const EMBEDDED_APP_STATS_CUSTOM_ID = 'embedded-app-stats';
-
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
   const unix = Math.floor(date.getTime() / 1000);
   return `<t:${unix}:${style}>`;
@@ -118,23 +116,6 @@ export const buildStreamReminderButton = (
       .setLabel('Remind Me')
       .setEmoji('⏰')
       .setStyle(ButtonStyle.Primary),
-  );
-};
-
-export const buildEmbeddedAppStatsButton = (
-  guildId: string,
-  stagingGuildId: string,
-): ActionRowBuilder<ButtonBuilder> | null => {
-  if (guildId !== stagingGuildId) {
-    return null;
-  }
-
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(EMBEDDED_APP_STATS_CUSTOM_ID)
-      .setLabel('Stats')
-      .setEmoji('📊')
-      .setStyle(ButtonStyle.Secondary),
   );
 };
 

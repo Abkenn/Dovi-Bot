@@ -4,6 +4,7 @@ import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { getLiveGameTrackingStatus } from '../modules/boss-tracking/boss-tracking.service';
 import { buildGameTrackingStatusEmbed } from '../modules/boss-tracking/boss-tracking-game-status.discord';
 import { runCommand } from '../modules/command-runner/run-command';
+import { buildEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
 
 const METADATA = COMMAND_METADATA.TRACK_GAME_STATUS;
 
@@ -47,9 +48,14 @@ export class TrackGameStatusCommand extends Command {
           guildId,
           gameName: interaction.options.getString('game'),
         });
+        const statsButton = buildEmbeddedAppStatsButton(
+          guildId,
+          status.gameName,
+        );
 
         return editReply({
           embeds: [buildGameTrackingStatusEmbed(status)],
+          components: statsButton ? [statsButton] : [],
         });
       },
     });

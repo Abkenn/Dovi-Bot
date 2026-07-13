@@ -1,4 +1,5 @@
 import { BOT_GUILDS } from '../config/discord-access';
+import { getEmbeddedAppLaunchTarget } from '../modules/embedded-app/embedded-app-launch-target.service';
 import type { EmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats.types';
 import { getCachedEmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats-cache.service';
 import { createEmbeddedAppSsrWorker } from './embedded-app-ssr-worker';
@@ -39,7 +40,7 @@ type PendingResponse = {
 };
 
 type CreateEmbeddedAppSsrWorker = () => EmbeddedAppSsrWorker;
-type LoadEmbeddedAppStats = () => Promise<EmbeddedAppStats>;
+type LoadEmbeddedAppStats = (request: Request) => Promise<EmbeddedAppStats>;
 
 const SSR_WORKER_MAX_RENDERS = 25;
 
@@ -113,7 +114,7 @@ export const createEmbeddedAppWorkerFetcher = (
 
   return async (request: Request) => {
     const [stats, body] = await Promise.all([
-      loadStats(),
+      loadStats(request),
       request.method === 'GET' || request.method === 'HEAD'
         ? Promise.resolve(null)
         : request.arrayBuffer(),
@@ -140,6 +141,26 @@ export const createEmbeddedAppWorkerFetcher = (
   };
 };
 
-export const fetchEmbeddedApp = createEmbeddedAppWorkerFetcher(() =>
-  getCachedEmbeddedAppStats(BOT_GUILDS.STAGING_ENV),
+export const loadEmbeddedAppStatsForRequest = async (request: Request) => {
+  const url = new URL(request.url);
+  const requestedGuildId = url.searchParams.get('guild_id');
+  let guildId = BOT_GUILDS.STAGING_ENV;
+
+  if (requestedGuildId === BOT_GUILDS.PROD_ENV) {
+    guildId = BOT_GUILDS.PROD_ENV;
+  } else if (requestedGuildId && requestedGuildId !== BOT_GUILDS.STAGING_ENV) {
+    throw new Error('Embedded app request came from an unsupported guild.');
+  }
+
+  const stats = await getCachedEmbeddedAppStats(guildId);
+  const instanceId = url.searchParams.get('instance_id');
+  const initialGameName = instanceId
+    ? getEmbeddedAppLaunchTarget(instanceId)
+    : null;
+
+  return initialGameName ? { ...stats, initialGameName } : stats;
+};
+
+export const fetchEmbeddedApp = createEmbeddedAppWorkerFetcher(
+  loadEmbeddedAppStatsForRequest,
 );

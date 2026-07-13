@@ -4,6 +4,7 @@ import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildBossTrackingEmbed } from '../modules/boss-tracking/boss-tracking.discord';
 import { getLiveBossTrackingStatus } from '../modules/boss-tracking/boss-tracking.service';
 import { runCommand } from '../modules/command-runner/run-command';
+import { buildEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
 
 const METADATA = COMMAND_METADATA.TRACK_BOSS_STATUS;
 
@@ -32,7 +33,7 @@ export class TrackBossStatusCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
-      run: async ({ editReply }) => {
+      run: async ({ editReply, preflight: guildId }) => {
         const session = await getLiveBossTrackingStatus().catch((error) => {
           if (
             error instanceof Error &&
@@ -45,12 +46,20 @@ export class TrackBossStatusCommand extends Command {
         });
 
         if (!session) {
+          const statsButton = buildEmbeddedAppStatsButton(guildId);
+
           return editReply({
             content:
               'No boss is being tracked right now. Use `/trackbossstart` when Davi reaches one.',
             embeds: [],
+            components: statsButton ? [statsButton] : [],
           });
         }
+
+        const statsButton = buildEmbeddedAppStatsButton(
+          guildId,
+          session.game.name,
+        );
 
         return editReply({
           embeds: [
@@ -59,6 +68,7 @@ export class TrackBossStatusCommand extends Command {
               title: 'Boss Tracking Status',
             }),
           ],
+          components: statsButton ? [statsButton] : [],
         });
       },
     });
