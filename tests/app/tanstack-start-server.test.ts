@@ -13,6 +13,7 @@ import { createEmbeddedAppWorkerFetcher } from '../../src/app/tanstack-start-ser
 const emptyStats = {
   game: null,
   currentBoss: null,
+  currentStreamWindow: null,
   streamEncounters: [],
   killedBosses: [],
 };

@@ -85,7 +85,10 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
         />
       </section>
       <CurrentBossCard boss={stats.currentBoss} />
-      <StreamEncounters encounters={stats.streamEncounters} />
+      <StreamEncounters
+        encounters={stats.streamEncounters}
+        currentStreamWindow={stats.currentStreamWindow}
+      />
       <BossHistory bosses={stats.killedBosses} />
       <footer className="py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
         Anonymous view · Refreshes every 5 seconds

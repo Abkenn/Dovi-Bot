@@ -8,6 +8,7 @@ import {
 const queries = vi.hoisted(() => ({
   findEmbeddedAppGameStats: vi.fn(),
   getGameBossDeathRanking: vi.fn(),
+  getStreamInfo: vi.fn(),
 }));
 
 vi.mock('../../src/data/queries/embedded-app-stats', () => ({
@@ -16,6 +17,9 @@ vi.mock('../../src/data/queries/embedded-app-stats', () => ({
 
 vi.mock('../../src/modules/bosses/bosses.service', () => ({
   getGameBossDeathRanking: queries.getGameBossDeathRanking,
+}));
+vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
+  getStreamInfo: queries.getStreamInfo,
 }));
 
 import { getEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-app-stats.service';
@@ -149,6 +153,14 @@ describe('embedded app stats', () => {
         },
       ],
     });
+    queries.getStreamInfo.mockResolvedValue({
+      current: {
+        startAt: new Date('2026-07-10T16:00:00.000Z'),
+        endAt: new Date('2026-07-10T20:00:00.000Z'),
+      },
+      next: null,
+      timezone: 'America/Sao_Paulo',
+    });
 
     const stats = await getEmbeddedAppStats('staging-guild');
 
@@ -164,6 +176,10 @@ describe('embedded app stats', () => {
         deaths: 3,
         attemptNumber: 3,
         attemptStartedAt: '2026-07-10T18:00:00.000Z',
+      },
+      currentStreamWindow: {
+        startAt: '2026-07-10T16:00:00.000Z',
+        endAt: '2026-07-10T20:00:00.000Z',
       },
       streamEncounters: [
         { name: 'Iudex Gundyr', deaths: 7, outcome: 'KILLED' },
@@ -184,12 +200,55 @@ describe('embedded app stats', () => {
     );
   });
 
+  it('uses the latest tracking run when no stream is currently happening', async () => {
+    const lastStreamBoss = makeSession({
+      id: 'last-stream',
+      bossName: 'Abyss Watchers',
+      status: BossTrackingSessionStatus.ENDED,
+      endResult: BossTrackingEndResult.KILLED,
+      deathCount: 10,
+      startedAt: new Date('2026-07-09T17:00:00.000Z'),
+      endedAt: new Date('2026-07-09T17:45:00.000Z'),
+    });
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game: { id: 'game-1', name: 'Dark Souls III' },
+      gameDeaths: 10,
+      sessions: [lastStreamBoss],
+    });
+    queries.getGameBossDeathRanking.mockResolvedValue({
+      game: { id: 'game-1', name: 'Dark Souls III' },
+      stats: [],
+      trackedBosses: [
+        {
+          id: 'boss-last-stream',
+          name: 'Abyss Watchers',
+          trackingSessions: [
+            { deathCount: 10, endResult: BossTrackingEndResult.KILLED },
+          ],
+        },
+      ],
+    });
+    queries.getStreamInfo.mockResolvedValue({
+      current: null,
+      next: null,
+      timezone: 'America/Sao_Paulo',
+    });
+
+    await expect(getEmbeddedAppStats('staging-guild')).resolves.toMatchObject({
+      currentStreamWindow: null,
+      streamEncounters: [
+        { name: 'Abyss Watchers', deaths: 10, outcome: 'KILLED' },
+      ],
+    });
+  });
+
   it('returns an empty state when staging has no tracking history', async () => {
     queries.findEmbeddedAppGameStats.mockResolvedValue(null);
 
     await expect(getEmbeddedAppStats('staging-guild')).resolves.toEqual({
       game: null,
       currentBoss: null,
+      currentStreamWindow: null,
       streamEncounters: [],
       killedBosses: [],
     });

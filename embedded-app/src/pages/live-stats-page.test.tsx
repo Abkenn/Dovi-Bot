@@ -24,6 +24,7 @@ describe('LiveStatsPage', () => {
             killedBossCount: 4,
           },
           currentBoss: null,
+          currentStreamWindow: null,
           streamEncounters: [],
           killedBosses: [],
         }}
@@ -45,6 +46,7 @@ describe('LiveStatsPage', () => {
         stats={{
           game: null,
           currentBoss: null,
+          currentStreamWindow: null,
           streamEncounters: [],
           killedBosses: [],
         }}

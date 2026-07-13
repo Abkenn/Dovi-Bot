@@ -8,6 +8,7 @@ import {
   getGameBossStatsRows,
   hasTrackedBossKill,
 } from '../bosses/bosses.stats';
+import { getStreamInfo } from '../stream-info/stream-info.service';
 import type {
   EmbeddedAppCurrentBoss,
   EmbeddedAppStats,
@@ -90,9 +91,15 @@ const toLatestStreamEncounters = (
     previousFocusedAt = session.focusedAt;
   }
 
+  return toStreamEncounters(latestStreamSessions);
+};
+
+const toStreamEncounters = (
+  sessions: EmbeddedAppStatsSession[],
+): EmbeddedAppStreamEncounter[] => {
   const encounters = new Map<string, EmbeddedAppStreamEncounter>();
 
-  for (const session of latestStreamSessions.reverse()) {
+  for (const session of [...sessions].reverse()) {
     const existing = encounters.get(session.boss.name);
     let outcome: EmbeddedAppStreamEncounter['outcome'] = 'LEFT';
 
@@ -114,6 +121,18 @@ const toLatestStreamEncounters = (
   return [...encounters.values()];
 };
 
+const toCurrentStreamEncounters = (
+  sessions: EmbeddedAppStatsSession[],
+  currentStream: { startAt: Date; endAt: Date },
+) =>
+  toStreamEncounters(
+    sessions.filter(
+      (session) =>
+        session.focusedAt >= currentStream.startAt &&
+        session.focusedAt <= currentStream.endAt,
+    ),
+  );
+
 export const getEmbeddedAppStats = async (
   guildId: string,
 ): Promise<EmbeddedAppStats> => {
@@ -123,12 +142,20 @@ export const getEmbeddedAppStats = async (
     return {
       game: null,
       currentBoss: null,
+      currentStreamWindow: null,
       streamEncounters: [],
       killedBosses: [],
     };
   }
 
-  const killedBosses = await getKilledBosses(result.game.name);
+  const [killedBosses, streamInfo] = await Promise.all([
+    getKilledBosses(result.game.name),
+    getStreamInfo(guildId),
+  ]);
+  const currentStream = streamInfo.current;
+  const streamEncounters = currentStream
+    ? toCurrentStreamEncounters(result.sessions, currentStream)
+    : toLatestStreamEncounters(result.sessions);
 
   return {
     game: {
@@ -138,7 +165,13 @@ export const getEmbeddedAppStats = async (
       killedBossCount: killedBosses.length,
     },
     currentBoss: toCurrentBoss(result.sessions),
-    streamEncounters: toLatestStreamEncounters(result.sessions),
+    currentStreamWindow: currentStream
+      ? {
+          startAt: currentStream.startAt.toISOString(),
+          endAt: currentStream.endAt.toISOString(),
+        }
+      : null,
+    streamEncounters,
     killedBosses,
   };
 };

@@ -27,6 +27,10 @@ export type EmbeddedAppStats = {
     killedBossCount: number;
   } | null;
   currentBoss: EmbeddedAppCurrentBoss | null;
+  currentStreamWindow: {
+    startAt: string;
+    endAt: string;
+  } | null;
   streamEncounters: EmbeddedAppStreamEncounter[];
   killedBosses: EmbeddedAppKilledBoss[];
 };

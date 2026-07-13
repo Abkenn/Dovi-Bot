@@ -9,6 +9,7 @@ import { createEmbeddedAppStatsCache } from '../../src/modules/embedded-app/embe
 const emptyStats = {
   game: null,
   currentBoss: null,
+  currentStreamWindow: null,
   streamEncounters: [],
   killedBosses: [],
 };
