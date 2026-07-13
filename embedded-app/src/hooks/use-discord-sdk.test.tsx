@@ -8,6 +8,7 @@ const sdk = vi.hoisted(() => ({
   subscribe: vi.fn(),
   unsubscribe: vi.fn().mockResolvedValue(undefined),
   customId: null as string | null,
+  platform: 'mobile',
 }));
 
 vi.mock('@discord/embedded-app-sdk', () => ({
@@ -20,6 +21,7 @@ vi.mock('@discord/embedded-app-sdk', () => ({
     public subscribe = sdk.subscribe;
     public unsubscribe = sdk.unsubscribe;
     public customId = sdk.customId;
+    public platform = sdk.platform;
   },
   Common: {
     LayoutModeTypeObject: { PIP: 1 },
@@ -34,6 +36,7 @@ describe('useDiscordSdk', () => {
     sdk.subscribe.mockResolvedValue(undefined);
     document.documentElement.removeAttribute('data-activity-layout');
     document.documentElement.removeAttribute('data-screen-orientation');
+    document.documentElement.removeAttribute('data-discord-platform');
   });
 
   it('readies the SDK for the configured Discord application', () => {
@@ -41,6 +44,7 @@ describe('useDiscordSdk', () => {
 
     expect(sdk.constructor).toHaveBeenCalledWith('client-1');
     expect(sdk.ready).toHaveBeenCalledOnce();
+    expect(document.documentElement.dataset.discordPlatform).toBe('mobile');
   });
 
   it('stays inert when the client id is unavailable', () => {

@@ -26,6 +26,7 @@ export const useDiscordSdk = (clientId: string) => {
 
     const discordSdk = new DiscordSDK(clientId);
     setCustomId(discordSdk.customId);
+    document.documentElement.dataset.discordPlatform = discordSdk.platform;
 
     let subscribed = false;
     void discordSdk.ready().then(async () => {
@@ -46,6 +47,7 @@ export const useDiscordSdk = (clientId: string) => {
       }
       document.documentElement.removeAttribute('data-activity-layout');
       document.documentElement.removeAttribute('data-screen-orientation');
+      document.documentElement.removeAttribute('data-discord-platform');
     };
   }, [clientId]);
 

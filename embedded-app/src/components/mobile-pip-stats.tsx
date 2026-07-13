@@ -10,7 +10,7 @@ export const MobilePipStats = ({
   killedBossCount,
 }: MobilePipStatsProps) => (
   <div
-    className="mobile-pip:flex hidden min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden"
+    className="mobile-pip-only min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden"
     aria-hidden="true"
   >
     <h2 className="truncate text-center text-base leading-tight font-bold">

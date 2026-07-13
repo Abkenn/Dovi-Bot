@@ -5,9 +5,34 @@
 @custom-variant activity-compact (@media (max-width: 480px) and (
     max-height: 320px
   ));
-@custom-variant mobile-pip (&:where(
-    html[data-activity-layout="pip"][data-screen-orientation="portrait"] *
-  ));
+.mobile-pip-only {
+  display: none;
+}
+
+html[data-discord-platform="mobile"][data-activity-layout="pip"]
+  .mobile-pip-frame {
+  width: 60svh;
+  max-width: 60svh;
+  height: 100svh;
+  min-height: 0;
+  margin-right: 0;
+  margin-left: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+html[data-discord-platform="mobile"][data-activity-layout="pip"]
+  .mobile-pip-only {
+  display: flex;
+}
+
+html[data-discord-platform="mobile"][data-activity-layout="pip"]
+  .mobile-pip-hide {
+  display: none;
+}
 
 :root {
   --radius: 0.875rem;
