@@ -135,8 +135,6 @@ describe('/streaminfo response privacy', () => {
     );
     expect(dependencies.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
       'production-guild',
-      null,
-      false,
     );
     expect(dependencies.registerLastStreamInfoMessage).not.toHaveBeenCalled();
     expect(dependencies.assertCommandAccess).toHaveBeenCalledWith(
@@ -147,6 +145,7 @@ describe('/streaminfo response privacy', () => {
 
   it('keeps a public normal-channel response registered for background edits', async () => {
     const interaction = makeInteraction(null);
+    dependencies.buildEmbeddedAppStatsButton.mockReturnValue(null);
 
     await StreamInfoCommand.prototype.chatInputRun.call(
       { name: 'streaminfo' },
@@ -163,11 +162,10 @@ describe('/streaminfo response privacy', () => {
     });
   });
 
-  it('does not add a Stats button to thread responses', async () => {
+  it('keeps the Stats button in thread responses', async () => {
     const interaction = makeInteraction(false, true);
     const reminderButton = { type: 'reminder-button' };
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
-    dependencies.buildEmbeddedAppStatsButton.mockReturnValue(null);
 
     await StreamInfoCommand.prototype.chatInputRun.call(
       { name: 'streaminfo' },
@@ -176,11 +174,11 @@ describe('/streaminfo response privacy', () => {
 
     expect(dependencies.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
       'production-guild',
-      null,
-      true,
     );
     expect(dependencies.editReply).toHaveBeenCalledWith(
-      expect.objectContaining({ components: [reminderButton] }),
+      expect.objectContaining({
+        components: [reminderButton, { type: 'stats-button' }],
+      }),
     );
   });
 });

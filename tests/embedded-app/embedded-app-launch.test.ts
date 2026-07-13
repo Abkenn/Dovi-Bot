@@ -75,18 +75,46 @@ describe('embedded app launch', () => {
     );
   });
 
-  it('cannot recover after Discord rejects the Activity channel type', async () => {
+  it('offers the Activity deep link when Discord rejects the channel type', async () => {
     const { interaction, launchActivity, reply } = makeInteraction();
     launchActivity.mockRejectedValue({ code: 50024 });
+    reply.mockResolvedValue(undefined);
 
     await expect(
       launchEmbeddedAppStats(interaction, 'Elden Ring'),
     ).resolves.toEqual({
-      launched: false,
-      note: 'Discord rejected Activity launch for this channel type.',
+      launched: true,
+      note: 'Used Activity deep link after channel launch was rejected.',
     });
 
-    expect(reply).not.toHaveBeenCalled();
+    expect(reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Open Live Stats in Discord:',
+        components: [
+          expect.objectContaining({
+            components: [
+              expect.objectContaining({
+                data: expect.objectContaining({
+                  label: 'Stats',
+                  url: 'https://discord.com/activities/app-1?custom_id=Elden+Ring',
+                }),
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('reports an expired interaction when the channel fallback cannot reply', async () => {
+    const { interaction, launchActivity, reply } = makeInteraction();
+    launchActivity.mockRejectedValue({ code: 50024 });
+    reply.mockRejectedValue({ code: 10062 });
+
+    await expect(launchEmbeddedAppStats(interaction)).resolves.toEqual({
+      launched: false,
+      note: 'Interaction expired before the Activity fallback was sent.',
+    });
   });
 
   it('ignores an expired interaction while explaining missing Activities', async () => {

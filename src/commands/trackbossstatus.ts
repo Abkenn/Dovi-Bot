@@ -46,11 +46,7 @@ export class TrackBossStatusCommand extends Command {
         });
 
         if (!session) {
-          const statsButton = buildEmbeddedAppStatsButton(
-            guildId,
-            null,
-            interaction.channel?.isThread() ?? false,
-          );
+          const statsButton = buildEmbeddedAppStatsButton(guildId);
 
           return editReply({
             content:
@@ -63,7 +59,6 @@ export class TrackBossStatusCommand extends Command {
         const statsButton = buildEmbeddedAppStatsButton(
           guildId,
           session.game.name,
-          interaction.channel?.isThread() ?? false,
         );
 
         return editReply({

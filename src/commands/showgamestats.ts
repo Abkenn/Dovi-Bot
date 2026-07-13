@@ -79,11 +79,7 @@ export class ShowGameStatsCommand extends Command {
         );
         const bossName = interaction.options.getString('boss');
         const results = interaction.options.getString('results') ?? 'top10';
-        const statsButton = buildEmbeddedAppStatsButton(
-          guildId,
-          gameName,
-          interaction.channel?.isThread() ?? false,
-        );
+        const statsButton = buildEmbeddedAppStatsButton(guildId, gameName);
         const components = statsButton ? [statsButton] : [];
 
         if (bossName) {

@@ -58,11 +58,7 @@ export class StreamInfoCommand extends Command {
         const reminderButton = buildStreamReminderButton(
           getStreamReminderOccurrence(streamInfo),
         );
-        const statsButton = buildEmbeddedAppStatsButton(
-          guildId,
-          null,
-          interaction.channel?.isThread() ?? false,
-        );
+        const statsButton = buildEmbeddedAppStatsButton(guildId);
         const message = await editReply({
           embeds: [buildStreamInfoEmbed(streamInfo)],
           components: [

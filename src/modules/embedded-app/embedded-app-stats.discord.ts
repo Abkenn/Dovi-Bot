@@ -22,12 +22,11 @@ export const parseEmbeddedAppStatsButton = (customId: string) => {
 export const buildEmbeddedAppStatsButton = (
   guildId: string,
   gameName?: string | null,
-  isThread = false,
 ): ActionRowBuilder<ButtonBuilder> | null => {
   const isEmbeddedAppGuild =
     guildId === BOT_GUILDS.STAGING_ENV || guildId === BOT_GUILDS.PROD_ENV;
 
-  if (!isEmbeddedAppGuild || isThread) {
+  if (!isEmbeddedAppGuild) {
     return null;
   }
 

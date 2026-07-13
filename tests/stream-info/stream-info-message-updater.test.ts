@@ -202,8 +202,6 @@ describe('stream info message updater', () => {
     expect(channel.messages.fetch).toHaveBeenCalledWith('message-1');
     expect(embeddedAppDiscord.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
       'guild-1',
-      null,
-      false,
     );
     expect(message.edit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -213,8 +211,9 @@ describe('stream info message updater', () => {
     );
   });
 
-  it('omits the Stats button when refreshing a message inside a thread', async () => {
+  it('keeps the Stats button when refreshing a message inside a thread', async () => {
     const message = makeMessage(true);
+    const statsButton = { type: 'stats-button' };
     const channel = {
       messages: {
         fetch: vi.fn().mockResolvedValue(message),
@@ -223,6 +222,7 @@ describe('stream info message updater', () => {
     streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder().setTitle('Stream Info'),
     );
+    embeddedAppDiscord.buildEmbeddedAppStatsButton.mockReturnValue(statsButton);
 
     await refreshStreamInfoMessage({
       client: makeClient({ channel }),
@@ -235,10 +235,12 @@ describe('stream info message updater', () => {
 
     expect(embeddedAppDiscord.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
       'production-guild',
-      null,
-      true,
     );
-    expect(message.edit).toHaveBeenCalledOnce();
+    expect(message.edit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([statsButton]),
+      }),
+    );
   });
 
   it('processes a next-stream announcement before the scheduled start', async () => {

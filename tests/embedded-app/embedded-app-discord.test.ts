@@ -55,10 +55,10 @@ describe('embedded app stats Discord button', () => {
     expect(buildEmbeddedAppStatsButton('unknown-guild')).toBeNull();
   });
 
-  it('does not offer an Activity button inside a thread', () => {
+  it('keeps the Activity button available inside a thread', () => {
     expect(
-      buildEmbeddedAppStatsButton('production-guild', 'Elden Ring', true),
-    ).toBeNull();
+      buildEmbeddedAppStatsButton('production-guild', 'Elden Ring'),
+    ).not.toBeNull();
   });
 
   it('parses live and targeted Stats interactions', () => {
