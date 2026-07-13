@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArchivedGamePage } from './archived-game-page';
@@ -38,8 +38,11 @@ describe('ArchivedGamePage', () => {
     expect(screen.getByRole('heading', { name: 'Dark Souls III' })).toHaveClass(
       'activity-compact:!text-xl',
     );
-    expect(screen.getByText('130')).toHaveClass('activity-compact:!text-xl');
-    expect(screen.getByText('20')).toBeInTheDocument();
+    const totals = within(
+      screen.getByRole('region', { name: 'Archived game totals' }),
+    );
+    expect(totals.getByText('130')).toHaveClass('activity-compact:!text-xl');
+    expect(totals.getByText('20')).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
     expect(screen.getByText('Boss history')).toBeInTheDocument();
     expect(

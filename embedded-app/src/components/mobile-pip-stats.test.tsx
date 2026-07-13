@@ -1,0 +1,22 @@
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { MobilePipStats } from './mobile-pip-stats';
+
+describe('MobilePipStats', () => {
+  it('renders a compact portrait PiP summary without dashboard cards', () => {
+    render(
+      <MobilePipStats
+        gameName="Dark Souls III"
+        deaths={178}
+        killedBossCount={20}
+      />,
+    );
+
+    const summary = screen.getByText('Dark Souls III').parentElement;
+
+    expect(summary).toHaveClass('hidden', 'mobile-pip:flex', 'overflow-hidden');
+    expect(screen.getByText('178')).toHaveClass('text-2xl', 'leading-none');
+    expect(screen.getByText('Deaths')).toBeInTheDocument();
+    expect(screen.getByText('Bosses killed')).toBeInTheDocument();
+  });
+});

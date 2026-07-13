@@ -4,6 +4,7 @@ import { ViewTransition } from 'react';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
 import { GameSwitcher } from '@/components/game-switcher';
+import { MobilePipStats } from '@/components/mobile-pip-stats';
 import { StreamEncounters } from '@/components/stream-encounters';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -70,7 +71,12 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
       animate={{ opacity: 1, y: 0 }}
       className="activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mobile-pip:!ml-auto mobile-pip:!mr-0 mobile-pip:!w-svh mobile-pip:!max-w-[100svh] mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12"
     >
-      <header className="flex items-start justify-between gap-2 sm:gap-5 sm:pb-3">
+      <MobilePipStats
+        gameName={stats.game.name}
+        deaths={stats.game.deaths}
+        killedBossCount={stats.game.killedBossCount}
+      />
+      <header className="mobile-pip:hidden flex items-start justify-between gap-2 sm:gap-5 sm:pb-3">
         <div className="min-w-0 space-y-1 sm:space-y-2">
           <p className="activity-compact:hidden text-[0.65rem] font-bold tracking-[0.2em] text-primary uppercase sm:text-xs sm:tracking-[0.24em]">
             Dovi Live Stats
@@ -90,11 +96,11 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
           <span className="min-[420px]:hidden">Live</span>
         </Badge>
       </header>
-      <div className="activity-compact:hidden">
+      <div className="activity-compact:hidden mobile-pip:hidden">
         <GameSwitcher games={stats.games} selectedGameId={null} />
       </div>
       <motion.section
-        className="activity-compact:gap-2 grid grid-cols-2 gap-3"
+        className="activity-compact:gap-2 mobile-pip:hidden grid grid-cols-2 gap-3"
         aria-label="Game totals"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -111,19 +117,19 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
           label="Bosses killed"
         />
       </motion.section>
-      <div className="activity-compact:hidden">
+      <div className="activity-compact:hidden mobile-pip:hidden">
         <CurrentBossCard boss={stats.currentBoss} />
       </div>
-      <div className="activity-compact:hidden">
+      <div className="activity-compact:hidden mobile-pip:hidden">
         <StreamEncounters
           encounters={stats.streamEncounters}
           currentStreamWindow={stats.currentStreamWindow}
         />
       </div>
-      <div className="activity-compact:hidden">
+      <div className="activity-compact:hidden mobile-pip:hidden">
         <BossHistory bosses={stats.killedBosses} />
       </div>
-      <footer className="activity-compact:hidden py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
+      <footer className="activity-compact:hidden mobile-pip:hidden py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
         Anonymous view · Refreshes every 5 seconds
       </footer>
     </motion.main>
