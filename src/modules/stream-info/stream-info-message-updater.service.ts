@@ -105,7 +105,11 @@ const findRecentStreamInfoMessage = async ({
   );
 };
 
-const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
+const buildStreamInfoMessageEdit = async (
+  guildId: string,
+  client: Client,
+  isThread: boolean,
+) => {
   const streamInfo = await getStreamInfo(guildId);
   await deliverStreamReminders({
     client,
@@ -116,7 +120,7 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
   const reminderButton = buildStreamReminderButton(
     getStreamReminderOccurrence(streamInfo),
   );
-  const statsButton = buildEmbeddedAppStatsButton(guildId);
+  const statsButton = buildEmbeddedAppStatsButton(guildId, null, isThread);
   const { flags: _flags, ...componentMessage } =
     buildComponentEmbedMessageFromEmbeds([embed]);
 
@@ -141,7 +145,13 @@ const editStreamInfoMessage = async ({
   guildId: string;
   message: Message;
 }) => {
-  await message.edit(await buildStreamInfoMessageEdit(guildId, client));
+  await message.edit(
+    await buildStreamInfoMessageEdit(
+      guildId,
+      client,
+      message.channel.isThread(),
+    ),
+  );
 };
 
 export const registerLastStreamInfoMessage = async ({

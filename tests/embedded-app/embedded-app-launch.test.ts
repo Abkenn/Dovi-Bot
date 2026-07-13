@@ -13,10 +13,7 @@ vi.mock(
   }),
 );
 
-import {
-  launchEmbeddedAppStats,
-  replyWithEmbeddedAppStatsLink,
-} from '../../src/modules/embedded-app/embedded-app-launch.service';
+import { launchEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-app-launch.service';
 
 const makeInteraction = () => {
   const launchActivity = vi.fn();
@@ -90,34 +87,6 @@ describe('embedded app launch', () => {
     });
 
     expect(reply).not.toHaveBeenCalled();
-  });
-
-  it('can send the Activity deep link as the initial response', async () => {
-    const { interaction, launchActivity, reply } = makeInteraction();
-    reply.mockResolvedValue(undefined);
-
-    await expect(
-      replyWithEmbeddedAppStatsLink(interaction, 'Elden Ring'),
-    ).resolves.toEqual({ launched: true, note: 'Used Activity deep link.' });
-
-    expect(reply).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: 'Open Live Stats in Discord:',
-        components: [
-          expect.objectContaining({
-            components: [
-              expect.objectContaining({
-                data: expect.objectContaining({
-                  label: 'Stats',
-                  url: 'https://discord.com/activities/app-1?custom_id=Elden+Ring',
-                }),
-              }),
-            ],
-          }),
-        ],
-      }),
-    );
-    expect(launchActivity).not.toHaveBeenCalled();
   });
 
   it('ignores an expired interaction while explaining missing Activities', async () => {

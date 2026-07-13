@@ -6,9 +6,6 @@ vi.mock('../../src/config/discord-access', () => ({
     PROD_ENV: 'production-guild',
   },
 }));
-vi.mock('../../src/types/zod-schemas/env.zod', () => ({
-  env: { DISCORD_CLIENT_ID: 'app-1' },
-}));
 
 import {
   buildEmbeddedAppStatsButton,
@@ -44,19 +41,24 @@ describe('embedded app stats Discord button', () => {
     });
   });
 
-  it('builds a direct Activity link in production', () => {
+  it('builds the interactive Stats button in a normal production channel', () => {
     expect(
       buildEmbeddedAppStatsButton('production-guild', 'Elden Ring')?.toJSON(),
     ).toMatchObject({
       components: [
         {
           label: 'Stats',
-          style: 5,
-          url: 'https://discord.com/activities/app-1?custom_id=Elden+Ring',
+          custom_id: 'embedded-app-stats:Elden Ring',
         },
       ],
     });
     expect(buildEmbeddedAppStatsButton('unknown-guild')).toBeNull();
+  });
+
+  it('does not offer an Activity button inside a thread', () => {
+    expect(
+      buildEmbeddedAppStatsButton('production-guild', 'Elden Ring', true),
+    ).toBeNull();
   });
 
   it('parses live and targeted Stats interactions', () => {

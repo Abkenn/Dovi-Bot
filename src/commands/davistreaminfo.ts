@@ -42,7 +42,11 @@ export class DaviStreamInfoCommand extends Command {
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
-        const statsButton = buildEmbeddedAppStatsButton(guildId);
+        const statsButton = buildEmbeddedAppStatsButton(
+          guildId,
+          null,
+          interaction.channel?.isThread() ?? false,
+        );
 
         return editReply({
           embeds: [await getStreamInfoEmbed(BOT_GUILDS.PROD_ENV)],

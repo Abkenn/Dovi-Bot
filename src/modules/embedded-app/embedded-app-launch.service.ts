@@ -1,14 +1,10 @@
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
   type ButtonInteraction,
-  ButtonStyle,
   type InteractionReplyOptions,
   MessageFlags,
 } from 'discord.js';
 import { getNumberProperty } from '../../lib/type-guards';
 import { registerEmbeddedAppLaunchTarget } from './embedded-app-launch-target.service';
-import { buildEmbeddedAppActivityUrl } from './embedded-app-link';
 
 const MISSING_EMBEDDED_FLAG_CODE = 50234;
 const UNSUPPORTED_ACTIVITY_CHANNEL_CODE = 50024;
@@ -37,34 +33,6 @@ const replySafely = async (
 
     return false;
   }
-};
-
-export const replyWithEmbeddedAppStatsLink = async (
-  interaction: ButtonInteraction,
-  gameName?: string | null,
-): Promise<EmbeddedAppLaunchResult> => {
-  const replied = await replySafely(interaction, {
-    content: 'Open Live Stats in Discord:',
-    components: [
-      new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setLabel('Stats')
-          .setEmoji('\u{1F4CA}')
-          .setStyle(ButtonStyle.Link)
-          .setURL(
-            buildEmbeddedAppActivityUrl(interaction.applicationId, gameName),
-          ),
-      ),
-    ],
-    flags: MessageFlags.Ephemeral,
-  });
-
-  return replied
-    ? { launched: true, note: 'Used Activity deep link.' }
-    : {
-        launched: false,
-        note: 'Interaction expired before the Activity fallback was sent.',
-      };
 };
 
 export const launchEmbeddedAppStats = async (

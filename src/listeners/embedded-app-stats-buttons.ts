@@ -3,10 +3,7 @@ import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { BOT_GUILDS } from '../config/discord-access';
 import { CommandExecutionStatus } from '../generated/prisma/client';
 import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
-import {
-  launchEmbeddedAppStats,
-  replyWithEmbeddedAppStatsLink,
-} from '../modules/embedded-app/embedded-app-launch.service';
+import { launchEmbeddedAppStats } from '../modules/embedded-app/embedded-app-launch.service';
 import { parseEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
 
 const STATS_APP_ENTER_LOG_NAME = 'stats-app:enter';
@@ -85,10 +82,7 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
     }
 
     try {
-      const result =
-        interaction.guildId === BOT_GUILDS.PROD_ENV
-          ? await replyWithEmbeddedAppStatsLink(interaction, target.gameName)
-          : await launchEmbeddedAppStats(interaction, target.gameName);
+      const result = await launchEmbeddedAppStats(interaction, target.gameName);
 
       await logStatsAppEnterSafely({
         interaction,

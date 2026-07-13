@@ -88,12 +88,15 @@ const makeClient = ({
     },
   }) as unknown as Client;
 
-const makeMessage = () => {
+const makeMessage = (isThread = false) => {
   const edit = vi.fn().mockResolvedValue(undefined);
 
   return {
     id: 'message-1',
     edit,
+    channel: {
+      isThread: () => isThread,
+    },
   } as unknown as Message & { edit: typeof edit };
 };
 
@@ -197,12 +200,45 @@ describe('stream info message updater', () => {
     });
 
     expect(channel.messages.fetch).toHaveBeenCalledWith('message-1');
+    expect(embeddedAppDiscord.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
+      'guild-1',
+      null,
+      false,
+    );
     expect(message.edit).toHaveBeenCalledWith(
       expect.objectContaining({
         allowedMentions: { parse: [] },
         components: expect.any(Array),
       }),
     );
+  });
+
+  it('omits the Stats button when refreshing a message inside a thread', async () => {
+    const message = makeMessage(true);
+    const channel = {
+      messages: {
+        fetch: vi.fn().mockResolvedValue(message),
+      },
+    };
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
+      new EmbedBuilder().setTitle('Stream Info'),
+    );
+
+    await refreshStreamInfoMessage({
+      client: makeClient({ channel }),
+      pointer: {
+        guildId: 'production-guild',
+        channelId: 'thread-1',
+        messageId: 'message-1',
+      },
+    });
+
+    expect(embeddedAppDiscord.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
+      'production-guild',
+      null,
+      true,
+    );
+    expect(message.edit).toHaveBeenCalledOnce();
   });
 
   it('processes a next-stream announcement before the scheduled start', async () => {

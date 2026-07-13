@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   launchEmbeddedAppStats: vi.fn(),
-  replyWithEmbeddedAppStatsLink: vi.fn(),
   createInteractionExecutionLog: vi.fn(),
 }));
 
@@ -15,12 +14,8 @@ vi.mock('../../src/config/discord-access', () => ({
     PROD_ENV: 'production-guild',
   },
 }));
-vi.mock('../../src/types/zod-schemas/env.zod', () => ({
-  env: { DISCORD_CLIENT_ID: 'app-1' },
-}));
 vi.mock('../../src/modules/embedded-app/embedded-app-launch.service', () => ({
   launchEmbeddedAppStats: dependencies.launchEmbeddedAppStats,
-  replyWithEmbeddedAppStatsLink: dependencies.replyWithEmbeddedAppStatsLink,
 }));
 vi.mock('../../src/modules/command-logging/command-logging.service', () => ({
   createInteractionExecutionLog: dependencies.createInteractionExecutionLog,
@@ -43,10 +38,6 @@ describe('embedded app Stats buttons', () => {
     dependencies.launchEmbeddedAppStats.mockResolvedValue({
       launched: true,
       note: null,
-    });
-    dependencies.replyWithEmbeddedAppStatsLink.mockResolvedValue({
-      launched: true,
-      note: 'Used Activity deep link.',
     });
     dependencies.createInteractionExecutionLog.mockResolvedValue(undefined);
   });
@@ -100,7 +91,7 @@ describe('embedded app Stats buttons', () => {
     expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
   });
 
-  it('replies with a deep link for legacy production buttons', async () => {
+  it('launches from a normal production channel too', async () => {
     const interaction = makeInteraction(
       'embedded-app-stats',
       'production-guild',
@@ -111,8 +102,7 @@ describe('embedded app Stats buttons', () => {
       interaction as never,
     );
 
-    expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
-    expect(dependencies.replyWithEmbeddedAppStatsLink).toHaveBeenCalledWith(
+    expect(dependencies.launchEmbeddedAppStats).toHaveBeenCalledWith(
       interaction,
       null,
     );

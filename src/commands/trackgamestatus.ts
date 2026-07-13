@@ -51,6 +51,7 @@ export class TrackGameStatusCommand extends Command {
         const statsButton = buildEmbeddedAppStatsButton(
           guildId,
           status.gameName,
+          interaction.channel?.isThread() ?? false,
         );
 
         return editReply({

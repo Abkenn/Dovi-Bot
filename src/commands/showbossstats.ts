@@ -50,6 +50,7 @@ export class ShowBossStatsCommand extends Command {
         const statsButton = buildEmbeddedAppStatsButton(
           guildId,
           boss.game.name,
+          interaction.channel?.isThread() ?? false,
         );
 
         return editReply({
