@@ -2,10 +2,7 @@ import { pingDatabase } from '@data/queries/database-health';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { getRuntimeHealth } from './runtime-health';
-import {
-  fetchEmbeddedApp,
-  registerEmbeddedAppStatsLoader,
-} from './tanstack-start-server';
+import { fetchEmbeddedApp } from './tanstack-start-server';
 
 const DATABASE_HEALTH_CACHE_MS = 60_000;
 const DISCORD_PROXY_PATH = '/.proxy';
@@ -50,7 +47,6 @@ const getDatabaseHealth = async () => {
 
 export function createHealthServer() {
   const app = new Hono();
-  registerEmbeddedAppStatsLoader();
 
   const normalizeDiscordProxyRequest = (request: Request) => {
     const url = new URL(request.url);

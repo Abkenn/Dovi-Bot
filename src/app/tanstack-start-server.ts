@@ -1,50 +1,145 @@
 import { BOT_GUILDS } from '../config/discord-access';
-import { isUnknownRecord } from '../lib/type-guards';
+import type { EmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats.types';
 import { getCachedEmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats-cache.service';
-import type {} from '../types/embedded-app-global';
+import { createEmbeddedAppSsrWorker } from './embedded-app-ssr-worker';
 
-type TanStackStartServerEntry = {
-  fetch: (request: Request) => Response | Promise<Response>;
+export type EmbeddedAppWorkerRequest = {
+  id: number;
+  request: {
+    url: string;
+    method: string;
+    headers: [string, string][];
+    body: ArrayBuffer | null;
+  };
+  stats: EmbeddedAppStats;
 };
 
-type LoadTanStackStartServerEntry = () => Promise<unknown>;
+export type EmbeddedAppWorkerResponse = {
+  id: number;
+  response?: {
+    status: number;
+    statusText: string;
+    headers: [string, string][];
+    body: ArrayBuffer;
+  };
+  error?: string;
+};
 
-const isTanStackStartServerEntry = (
-  value: unknown,
-): value is TanStackStartServerEntry =>
-  isUnknownRecord(value) && typeof value.fetch === 'function';
+export type EmbeddedAppSsrWorker = {
+  postMessage: (message: EmbeddedAppWorkerRequest) => void;
+  onMessage: (listener: (message: EmbeddedAppWorkerResponse) => void) => void;
+  onError: (listener: (error: Error) => void) => void;
+  onExit: (listener: (code: number) => void) => void;
+  terminate: () => void;
+};
 
-export const createTanStackStartFetcher = (
-  loadEntry: LoadTanStackStartServerEntry,
+type PendingResponse = {
+  resolve: (response: Response) => void;
+  reject: (error: Error) => void;
+};
+
+type CreateEmbeddedAppSsrWorker = () => EmbeddedAppSsrWorker;
+type LoadEmbeddedAppStats = () => Promise<EmbeddedAppStats>;
+
+const SSR_WORKER_MAX_RENDERS = 25;
+
+export const createEmbeddedAppWorkerFetcher = (
+  loadStats: LoadEmbeddedAppStats,
+  createSsrWorker: CreateEmbeddedAppSsrWorker = createEmbeddedAppSsrWorker,
 ) => {
-  let pendingEntry: Promise<TanStackStartServerEntry> | undefined;
+  let worker: EmbeddedAppSsrWorker | undefined;
+  let nextRequestId = 1;
+  const pending = new Map<number, PendingResponse>();
 
-  return async (request: Request) => {
-    if (!pendingEntry) {
-      pendingEntry = loadEntry().then((module) => {
-        if (
-          !isUnknownRecord(module) ||
-          !isTanStackStartServerEntry(module.default)
-        ) {
-          throw new Error('The TanStack Start server entry is invalid.');
-        }
+  const rejectPending = (error: Error) => {
+    for (const response of pending.values()) {
+      response.reject(error);
+    }
+    pending.clear();
+    worker = undefined;
+  };
 
-        return module.default;
-      });
+  const getWorker = () => {
+    if (worker) {
+      return worker;
     }
 
-    return (await pendingEntry).fetch(request);
+    const startedWorker = createSsrWorker();
+    let handledRenders = 0;
+    let terminating = false;
+    worker = startedWorker;
+    startedWorker.onMessage((message) => {
+      const response = pending.get(message.id);
+      if (!response) {
+        return;
+      }
+
+      pending.delete(message.id);
+      handledRenders += 1;
+      if (message.error || !message.response) {
+        response.reject(
+          new Error(message.error ?? 'The embedded app SSR response is empty.'),
+        );
+      } else {
+        response.resolve(
+          new Response(message.response.body, {
+            status: message.response.status,
+            statusText: message.response.statusText,
+            headers: message.response.headers,
+          }),
+        );
+      }
+
+      if (handledRenders >= SSR_WORKER_MAX_RENDERS && pending.size === 0) {
+        terminating = true;
+        worker = undefined;
+        startedWorker.terminate();
+      }
+    });
+    startedWorker.onError(rejectPending);
+    startedWorker.onExit((code) => {
+      if (worker === startedWorker) {
+        worker = undefined;
+      }
+      if (code !== 0 && !terminating) {
+        rejectPending(
+          new Error(`The embedded app SSR worker exited (${code}).`),
+        );
+      }
+    });
+
+    return startedWorker;
+  };
+
+  return async (request: Request) => {
+    const [stats, body] = await Promise.all([
+      loadStats(),
+      request.method === 'GET' || request.method === 'HEAD'
+        ? Promise.resolve(null)
+        : request.arrayBuffer(),
+    ]);
+    const id = nextRequestId;
+    nextRequestId += 1;
+
+    const response = new Promise<Response>((resolve, reject) => {
+      pending.set(id, { resolve, reject });
+    });
+
+    getWorker().postMessage({
+      id,
+      request: {
+        url: request.url,
+        method: request.method,
+        headers: [...request.headers.entries()],
+        body,
+      },
+      stats,
+    });
+
+    return response;
   };
 };
 
-const serverEntryPath = '../../embedded-app/dist/server/index.js';
-const fetchTanStackStart = createTanStackStartFetcher(
-  () => import(serverEntryPath),
+export const fetchEmbeddedApp = createEmbeddedAppWorkerFetcher(() =>
+  getCachedEmbeddedAppStats(BOT_GUILDS.STAGING_ENV),
 );
-
-export const registerEmbeddedAppStatsLoader = () => {
-  globalThis.__doviEmbeddedAppStatsLoader = () =>
-    getCachedEmbeddedAppStats(BOT_GUILDS.STAGING_ENV);
-};
-
-export const fetchEmbeddedApp = fetchTanStackStart;

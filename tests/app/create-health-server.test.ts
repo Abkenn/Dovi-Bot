@@ -4,7 +4,6 @@ const database = vi.hoisted(() => ({ pingDatabase: vi.fn() }));
 const runtime = vi.hoisted(() => ({ getRuntimeHealth: vi.fn() }));
 const tanstackStart = vi.hoisted(() => ({
   fetchEmbeddedApp: vi.fn(),
-  registerEmbeddedAppStatsLoader: vi.fn(),
 }));
 
 vi.mock('@data/queries/database-health', () => ({
@@ -15,7 +14,6 @@ vi.mock('../../src/app/runtime-health', () => ({
 }));
 vi.mock('../../src/app/tanstack-start-server', () => ({
   fetchEmbeddedApp: tanstackStart.fetchEmbeddedApp,
-  registerEmbeddedAppStatsLoader: tanstackStart.registerEmbeddedAppStatsLoader,
 }));
 
 import { createHealthServer } from '../../src/app/create-health-server';
@@ -37,7 +35,6 @@ describe('health and embedded app server', () => {
 
     expect(response.status).toBe(200);
     expect(await response.text()).toContain('Live Stats');
-    expect(tanstackStart.registerEmbeddedAppStatsLoader).toHaveBeenCalledOnce();
     expect(tanstackStart.fetchEmbeddedApp).toHaveBeenCalledOnce();
   });
 
