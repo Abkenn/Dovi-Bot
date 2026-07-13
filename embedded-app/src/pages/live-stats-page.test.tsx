@@ -58,6 +58,8 @@ describe('LiveStatsPage', () => {
     expect(screen.getByRole('main')).toHaveClass(
       'activity-compact:flex',
       'activity-compact:justify-center',
+      'mobile-pip:!ml-auto',
+      'mobile-pip:!w-svh',
     );
   });
 
