@@ -35,10 +35,10 @@ describe('LiveStatsPage', () => {
       />,
     );
 
-    expect(
-      screen.getByRole('heading', { name: 'Dark Souls III' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('127')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dark Souls III' })).toHaveClass(
+      'activity-compact:!text-xl',
+    );
+    expect(screen.getByText('127')).toHaveClass('activity-compact:!text-xl');
     expect(screen.getByText('Current boss card')).toBeInTheDocument();
     expect(screen.getByText('Stream encounters')).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
@@ -54,6 +54,10 @@ describe('LiveStatsPage', () => {
     );
     expect(screen.getByText('Boss history').parentElement).toHaveClass(
       'activity-compact:hidden',
+    );
+    expect(screen.getByRole('main')).toHaveClass(
+      'activity-compact:flex',
+      'activity-compact:justify-center',
     );
   });
 

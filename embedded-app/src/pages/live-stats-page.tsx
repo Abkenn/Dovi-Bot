@@ -19,15 +19,15 @@ const TotalCard = ({
   label: string;
 }) => (
   <Card className="activity-compact:rounded-lg gap-0 py-0">
-    <CardContent className="activity-compact:p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
+    <CardContent className="activity-compact:!p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
       <span className="activity-compact:hidden grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary sm:size-11 sm:rounded-xl">
         {icon}
       </span>
       <div className="min-w-0">
-        <strong className="activity-compact:text-xl block text-2xl font-bold tracking-tight sm:text-4xl">
+        <strong className="activity-compact:!text-xl block text-2xl font-bold tracking-tight sm:text-4xl">
           {value}
         </strong>
-        <span className="activity-compact:text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs sm:tracking-[0.12em]">
+        <span className="activity-compact:!text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs sm:tracking-[0.12em]">
           {label}
         </span>
       </div>
@@ -68,7 +68,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
     <motion.main
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:space-y-2 activity-compact:p-3 mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12"
+      className="activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12"
     >
       <header className="flex items-start justify-between gap-2 sm:gap-5 sm:pb-3">
         <div className="min-w-0 space-y-1 sm:space-y-2">
@@ -76,7 +76,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
             Dovi Live Stats
           </p>
           <ViewTransition name="game-title">
-            <h1 className="activity-compact:text-xl text-2xl leading-none font-bold tracking-tight sm:text-6xl">
+            <h1 className="activity-compact:!text-xl text-2xl leading-none font-bold tracking-tight sm:text-6xl">
               {stats.game.name}
             </h1>
           </ViewTransition>
