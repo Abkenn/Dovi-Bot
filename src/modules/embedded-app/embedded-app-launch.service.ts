@@ -39,7 +39,7 @@ const replySafely = async (
   }
 };
 
-const replyWithActivityDeepLink = async (
+export const replyWithEmbeddedAppStatsLink = async (
   interaction: ButtonInteraction,
   gameName?: string | null,
 ): Promise<EmbeddedAppLaunchResult> => {
@@ -62,7 +62,7 @@ const replyWithActivityDeepLink = async (
   return replied
     ? {
         launched: true,
-        note: 'Used Activity deep link after channel launch was rejected.',
+        note: 'Used Activity deep link for unsupported channel.',
       }
     : {
         launched: false,
@@ -94,7 +94,7 @@ export const launchEmbeddedAppStats = async (
     }
 
     if (errorCode === UNSUPPORTED_ACTIVITY_CHANNEL_CODE) {
-      return replyWithActivityDeepLink(interaction, gameName);
+      return replyWithEmbeddedAppStatsLink(interaction, gameName);
     }
 
     if (errorCode !== MISSING_EMBEDDED_FLAG_CODE) {

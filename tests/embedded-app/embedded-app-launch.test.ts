@@ -84,7 +84,7 @@ describe('embedded app launch', () => {
       launchEmbeddedAppStats(interaction, 'Elden Ring'),
     ).resolves.toEqual({
       launched: true,
-      note: 'Used Activity deep link after channel launch was rejected.',
+      note: 'Used Activity deep link for unsupported channel.',
     });
 
     expect(reply).toHaveBeenCalledWith(

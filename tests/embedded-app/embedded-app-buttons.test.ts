@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   launchEmbeddedAppStats: vi.fn(),
+  replyWithEmbeddedAppStatsLink: vi.fn(),
   createInteractionExecutionLog: vi.fn(),
 }));
 
@@ -16,6 +17,7 @@ vi.mock('../../src/config/discord-access', () => ({
 }));
 vi.mock('../../src/modules/embedded-app/embedded-app-launch.service', () => ({
   launchEmbeddedAppStats: dependencies.launchEmbeddedAppStats,
+  replyWithEmbeddedAppStatsLink: dependencies.replyWithEmbeddedAppStatsLink,
 }));
 vi.mock('../../src/modules/command-logging/command-logging.service', () => ({
   createInteractionExecutionLog: dependencies.createInteractionExecutionLog,
@@ -23,11 +25,16 @@ vi.mock('../../src/modules/command-logging/command-logging.service', () => ({
 
 import { EmbeddedAppStatsButtonsListener } from '../../src/listeners/embedded-app-stats-buttons';
 
-const makeInteraction = (customId: string, guildId = 'staging-guild') => ({
+const makeInteraction = (
+  customId: string,
+  guildId = 'staging-guild',
+  isThread = false,
+) => ({
   isButton: () => true,
   customId,
   guildId,
   channelId: 'channel-1',
+  channel: { isThread: () => isThread },
   user: { id: 'user-1', tag: 'DoviFan' },
   reply: vi.fn(),
 });
@@ -38,6 +45,10 @@ describe('embedded app Stats buttons', () => {
     dependencies.launchEmbeddedAppStats.mockResolvedValue({
       launched: true,
       note: null,
+    });
+    dependencies.replyWithEmbeddedAppStatsLink.mockResolvedValue({
+      launched: true,
+      note: 'Used Activity deep link for unsupported channel.',
     });
     dependencies.createInteractionExecutionLog.mockResolvedValue(undefined);
   });
@@ -110,6 +121,32 @@ describe('embedded app Stats buttons', () => {
       expect.objectContaining({
         commandName: 'stats-app:enter',
         status: 'SUCCESS',
+      }),
+    );
+  });
+
+  it('uses the Activity deep link directly inside a thread', async () => {
+    const interaction = makeInteraction(
+      'embedded-app-stats:Elden Ring',
+      'production-guild',
+      true,
+    );
+
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      interaction as never,
+    );
+
+    expect(dependencies.replyWithEmbeddedAppStatsLink).toHaveBeenCalledWith(
+      interaction,
+      'Elden Ring',
+    );
+    expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
+    expect(dependencies.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commandName: 'stats-app:enter',
+        status: 'SUCCESS',
+        note: 'Used Activity deep link for unsupported channel.',
       }),
     );
   });
