@@ -13,7 +13,10 @@ vi.mock(
   }),
 );
 
-import { launchEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-app-launch.service';
+import {
+  launchEmbeddedAppStats,
+  replyWithEmbeddedAppStatsLink,
+} from '../../src/modules/embedded-app/embedded-app-launch.service';
 
 const makeInteraction = () => {
   const launchActivity = vi.fn();
@@ -75,13 +78,26 @@ describe('embedded app launch', () => {
     );
   });
 
-  it('offers a deep link when Discord cannot launch in the channel type', async () => {
+  it('cannot recover after Discord rejects the Activity channel type', async () => {
     const { interaction, launchActivity, reply } = makeInteraction();
     launchActivity.mockRejectedValue({ code: 50024 });
-    reply.mockResolvedValue(undefined);
 
     await expect(
       launchEmbeddedAppStats(interaction, 'Elden Ring'),
+    ).resolves.toEqual({
+      launched: false,
+      note: 'Discord rejected Activity launch for this channel type.',
+    });
+
+    expect(reply).not.toHaveBeenCalled();
+  });
+
+  it('can send the Activity deep link as the initial response', async () => {
+    const { interaction, launchActivity, reply } = makeInteraction();
+    reply.mockResolvedValue(undefined);
+
+    await expect(
+      replyWithEmbeddedAppStatsLink(interaction, 'Elden Ring'),
     ).resolves.toEqual({ launched: true, note: 'Used Activity deep link.' });
 
     expect(reply).toHaveBeenCalledWith(
@@ -101,6 +117,7 @@ describe('embedded app launch', () => {
         ],
       }),
     );
+    expect(launchActivity).not.toHaveBeenCalled();
   });
 
   it('ignores an expired interaction while explaining missing Activities', async () => {

@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { getNumberProperty } from '../../lib/type-guards';
 import { registerEmbeddedAppLaunchTarget } from './embedded-app-launch-target.service';
+import { buildEmbeddedAppActivityUrl } from './embedded-app-link';
 
 const MISSING_EMBEDDED_FLAG_CODE = 50234;
 const UNSUPPORTED_ACTIVITY_CHANNEL_CODE = 50024;
@@ -38,17 +39,32 @@ const replySafely = async (
   }
 };
 
-const buildActivityDeepLink = (
-  applicationId: string,
+export const replyWithEmbeddedAppStatsLink = async (
+  interaction: ButtonInteraction,
   gameName?: string | null,
-) => {
-  const url = new URL(`https://discord.com/activities/${applicationId}`);
+): Promise<EmbeddedAppLaunchResult> => {
+  const replied = await replySafely(interaction, {
+    content: 'Open Live Stats in Discord:',
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setLabel('Stats')
+          .setEmoji('\u{1F4CA}')
+          .setStyle(ButtonStyle.Link)
+          .setURL(
+            buildEmbeddedAppActivityUrl(interaction.applicationId, gameName),
+          ),
+      ),
+    ],
+    flags: MessageFlags.Ephemeral,
+  });
 
-  if (gameName) {
-    url.searchParams.set('custom_id', gameName);
-  }
-
-  return url.toString();
+  return replied
+    ? { launched: true, note: 'Used Activity deep link.' }
+    : {
+        launched: false,
+        note: 'Interaction expired before the Activity fallback was sent.',
+      };
 };
 
 export const launchEmbeddedAppStats = async (
@@ -75,28 +91,10 @@ export const launchEmbeddedAppStats = async (
     }
 
     if (errorCode === UNSUPPORTED_ACTIVITY_CHANNEL_CODE) {
-      const replied = await replySafely(interaction, {
-        content: 'Open Live Stats in Discord:',
-        components: [
-          new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-              .setLabel('Stats')
-              .setEmoji('\u{1F4CA}')
-              .setStyle(ButtonStyle.Link)
-              .setURL(
-                buildActivityDeepLink(interaction.applicationId, gameName),
-              ),
-          ),
-        ],
-        flags: MessageFlags.Ephemeral,
-      });
-
-      return replied
-        ? { launched: true, note: 'Used Activity deep link.' }
-        : {
-            launched: false,
-            note: 'Interaction expired before the Activity fallback was sent.',
-          };
+      return {
+        launched: false,
+        note: 'Discord rejected Activity launch for this channel type.',
+      };
     }
 
     if (errorCode !== MISSING_EMBEDDED_FLAG_CODE) {
