@@ -11,21 +11,21 @@ import { Separator } from '@/components/ui/separator';
 import type { KilledBoss } from '@/live-stats.types';
 
 export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
-  <Card>
-    <CardHeader className="grid-cols-[1fr_auto]">
-      <div className="space-y-2">
+  <Card className="gap-3 py-4 sm:gap-6 sm:py-6">
+    <CardHeader className="grid-cols-[1fr_auto] px-4 sm:px-6">
+      <div className="space-y-1 sm:space-y-2">
         <CardDescription className="font-semibold tracking-[0.18em] text-primary uppercase">
           Journey
         </CardDescription>
         <CardTitle>
-          <h2 className="text-2xl">Killed bosses</h2>
+          <h2 className="text-xl sm:text-2xl">Killed bosses</h2>
         </CardTitle>
       </div>
       <Badge variant="secondary" className="size-9 rounded-full p-0 text-sm">
         {bosses.length}
       </Badge>
     </CardHeader>
-    <CardContent>
+    <CardContent className="px-4 sm:px-6">
       {bosses.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-8 text-center text-muted-foreground">
           <Skull className="size-8 opacity-60" aria-hidden="true" />
@@ -34,9 +34,9 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
       ) : (
         <ol>
           {bosses.map((boss, index) => (
-            <li key={`${boss.name}-${boss.killedAt}`}>
+            <li key={boss.name}>
               {index > 0 ? <Separator /> : null}
-              <div className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-4">
+              <div className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-2 py-3 sm:grid-cols-[2rem_1fr_auto] sm:gap-3 sm:py-4">
                 <span className="text-muted-foreground text-sm tabular-nums">
                   {String(index + 1).padStart(2, '0')}
                 </span>

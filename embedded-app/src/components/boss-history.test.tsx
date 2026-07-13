@@ -10,9 +10,8 @@ describe('BossHistory', () => {
           {
             name: 'Iudex Gundyr',
             deaths: 7,
-            killedAt: '2026-07-09T18:30:00.000Z',
           },
-          { name: 'Vordt', deaths: 3, killedAt: '2026-07-10T18:30:00.000Z' },
+          { name: 'Vordt', deaths: 3 },
         ]}
       />,
     );

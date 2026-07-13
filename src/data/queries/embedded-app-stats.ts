@@ -49,6 +49,8 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
       deathCount: true,
       finalDeaths: true,
       pausedAt: true,
+      startedAt: true,
+      focusedAt: true,
       endedAt: true,
       endResult: true,
       boss: { select: { name: true } },

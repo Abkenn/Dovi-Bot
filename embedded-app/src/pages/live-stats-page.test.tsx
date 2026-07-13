@@ -8,6 +8,9 @@ vi.mock('../components/current-boss-card', () => ({
 vi.mock('../components/boss-history', () => ({
   BossHistory: () => <div>Boss history</div>,
 }));
+vi.mock('../components/stream-encounters', () => ({
+  StreamEncounters: () => <div>Stream encounters</div>,
+}));
 
 describe('LiveStatsPage', () => {
   it('shows game totals and dashboard sections', () => {
@@ -21,6 +24,7 @@ describe('LiveStatsPage', () => {
             killedBossCount: 4,
           },
           currentBoss: null,
+          streamEncounters: [],
           killedBosses: [],
         }}
       />,
@@ -31,13 +35,19 @@ describe('LiveStatsPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('127')).toBeInTheDocument();
     expect(screen.getByText('Current boss card')).toBeInTheDocument();
+    expect(screen.getByText('Stream encounters')).toBeInTheDocument();
     expect(screen.getByText('Boss history')).toBeInTheDocument();
   });
 
   it('shows the no-tracking state', () => {
     render(
       <LiveStatsPage
-        stats={{ game: null, currentBoss: null, killedBosses: [] }}
+        stats={{
+          game: null,
+          currentBoss: null,
+          streamEncounters: [],
+          killedBosses: [],
+        }}
       />,
     );
     expect(

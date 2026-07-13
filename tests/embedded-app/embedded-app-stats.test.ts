@@ -7,10 +7,15 @@ import {
 
 const queries = vi.hoisted(() => ({
   findEmbeddedAppGameStats: vi.fn(),
+  getGameBossDeathRanking: vi.fn(),
 }));
 
 vi.mock('../../src/data/queries/embedded-app-stats', () => ({
   findEmbeddedAppGameStats: queries.findEmbeddedAppGameStats,
+}));
+
+vi.mock('../../src/modules/bosses/bosses.service', () => ({
+  getGameBossDeathRanking: queries.getGameBossDeathRanking,
 }));
 
 import { getEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-app-stats.service';
@@ -90,15 +95,24 @@ describe('embedded app stats', () => {
     vi.clearAllMocks();
   });
 
-  it('returns the current encounter and every killed boss in game history', async () => {
+  it('returns the current encounter and every imported or tracked killed boss', async () => {
     const killed = makeSession({
       id: 'killed',
       bossName: 'Iudex Gundyr',
       status: BossTrackingSessionStatus.ENDED,
       endResult: BossTrackingEndResult.KILLED,
       deathCount: 7,
-      startedAt: new Date('2026-07-09T18:00:00.000Z'),
-      endedAt: new Date('2026-07-09T18:30:00.000Z'),
+      startedAt: new Date('2026-07-10T17:00:00.000Z'),
+      endedAt: new Date('2026-07-10T17:30:00.000Z'),
+    });
+    const previousStream = makeSession({
+      id: 'previous',
+      bossName: 'Abyss Watchers',
+      status: BossTrackingSessionStatus.ENDED,
+      endResult: BossTrackingEndResult.KILLED,
+      deathCount: 10,
+      startedAt: new Date('2026-07-09T17:00:00.000Z'),
+      endedAt: new Date('2026-07-09T17:45:00.000Z'),
     });
     const current = makeSession({
       id: 'current',
@@ -112,15 +126,38 @@ describe('embedded app stats', () => {
     queries.findEmbeddedAppGameStats.mockResolvedValue({
       game: { id: 'game-1', name: 'Dark Souls III' },
       gameDeaths: 10,
-      sessions: [current, killed],
+      sessions: [current, killed, previousStream],
+    });
+    queries.getGameBossDeathRanking.mockResolvedValue({
+      game: { id: 'game-1', name: 'Dark Souls III' },
+      stats: Array.from({ length: 19 }, (_, index) => ({
+        deaths: 19 - index,
+        boss: { id: `imported-${index}`, name: `Imported Boss ${index + 1}` },
+      })),
+      trackedBosses: [
+        {
+          id: 'boss-killed',
+          name: 'Iudex Gundyr',
+          trackingSessions: [
+            { deathCount: 7, endResult: BossTrackingEndResult.KILLED },
+          ],
+        },
+        {
+          id: 'boss-current',
+          name: 'Vordt',
+          trackingSessions: [{ deathCount: 3, endResult: null }],
+        },
+      ],
     });
 
-    await expect(getEmbeddedAppStats('staging-guild')).resolves.toMatchObject({
+    const stats = await getEmbeddedAppStats('staging-guild');
+
+    expect(stats).toMatchObject({
       game: {
         id: 'game-1',
         name: 'Dark Souls III',
         deaths: 10,
-        killedBossCount: 1,
+        killedBossCount: 20,
       },
       currentBoss: {
         name: 'Vordt',
@@ -128,14 +165,23 @@ describe('embedded app stats', () => {
         attemptNumber: 3,
         attemptStartedAt: '2026-07-10T18:00:00.000Z',
       },
-      killedBosses: [
-        {
-          name: 'Iudex Gundyr',
-          deaths: 7,
-          killedAt: '2026-07-09T18:30:00.000Z',
-        },
+      streamEncounters: [
+        { name: 'Iudex Gundyr', deaths: 7, outcome: 'KILLED' },
+        { name: 'Vordt', deaths: 3, outcome: 'ACTIVE' },
       ],
     });
+    expect(stats.killedBosses).toHaveLength(20);
+    expect(stats.killedBosses).toContainEqual({
+      name: 'Iudex Gundyr',
+      deaths: 7,
+    });
+    expect(stats.killedBosses).not.toContainEqual(
+      expect.objectContaining({ name: 'Vordt' }),
+    );
+    expect(queries.getGameBossDeathRanking).toHaveBeenCalledWith(
+      'Dark Souls III',
+      { limit: null },
+    );
   });
 
   it('returns an empty state when staging has no tracking history', async () => {
@@ -144,6 +190,7 @@ describe('embedded app stats', () => {
     await expect(getEmbeddedAppStats('staging-guild')).resolves.toEqual({
       game: null,
       currentBoss: null,
+      streamEncounters: [],
       killedBosses: [],
     });
   });

@@ -6,7 +6,12 @@ vi.mock('../../src/modules/embedded-app/embedded-app-stats.service', () => ({
 
 import { createEmbeddedAppStatsCache } from '../../src/modules/embedded-app/embedded-app-stats-cache.service';
 
-const emptyStats = { game: null, currentBoss: null, killedBosses: [] };
+const emptyStats = {
+  game: null,
+  currentBoss: null,
+  streamEncounters: [],
+  killedBosses: [],
+};
 
 describe('embedded app stats cache', () => {
   beforeEach(() => {

@@ -22,7 +22,7 @@ const formatDuration = (seconds: number | null) => {
 
 const Stat = ({ value, label }: { value: string | number; label: string }) => (
   <div className="space-y-1">
-    <strong className="block text-3xl font-bold tracking-tight sm:text-4xl">
+    <strong className="block text-2xl font-bold tracking-tight sm:text-4xl">
       {value}
     </strong>
     <span className="text-muted-foreground text-[0.68rem] font-semibold tracking-[0.14em] uppercase">
@@ -37,13 +37,13 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
 
   if (!boss) {
     return (
-      <Card className="border-dashed bg-card/70">
-        <CardHeader>
+      <Card className="gap-3 border-dashed bg-card/70 py-4 sm:gap-6 sm:py-6">
+        <CardHeader className="px-4 sm:px-6">
           <CardDescription className="font-semibold tracking-[0.18em] text-primary uppercase">
             Current boss
           </CardDescription>
           <CardTitle>
-            <h2 className="text-2xl">Waiting for tracking</h2>
+            <h2 className="text-xl sm:text-2xl">Waiting for tracking</h2>
           </CardTitle>
           <CardDescription>
             Live details will appear when the next boss begins.
@@ -54,14 +54,18 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
   }
 
   return (
-    <Card className={paused ? 'border-amber-500/40' : 'border-primary/20'}>
-      <CardHeader className="grid-cols-[1fr_auto]">
+    <Card
+      className={`gap-4 py-4 sm:gap-6 sm:py-6 ${
+        paused ? 'border-amber-500/40' : 'border-primary/20'
+      }`}
+    >
+      <CardHeader className="grid-cols-[1fr_auto] px-4 sm:px-6">
         <div className="space-y-2">
           <CardDescription className="font-semibold tracking-[0.18em] text-primary uppercase">
             Current boss
           </CardDescription>
           <CardTitle>
-            <h2 className="text-2xl sm:text-3xl">{boss.name}</h2>
+            <h2 className="text-xl sm:text-3xl">{boss.name}</h2>
           </CardTitle>
         </div>
         <Badge
@@ -76,8 +80,8 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
           {paused ? 'Paused' : 'Live'}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+      <CardContent className="space-y-4 px-4 sm:space-y-6 sm:px-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-5">
           <Stat value={boss.deaths} label="Deaths" />
           <Stat value={boss.attemptNumber ?? '–'} label="Attempt" />
           <Stat value={formatDuration(elapsed)} label="Attempt time" />

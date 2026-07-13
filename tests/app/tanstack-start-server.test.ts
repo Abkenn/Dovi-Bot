@@ -40,7 +40,12 @@ describe('TanStack Start server integration', () => {
   });
 
   it('registers the existing cached DAL service for Start server functions', async () => {
-    const emptyStats = { game: null, currentBoss: null, killedBosses: [] };
+    const emptyStats = {
+      game: null,
+      currentBoss: null,
+      streamEncounters: [],
+      killedBosses: [],
+    };
     stats.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);
 
     registerEmbeddedAppStatsLoader();

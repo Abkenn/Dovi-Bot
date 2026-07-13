@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadLiveStatsPayload } from './live-stats.server';
 
-const emptyStats = { game: null, currentBoss: null, killedBosses: [] };
+const emptyStats = {
+  game: null,
+  currentBoss: null,
+  streamEncounters: [],
+  killedBosses: [],
+};
 
 describe('live stats server adapter', () => {
   afterEach(() => {
