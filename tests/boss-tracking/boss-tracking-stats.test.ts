@@ -529,6 +529,60 @@ describe('boss tracking stats', () => {
     });
   });
 
+  it('uses imported encounters when a legacy game has no tracked sessions', () => {
+    const status = summarizeTrackedGameStatus({
+      name: 'Elden Ring',
+      trackingSessions: [],
+      bosses: [
+        {
+          id: 'margit',
+          name: 'Margit',
+          stats: [{ deaths: 8 }],
+          trackingSessions: [],
+        },
+        {
+          id: 'godrick',
+          name: 'Godrick',
+          stats: [{ deaths: 4 }],
+          trackingSessions: [],
+        },
+      ],
+    });
+
+    expect(status).toEqual({
+      gameName: 'Elden Ring',
+      deaths: 12,
+      killedBossCount: 2,
+      pendingBossCount: 0,
+    });
+  });
+
+  it('shows imported encounters when no recent tracked encounters exist', () => {
+    expect(
+      summarizeRecentBossEncounters([
+        {
+          name: 'Margit',
+          stats: [
+            {
+              deaths: 8,
+              totalAttemptTimeSeconds: 900,
+              winningAttemptTimeSeconds: 120,
+              difficultyCoefficient: null,
+            },
+          ],
+          trackingSessions: [],
+        },
+      ]),
+    ).toEqual([
+      {
+        bossName: 'Margit',
+        deaths: 8,
+        averageAttemptSeconds: 100,
+        winningAttemptSeconds: 120,
+      },
+    ]);
+  });
+
   it('summarizes the three most recently fought distinct bosses', () => {
     const oldest = oneDeathRunbackScenario();
     const middle = multiDeathPausedScenario();

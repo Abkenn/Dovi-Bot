@@ -25,7 +25,7 @@ describe('boss tracking Discord output', () => {
       ],
     });
 
-    expect(getEmbedFieldValue(embed, 'Recent Boss Encounters')).toBe(
+    expect(getEmbedFieldValue(embed, 'Boss Encounters')).toBe(
       '**Pending Boss**\nDeaths: 5 | Avg attempt: 1m 15s\n\n' +
         '**Killed Boss**\nDeaths: 7 | Avg attempt: 1m 30s | Winning attempt: 2m 3s',
     );
@@ -59,13 +59,13 @@ describe('boss tracking Discord output', () => {
       ],
     });
 
-    expect(getEmbedFieldValue(embed, 'Recent Boss Encounters')).toContain(
+    expect(getEmbedFieldValue(embed, 'Boss Encounters')).toContain(
       'Avg attempt: Unknown',
     );
-    expect(getEmbedFieldValue(embed, 'Recent Boss Encounters')).toContain(
+    expect(getEmbedFieldValue(embed, 'Boss Encounters')).toContain(
       'Avg attempt: 45s',
     );
-    expect(getEmbedFieldValue(embed, 'Recent Boss Encounters')).toContain(
+    expect(getEmbedFieldValue(embed, 'Boss Encounters')).toContain(
       'Avg attempt: 1h 1m 1s | Winning attempt: 1h 0m 0s',
     );
   });
@@ -79,7 +79,7 @@ describe('boss tracking Discord output', () => {
       recentBossEncounters: [],
     });
 
-    expect(getEmbedFieldValue(embed, 'Recent Boss Encounters')).toBe(
+    expect(getEmbedFieldValue(embed, 'Boss Encounters')).toBe(
       'No boss encounters recorded yet.',
     );
   });

@@ -25,10 +25,12 @@ export const getBossGameAutocomplete = async (query: string) => {
 export const getBossAutocomplete = async ({
   gameName,
   query,
+  requireEncounterData,
 }: GetBossAutocompleteInput) => {
   const bosses = await findBossesForAutocomplete({
     ...(gameName ? { normalizedGameName: normalizeBossName(gameName) } : {}),
     normalizedBossQuery: normalizeBossName(query),
+    ...(requireEncounterData ? { requireEncounterData: true } : {}),
   });
   const seen = new Set<string>();
 

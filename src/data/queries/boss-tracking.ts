@@ -1,4 +1,7 @@
-import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
+import {
+  BossEncounterSource,
+  BossTrackingSessionStatus,
+} from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 import { OPEN_BOSS_TRACKING_SESSION_STATUSES } from '../boss-tracking.constants';
 import type { FindOpenBossTrackingBossesForAutocompleteInput } from './boss-stats.types';
@@ -128,6 +131,13 @@ export const findTrackedGameStatus = (normalizedGameName: string) =>
       },
       bosses: {
         include: {
+          stats: {
+            where: {
+              source: BossEncounterSource.DAVI_SPREADSHEET,
+              deaths: { not: null },
+            },
+            take: 1,
+          },
           trackingSessions: {
             where: {
               status: { not: BossTrackingSessionStatus.CANCELLED },

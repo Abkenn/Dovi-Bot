@@ -248,6 +248,9 @@ export class BossAutocompleteHandler extends InteractionHandler {
       getBossAutocomplete({
         gameName,
         query,
+        requireEncounterData: ['showbossstats', 'showgamestats'].includes(
+          interaction.commandName,
+        ),
       }),
       [],
     );

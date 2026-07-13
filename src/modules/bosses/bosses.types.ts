@@ -1,6 +1,7 @@
 export type GetBossAutocompleteInput = {
   gameName: string | null;
   query: string;
+  requireEncounterData?: boolean;
 };
 
 export type BossAutocompleteValueInput = {

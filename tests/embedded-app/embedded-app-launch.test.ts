@@ -18,7 +18,11 @@ import { launchEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-
 const makeInteraction = () => {
   const launchActivity = vi.fn();
   const reply = vi.fn();
-  const interaction = { launchActivity, reply } as unknown as ButtonInteraction;
+  const interaction = {
+    applicationId: 'app-1',
+    launchActivity,
+    reply,
+  } as unknown as ButtonInteraction;
 
   return { interaction, launchActivity, reply };
 };
@@ -63,6 +67,32 @@ describe('embedded app launch', () => {
 
     await expect(launchEmbeddedAppStats(interaction)).rejects.toThrow(
       'Discord unavailable',
+    );
+  });
+
+  it('offers a deep link when Discord cannot launch in the channel type', async () => {
+    const { interaction, launchActivity, reply } = makeInteraction();
+    launchActivity.mockRejectedValue({ code: 50024 });
+    reply.mockResolvedValue(undefined);
+
+    await launchEmbeddedAppStats(interaction, 'Elden Ring');
+
+    expect(reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Open Live Stats in Discord:',
+        components: [
+          expect.objectContaining({
+            components: [
+              expect.objectContaining({
+                data: expect.objectContaining({
+                  label: 'Stats',
+                  url: 'https://discord.com/activities/app-1?custom_id=Elden+Ring',
+                }),
+              }),
+            ],
+          }),
+        ],
+      }),
     );
   });
 

@@ -42,11 +42,14 @@ type GameTrackingStatusStats = {
     deathCount: number;
     finalDeaths: number | null;
   }[];
-  bosses: GameBossWithTrackedSessions[];
+  bosses: (GameBossWithTrackedSessions & {
+    stats?: { deaths: number | null }[];
+  })[];
 };
 
 type RecentBossEncounterStats = {
   name: string;
+  stats?: BossWithDaviStats['stats'];
   trackingSessions: BossTrackingSessionView[];
 };
 
@@ -177,23 +180,28 @@ export const getGameBossStatsRows = (
 };
 
 export const summarizeTrackedGameStatus = (game: GameTrackingStatusStats) => {
-  const trackedBosses = game.bosses.filter(
-    (boss) => boss.trackingSessions.length > 0,
+  const encounteredBosses = game.bosses.filter(
+    (boss) => (boss.stats?.length ?? 0) > 0 || boss.trackingSessions.length > 0,
   );
-  const killedBosses = trackedBosses.filter((boss) =>
-    hasTrackedBossKill(boss.trackingSessions),
+  const killedBosses = encounteredBosses.filter(
+    (boss) =>
+      (boss.stats?.length ?? 0) > 0 ||
+      hasTrackedBossKill(boss.trackingSessions),
   );
   const latestSession = game.trackingSessions[0] ?? null;
   const deaths = latestSession
     ? (latestSession.finalDeaths ??
       latestSession.startDeaths + latestSession.deathCount)
-    : 0;
+    : encounteredBosses.reduce(
+        (total, boss) => total + (boss.stats?.[0]?.deaths ?? 0),
+        0,
+      );
 
   return {
     gameName: game.name,
     deaths,
     killedBossCount: killedBosses.length,
-    pendingBossCount: trackedBosses.length - killedBosses.length,
+    pendingBossCount: encounteredBosses.length - killedBosses.length,
   };
 };
 
@@ -201,23 +209,55 @@ export const summarizeRecentBossEncounters = (
   bosses: RecentBossEncounterStats[],
 ) =>
   bosses
-    .filter((boss) => boss.trackingSessions.length > 0)
-    .sort((left, right) => {
-      const leftFocusedAt = left.trackingSessions[0]?.focusedAt.getTime() ?? 0;
-      const rightFocusedAt =
-        right.trackingSessions[0]?.focusedAt.getTime() ?? 0;
+    .map((boss) => {
+      const stats = summarizeCombinedBossStats({
+        stats: boss.stats ?? [],
+        trackingSessions: boss.trackingSessions,
+      });
 
-      return rightFocusedAt - leftFocusedAt;
+      if (!stats) {
+        return null;
+      }
+
+      return {
+        boss,
+        stats,
+        focusedAt: boss.trackingSessions[0]?.focusedAt.getTime() ?? null,
+      };
+    })
+    .filter((encounter) => encounter !== null)
+    .sort((left, right) => {
+      if (left.focusedAt !== null && right.focusedAt === null) {
+        return -1;
+      }
+
+      if (left.focusedAt === null && right.focusedAt !== null) {
+        return 1;
+      }
+
+      if (left.focusedAt !== null && right.focusedAt !== null) {
+        return right.focusedAt - left.focusedAt;
+      }
+
+      const deathDifference =
+        (right.stats.deaths ?? 0) - (left.stats.deaths ?? 0);
+
+      if (deathDifference !== 0) {
+        return deathDifference;
+      }
+
+      return left.boss.name.localeCompare(right.boss.name);
     })
     .slice(0, 3)
-    .map((boss) => {
-      const summary = summarizeBossTrackingSessions(boss.trackingSessions);
-      const killed = hasTrackedBossKill(boss.trackingSessions);
+    .map(({ boss, stats }) => {
+      const killed =
+        (boss.stats?.length ?? 0) > 0 ||
+        hasTrackedBossKill(boss.trackingSessions);
 
       return {
         bossName: boss.name,
-        deaths: getTrackedBossDeathCount(boss.trackingSessions),
-        averageAttemptSeconds: summary.averageAttemptSeconds,
-        winningAttemptSeconds: killed ? summary.winningAttemptSeconds : null,
+        deaths: stats.deaths ?? 0,
+        averageAttemptSeconds: stats.averageAttemptSeconds,
+        winningAttemptSeconds: killed ? stats.winningAttemptSeconds : null,
       };
     });

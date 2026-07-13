@@ -48,6 +48,7 @@ export const findBossGamesForAutocomplete = (normalizedQuery: string) =>
 export const findBossesForAutocomplete = async ({
   normalizedGameName,
   normalizedBossQuery,
+  requireEncounterData,
 }: FindBossesForAutocompleteInput) => {
   const game = normalizedGameName
     ? await prisma.bossGame.findFirst({
@@ -69,22 +70,51 @@ export const findBossesForAutocomplete = async ({
     return [];
   }
 
-  return prisma.boss.findMany({
-    where: {
-      ...(game ? { gameId: game.id } : {}),
-      ...(normalizedBossQuery
-        ? {
-            OR: [
-              { normalizedName: { contains: normalizedBossQuery } },
-              {
-                topicTerms: {
-                  some: { normalizedValue: { contains: normalizedBossQuery } },
-                },
+  const where: Prisma.BossWhereInput = {};
+
+  if (game) {
+    where.gameId = game.id;
+  }
+
+  if (normalizedBossQuery) {
+    where.OR = [
+      { normalizedName: { contains: normalizedBossQuery } },
+      {
+        topicTerms: {
+          some: { normalizedValue: { contains: normalizedBossQuery } },
+        },
+      },
+    ];
+  }
+
+  if (requireEncounterData) {
+    where.AND = [
+      {
+        OR: [
+          {
+            stats: {
+              some: {
+                OR: [
+                  { deaths: { not: null } },
+                  { totalAttemptTimeSeconds: { not: null } },
+                  { winningAttemptTimeSeconds: { not: null } },
+                  { difficultyCoefficient: { not: null } },
+                ],
               },
-            ],
-          }
-        : {}),
-    },
+            },
+          },
+          {
+            trackingSessions: {
+              some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+            },
+          },
+        ],
+      },
+    ];
+  }
+
+  return prisma.boss.findMany({
+    where,
     orderBy: [{ game: { name: 'asc' } }, { name: 'asc' }],
     take: AUTOCOMPLETE_LIMIT * 2,
     select: { name: true, game: { select: { name: true } } },

@@ -59,7 +59,7 @@ export const buildGameTrackingStatusEmbed = (status: GameTrackingStatusView) =>
         inline: false,
       },
       {
-        name: 'Recent Boss Encounters',
+        name: 'Boss Encounters',
         value:
           status.recentBossEncounters
             .map(formatRecentBossEncounter)

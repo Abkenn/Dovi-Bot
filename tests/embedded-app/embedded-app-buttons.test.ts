@@ -33,7 +33,26 @@ const makeInteraction = (customId: string, guildId = 'staging-guild') => ({
 });
 
 describe('embedded app Stats buttons', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    dependencies.launchEmbeddedAppStats.mockResolvedValue(undefined);
+    dependencies.createInteractionExecutionLog.mockResolvedValue(undefined);
+  });
+
+  it('registers as an interaction listener', () => {
+    expect(
+      new EmbeddedAppStatsButtonsListener({} as never, {} as never),
+    ).toBeInstanceOf(EmbeddedAppStatsButtonsListener);
+  });
+
+  it('ignores interactions that are not buttons', async () => {
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      { isButton: () => false } as never,
+    );
+
+    expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
+  });
 
   it('launches and logs the authenticated user and targeted game', async () => {
     const interaction = makeInteraction('embedded-app-stats:UNDERTALE');
@@ -101,5 +120,45 @@ describe('embedded app Stats buttons', () => {
     expect(dependencies.createInteractionExecutionLog).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'DENIED' }),
     );
+  });
+
+  it('logs launch failures before preserving the error', async () => {
+    const error = new Error('Discord unavailable');
+    dependencies.launchEmbeddedAppStats.mockRejectedValue(error);
+
+    await expect(
+      EmbeddedAppStatsButtonsListener.prototype.run.call(
+        {} as EmbeddedAppStatsButtonsListener,
+        makeInteraction('embedded-app-stats') as never,
+      ),
+    ).rejects.toBe(error);
+    expect(dependencies.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'ERROR',
+        note: 'Discord unavailable',
+      }),
+    );
+  });
+
+  it('does not fail a launch when analytics logging is unavailable', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    dependencies.createInteractionExecutionLog.mockRejectedValue(
+      new Error('Database unavailable'),
+    );
+
+    await expect(
+      EmbeddedAppStatsButtonsListener.prototype.run.call(
+        {} as EmbeddedAppStatsButtonsListener,
+        makeInteraction('embedded-app-stats') as never,
+      ),
+    ).resolves.toBeUndefined();
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to log Stats app button interaction',
+      expect.any(Error),
+    );
+
+    consoleError.mockRestore();
   });
 });

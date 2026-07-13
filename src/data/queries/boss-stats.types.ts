@@ -3,6 +3,7 @@ import type { Simplify } from 'type-fest';
 export type FindBossesForAutocompleteInput = {
   normalizedGameName?: string;
   normalizedBossQuery: string;
+  requireEncounterData?: boolean;
 };
 
 export type FindOpenBossTrackingBossesForAutocompleteInput = Simplify<
