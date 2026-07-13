@@ -82,19 +82,19 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
     }
 
     try {
-      const response = await launchEmbeddedAppStats(
-        interaction,
-        target.gameName,
-      );
+      const result = await launchEmbeddedAppStats(interaction, target.gameName);
 
       await logStatsAppEnterSafely({
         interaction,
         targetGame: target.gameName,
-        status: CommandExecutionStatus.SUCCESS,
+        status: result.launched
+          ? CommandExecutionStatus.SUCCESS
+          : CommandExecutionStatus.ERROR,
         durationMs: Date.now() - startedAt,
+        note: result.note,
       });
 
-      return response;
+      return;
     } catch (error) {
       await logStatsAppEnterSafely({
         interaction,

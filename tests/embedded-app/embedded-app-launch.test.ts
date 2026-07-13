@@ -36,7 +36,9 @@ describe('embedded app launch', () => {
       interaction: { activityInstanceId: 'instance-1' },
     });
 
-    await launchEmbeddedAppStats(interaction, 'UNDERTALE');
+    await expect(
+      launchEmbeddedAppStats(interaction, 'UNDERTALE'),
+    ).resolves.toEqual({ launched: true, note: null });
 
     expect(launchActivity).toHaveBeenCalledWith({ withResponse: true });
     expect(launchTargets.registerEmbeddedAppLaunchTarget).toHaveBeenCalledWith(
@@ -51,7 +53,10 @@ describe('embedded app launch', () => {
     launchActivity.mockRejectedValue({ code: 50234 });
     reply.mockResolvedValue(undefined);
 
-    await launchEmbeddedAppStats(interaction);
+    await expect(launchEmbeddedAppStats(interaction)).resolves.toEqual({
+      launched: false,
+      note: 'Activities are not enabled for this application.',
+    });
 
     expect(reply).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -75,7 +80,9 @@ describe('embedded app launch', () => {
     launchActivity.mockRejectedValue({ code: 50024 });
     reply.mockResolvedValue(undefined);
 
-    await launchEmbeddedAppStats(interaction, 'Elden Ring');
+    await expect(
+      launchEmbeddedAppStats(interaction, 'Elden Ring'),
+    ).resolves.toEqual({ launched: true, note: 'Used Activity deep link.' });
 
     expect(reply).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -101,6 +108,20 @@ describe('embedded app launch', () => {
     launchActivity.mockRejectedValue({ code: 50234 });
     reply.mockRejectedValue({ code: 10062 });
 
-    await expect(launchEmbeddedAppStats(interaction)).resolves.toBeUndefined();
+    await expect(launchEmbeddedAppStats(interaction)).resolves.toEqual({
+      launched: false,
+      note: 'Interaction expired before the Activity fallback was sent.',
+    });
+  });
+
+  it('treats a duplicate-consumer unknown interaction as an expired outcome', async () => {
+    const { interaction, launchActivity, reply } = makeInteraction();
+    launchActivity.mockRejectedValue({ code: 10062 });
+
+    await expect(launchEmbeddedAppStats(interaction)).resolves.toEqual({
+      launched: false,
+      note: 'Interaction expired before the Activity launched.',
+    });
+    expect(reply).not.toHaveBeenCalled();
   });
 });

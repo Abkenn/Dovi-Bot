@@ -35,7 +35,10 @@ const makeInteraction = (customId: string, guildId = 'staging-guild') => ({
 describe('embedded app Stats buttons', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    dependencies.launchEmbeddedAppStats.mockResolvedValue(undefined);
+    dependencies.launchEmbeddedAppStats.mockResolvedValue({
+      launched: true,
+      note: null,
+    });
     dependencies.createInteractionExecutionLog.mockResolvedValue(undefined);
   });
 
@@ -136,6 +139,26 @@ describe('embedded app Stats buttons', () => {
       expect.objectContaining({
         status: 'ERROR',
         note: 'Discord unavailable',
+      }),
+    );
+  });
+
+  it('logs an expired duplicate interaction without throwing', async () => {
+    dependencies.launchEmbeddedAppStats.mockResolvedValue({
+      launched: false,
+      note: 'Interaction expired before the Activity launched.',
+    });
+
+    await expect(
+      EmbeddedAppStatsButtonsListener.prototype.run.call(
+        {} as EmbeddedAppStatsButtonsListener,
+        makeInteraction('embedded-app-stats') as never,
+      ),
+    ).resolves.toBeUndefined();
+    expect(dependencies.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'ERROR',
+        note: 'Interaction expired before the Activity launched.',
       }),
     );
   });
