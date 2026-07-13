@@ -1,6 +1,5 @@
 import { findEmbeddedAppGameStats } from '../../data/queries/embedded-app-stats';
 import {
-  BossTrackingAttemptResult,
   BossTrackingEndResult,
   BossTrackingSessionStatus,
 } from '../../generated/prisma/enums';
@@ -31,10 +30,8 @@ const toCurrentBoss = (
     return null;
   }
 
-  const attempt = session.attempts.find(
-    (candidate) => candidate.result === BossTrackingAttemptResult.IN_PROGRESS,
-  );
-  const openPause = session.pauses.find((pause) => pause.endedAt === null);
+  const attempt = session.attempts[0];
+  const openPause = session.pauses[0];
 
   return {
     name: session.boss.name,

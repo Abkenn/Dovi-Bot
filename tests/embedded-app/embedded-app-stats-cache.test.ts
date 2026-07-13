@@ -16,21 +16,52 @@ describe('embedded app stats cache', () => {
 
   it('shares one small snapshot across viewers during the refresh window', async () => {
     const loadStats = vi.fn().mockResolvedValue(emptyStats);
-    const getStats = createEmbeddedAppStatsCache(loadStats);
+    const cache = createEmbeddedAppStatsCache(loadStats);
 
-    await Promise.all([getStats('staging-guild'), getStats('staging-guild')]);
-    await getStats('staging-guild');
+    await Promise.all([cache.get('staging-guild'), cache.get('staging-guild')]);
+    await cache.get('staging-guild');
 
     expect(loadStats).toHaveBeenCalledOnce();
   });
 
-  it('refreshes after four seconds', async () => {
+  it('keeps the tiny snapshot for twelve hours between tracking changes', async () => {
     const loadStats = vi.fn().mockResolvedValue(emptyStats);
-    const getStats = createEmbeddedAppStatsCache(loadStats);
-    await getStats('staging-guild');
+    const cache = createEmbeddedAppStatsCache(loadStats);
+    await cache.get('staging-guild');
 
-    vi.advanceTimersByTime(4_000);
-    await getStats('staging-guild');
+    vi.advanceTimersByTime(12 * 60 * 60 * 1_000);
+    await cache.get('staging-guild');
+
+    expect(loadStats).toHaveBeenCalledTimes(2);
+  });
+
+  it('reloads immediately after the guild tracking data changes', async () => {
+    const loadStats = vi.fn().mockResolvedValue(emptyStats);
+    const cache = createEmbeddedAppStatsCache(loadStats);
+    await cache.get('staging-guild');
+
+    cache.invalidate('staging-guild');
+    await cache.get('staging-guild');
+
+    expect(loadStats).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retain a snapshot invalidated while it is loading', async () => {
+    let finishLoad: ((stats: typeof emptyStats) => void) | undefined;
+    const loadStats = vi.fn(
+      () =>
+        new Promise<typeof emptyStats>((resolve) => {
+          finishLoad = resolve;
+        }),
+    );
+    const cache = createEmbeddedAppStatsCache(loadStats);
+    const firstLoad = cache.get('staging-guild');
+
+    cache.invalidate('staging-guild');
+    finishLoad?.(emptyStats);
+    await firstLoad;
+    loadStats.mockResolvedValue(emptyStats);
+    await cache.get('staging-guild');
 
     expect(loadStats).toHaveBeenCalledTimes(2);
   });

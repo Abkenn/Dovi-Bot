@@ -8,6 +8,7 @@ import {
 } from './tanstack-start-server';
 
 const DATABASE_HEALTH_CACHE_MS = 60_000;
+const DISCORD_PROXY_PATH = '/.proxy';
 
 let databaseHealth:
   | {
@@ -50,6 +51,20 @@ const getDatabaseHealth = async () => {
 export function createHealthServer() {
   const app = new Hono();
   registerEmbeddedAppStatsLoader();
+
+  const normalizeDiscordProxyRequest = (request: Request) => {
+    const url = new URL(request.url);
+    url.pathname = url.pathname.slice(DISCORD_PROXY_PATH.length) || '/';
+
+    return new Request(url, request);
+  };
+
+  app.use('/.proxy', async (c) =>
+    app.fetch(normalizeDiscordProxyRequest(c.req.raw)),
+  );
+  app.use('/.proxy/*', async (c) =>
+    app.fetch(normalizeDiscordProxyRequest(c.req.raw)),
+  );
 
   app.get('/health', async (c) => {
     const runtimeHealth = getRuntimeHealth();

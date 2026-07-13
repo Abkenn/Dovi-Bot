@@ -41,6 +41,20 @@ describe('health and embedded app server', () => {
     expect(tanstackStart.fetchEmbeddedApp).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    ['/.proxy', '/'],
+    ['/.proxy/', '/'],
+    ['/.proxy/live?instance_id=activity', '/live?instance_id=activity'],
+  ])('normalizes Discord Activity proxy path %s', async (path, expectedPath) => {
+    const response = await createHealthServer().request(path);
+
+    expect(response.status).toBe(200);
+    const request = tanstackStart.fetchEmbeddedApp.mock.calls[0]?.[0];
+    expect(new URL(request.url).pathname + new URL(request.url).search).toBe(
+      expectedPath,
+    );
+  });
+
   it('reports ready Discord and database health', async () => {
     runtime.getRuntimeHealth.mockReturnValue({
       discord: { status: 'ready', detail: null },

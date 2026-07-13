@@ -1,6 +1,10 @@
 import type { Interaction } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@sapphire/framework', () => ({
+  Listener: class Listener {},
+}));
+
 const reminderService = vi.hoisted(() => ({
   setLiveReminderEnabled: vi.fn(),
   subscribeToStreamReminder: vi.fn(),
@@ -29,6 +33,12 @@ describe('stream reminder DM buttons', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     discordAccess.isAllowedGuildForCommand.mockReturnValue(true);
+  });
+
+  it('registers as an interaction listener', () => {
+    expect(
+      new StreamReminderButtonsListener({} as never, {} as never),
+    ).toBeInstanceOf(StreamReminderButtonsListener);
   });
 
   it('toggles the owner preference and updates the pre-stream DM in place', async () => {

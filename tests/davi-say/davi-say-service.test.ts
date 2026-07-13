@@ -178,7 +178,7 @@ describe('davi-say service', () => {
     const client = { guilds: { fetch: vi.fn().mockResolvedValue(guild) } };
 
     await expect(
-      fetchDaviSayChannels(client as never, 'prod'),
+      fetchDaviSayChannels(client as never, getDaviSayTargetGuildId('prod')),
     ).resolves.toEqual([
       {
         id: 'text',
@@ -207,7 +207,7 @@ describe('davi-say service', () => {
     const client = { guilds: { fetch: vi.fn().mockResolvedValue(guild) } };
 
     await expect(
-      fetchDaviSayChannels(client as never, 'prod'),
+      fetchDaviSayChannels(client as never, getDaviSayTargetGuildId('prod')),
     ).resolves.toEqual([]);
   });
 
@@ -225,7 +225,7 @@ describe('davi-say service', () => {
     const client = { guilds: { fetch: vi.fn().mockResolvedValue(guild) } };
 
     await expect(
-      fetchDaviSayStickers(client as never, 'prod'),
+      fetchDaviSayStickers(client as never, getDaviSayTargetGuildId('prod')),
     ).resolves.toEqual([
       { available: true, id: 'one', name: 'Wave' },
       { available: false, id: 'two', name: 'Old Wave' },

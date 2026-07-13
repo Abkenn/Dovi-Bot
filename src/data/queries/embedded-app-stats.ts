@@ -1,7 +1,9 @@
-import { BossTrackingSessionStatus } from '../../generated/prisma/enums';
+import {
+  BossTrackingAttemptResult,
+  BossTrackingSessionStatus,
+} from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
 import { OPEN_BOSS_TRACKING_SESSION_STATUSES } from '../boss-tracking.constants';
-import { bossTrackingSessionInclude } from './boss-tracking';
 
 export const findEmbeddedAppGameStats = async (guildId: string) => {
   const latestSession = await prisma.bossTrackingSession.findFirst({
@@ -40,7 +42,29 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
       gameId: targetSession.gameId,
       status: { not: BossTrackingSessionStatus.CANCELLED },
     },
-    include: bossTrackingSessionInclude,
+    select: {
+      guildId: true,
+      status: true,
+      startDeaths: true,
+      deathCount: true,
+      finalDeaths: true,
+      pausedAt: true,
+      endedAt: true,
+      endResult: true,
+      boss: { select: { name: true } },
+      attempts: {
+        where: { result: BossTrackingAttemptResult.IN_PROGRESS },
+        orderBy: { attemptNumber: 'desc' },
+        take: 1,
+        select: { attemptNumber: true, startedAt: true },
+      },
+      pauses: {
+        where: { endedAt: null },
+        orderBy: { startedAt: 'desc' },
+        take: 1,
+        select: { reason: true },
+      },
+    },
     orderBy: { focusedAt: 'desc' },
   });
 

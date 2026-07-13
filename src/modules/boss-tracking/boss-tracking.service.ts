@@ -27,6 +27,7 @@ import {
 } from '../bosses/bosses.stats';
 import { normalizeBossName } from '../bosses/bosses.utils';
 import { invalidateCommunityTopicMatcherCache } from '../community-topics/community-topic-matcher';
+import { invalidateEmbeddedAppStatsCache } from '../embedded-app/embedded-app-stats-cache.service';
 import type {
   BossTopicTermsInput,
   BossTrackingSessionView,
@@ -57,6 +58,15 @@ const assertNonEmptyName = (value: string, label: string) => {
   }
 
   return trimmed;
+};
+
+const completeEmbeddedAppStatsMutation = async <Result>(
+  guildId: string,
+  mutation: Promise<Result>,
+) => {
+  const result = await mutation;
+  invalidateEmbeddedAppStatsCache(guildId);
+  return result;
 };
 
 const getDefaultGameName = async (guildId: string) => {
@@ -278,6 +288,7 @@ export const startLiveBossTracking = async ({
   const session = await startBossTrackingSession(startSessionInput);
 
   invalidateCommunityTopicMatcherCache();
+  invalidateEmbeddedAppStatsCache(guildId);
 
   return session;
 };
@@ -288,9 +299,12 @@ export const recordLiveBossDeath = ({
 }: RecordLiveBossDeathInput) => {
   const vodDeathSeconds = parseVodTimestamp(vodTime);
 
-  return vodDeathSeconds === undefined
-    ? recordBossTrackingDeath({ guildId })
-    : recordBossTrackingDeath({ guildId, vodDeathSeconds });
+  const mutation =
+    vodDeathSeconds === undefined
+      ? recordBossTrackingDeath({ guildId })
+      : recordBossTrackingDeath({ guildId, vodDeathSeconds });
+
+  return completeEmbeddedAppStatsMutation(guildId, mutation);
 };
 
 export const pauseLiveBossTracking = async ({
@@ -320,7 +334,10 @@ export const pauseLiveBossTracking = async ({
     }
   }
 
-  return pauseBossTrackingSession(pauseInput);
+  return completeEmbeddedAppStatsMutation(
+    guildId,
+    pauseBossTrackingSession(pauseInput),
+  );
 };
 
 export const resumeLiveBossTracking = async ({
@@ -357,7 +374,10 @@ export const resumeLiveBossTracking = async ({
     resumeSessionInput.vodResumeSeconds = vodResumeSeconds;
   }
 
-  return resumeBossTrackingSession(resumeSessionInput);
+  return completeEmbeddedAppStatsMutation(
+    guildId,
+    resumeBossTrackingSession(resumeSessionInput),
+  );
 };
 
 export const getLiveBossTrackingStatus =
@@ -482,6 +502,7 @@ export const updateLiveBossInfo = async ({
   const result = await updateBossTrackingInfo(trackingInfoUpdate);
 
   invalidateCommunityTopicMatcherCache();
+  invalidateEmbeddedAppStatsCache(guildId);
 
   return result;
 };
@@ -544,6 +565,7 @@ export const updateLiveGameInfo = async ({
   const result = await updateBossGameTopicInfo(gameTopicInfoUpdate);
 
   invalidateCommunityTopicMatcherCache();
+  invalidateEmbeddedAppStatsCache(guildId);
 
   return result;
 };
@@ -609,13 +631,17 @@ export const endLiveBossTracking = async ({
     endInput.vodEndSeconds = vodEndSeconds;
   }
 
-  return endBossTrackingSession(endInput);
+  return completeEmbeddedAppStatsMutation(
+    guildId,
+    endBossTrackingSession(endInput),
+  );
 };
 
 export const cancelLiveBossTracking = async (guildId: string) => {
   const session = await cancelBossTrackingSession(guildId);
 
   invalidateCommunityTopicMatcherCache();
+  invalidateEmbeddedAppStatsCache(guildId);
 
   return session;
 };
