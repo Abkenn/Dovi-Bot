@@ -23,21 +23,12 @@ export const useAnimatedNumber = ({
       ? 'returning'
       : 'first',
   );
-  const hasAnimated = useRef(false);
 
   useEffect(() => {
-    let duration = 0.55;
-    if (hasAnimated.current) {
-      duration = 0.25;
-    } else if (visit.current === 'returning') {
-      duration = 0.055;
-    }
-
     const controls = animate(animatedValue, value, {
-      duration,
+      duration: 0.3,
       ease: [0.22, 1, 0.36, 1],
     });
-    hasAnimated.current = true;
     if (cacheKey !== undefined) {
       visitedNumbers.add(cacheKey);
     }
