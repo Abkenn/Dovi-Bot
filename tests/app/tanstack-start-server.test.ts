@@ -139,6 +139,18 @@ describe('TanStack Start SSR worker integration', () => {
     );
   });
 
+  it('loads the same production stats for a staging Activity launch', async () => {
+    services.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);
+
+    await loadEmbeddedAppStatsForRequest(
+      new Request('https://dovi.test/?guild_id=staging-guild'),
+    );
+
+    expect(services.getCachedEmbeddedAppStats).toHaveBeenCalledWith(
+      'production-guild',
+    );
+  });
+
   it('rejects Activity launches from an unknown guild', async () => {
     await expect(
       loadEmbeddedAppStatsForRequest(

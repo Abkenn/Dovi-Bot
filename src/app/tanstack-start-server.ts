@@ -144,15 +144,16 @@ export const createEmbeddedAppWorkerFetcher = (
 export const loadEmbeddedAppStatsForRequest = async (request: Request) => {
   const url = new URL(request.url);
   const requestedGuildId = url.searchParams.get('guild_id');
-  let guildId = BOT_GUILDS.STAGING_ENV;
 
-  if (requestedGuildId === BOT_GUILDS.PROD_ENV) {
-    guildId = BOT_GUILDS.PROD_ENV;
-  } else if (requestedGuildId && requestedGuildId !== BOT_GUILDS.STAGING_ENV) {
+  if (
+    requestedGuildId &&
+    requestedGuildId !== BOT_GUILDS.STAGING_ENV &&
+    requestedGuildId !== BOT_GUILDS.PROD_ENV
+  ) {
     throw new Error('Embedded app request came from an unsupported guild.');
   }
 
-  const stats = await getCachedEmbeddedAppStats(guildId);
+  const stats = await getCachedEmbeddedAppStats(BOT_GUILDS.PROD_ENV);
   const instanceId = url.searchParams.get('instance_id');
   const initialGameName = instanceId
     ? getEmbeddedAppLaunchTarget(instanceId)
