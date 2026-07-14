@@ -12,7 +12,13 @@ import {
 import { Separator } from '@/components/ui/separator';
 import type { KilledBoss } from '@/live-stats.types';
 
-export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
+export const BossHistory = ({
+  bosses,
+  cacheKey = 'boss-history',
+}: {
+  bosses: KilledBoss[];
+  cacheKey?: string;
+}) => (
   <Card className="gap-3 py-4 sm:gap-6 sm:py-6">
     <CardHeader className="grid-cols-[1fr_auto] px-4 sm:px-6">
       <div className="space-y-1 sm:space-y-2">
@@ -24,7 +30,11 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
         </CardTitle>
       </div>
       <Badge variant="secondary" className="size-9 rounded-full p-0 text-sm">
-        <AnimatedNumber value={bosses.length} className="tabular-nums" />
+        <AnimatedNumber
+          value={bosses.length}
+          cacheKey={`${cacheKey}:count`}
+          className="tabular-nums"
+        />
       </Badge>
     </CardHeader>
     <CardContent className="px-4 sm:px-6">
@@ -55,6 +65,7 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
                     <p className="text-muted-foreground text-sm">
                       <AnimatedNumber
                         value={boss.deaths}
+                        cacheKey={`${cacheKey}:${boss.name}:deaths`}
                         className="tabular-nums"
                       />{' '}
                       deaths

@@ -6,13 +6,22 @@ type MobilePipStatsProps = {
   killedBossCount: number;
 };
 
-const MobilePipTotal = ({ value, label }: { value: number; label: string }) => {
+const MobilePipTotal = ({
+  value,
+  label,
+  cacheKey,
+}: {
+  value: number;
+  label: string;
+  cacheKey: string;
+}) => {
   const valueSize = Math.abs(value) >= 100 ? 'text-xl' : 'text-2xl';
 
   return (
     <div className="min-w-0 rounded-lg border border-border bg-card/70 px-2 py-3 text-center">
       <AnimatedNumber
         value={value}
+        cacheKey={cacheKey}
         className={`${valueSize} block leading-none font-bold tabular-nums`}
       />
       <span className="mt-1.5 block text-[0.5rem] leading-tight font-semibold tracking-[0.08em] text-muted-foreground uppercase">
@@ -35,8 +44,16 @@ export const MobilePipStats = ({
       {gameName}
     </h2>
     <div className="grid grid-cols-2 gap-2">
-      <MobilePipTotal value={deaths} label="Deaths" />
-      <MobilePipTotal value={killedBossCount} label="Bosses killed" />
+      <MobilePipTotal
+        value={deaths}
+        label="Deaths"
+        cacheKey={`${gameName}:deaths`}
+      />
+      <MobilePipTotal
+        value={killedBossCount}
+        label="Bosses killed"
+        cacheKey={`${gameName}:bosses-killed`}
+      />
     </div>
   </div>
 );

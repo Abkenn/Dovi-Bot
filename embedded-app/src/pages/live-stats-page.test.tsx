@@ -52,6 +52,7 @@ describe('LiveStatsPage', () => {
     );
     expect(screen.getByText('Current boss card').parentElement).toHaveClass(
       'activity-compact:hidden',
+      'overflow-hidden',
     );
     expect(screen.getByText('Stream encounters').parentElement).toHaveClass(
       'activity-compact:hidden',

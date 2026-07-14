@@ -15,10 +15,12 @@ const TotalCard = ({
   icon,
   value,
   label,
+  cacheKey,
 }: {
   icon: React.ReactNode;
   value: number;
   label: string;
+  cacheKey: string;
 }) => (
   <Card className="activity-compact:rounded-lg gap-0 py-0">
     <CardContent className="activity-compact:!p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
@@ -28,6 +30,7 @@ const TotalCard = ({
       <div className="min-w-0">
         <AnimatedNumber
           value={value}
+          cacheKey={cacheKey}
           className="activity-compact:!text-xl block text-2xl font-bold tracking-tight tabular-nums sm:text-4xl"
         />
         <span className="activity-compact:!text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs sm:tracking-[0.12em]">
@@ -92,20 +95,22 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
             icon={<Skull aria-hidden="true" />}
             value={stats.game.deaths}
             label="Total deaths"
+            cacheKey={`${stats.game.id}:deaths`}
           />
           <TotalCard
             icon={<Trophy aria-hidden="true" />}
             value={stats.game.killedBossCount}
             label="Bosses killed"
+            cacheKey={`${stats.game.id}:bosses-killed`}
           />
         </section>
       </ViewTransition>
       <ViewTransition name="live-details">
         <motion.div
-          className="activity-compact:hidden mobile-pip-hide space-y-3 sm:space-y-5"
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          className="activity-compact:hidden mobile-pip-hide space-y-3 overflow-hidden sm:space-y-5"
+          initial={{ opacity: 0, height: 0, y: -6 }}
+          animate={{ opacity: 1, height: 'auto', y: 0 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         >
           <CurrentBossCard boss={stats.currentBoss} />
           <StreamEncounters
@@ -116,7 +121,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
       </ViewTransition>
       <ViewTransition name="boss-journey">
         <div className="activity-compact:hidden mobile-pip-hide">
-          <BossHistory bosses={stats.killedBosses} />
+          <BossHistory bosses={stats.killedBosses} cacheKey={stats.game.id} />
         </div>
       </ViewTransition>
       <footer className="activity-compact:hidden mobile-pip-hide py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
