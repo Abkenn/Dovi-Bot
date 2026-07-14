@@ -26,8 +26,10 @@ describe('ArchivedGamePage', () => {
     const totals = within(
       screen.getByRole('region', { name: 'Archived game totals' }),
     );
-    expect(totals.getByText('130')).toHaveClass('activity-compact:!text-xl');
-    expect(totals.getByText('20')).toBeInTheDocument();
+    expect(totals.getByLabelText('130')).toHaveClass(
+      'activity-compact:!text-xl',
+    );
+    expect(totals.getByLabelText('20')).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
     expect(screen.getByText('Boss history')).toBeInTheDocument();
     expect(screen.getByText('Dovi Archived Stats')).toBeInTheDocument();
@@ -43,5 +45,6 @@ describe('ArchivedGamePage', () => {
       'activity-compact:justify-center',
       'mobile-pip-frame',
     );
+    expect(screen.getByRole('main')).not.toHaveAttribute('style');
   });
 });

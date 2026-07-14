@@ -15,8 +15,8 @@ describe('MobilePipStats', () => {
     const summary = screen.getByText('Dark Souls III').parentElement;
 
     expect(summary).toHaveClass('mobile-pip-only', 'overflow-hidden');
-    expect(screen.getByText('178')).toHaveClass('text-xl', 'leading-none');
-    expect(screen.getByText('20')).toHaveClass('text-2xl', 'leading-none');
+    expect(screen.getByLabelText('178')).toHaveClass('text-xl', 'leading-none');
+    expect(screen.getByLabelText('20')).toHaveClass('text-2xl', 'leading-none');
     expect(screen.getByText('Deaths')).toBeInTheDocument();
     expect(screen.getByText('Bosses killed')).toBeInTheDocument();
   });

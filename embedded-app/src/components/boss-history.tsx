@@ -1,5 +1,6 @@
 import { Check, Skull } from 'lucide-react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
+import { AnimatedNumber } from '@/components/animated-number';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -23,7 +24,7 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
         </CardTitle>
       </div>
       <Badge variant="secondary" className="size-9 rounded-full p-0 text-sm">
-        {bosses.length}
+        <AnimatedNumber value={bosses.length} className="tabular-nums" />
       </Badge>
     </CardHeader>
     <CardContent className="px-4 sm:px-6">
@@ -33,44 +34,43 @@ export const BossHistory = ({ bosses }: { bosses: KilledBoss[] }) => (
           <p>No defeated bosses recorded for this game yet.</p>
         </div>
       ) : (
-        <motion.ol
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: 0.025 } },
-          }}
-        >
-          {bosses.map((boss, index) => (
-            <motion.li
-              key={boss.name}
-              layout="position"
-              variants={{
-                hidden: { opacity: 0, x: -8 },
-                visible: { opacity: 1, x: 0 },
-              }}
-            >
-              {index > 0 ? <Separator /> : null}
-              <div className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-2 py-3 sm:grid-cols-[2rem_1fr_auto] sm:gap-3 sm:py-4">
-                <span className="text-muted-foreground text-sm tabular-nums">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div>
-                  <p className="font-semibold">{boss.name}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {boss.deaths} deaths
-                  </p>
+        <motion.ol layout>
+          <AnimatePresence initial={false} mode="popLayout">
+            {bosses.map((boss, index) => (
+              <motion.li
+                key={boss.name}
+                layout="position"
+                initial={{ opacity: 0, height: 0, x: -8 }}
+                animate={{ opacity: 1, height: 'auto', x: 0 }}
+                exit={{ opacity: 0, height: 0, x: 8 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {index > 0 ? <Separator /> : null}
+                <div className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-2 py-3 sm:grid-cols-[2rem_1fr_auto] sm:gap-3 sm:py-4">
+                  <span className="text-muted-foreground text-sm tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <div>
+                    <p className="font-semibold">{boss.name}</p>
+                    <p className="text-muted-foreground text-sm">
+                      <AnimatedNumber
+                        value={boss.deaths}
+                        className="tabular-nums"
+                      />{' '}
+                      deaths
+                    </p>
+                  </div>
+                  <span
+                    className="grid size-7 place-items-center rounded-full bg-emerald-500/10 text-emerald-400"
+                    role="img"
+                    aria-label="Killed"
+                  >
+                    <Check className="size-4" aria-hidden="true" />
+                  </span>
                 </div>
-                <span
-                  className="grid size-7 place-items-center rounded-full bg-emerald-500/10 text-emerald-400"
-                  role="img"
-                  aria-label="Killed"
-                >
-                  <Check className="size-4" aria-hidden="true" />
-                </span>
-              </div>
-            </motion.li>
-          ))}
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </motion.ol>
       )}
     </CardContent>

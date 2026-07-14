@@ -1,5 +1,7 @@
 import { Radio, Skull, Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
+import { ViewTransition } from 'react';
+import { AnimatedNumber } from '@/components/animated-number';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
 import { GameSwitcher } from '@/components/game-switcher';
@@ -24,9 +26,10 @@ const TotalCard = ({
         {icon}
       </span>
       <div className="min-w-0">
-        <strong className="activity-compact:!text-xl block text-2xl font-bold tracking-tight sm:text-4xl">
-          {value}
-        </strong>
+        <AnimatedNumber
+          value={value}
+          className="activity-compact:!text-xl block text-2xl font-bold tracking-tight tabular-nums sm:text-4xl"
+        />
         <span className="activity-compact:!text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs sm:tracking-[0.12em]">
           {label}
         </span>
@@ -65,11 +68,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
   }
 
   return (
-    <motion.main
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12"
-    >
+    <main className="mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12">
       <MobilePipStats
         gameName={stats.game.name}
         deaths={stats.game.deaths}
@@ -84,39 +83,45 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
       <div className="activity-compact:hidden mobile-pip-hide">
         <GameSwitcher games={stats.games} selectedGameId={null} />
       </div>
-      <motion.section
-        className="activity-compact:gap-2 mobile-pip-hide grid grid-cols-2 gap-3"
-        aria-label="Game totals"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
-        <TotalCard
-          icon={<Skull aria-hidden="true" />}
-          value={stats.game.deaths}
-          label="Total deaths"
-        />
-        <TotalCard
-          icon={<Trophy aria-hidden="true" />}
-          value={stats.game.killedBossCount}
-          label="Bosses killed"
-        />
-      </motion.section>
-      <div className="activity-compact:hidden mobile-pip-hide">
-        <CurrentBossCard boss={stats.currentBoss} />
-      </div>
-      <div className="activity-compact:hidden mobile-pip-hide">
-        <StreamEncounters
-          encounters={stats.streamEncounters}
-          currentStreamWindow={stats.currentStreamWindow}
-        />
-      </div>
-      <div className="activity-compact:hidden mobile-pip-hide">
-        <BossHistory bosses={stats.killedBosses} />
-      </div>
+      <ViewTransition name="stats-totals">
+        <section
+          className="activity-compact:gap-2 mobile-pip-hide grid grid-cols-2 gap-3"
+          aria-label="Game totals"
+        >
+          <TotalCard
+            icon={<Skull aria-hidden="true" />}
+            value={stats.game.deaths}
+            label="Total deaths"
+          />
+          <TotalCard
+            icon={<Trophy aria-hidden="true" />}
+            value={stats.game.killedBossCount}
+            label="Bosses killed"
+          />
+        </section>
+      </ViewTransition>
+      <ViewTransition name="live-details">
+        <motion.div
+          className="activity-compact:hidden mobile-pip-hide space-y-3 sm:space-y-5"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <CurrentBossCard boss={stats.currentBoss} />
+          <StreamEncounters
+            encounters={stats.streamEncounters}
+            currentStreamWindow={stats.currentStreamWindow}
+          />
+        </motion.div>
+      </ViewTransition>
+      <ViewTransition name="boss-journey">
+        <div className="activity-compact:hidden mobile-pip-hide">
+          <BossHistory bosses={stats.killedBosses} />
+        </div>
+      </ViewTransition>
       <footer className="activity-compact:hidden mobile-pip-hide py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
         Anonymous view · Refreshes every 5 seconds
       </footer>
-    </motion.main>
+    </main>
   );
 };

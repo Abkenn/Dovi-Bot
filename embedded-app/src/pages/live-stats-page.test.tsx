@@ -39,9 +39,9 @@ describe('LiveStatsPage', () => {
       'activity-compact:!text-xl',
     );
     expect(
-      within(screen.getByRole('region', { name: 'Game totals' })).getByText(
-        '127',
-      ),
+      within(
+        screen.getByRole('region', { name: 'Game totals' }),
+      ).getByLabelText('127'),
     ).toHaveClass('activity-compact:!text-xl');
     expect(screen.getByText('Current boss card')).toBeInTheDocument();
     expect(screen.getByText('Stream encounters')).toBeInTheDocument();
@@ -64,6 +64,7 @@ describe('LiveStatsPage', () => {
       'activity-compact:justify-center',
       'mobile-pip-frame',
     );
+    expect(screen.getByRole('main')).not.toHaveAttribute('style');
   });
 
   it('keeps archived games reachable from the no-tracking state', () => {

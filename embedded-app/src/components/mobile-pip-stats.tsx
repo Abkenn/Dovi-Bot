@@ -1,3 +1,5 @@
+import { AnimatedNumber } from './animated-number';
+
 type MobilePipStatsProps = {
   gameName: string;
   deaths: number;
@@ -9,11 +11,10 @@ const MobilePipTotal = ({ value, label }: { value: number; label: string }) => {
 
   return (
     <div className="min-w-0 rounded-lg border border-border bg-card/70 px-2 py-3 text-center">
-      <strong
+      <AnimatedNumber
+        value={value}
         className={`${valueSize} block leading-none font-bold tabular-nums`}
-      >
-        {value}
-      </strong>
+      />
       <span className="mt-1.5 block text-[0.5rem] leading-tight font-semibold tracking-[0.08em] text-muted-foreground uppercase">
         {label}
       </span>

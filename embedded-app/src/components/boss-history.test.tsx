@@ -18,7 +18,27 @@ describe('BossHistory', () => {
 
     expect(screen.getByText('Iudex Gundyr')).toBeInTheDocument();
     expect(screen.getByText('Vordt')).toBeInTheDocument();
-    expect(screen.getByText('7 deaths')).toBeInTheDocument();
+    expect(screen.getByLabelText('7')).toBeInTheDocument();
+  });
+
+  it('keeps existing rows mounted while values change and new rows enter', () => {
+    const { rerender } = render(
+      <BossHistory bosses={[{ name: 'Iudex Gundyr', deaths: 7 }]} />,
+    );
+    const existingRow = screen.getByText('Iudex Gundyr');
+
+    rerender(
+      <BossHistory
+        bosses={[
+          { name: 'Iudex Gundyr', deaths: 8 },
+          { name: 'Vordt', deaths: 3 },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Iudex Gundyr')).toBe(existingRow);
+    expect(screen.getByLabelText('8')).toBeInTheDocument();
+    expect(screen.getByText('Vordt')).toBeInTheDocument();
   });
 
   it('shows an empty history message', () => {

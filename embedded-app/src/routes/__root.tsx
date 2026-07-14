@@ -6,7 +6,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router';
 import { LayoutGroup, MotionConfig } from 'motion/react';
-import { type ReactNode, useEffect, useRef, ViewTransition } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import {
   ActivityErrorState,
   ActivityLoadingState,
@@ -85,9 +85,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           reducedMotion="user"
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
         >
-          <LayoutGroup id="game-stats-navigation">
-            <ViewTransition>{children}</ViewTransition>
-          </LayoutGroup>
+          <LayoutGroup id="game-stats-navigation">{children}</LayoutGroup>
         </MotionConfig>
         <Scripts />
       </body>

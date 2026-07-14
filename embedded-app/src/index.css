@@ -104,6 +104,20 @@ html[data-discord-platform="mobile"][data-activity-layout="pip"]
   animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both game-title-in;
 }
 
+::view-transition-group(stats-totals),
+::view-transition-group(boss-journey) {
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(live-details) {
+  animation: 120ms ease-in both live-details-out;
+}
+
+::view-transition-new(live-details) {
+  animation: 160ms cubic-bezier(0.22, 1, 0.36, 1) both live-details-in;
+}
+
 @keyframes game-title-out {
   to {
     opacity: 0;
@@ -118,9 +132,30 @@ html[data-discord-platform="mobile"][data-activity-layout="pip"]
   }
 }
 
+@keyframes live-details-out {
+  to {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.995);
+  }
+}
+
+@keyframes live-details-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.375rem) scale(0.995);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(game-title),
   ::view-transition-new(game-title) {
+    animation-duration: 1ms;
+  }
+
+  ::view-transition-group(stats-totals),
+  ::view-transition-group(boss-journey),
+  ::view-transition-old(live-details),
+  ::view-transition-new(live-details) {
     animation-duration: 1ms;
   }
 }
