@@ -1,12 +1,9 @@
-import { Link } from '@tanstack/react-router';
-import { ArrowLeft, Skull, Trophy } from 'lucide-react';
+import { History, Skull, Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ViewTransition } from 'react';
 import { BossHistory } from '@/components/boss-history';
 import { GameSwitcher } from '@/components/game-switcher';
 import { MobilePipStats } from '@/components/mobile-pip-stats';
-import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button';
+import { StatsPageHeader } from '@/components/stats-page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ArchivedGame } from '@/live-stats.types';
 
@@ -53,24 +50,12 @@ export const ArchivedGamePage = ({
       deaths={game.deaths}
       killedBossCount={game.killedBossCount}
     />
-    <header className="mobile-pip-hide flex items-start justify-between gap-3">
-      <div className="min-w-0 space-y-1 sm:space-y-2">
-        <Link
-          to="/"
-          className={`${buttonVariants({ variant: 'ghost', size: 'sm' })} activity-compact:hidden -ml-2 text-primary uppercase`}
-        >
-          <ArrowLeft className="size-3.5" aria-hidden="true" /> Archived stats
-        </Link>
-        <ViewTransition name="game-title">
-          <h1 className="activity-compact:!text-xl text-2xl leading-none font-bold tracking-tight sm:text-6xl">
-            {game.name}
-          </h1>
-        </ViewTransition>
-      </div>
-      <Badge className="activity-compact:hidden" variant="secondary">
-        Complete history
-      </Badge>
-    </header>
+    <StatsPageHeader
+      eyebrow="Dovi Archived Stats"
+      title={game.name}
+      statusIcon={<History aria-hidden="true" />}
+      statusLabel="Complete history"
+    />
     <div className="activity-compact:hidden mobile-pip-hide">
       <GameSwitcher games={games} selectedGameId={game.id} />
     </div>

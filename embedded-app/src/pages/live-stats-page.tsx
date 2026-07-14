@@ -1,12 +1,11 @@
 import { Radio, Skull, Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ViewTransition } from 'react';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
 import { GameSwitcher } from '@/components/game-switcher';
 import { MobilePipStats } from '@/components/mobile-pip-stats';
+import { StatsPageHeader } from '@/components/stats-page-header';
 import { StreamEncounters } from '@/components/stream-encounters';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LiveStats } from '@/live-stats.types';
 
@@ -76,26 +75,12 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
         deaths={stats.game.deaths}
         killedBossCount={stats.game.killedBossCount}
       />
-      <header className="mobile-pip-hide flex items-start justify-between gap-2 sm:gap-5 sm:pb-3">
-        <div className="min-w-0 space-y-1 sm:space-y-2">
-          <p className="activity-compact:hidden text-[0.65rem] font-bold tracking-[0.2em] text-primary uppercase sm:text-xs sm:tracking-[0.24em]">
-            Dovi Live Stats
-          </p>
-          <ViewTransition name="game-title">
-            <h1 className="activity-compact:!text-xl text-2xl leading-none font-bold tracking-tight sm:text-6xl">
-              {stats.game.name}
-            </h1>
-          </ViewTransition>
-        </div>
-        <Badge
-          variant="outline"
-          className="activity-compact:hidden shrink-0 border-primary/40 px-2 text-primary sm:px-2.5"
-        >
-          <Radio aria-hidden="true" />
-          <span className="hidden min-[420px]:inline">Live tracking</span>
-          <span className="min-[420px]:hidden">Live</span>
-        </Badge>
-      </header>
+      <StatsPageHeader
+        eyebrow="Dovi Live Stats"
+        title={stats.game.name}
+        statusIcon={<Radio aria-hidden="true" />}
+        statusLabel="Live tracking"
+      />
       <div className="activity-compact:hidden mobile-pip-hide">
         <GameSwitcher games={stats.games} selectedGameId={null} />
       </div>

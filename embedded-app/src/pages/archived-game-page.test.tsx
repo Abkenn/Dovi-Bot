@@ -1,5 +1,4 @@
 import { render, screen, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArchivedGamePage } from './archived-game-page';
 
@@ -9,20 +8,6 @@ vi.mock('../components/game-switcher', () => ({
 vi.mock('../components/boss-history', () => ({
   BossHistory: () => <div>Boss history</div>,
 }));
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    className,
-  }: {
-    children: ReactNode;
-    className?: string;
-  }) => (
-    <a href="/" className={className}>
-      {children}
-    </a>
-  ),
-}));
-
 describe('ArchivedGamePage', () => {
   it('shows archived totals and game history', () => {
     const game = {
@@ -45,9 +30,8 @@ describe('ArchivedGamePage', () => {
     expect(totals.getByText('20')).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
     expect(screen.getByText('Boss history')).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'Archived stats' }),
-    ).toHaveAttribute('href', '/');
+    expect(screen.getByText('Dovi Archived Stats')).toBeInTheDocument();
+    expect(screen.getByText('Complete history')).toBeInTheDocument();
     expect(screen.getByText('Game switcher').parentElement).toHaveClass(
       'activity-compact:hidden',
     );
