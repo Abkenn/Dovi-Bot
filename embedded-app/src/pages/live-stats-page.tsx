@@ -4,6 +4,7 @@ import { ViewTransition } from 'react';
 import { AnimatedNumber } from '@/components/animated-number';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
+import { DesktopPipLiveStats } from '@/components/desktop-pip-live-stats';
 import { GameSwitcher } from '@/components/game-switcher';
 import { MobilePipStats } from '@/components/mobile-pip-stats';
 import { StatsPageHeader } from '@/components/stats-page-header';
@@ -71,12 +72,22 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
   }
 
   return (
-    <main className="mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12">
+    <main
+      className={`${stats.currentBoss ? 'desktop-pip-live-frame ' : ''}mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12`}
+    >
       <MobilePipStats
         gameName={stats.game.name}
         deaths={stats.game.deaths}
         killedBossCount={stats.game.killedBossCount}
       />
+      {stats.currentBoss ? (
+        <DesktopPipLiveStats
+          gameName={stats.game.name}
+          totalDeaths={stats.game.deaths}
+          killedBossCount={stats.game.killedBossCount}
+          boss={stats.currentBoss}
+        />
+      ) : null}
       <StatsPageHeader
         eyebrow="Dovi Live Stats"
         title={stats.game.name}
@@ -107,14 +118,12 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
       </ViewTransition>
       <ViewTransition name="live-details">
         <motion.div
-          className={`${stats.currentBoss ? 'desktop-pip-details ' : ''}activity-compact:hidden mobile-pip-hide space-y-3 overflow-hidden sm:space-y-5`}
+          className="activity-compact:hidden mobile-pip-hide space-y-3 overflow-hidden sm:space-y-5"
           initial={{ opacity: 0, height: 0, y: -6 }}
           animate={{ opacity: 1, height: 'auto', y: 0 }}
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="desktop-pip-current-boss">
-            <CurrentBossCard boss={stats.currentBoss} />
-          </div>
+          <CurrentBossCard boss={stats.currentBoss} />
           <StreamEncounters
             encounters={stats.streamEncounters}
             currentStreamWindow={stats.currentStreamWindow}

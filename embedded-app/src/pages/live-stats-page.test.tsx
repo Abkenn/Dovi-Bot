@@ -16,6 +16,11 @@ vi.mock('../components/stream-encounters', () => ({
 vi.mock('../components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
 }));
+vi.mock('../components/desktop-pip-live-stats', () => ({
+  DesktopPipLiveStats: () => (
+    <div className="desktop-pip-live-only">Desktop PiP live attempt</div>
+  ),
+}));
 
 describe('LiveStatsPage', () => {
   it('shows game totals and dashboard sections', () => {
@@ -52,12 +57,14 @@ describe('LiveStatsPage', () => {
     expect(screen.getByText('Game switcher').parentElement).toHaveClass(
       'activity-compact:hidden',
     );
+    expect(screen.getByText('Current boss card').parentElement).toHaveClass(
+      'activity-compact:hidden',
+      'overflow-hidden',
+    );
+    expect(screen.getByRole('main')).not.toHaveClass('desktop-pip-live-frame');
     expect(
-      screen.getByText('Current boss card').parentElement?.parentElement,
-    ).toHaveClass('activity-compact:hidden', 'overflow-hidden');
-    expect(
-      screen.getByText('Current boss card').parentElement?.parentElement,
-    ).not.toHaveClass('desktop-pip-details');
+      screen.queryByText('Desktop PiP live attempt'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Stream encounters').parentElement).toHaveClass(
       'activity-compact:hidden',
     );
@@ -127,16 +134,16 @@ describe('LiveStatsPage', () => {
     );
 
     const desktopPip = container.querySelector<HTMLElement>(
-      '.desktop-pip-current-boss',
+      '.desktop-pip-live-only',
     );
     const mobilePip = container.querySelector<HTMLElement>('.mobile-pip-only');
     if (!desktopPip || !mobilePip) {
       throw new Error('Expected desktop and mobile PiP surfaces');
     }
-    expect(desktopPip.parentElement).toHaveClass('desktop-pip-details');
-    expect(within(desktopPip).getByText('Sister Friede')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveClass('desktop-pip-live-frame');
+    expect(screen.getByText('Desktop PiP live attempt')).toBeInTheDocument();
     expect(mobilePip).not.toContainElement(
-      within(desktopPip).getByText('Sister Friede'),
+      screen.getByText('Desktop PiP live attempt'),
     );
   });
 });

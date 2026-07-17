@@ -9,15 +9,31 @@
   display: none;
 }
 
-html[data-discord-platform="desktop"][data-activity-layout="pip"]
-  .desktop-pip-details {
-  display: block;
+.desktop-pip-live-only {
+  display: none;
 }
 
 html[data-discord-platform="desktop"][data-activity-layout="pip"]
-  .desktop-pip-details
-  > :not(.desktop-pip-current-boss) {
+  .desktop-pip-live-frame {
+  width: 100%;
+  max-width: none;
+  height: 100svh;
+  min-height: 0;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+html[data-discord-platform="desktop"][data-activity-layout="pip"]
+  .desktop-pip-live-frame
+  > :not(.desktop-pip-live-only) {
   display: none;
+}
+
+html[data-discord-platform="desktop"][data-activity-layout="pip"]
+  .desktop-pip-live-only {
+  display: block;
 }
 
 html[data-discord-platform="mobile"][data-activity-layout="pip"]
