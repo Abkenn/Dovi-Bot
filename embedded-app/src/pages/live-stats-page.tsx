@@ -107,12 +107,14 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
       </ViewTransition>
       <ViewTransition name="live-details">
         <motion.div
-          className="activity-compact:hidden mobile-pip-hide space-y-3 overflow-hidden sm:space-y-5"
+          className={`${stats.currentBoss ? 'desktop-pip-details ' : ''}activity-compact:hidden mobile-pip-hide space-y-3 overflow-hidden sm:space-y-5`}
           initial={{ opacity: 0, height: 0, y: -6 }}
           animate={{ opacity: 1, height: 'auto', y: 0 }}
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         >
-          <CurrentBossCard boss={stats.currentBoss} />
+          <div className="desktop-pip-current-boss">
+            <CurrentBossCard boss={stats.currentBoss} />
+          </div>
           <StreamEncounters
             encounters={stats.streamEncounters}
             currentStreamWindow={stats.currentStreamWindow}

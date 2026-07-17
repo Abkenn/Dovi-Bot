@@ -21,11 +21,11 @@ const formatDuration = (seconds: number | null) => {
 };
 
 const Stat = ({ value, label }: { value: string | number; label: string }) => (
-  <div className="space-y-1">
-    <strong className="block text-2xl font-bold tracking-tight sm:text-4xl">
+  <div className="activity-compact:space-y-0 space-y-1">
+    <strong className="activity-compact:!text-xl block text-2xl font-bold tracking-tight sm:text-4xl">
       {value}
     </strong>
-    <span className="text-muted-foreground text-[0.68rem] font-semibold tracking-[0.14em] uppercase">
+    <span className="activity-compact:!text-[0.5rem] text-muted-foreground text-[0.68rem] font-semibold tracking-[0.14em] uppercase">
       {label}
     </span>
   </div>
@@ -55,17 +55,19 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
 
   return (
     <Card
-      className={`gap-4 py-4 sm:gap-6 sm:py-6 ${
+      className={`activity-compact:gap-2 activity-compact:py-2 gap-4 py-4 sm:gap-6 sm:py-6 ${
         paused ? 'border-amber-500/40' : 'border-primary/20'
       }`}
     >
-      <CardHeader className="grid-cols-[1fr_auto] px-4 sm:px-6">
-        <div className="space-y-2">
+      <CardHeader className="activity-compact:px-3 grid-cols-[1fr_auto] px-4 sm:px-6">
+        <div className="activity-compact:space-y-0 space-y-2">
           <CardDescription className="font-semibold tracking-[0.18em] text-primary uppercase">
             Current boss
           </CardDescription>
           <CardTitle>
-            <h2 className="text-xl sm:text-3xl">{boss.name}</h2>
+            <h2 className="activity-compact:!text-base text-xl sm:text-3xl">
+              {boss.name}
+            </h2>
           </CardTitle>
         </div>
         <Badge
@@ -80,7 +82,7 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
           {paused ? 'Paused' : 'Live'}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-4 px-4 sm:space-y-6 sm:px-6">
+      <CardContent className="activity-compact:px-3 space-y-4 px-4 sm:space-y-6 sm:px-6">
         <div className="grid grid-cols-3 gap-3 sm:gap-5">
           <Stat value={boss.deaths} label="Deaths" />
           <Stat value={boss.attemptNumber ?? '–'} label="Attempt" />

@@ -9,6 +9,17 @@
   display: none;
 }
 
+html[data-discord-platform="desktop"][data-activity-layout="pip"]
+  .desktop-pip-details {
+  display: block;
+}
+
+html[data-discord-platform="desktop"][data-activity-layout="pip"]
+  .desktop-pip-details
+  > :not(.desktop-pip-current-boss) {
+  display: none;
+}
+
 html[data-discord-platform="mobile"][data-activity-layout="pip"]
   .mobile-pip-frame {
   width: 60svh;

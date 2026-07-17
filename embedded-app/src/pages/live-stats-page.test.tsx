@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { LiveStatsPage } from './live-stats-page';
 
 vi.mock('../components/current-boss-card', () => ({
-  CurrentBossCard: () => <div>Current boss card</div>,
+  CurrentBossCard: ({ boss }: { boss: { name: string } | null }) => (
+    <div>{boss?.name ?? 'Current boss card'}</div>
+  ),
 }));
 vi.mock('../components/boss-history', () => ({
   BossHistory: () => <div>Boss history</div>,
@@ -50,10 +52,12 @@ describe('LiveStatsPage', () => {
     expect(screen.getByText('Game switcher').parentElement).toHaveClass(
       'activity-compact:hidden',
     );
-    expect(screen.getByText('Current boss card').parentElement).toHaveClass(
-      'activity-compact:hidden',
-      'overflow-hidden',
-    );
+    expect(
+      screen.getByText('Current boss card').parentElement?.parentElement,
+    ).toHaveClass('activity-compact:hidden', 'overflow-hidden');
+    expect(
+      screen.getByText('Current boss card').parentElement?.parentElement,
+    ).not.toHaveClass('desktop-pip-details');
     expect(screen.getByText('Stream encounters').parentElement).toHaveClass(
       'activity-compact:hidden',
     );
@@ -93,5 +97,46 @@ describe('LiveStatsPage', () => {
       screen.getByRole('heading', { name: 'No tracked game yet' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
+  });
+
+  it('provides the live attempt as a desktop PiP-only view', () => {
+    const { container } = render(
+      <LiveStatsPage
+        stats={{
+          game: {
+            id: 'game-1',
+            name: 'Dark Souls III',
+            deaths: 1,
+            killedBossCount: 0,
+          },
+          currentBoss: {
+            name: 'Sister Friede',
+            deaths: 1,
+            attemptNumber: 2,
+            attemptStartedAt: '2026-07-17T12:00:00.000Z',
+            pausedAt: null,
+            status: 'ACTIVE',
+            pauseReason: null,
+          },
+          currentStreamWindow: null,
+          streamEncounters: [],
+          killedBosses: [],
+          games: [],
+        }}
+      />,
+    );
+
+    const desktopPip = container.querySelector<HTMLElement>(
+      '.desktop-pip-current-boss',
+    );
+    const mobilePip = container.querySelector<HTMLElement>('.mobile-pip-only');
+    if (!desktopPip || !mobilePip) {
+      throw new Error('Expected desktop and mobile PiP surfaces');
+    }
+    expect(desktopPip.parentElement).toHaveClass('desktop-pip-details');
+    expect(within(desktopPip).getByText('Sister Friede')).toBeInTheDocument();
+    expect(mobilePip).not.toContainElement(
+      within(desktopPip).getByText('Sister Friede'),
+    );
   });
 });
