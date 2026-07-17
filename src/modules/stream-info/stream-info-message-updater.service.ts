@@ -16,8 +16,12 @@ import {
   type Snowflake,
 } from 'discord.js';
 import { DateTime } from 'luxon';
+import { BOT_GUILDS } from '../../config/discord-access';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
-import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
+import {
+  buildComponentEmbedMessageFromEmbeds,
+  mergeButtonActionRows,
+} from '../discord/component-embed';
 import { buildEmbeddedAppStatsButton } from '../embedded-app/embedded-app-stats.discord';
 import {
   buildStreamInfoEmbed,
@@ -117,16 +121,19 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
     getStreamReminderOccurrence(streamInfo),
   );
   const statsButton = buildEmbeddedAppStatsButton(guildId);
+  const buttonRows = [reminderButton, statsButton].filter(
+    (button) => button !== null,
+  );
+  const actionRows =
+    guildId === BOT_GUILDS.STAGING_ENV && buttonRows.length > 0
+      ? [mergeButtonActionRows(buttonRows)]
+      : buttonRows;
   const { flags: _flags, ...componentMessage } =
     buildComponentEmbedMessageFromEmbeds([embed]);
 
   return {
     ...componentMessage,
-    components: [
-      ...(componentMessage.components ?? []),
-      ...(reminderButton ? [reminderButton] : []),
-      ...(statsButton ? [statsButton] : []),
-    ],
+    components: [...(componentMessage.components ?? []), ...actionRows],
     allowedMentions: { parse: [] },
     flags: MessageFlags.IsComponentsV2,
   } satisfies MessageEditOptions;

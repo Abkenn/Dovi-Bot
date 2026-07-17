@@ -8,6 +8,7 @@ const dependencies = vi.hoisted(() => ({
   buildStreamReminderButton: vi.fn(),
   editReply: vi.fn(),
   getStreamInfo: vi.fn(),
+  mergeButtonActionRows: vi.fn(),
   registerLastStreamInfoMessage: vi.fn(),
   runCommand: vi.fn(),
 }));
@@ -21,6 +22,12 @@ vi.mock('@sapphire/framework', () => ({
 }));
 vi.mock('../../src/config/discord-command-guards', () => ({
   assertCommandAccess: dependencies.assertCommandAccess,
+}));
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: {
+    STAGING_ENV: 'staging-guild',
+    PROD_ENV: 'production-guild',
+  },
 }));
 vi.mock('../../src/config/discord-command-metadata', () => ({
   COMMAND_METADATA: {
@@ -37,6 +44,9 @@ vi.mock('../../src/modules/command-runner/run-command', () => ({
 }));
 vi.mock('../../src/modules/embedded-app/embedded-app-stats.discord', () => ({
   buildEmbeddedAppStatsButton: dependencies.buildEmbeddedAppStatsButton,
+}));
+vi.mock('../../src/modules/discord/component-embed', () => ({
+  mergeButtonActionRows: dependencies.mergeButtonActionRows,
 }));
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
   buildStreamInfoEmbed: dependencies.buildStreamInfoEmbed,
@@ -78,6 +88,7 @@ describe('/streaminfo response privacy', () => {
     });
     dependencies.editReply.mockResolvedValue({ id: 'message-1' });
     dependencies.registerLastStreamInfoMessage.mockResolvedValue(undefined);
+    dependencies.mergeButtonActionRows.mockReturnValue({ type: 'merged-row' });
     dependencies.runCommand.mockImplementation(async (options) => {
       options.beforeDefer();
       return options.run({
@@ -179,6 +190,32 @@ describe('/streaminfo response privacy', () => {
       expect.objectContaining({
         components: [reminderButton, { type: 'stats-button' }],
       }),
+    );
+  });
+
+  it('combines the buttons into one row in staging only', async () => {
+    const reminderButton = { type: 'reminder-button' };
+    const statsButton = { type: 'stats-button' };
+    dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
+    dependencies.buildEmbeddedAppStatsButton.mockReturnValue(statsButton);
+    dependencies.runCommand.mockImplementation(async (options) =>
+      options.run({
+        editReply: dependencies.editReply,
+        preflight: 'staging-guild',
+      }),
+    );
+
+    await StreamInfoCommand.prototype.chatInputRun.call(
+      { name: 'streaminfo' },
+      makeInteraction(false) as never,
+    );
+
+    expect(dependencies.mergeButtonActionRows).toHaveBeenCalledWith([
+      reminderButton,
+      statsButton,
+    ]);
+    expect(dependencies.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({ components: [{ type: 'merged-row' }] }),
     );
   });
 });

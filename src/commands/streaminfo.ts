@@ -1,10 +1,12 @@
 import { Command } from '@sapphire/framework';
+import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
+import { mergeButtonActionRows } from '../modules/discord/component-embed';
 import { buildEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
 import {
   buildStreamInfoEmbed,
@@ -59,12 +61,16 @@ export class StreamInfoCommand extends Command {
           getStreamReminderOccurrence(streamInfo),
         );
         const statsButton = buildEmbeddedAppStatsButton(guildId);
+        const buttonRows = [reminderButton, statsButton].filter(
+          (button) => button !== null,
+        );
+        const components =
+          guildId === BOT_GUILDS.STAGING_ENV && buttonRows.length > 0
+            ? [mergeButtonActionRows(buttonRows)]
+            : buttonRows;
         const message = await editReply({
           embeds: [buildStreamInfoEmbed(streamInfo)],
-          components: [
-            ...(reminderButton ? [reminderButton] : []),
-            ...(statsButton ? [statsButton] : []),
-          ],
+          components,
         });
 
         if (!isPrivate) {

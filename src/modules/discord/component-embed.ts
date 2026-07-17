@@ -1,5 +1,7 @@
 import {
+  ActionRowBuilder,
   type APIEmbed,
+  type ButtonBuilder,
   type ComponentInContainerData,
   ComponentType,
   type EmbedBuilder,
@@ -10,6 +12,13 @@ import {
   type TextDisplayComponentData,
   type TopLevelComponentData,
 } from 'discord.js';
+
+export const mergeButtonActionRows = (
+  rows: readonly ActionRowBuilder<ButtonBuilder>[],
+): ActionRowBuilder<ButtonBuilder> =>
+  new ActionRowBuilder<ButtonBuilder>().addComponents(
+    rows.flatMap((row) => row.components),
+  );
 
 export type ComponentEmbedField = {
   name: string;

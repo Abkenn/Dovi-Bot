@@ -1,8 +1,16 @@
-import { ComponentType, EmbedBuilder, MessageFlags } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
+  EmbedBuilder,
+  MessageFlags,
+} from 'discord.js';
 import { describe, expect, it } from 'vitest';
 import {
   buildComponentEmbedMessage,
   buildComponentEmbedMessageFromEmbeds,
+  mergeButtonActionRows,
 } from '../../src/modules/discord/component-embed';
 
 type TextDisplayComponent = {
@@ -15,6 +23,27 @@ type ContainerComponent = {
   accentColor?: number;
   components: { type: ComponentType; content?: string }[];
 };
+
+it('merges buttons into one action row', () => {
+  const reminderRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('reminder')
+      .setLabel('Remind Me')
+      .setStyle(ButtonStyle.Primary),
+  );
+  const statsRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('stats')
+      .setLabel('Stats')
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  expect(mergeButtonActionRows([reminderRow, statsRow]).toJSON()).toMatchObject(
+    {
+      components: [{ label: 'Remind Me' }, { label: 'Stats' }],
+    },
+  );
+});
 
 const getContainer = (
   message: ReturnType<typeof buildComponentEmbedMessage>,
