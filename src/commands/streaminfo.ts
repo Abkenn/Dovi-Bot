@@ -1,5 +1,4 @@
 import { Command } from '@sapphire/framework';
-import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
@@ -65,9 +64,7 @@ export class StreamInfoCommand extends Command {
           (button) => button !== null,
         );
         const components =
-          guildId === BOT_GUILDS.STAGING_ENV && buttonRows.length > 0
-            ? [mergeButtonActionRows(buttonRows)]
-            : buttonRows;
+          buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
         const message = await editReply({
           embeds: [buildStreamInfoEmbed(streamInfo)],
           components,

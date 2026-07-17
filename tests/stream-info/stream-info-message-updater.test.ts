@@ -1,4 +1,11 @@
-import { type Client, EmbedBuilder, type Message } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type Client,
+  EmbedBuilder,
+  type Message,
+} from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const streamInfoMessageQueries = vi.hoisted(() => ({
@@ -213,7 +220,12 @@ describe('stream info message updater', () => {
 
   it('keeps the Stats button when refreshing a message inside a thread', async () => {
     const message = makeMessage(true);
-    const statsButton = { type: 'stats-button' };
+    const statsButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('stats-button')
+        .setLabel('Stats')
+        .setStyle(ButtonStyle.Primary),
+    );
     const channel = {
       messages: {
         fetch: vi.fn().mockResolvedValue(message),
@@ -238,7 +250,15 @@ describe('stream info message updater', () => {
     );
     expect(message.edit).toHaveBeenCalledWith(
       expect.objectContaining({
-        components: expect.arrayContaining([statsButton]),
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: [
+              expect.objectContaining({
+                data: expect.objectContaining({ custom_id: 'stats-button' }),
+              }),
+            ],
+          }),
+        ]),
       }),
     );
   });

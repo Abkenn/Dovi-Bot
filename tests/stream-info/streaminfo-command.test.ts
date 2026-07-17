@@ -173,7 +173,7 @@ describe('/streaminfo response privacy', () => {
     });
   });
 
-  it('keeps the Stats button in thread responses', async () => {
+  it('keeps the combined buttons in thread responses', async () => {
     const interaction = makeInteraction(false, true);
     const reminderButton = { type: 'reminder-button' };
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
@@ -188,23 +188,16 @@ describe('/streaminfo response privacy', () => {
     );
     expect(dependencies.editReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        components: [reminderButton, { type: 'stats-button' }],
+        components: [{ type: 'merged-row' }],
       }),
     );
   });
 
-  it('combines the buttons into one row in staging only', async () => {
+  it('combines the buttons into one row in production', async () => {
     const reminderButton = { type: 'reminder-button' };
     const statsButton = { type: 'stats-button' };
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
     dependencies.buildEmbeddedAppStatsButton.mockReturnValue(statsButton);
-    dependencies.runCommand.mockImplementation(async (options) =>
-      options.run({
-        editReply: dependencies.editReply,
-        preflight: 'staging-guild',
-      }),
-    );
-
     await StreamInfoCommand.prototype.chatInputRun.call(
       { name: 'streaminfo' },
       makeInteraction(false) as never,

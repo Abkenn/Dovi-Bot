@@ -16,7 +16,6 @@ import {
   type Snowflake,
 } from 'discord.js';
 import { DateTime } from 'luxon';
-import { BOT_GUILDS } from '../../config/discord-access';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 import {
   buildComponentEmbedMessageFromEmbeds,
@@ -125,9 +124,7 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
     (button) => button !== null,
   );
   const actionRows =
-    guildId === BOT_GUILDS.STAGING_ENV && buttonRows.length > 0
-      ? [mergeButtonActionRows(buttonRows)]
-      : buttonRows;
+    buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
   const { flags: _flags, ...componentMessage } =
     buildComponentEmbedMessageFromEmbeds([embed]);
 
