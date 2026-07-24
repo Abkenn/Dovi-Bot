@@ -49,6 +49,11 @@ const toCurrentBoss = (
     deaths: session.deathCount,
     attemptNumber: attempt?.attemptNumber ?? null,
     attemptStartedAt: attempt?.startedAt.toISOString() ?? null,
+    runbackSeconds:
+      attempt?.runbackSeconds ??
+      (attempt && attempt.attemptNumber > 1
+        ? session.boss.runbackSeconds
+        : null),
     pausedAt: session.pausedAt?.toISOString() ?? null,
     pauseReason: openPause?.reason ?? null,
   };

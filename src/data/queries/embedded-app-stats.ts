@@ -135,12 +135,16 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
       focusedAt: true,
       endedAt: true,
       endResult: true,
-      boss: { select: { name: true } },
+      boss: { select: { name: true, runbackSeconds: true } },
       attempts: {
         where: { result: BossTrackingAttemptResult.IN_PROGRESS },
         orderBy: { attemptNumber: 'desc' },
         take: 1,
-        select: { attemptNumber: true, startedAt: true },
+        select: {
+          attemptNumber: true,
+          startedAt: true,
+          runbackSeconds: true,
+        },
       },
       pauses: {
         where: { endedAt: null },

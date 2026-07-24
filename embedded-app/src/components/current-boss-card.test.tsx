@@ -22,6 +22,7 @@ describe('CurrentBossCard', () => {
           deaths: 3,
           attemptNumber: 4,
           attemptStartedAt: '2026-07-10T18:00:00.000Z',
+          runbackSeconds: null,
           pausedAt: null,
           pauseReason: null,
         }}
@@ -50,6 +51,7 @@ describe('CurrentBossCard', () => {
           deaths: 19,
           attemptNumber: null,
           attemptStartedAt: null,
+          runbackSeconds: 80,
           pausedAt: '2026-07-10T18:00:00.000Z',
           pauseReason: 'Dinner break',
         }}
@@ -59,5 +61,26 @@ describe('CurrentBossCard', () => {
     expect(screen.getByText('Paused')).toBeInTheDocument();
     expect(screen.getByText('--:--')).toBeInTheDocument();
     expect(screen.getByText('Dinner break')).toBeInTheDocument();
+  });
+
+  it('shows runback before the boss attempt begins', () => {
+    elapsedSeconds.value = 70;
+    render(
+      <CurrentBossCard
+        boss={{
+          name: 'Darkeater Midir',
+          status: 'ACTIVE',
+          deaths: 4,
+          attemptNumber: 5,
+          attemptStartedAt: '2026-07-10T18:00:00.000Z',
+          runbackSeconds: 80,
+          pausedAt: null,
+          pauseReason: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Runback')).toBeInTheDocument();
+    expect(screen.getByText('0:00')).toBeInTheDocument();
   });
 });

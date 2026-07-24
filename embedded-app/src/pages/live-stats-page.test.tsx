@@ -121,6 +121,7 @@ describe('LiveStatsPage', () => {
             deaths: 1,
             attemptNumber: 2,
             attemptStartedAt: '2026-07-17T12:00:00.000Z',
+            runbackSeconds: null,
             pausedAt: null,
             status: 'ACTIVE',
             pauseReason: null,

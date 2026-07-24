@@ -13,6 +13,9 @@ const streamInfoService = vi.hoisted(() => ({ getStreamInfo: vi.fn() }));
 const discordAccess = vi.hoisted(() => ({
   isAllowedGuildForCommand: vi.fn(),
 }));
+const commandLogging = vi.hoisted(() => ({
+  createInteractionExecutionLog: vi.fn(),
+}));
 
 vi.mock(
   '../../src/modules/stream-info/stream-reminder.service',
@@ -23,6 +26,10 @@ vi.mock(
   () => streamInfoService,
 );
 vi.mock('../../src/config/discord-access', () => discordAccess);
+vi.mock(
+  '../../src/modules/command-logging/command-logging.service',
+  () => commandLogging,
+);
 vi.mock('../../src/config/discord-command-metadata', () => ({
   COMMAND_METADATA: { STREAM_INFO: { guildIds: [] } },
 }));
@@ -33,6 +40,7 @@ describe('stream reminder DM buttons', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     discordAccess.isAllowedGuildForCommand.mockReturnValue(true);
+    commandLogging.createInteractionExecutionLog.mockResolvedValue(undefined);
   });
 
   it('registers as an interaction listener', () => {
@@ -227,6 +235,17 @@ describe('stream reminder DM buttons', () => {
     expect(editReply).toHaveBeenCalledWith(
       expect.stringContaining('Reminder set'),
     );
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interaction,
+        commandName: 'streaminfo:remind-me',
+        optionsJson: {
+          customId: 'stream-reminder:date-key',
+          dateKey: 'date-key',
+        },
+        status: 'SUCCESS',
+      }),
+    );
   });
 
   it('reports stale and non-error reminder failures privately', async () => {
@@ -259,6 +278,67 @@ describe('stream reminder DM buttons', () => {
     expect(editReply).toHaveBeenNthCalledWith(
       2,
       'Something went wrong while setting the reminder.',
+    );
+    expect(
+      commandLogging.createInteractionExecutionLog,
+    ).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        commandName: 'streaminfo:remind-me',
+        status: 'ERROR',
+        note: 'That stream is no longer available for reminders.',
+      }),
+    );
+    expect(
+      commandLogging.createInteractionExecutionLog,
+    ).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        commandName: 'streaminfo:remind-me',
+        status: 'ERROR',
+        note: 'Something went wrong while setting the reminder.',
+      }),
+    );
+  });
+
+  it('does not fail a reminder when analytics logging is unavailable', async () => {
+    const occurrence = {
+      dateKey: 'date-key',
+      endAt: new Date(Date.now() + 60 * 60_000),
+      gameName: 'Dark Souls III',
+      isOverride: false,
+      musicMode: null,
+      startAt: new Date(Date.now() + 60_000),
+      streamKind: 'GAME',
+      title: null,
+      weekday: null,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      current: null,
+      next: occurrence,
+      timezone: 'UTC',
+    });
+    commandLogging.createInteractionExecutionLog.mockRejectedValue(
+      new Error('analytics unavailable'),
+    );
+    const editReply = vi.fn();
+    const interaction = {
+      channelId: 'channel',
+      customId: 'stream-reminder:date-key',
+      deferReply: vi.fn(),
+      editReply,
+      guildId: 'guild',
+      isButton: () => true,
+      user: { id: 'user-1', tag: 'user' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      interaction,
+    );
+
+    expect(editReply).toHaveBeenCalledWith(
+      expect.stringContaining('Reminder set'),
     );
   });
 });

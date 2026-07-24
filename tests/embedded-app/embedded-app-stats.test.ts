@@ -27,7 +27,7 @@ const attempt = {
   endedAt: null,
   vodStartSeconds: null,
   vodEndSeconds: null,
-  runbackSeconds: null,
+  runbackSeconds: null as number | null,
   result: BossTrackingAttemptResult.IN_PROGRESS,
 };
 
@@ -79,7 +79,7 @@ const makeSession = ({
     id: `boss-${id}`,
     name: bossName,
     normalizedName: bossName.toLowerCase(),
-    runbackSeconds: null,
+    runbackSeconds: 80,
     game: {
       id: 'game-1',
       name: 'Dark Souls III',
@@ -195,6 +195,7 @@ describe('embedded app stats', () => {
         deaths: 3,
         attemptNumber: 3,
         attemptStartedAt: '2026-07-10T18:00:00.000Z',
+        runbackSeconds: 80,
       },
       currentStreamWindow: {
         startAt: '2026-07-10T16:00:00.000Z',

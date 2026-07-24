@@ -1,4 +1,8 @@
 import { Pause, Radio } from 'lucide-react';
+import {
+  CURRENT_ATTEMPT_STATE_LABEL,
+  getCurrentAttemptDisplay,
+} from '@/components/current-attempt-display';
 import { useElapsedSeconds } from '@/hooks/use-elapsed-seconds';
 import type { CurrentBoss } from '@/live-stats.types';
 
@@ -44,6 +48,8 @@ export const DesktopPipLiveStats = ({
 }: DesktopPipLiveStatsProps) => {
   const paused = boss.status === 'PAUSED';
   const elapsed = useElapsedSeconds(boss.attemptStartedAt, paused);
+  const attemptDisplay = getCurrentAttemptDisplay(boss, elapsed);
+  const isIdle = attemptDisplay.state !== 'LIVE';
 
   return (
     <section className="desktop-pip-live-only w-full rounded-xl border border-primary/25 bg-card px-3 py-2.5 shadow-sm">
@@ -64,23 +70,26 @@ export const DesktopPipLiveStats = ({
         </div>
         <span
           className={`flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.58rem] font-semibold ${
-            paused
+            isIdle
               ? 'border-amber-500/40 text-amber-300'
               : 'border-primary/40 text-primary'
           }`}
         >
-          {paused ? (
+          {isIdle ? (
             <Pause className="size-3" aria-hidden="true" />
           ) : (
             <Radio className="size-3" aria-hidden="true" />
           )}
-          {paused ? 'Paused' : 'Live'}
+          {CURRENT_ATTEMPT_STATE_LABEL[attemptDisplay.state]}
         </span>
       </div>
       <div className="mt-2.5 grid grid-cols-3 gap-2">
         <AttemptStat value={boss.deaths} label="Deaths" />
         <AttemptStat value={boss.attemptNumber ?? '–'} label="Attempt" />
-        <AttemptStat value={formatDuration(elapsed)} label="Attempt time" />
+        <AttemptStat
+          value={formatDuration(attemptDisplay.elapsedSeconds)}
+          label="Attempt time"
+        />
       </div>
     </section>
   );

@@ -2,6 +2,8 @@ import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
+import { CommandExecutionStatus } from '../generated/prisma/client';
+import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
 import {
   buildStreamAnnouncementReminderMessage,
   STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX,
@@ -15,6 +17,38 @@ import {
 } from '../modules/stream-info/stream-reminder.service';
 import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
 
+const STREAM_REMIND_ME_LOG_NAME = 'streaminfo:remind-me';
+
+const logStreamReminderSafely = async ({
+  interaction,
+  dateKey,
+  status,
+  startedAt,
+  note,
+}: {
+  interaction: Interaction;
+  dateKey: string;
+  status: CommandExecutionStatus;
+  startedAt: number;
+  note?: string | null;
+}) => {
+  try {
+    await createInteractionExecutionLog({
+      interaction,
+      commandName: STREAM_REMIND_ME_LOG_NAME,
+      optionsJson: {
+        customId: interaction.isButton() ? interaction.customId : null,
+        dateKey,
+      },
+      status,
+      note: note ?? null,
+      durationMs: Date.now() - startedAt,
+    });
+  } catch (error) {
+    console.error('Failed to log stream reminder interaction', error);
+  }
+};
+
 export class StreamReminderButtonsListener extends Listener {
   public constructor(
     context: Listener.LoaderContext,
@@ -27,6 +61,8 @@ export class StreamReminderButtonsListener extends Listener {
   }
 
   public override async run(interaction: Interaction) {
+    const startedAt = Date.now();
+
     if (!interaction.isButton()) {
       return;
     }
@@ -63,11 +99,20 @@ export class StreamReminderButtonsListener extends Listener {
       return;
     }
 
+    const dateKey = interaction.customId.slice(prefix.length);
     const guildId = interaction.guildId;
     if (
       !guildId ||
       !isAllowedGuildForCommand(guildId, COMMAND_METADATA.STREAM_INFO.guildIds)
     ) {
+      await logStreamReminderSafely({
+        interaction,
+        dateKey,
+        status: CommandExecutionStatus.DENIED,
+        startedAt,
+        note: 'This stream reminder is no longer available.',
+      });
+
       return interaction.reply({
         content: 'This stream reminder is no longer available.',
         flags: MessageFlags.Ephemeral,
@@ -77,7 +122,6 @@ export class StreamReminderButtonsListener extends Listener {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
-      const dateKey = interaction.customId.slice(prefix.length);
       const streamInfo = await getStreamInfo(guildId);
       const occurrence = getStreamReminderOccurrence(streamInfo);
 
@@ -91,12 +135,27 @@ export class StreamReminderButtonsListener extends Listener {
         occurrence,
       });
 
+      await logStreamReminderSafely({
+        interaction,
+        dateKey,
+        status: CommandExecutionStatus.SUCCESS,
+        startedAt,
+      });
+
       return interaction.editReply('Reminder set. I’ll notify you when live.');
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Something went wrong while setting the reminder.';
+
+      await logStreamReminderSafely({
+        interaction,
+        dateKey,
+        status: CommandExecutionStatus.ERROR,
+        startedAt,
+        note: message,
+      });
 
       return interaction.editReply(message);
     }

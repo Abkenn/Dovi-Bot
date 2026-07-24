@@ -4,6 +4,7 @@ export type EmbeddedAppCurrentBoss = {
   deaths: number;
   attemptNumber: number | null;
   attemptStartedAt: string | null;
+  runbackSeconds: number | null;
   pausedAt: string | null;
   pauseReason: string | null;
 };

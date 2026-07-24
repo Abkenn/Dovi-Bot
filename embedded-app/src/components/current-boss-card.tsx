@@ -1,4 +1,8 @@
 import { Pause, Radio } from 'lucide-react';
+import {
+  CURRENT_ATTEMPT_STATE_LABEL,
+  getCurrentAttemptDisplay,
+} from '@/components/current-attempt-display';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -53,10 +57,13 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
     );
   }
 
+  const attemptDisplay = getCurrentAttemptDisplay(boss, elapsed);
+  const isIdle = attemptDisplay.state !== 'LIVE';
+
   return (
     <Card
       className={`gap-4 py-4 sm:gap-6 sm:py-6 ${
-        paused ? 'border-amber-500/40' : 'border-primary/20'
+        isIdle ? 'border-amber-500/40' : 'border-primary/20'
       }`}
     >
       <CardHeader className="grid-cols-[1fr_auto] px-4 sm:px-6">
@@ -71,20 +78,23 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
         <Badge
           variant="outline"
           className={
-            paused
+            isIdle
               ? 'border-amber-500/40 text-amber-300'
               : 'border-primary/40 text-primary'
           }
         >
-          {paused ? <Pause aria-hidden="true" /> : <Radio aria-hidden="true" />}
-          {paused ? 'Paused' : 'Live'}
+          {isIdle ? <Pause aria-hidden="true" /> : <Radio aria-hidden="true" />}
+          {CURRENT_ATTEMPT_STATE_LABEL[attemptDisplay.state]}
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4 px-4 sm:space-y-6 sm:px-6">
         <div className="grid grid-cols-3 gap-3 sm:gap-5">
           <Stat value={boss.deaths} label="Deaths" />
           <Stat value={boss.attemptNumber ?? '–'} label="Attempt" />
-          <Stat value={formatDuration(elapsed)} label="Attempt time" />
+          <Stat
+            value={formatDuration(attemptDisplay.elapsedSeconds)}
+            label="Attempt time"
+          />
         </div>
         {paused && boss.pauseReason ? (
           <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
