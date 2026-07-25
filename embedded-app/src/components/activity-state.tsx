@@ -1,7 +1,9 @@
 import { Activity } from 'lucide-react';
 import { motion } from 'motion/react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const ERROR_RETRY_DELAY_MS = 5_000;
 
 const CenteredShell = ({ children }: { children: ReactNode }) => (
   <main className="grid min-h-svh place-content-center px-6 text-center">
@@ -68,13 +70,35 @@ export const ActivityLoadingState = () => (
   </motion.main>
 );
 
-export const ActivityErrorState = ({ message }: { message: string }) => (
-  <CenteredShell>
-    <Activity className="size-10 text-primary" aria-hidden="true" />
-    <p className="text-xs font-bold tracking-[0.24em] text-primary uppercase">
-      Dovi
-    </p>
-    <h1 className="text-3xl font-bold tracking-tight">Stats are resting</h1>
-    <p className="text-muted-foreground">{message}</p>
-  </CenteredShell>
-);
+export const ActivityErrorState = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) => {
+  useEffect(() => {
+    if (!onRetry) {
+      return;
+    }
+
+    const timeout = window.setTimeout(onRetry, ERROR_RETRY_DELAY_MS);
+    return () => window.clearTimeout(timeout);
+  }, [onRetry]);
+
+  return (
+    <CenteredShell>
+      <Activity className="size-10 text-primary" aria-hidden="true" />
+      <p className="text-xs font-bold tracking-[0.24em] text-primary uppercase">
+        Dovi
+      </p>
+      <h1 className="text-3xl font-bold tracking-tight">Stats are resting</h1>
+      <p className="text-muted-foreground">{message}</p>
+      {onRetry ? (
+        <p className="text-muted-foreground text-sm">
+          Retrying automatically...
+        </p>
+      ) : null}
+    </CenteredShell>
+  );
+};

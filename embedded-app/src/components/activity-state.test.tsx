@@ -1,8 +1,10 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ActivityErrorState, ActivityLoadingState } from './activity-state';
 
 describe('Activity states', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('renders an accessible dashboard-shaped loading state', () => {
     render(<ActivityLoadingState />);
 
@@ -16,5 +18,20 @@ describe('Activity states', () => {
   it('renders a loader error', () => {
     render(<ActivityErrorState message="Database unavailable" />);
     expect(screen.getByText('Database unavailable')).toBeInTheDocument();
+  });
+
+  it('automatically retries a recoverable Activity error', async () => {
+    vi.useFakeTimers();
+    const retry = vi.fn();
+    render(
+      <ActivityErrorState
+        message="A new version is waking up."
+        onRetry={retry}
+      />,
+    );
+
+    expect(screen.getByText('Retrying automatically...')).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(5_000));
+    expect(retry).toHaveBeenCalledOnce();
   });
 });

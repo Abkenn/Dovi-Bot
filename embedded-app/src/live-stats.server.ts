@@ -25,5 +25,6 @@ export const loadLiveStatsPayload = async () => {
   return {
     stats,
     discordClientId: process.env.DISCORD_CLIENT_ID ?? '',
+    deploymentVersion: process.env.KOYEB_GIT_SHA ?? 'development',
   };
 };

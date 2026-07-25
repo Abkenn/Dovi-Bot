@@ -27,6 +27,7 @@ export type EmbeddedAppArchivedGame = {
   deaths: number;
   killedBossCount: number;
   bosses: EmbeddedAppBoss[];
+  killedBosses?: EmbeddedAppBoss[];
 };
 
 export type EmbeddedAppStats = {
@@ -44,5 +45,6 @@ export type EmbeddedAppStats = {
   } | null;
   streamEncounters: EmbeddedAppStreamEncounter[];
   bosses: EmbeddedAppBoss[];
+  killedBosses?: EmbeddedAppBoss[];
   games: EmbeddedAppArchivedGame[];
 };

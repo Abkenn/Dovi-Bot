@@ -11,17 +11,25 @@ import {
   ActivityErrorState,
   ActivityLoadingState,
 } from '@/components/activity-state';
+import {
+  reloadActivity,
+  useDeploymentRecovery,
+} from '@/hooks/use-deployment-recovery';
 import { useDiscordSdk } from '@/hooks/use-discord-sdk';
 import { resolveActivityTargetGame } from '@/lib/activity-target';
 import { getLiveStats } from '@/live-stats.functions';
+import type { LiveStats } from '@/live-stats.types';
 import appCss from '../index.css?url';
+
+const retryActivity = () => reloadActivity(`retry-${Date.now()}`);
 
 export const Route = createRootRoute({
   loader: () => getLiveStats(),
   pendingComponent: ActivityLoadingState,
-  errorComponent: ({ error }) => (
+  errorComponent: () => (
     <ActivityErrorState
-      message={error.message || 'Live stats are unavailable.'}
+      message="A new version may be waking up."
+      onRetry={retryActivity}
     />
   ),
   head: () => ({
@@ -40,7 +48,27 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const { discordClientId, stats } = Route.useLoaderData();
+  const { deploymentVersion, discordClientId, stats } = Route.useLoaderData();
+  const deploymentChanged = useDeploymentRecovery(deploymentVersion);
+
+  return (
+    <RootDocument>
+      {deploymentChanged ? (
+        <ActivityLoadingState />
+      ) : (
+        <CurrentBuildContent discordClientId={discordClientId} stats={stats} />
+      )}
+    </RootDocument>
+  );
+}
+
+function CurrentBuildContent({
+  discordClientId,
+  stats,
+}: {
+  discordClientId: string;
+  stats: LiveStats;
+}) {
   const customId = useDiscordSdk(discordClientId);
   const navigate = useNavigate();
   const handledCustomId = useRef<string | null>(null);
@@ -67,11 +95,7 @@ function RootComponent() {
     }
   }, [customId, navigate, stats.games, stats.initialGameName]);
 
-  return (
-    <RootDocument>
-      <Outlet />
-    </RootDocument>
-  );
+  return <Outlet />;
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {

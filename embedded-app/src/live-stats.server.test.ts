@@ -20,10 +20,12 @@ describe('live stats server adapter', () => {
     const loadStats = vi.fn().mockResolvedValue(emptyStats);
     globalThis.__doviEmbeddedAppStatsLoader = loadStats;
     vi.stubEnv('DISCORD_CLIENT_ID', 'client-1');
+    vi.stubEnv('KOYEB_GIT_SHA', 'deploy-2');
 
     await expect(loadLiveStatsPayload()).resolves.toEqual({
       stats: emptyStats,
       discordClientId: 'client-1',
+      deploymentVersion: 'deploy-2',
     });
     expect(loadStats).toHaveBeenCalledOnce();
   });
@@ -34,5 +36,15 @@ describe('live stats server adapter', () => {
     await expect(loadLiveStatsPayload()).rejects.toThrow(
       'The embedded stats service bridge is unavailable.',
     );
+  });
+
+  it('uses a stable local version outside Koyeb', async () => {
+    globalThis.__doviEmbeddedAppStatsLoader = vi
+      .fn()
+      .mockResolvedValue(emptyStats);
+
+    await expect(loadLiveStatsPayload()).resolves.toMatchObject({
+      deploymentVersion: 'development',
+    });
   });
 });

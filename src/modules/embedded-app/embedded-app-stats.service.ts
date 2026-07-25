@@ -109,6 +109,7 @@ const toArchivedGame = (
   const killedBossCount = bosses.filter(
     (boss) => boss.outcome === 'KILLED',
   ).length;
+  const killedBosses = bosses.filter((boss) => boss.outcome === 'KILLED');
   const latestSession = game.trackingSessions[0];
   const deaths = latestSession
     ? (latestSession.finalDeaths ??
@@ -121,6 +122,7 @@ const toArchivedGame = (
     deaths,
     killedBossCount,
     bosses,
+    killedBosses,
   };
 };
 
@@ -213,6 +215,7 @@ export const getEmbeddedAppStats = async (
       currentStreamWindow: null,
       streamEncounters: [],
       bosses: [],
+      killedBosses: [],
       games,
     };
   }
@@ -241,6 +244,7 @@ export const getEmbeddedAppStats = async (
       : null,
     streamEncounters,
     bosses,
+    killedBosses: bosses.filter((boss) => boss.outcome === 'KILLED'),
     games,
   };
 };

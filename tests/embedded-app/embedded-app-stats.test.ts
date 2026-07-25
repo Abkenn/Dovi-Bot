@@ -257,6 +257,12 @@ describe('embedded app stats', () => {
       killedBossCount: currentGame?.killedBossCount,
     });
     expect(stats.bosses).toEqual(currentGame?.bosses);
+    expect(stats.killedBosses).toEqual(
+      stats.bosses.filter((boss) => boss.outcome === 'KILLED'),
+    );
+    expect(currentGame?.killedBosses).toEqual(
+      currentGame?.bosses.filter((boss) => boss.outcome === 'KILLED'),
+    );
     expect(queries.findEmbeddedAppGameStats).toHaveBeenCalledWith([
       'staging-guild',
       'production-guild',
@@ -443,6 +449,7 @@ describe('embedded app stats', () => {
       currentStreamWindow: null,
       streamEncounters: [],
       bosses: [],
+      killedBosses: [],
       games: [],
     });
   });
