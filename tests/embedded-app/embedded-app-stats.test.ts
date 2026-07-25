@@ -325,10 +325,28 @@ describe('embedded app stats', () => {
       startedAt: new Date('2026-07-25T16:10:00.000Z'),
       endedAt: new Date('2026-07-25T16:40:00.000Z'),
     });
+    const demonPrince = makeSession({
+      id: 'demon-prince',
+      bossName: 'Demon Prince',
+      status: BossTrackingSessionStatus.ENDED,
+      endResult: BossTrackingEndResult.KILLED,
+      deathCount: 0,
+      startedAt: new Date('2026-07-18T20:00:00.000Z'),
+      endedAt: new Date('2026-07-18T20:30:00.000Z'),
+    });
+    const sisterFriede = makeSession({
+      id: 'sister-friede',
+      bossName: 'Sister Friede',
+      status: BossTrackingSessionStatus.ENDED,
+      endResult: BossTrackingEndResult.KILLED,
+      deathCount: 2,
+      startedAt: new Date('2026-07-18T18:00:00.000Z'),
+      endedAt: new Date('2026-07-18T19:30:00.000Z'),
+    });
     queries.findEmbeddedAppGameStats.mockResolvedValue({
       game: { id: 'game-1', name: 'Dark Souls III' },
       gameDeaths: 246,
-      sessions: [gael, halflight, midir],
+      sessions: [gael, halflight, midir, demonPrince, sisterFriede],
       archiveGames: [
         {
           id: 'game-1',
