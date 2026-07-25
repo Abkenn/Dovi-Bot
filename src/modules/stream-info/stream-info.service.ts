@@ -36,6 +36,7 @@ import {
   extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
   findNextOccurrence,
+  findPreviousOccurrence,
   LUXON_WEEKDAY_TO_WEEKDAY,
   makeDateKey,
   resolveTargetStream,
@@ -46,6 +47,7 @@ import { getYouTubeStreamResolution } from './stream-info.youtube';
 import {
   DEFAULT_GUILD_STREAM_CONFIG,
   DEFAULT_STREAM_SCHEDULE,
+  STREAM_SCHEDULE_HISTORY_DAYS,
   startTimeToMinutes,
 } from './stream-schedule.config';
 
@@ -57,7 +59,7 @@ const getCandidateDates = (
   const targetWeekday = WEEKDAY_TO_LUXON[rule.weekday];
   const dates: DateTime[] = [];
 
-  for (let i = -1; i <= lookaheadDays; i += 1) {
+  for (let i = -STREAM_SCHEDULE_HISTORY_DAYS; i <= lookaheadDays; i += 1) {
     const candidate = nowLocal.plus({ days: i }).startOf('day');
 
     if (candidate.weekday === targetWeekday) {
@@ -455,7 +457,7 @@ export const getStreamInfo = async (
 
   const nowLocal = DateTime.utc().setZone(config.canonicalTimezone);
   const start = nowLocal
-    .minus({ days: 1 })
+    .minus({ days: STREAM_SCHEDULE_HISTORY_DAYS })
     .startOf('day')
     .toFormat('yyyy-LL-dd');
   const end = nowLocal
@@ -490,6 +492,11 @@ export const getStreamInfo = async (
   const current =
     youtubeResolution.current ??
     (shouldSuppressScheduledCurrent ? null : scheduledCurrent);
+  const previous = findPreviousOccurrence(
+    occurrences,
+    now,
+    current?.dateKey ?? youtubeResolution.suppressedScheduledDateKey,
+  );
   const next = findNextOccurrence(
     current
       ? occurrences.filter(
@@ -502,6 +509,7 @@ export const getStreamInfo = async (
   return {
     timezone: config.canonicalTimezone,
     current,
+    previous,
     next,
   };
 };

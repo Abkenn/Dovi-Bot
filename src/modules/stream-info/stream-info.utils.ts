@@ -72,6 +72,19 @@ export const findNextOccurrence = (
     (occurrence) => DateTime.fromJSDate(occurrence.startAt) > now,
   ) ?? null;
 
+export const findPreviousOccurrence = (
+  occurrences: readonly StreamOccurrence[],
+  now: DateTime,
+  excludedDateKey: string | null,
+): StreamOccurrence | null =>
+  [...occurrences]
+    .reverse()
+    .find(
+      (occurrence) =>
+        occurrence.dateKey !== excludedDateKey &&
+        DateTime.fromJSDate(occurrence.startAt) < now,
+    ) ?? null;
+
 export const resolveTargetStream = (
   current: StreamOccurrence | null,
   next: StreamOccurrence | null,

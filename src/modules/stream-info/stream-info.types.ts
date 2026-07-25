@@ -22,6 +22,7 @@ export type StreamOccurrence = {
 export type StreamInfoResult = {
   timezone: string;
   current: StreamOccurrence | null;
+  previous: StreamOccurrence | null;
   next: StreamOccurrence | null;
 };
 

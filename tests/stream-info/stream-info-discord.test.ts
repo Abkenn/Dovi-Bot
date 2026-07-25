@@ -48,6 +48,7 @@ describe('stream info discord output', () => {
         streamUrl: 'https://youtube.test/watch?v=stream',
         videoTitle: 'Dark Souls III but the bosses are unionizing',
       }),
+      previous: null,
       next: null,
     });
 
@@ -197,6 +198,7 @@ describe('stream info discord output', () => {
         current: makeOccurrence({
           streamUrl: 'https://youtube.test/watch?v=stream',
         }),
+        previous: null,
         next: null,
       }),
       '[Current stream](https://youtube.test/watch?v=stream)',
@@ -212,6 +214,7 @@ describe('stream info discord output', () => {
       buildStreamInfoEmbed({
         timezone: 'America/Sao_Paulo',
         current: makeOccurrence(),
+        previous: null,
         next: null,
       }),
       'Current stream',
@@ -224,6 +227,7 @@ describe('stream info discord output', () => {
     const embed = buildStreamInfoEmbed({
       timezone: 'America/Sao_Paulo',
       current: null,
+      previous: null,
       next: makeOccurrence({
         streamKind: StreamKind.MUSIC,
         musicMode: MusicMode.DEMOCRACY,
@@ -247,6 +251,7 @@ describe('stream info discord output', () => {
       buildStreamInfoEmbed({
         timezone: 'America/Sao_Paulo',
         current: null,
+        previous: null,
         next: makeOccurrence({
           streamKind: StreamKind.MUSIC,
           musicMode: MusicMode.DICTATORSHIP,
@@ -264,6 +269,7 @@ describe('stream info discord output', () => {
     const data: StreamInfoResult = {
       timezone: 'America/Sao_Paulo',
       current: null,
+      previous: null,
       next: null,
     };
 

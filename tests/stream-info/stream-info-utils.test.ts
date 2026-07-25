@@ -14,6 +14,7 @@ import {
   extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
   findNextOccurrence,
+  findPreviousOccurrence,
   isOngoingOccurrence,
   makeDateKey,
   resolveBaseGameName,
@@ -255,6 +256,13 @@ describe('stream info utils', () => {
     expect(isOngoingOccurrence(first, currentTime)).toBe(true);
     expect(findCurrentOccurrence([first, second], currentTime)).toBe(first);
     expect(findNextOccurrence([first, second], currentTime)).toBe(second);
+    expect(
+      findPreviousOccurrence(
+        [first, second],
+        DateTime.fromISO('2026-06-14T12:00:00Z'),
+        second.dateKey,
+      ),
+    ).toBe(first);
     expect(resolveTargetStream(first, second)).toEqual({
       target: 'current',
       occurrence: first,

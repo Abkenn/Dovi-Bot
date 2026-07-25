@@ -214,6 +214,21 @@ const toCurrentStreamEncounters = (
     ),
   );
 
+const toPreviousStreamEncounters = (
+  sessions: EmbeddedAppStatsSession[],
+  previousStream: { startAt: Date },
+  nextStream: { startAt: Date } | null,
+) =>
+  toStreamEncounters(
+    sessions.filter((session) => {
+      if (session.focusedAt < previousStream.startAt) {
+        return false;
+      }
+
+      return nextStream ? session.focusedAt < nextStream.startAt : true;
+    }),
+  );
+
 export const getEmbeddedAppStats = async (
   guildId: string,
 ): Promise<EmbeddedAppStats> => {
@@ -246,9 +261,22 @@ export const getEmbeddedAppStats = async (
 
   const streamInfo = await getStreamInfo(guildId);
   const currentStream = streamInfo.current;
-  const streamEncounters = currentStream
-    ? toCurrentStreamEncounters(result.sessions, currentStream)
-    : toLatestStreamEncounters(result.sessions);
+  let streamEncounters: EmbeddedAppStreamEncounter[];
+
+  if (currentStream) {
+    streamEncounters = toCurrentStreamEncounters(
+      result.sessions,
+      currentStream,
+    );
+  } else if (streamInfo.previous) {
+    streamEncounters = toPreviousStreamEncounters(
+      result.sessions,
+      streamInfo.previous,
+      streamInfo.next,
+    );
+  } else {
+    streamEncounters = toLatestStreamEncounters(result.sessions);
+  }
   const currentGameArchive = games.find((game) => game.id === result.game?.id);
   const bosses = currentGameArchive?.bosses ?? [];
 

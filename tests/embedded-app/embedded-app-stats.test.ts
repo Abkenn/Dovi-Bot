@@ -273,7 +273,7 @@ describe('embedded app stats', () => {
     ]);
   });
 
-  it('ranks every paused boss and selects the latest one for PiP', async () => {
+  it('keeps Saturday updates in the last non-skipped Friday stream', async () => {
     const gael = {
       ...makeSession({
         id: 'gael',
@@ -316,10 +316,19 @@ describe('embedded app stats', () => {
         },
       ],
     };
+    const halflight = makeSession({
+      id: 'halflight',
+      bossName: 'Halflight Spear of the Church',
+      status: BossTrackingSessionStatus.ENDED,
+      endResult: BossTrackingEndResult.KILLED,
+      deathCount: 1,
+      startedAt: new Date('2026-07-25T16:10:00.000Z'),
+      endedAt: new Date('2026-07-25T16:40:00.000Z'),
+    });
     queries.findEmbeddedAppGameStats.mockResolvedValue({
       game: { id: 'game-1', name: 'Dark Souls III' },
       gameDeaths: 246,
-      sessions: [gael, midir],
+      sessions: [gael, halflight, midir],
       archiveGames: [
         {
           id: 'game-1',
@@ -338,6 +347,19 @@ describe('embedded app stats', () => {
                   endResult: null,
                   status: BossTrackingSessionStatus.PAUSED,
                   focusedAt: midir.focusedAt,
+                },
+              ],
+            },
+            {
+              id: 'boss-halflight',
+              name: 'Halflight Spear of the Church',
+              stats: [],
+              trackingSessions: [
+                {
+                  deathCount: 1,
+                  endResult: BossTrackingEndResult.KILLED,
+                  status: BossTrackingSessionStatus.ENDED,
+                  focusedAt: halflight.focusedAt,
                 },
               ],
             },
@@ -366,7 +388,14 @@ describe('embedded app stats', () => {
     });
     queries.getStreamInfo.mockResolvedValue({
       current: null,
-      next: null,
+      previous: {
+        startAt: new Date('2026-07-24T18:10:00.000Z'),
+        endAt: new Date('2026-07-24T22:10:00.000Z'),
+      },
+      next: {
+        startAt: new Date('2026-07-31T18:10:00.000Z'),
+        endAt: new Date('2026-07-31T22:10:00.000Z'),
+      },
       timezone: 'America/Sao_Paulo',
     });
 
@@ -382,6 +411,81 @@ describe('embedded app stats', () => {
         { name: 'Darkeater Midir', deaths: 16, outcome: 'PAUSED' },
         { name: 'Pontiff Sulyvahn', deaths: 12, outcome: 'KILLED' },
         { name: 'Slave Knight Gael', deaths: 8, outcome: 'PAUSED' },
+        {
+          name: 'Halflight Spear of the Church',
+          deaths: 1,
+          outcome: 'KILLED',
+        },
+      ],
+      streamEncounters: [
+        { name: 'Darkeater Midir', deaths: 16, outcome: 'PAUSED' },
+        {
+          name: 'Halflight Spear of the Church',
+          deaths: 1,
+          outcome: 'KILLED',
+        },
+        { name: 'Slave Knight Gael', deaths: 8, outcome: 'PAUSED' },
+      ],
+    });
+  });
+
+  it('keeps pre-stream Saturday VOD updates with Friday', async () => {
+    const midir = makeSession({
+      id: 'midir-friday',
+      bossName: 'Darkeater Midir',
+      status: BossTrackingSessionStatus.PAUSED,
+      endResult: null,
+      deathCount: 16,
+      startedAt: new Date('2026-07-24T20:02:47.423Z'),
+      endedAt: null,
+    });
+    const halflight = makeSession({
+      id: 'halflight-vod',
+      bossName: 'Halflight Spear of the Church',
+      status: BossTrackingSessionStatus.ENDED,
+      endResult: BossTrackingEndResult.KILLED,
+      deathCount: 1,
+      startedAt: new Date('2026-07-25T16:10:00.000Z'),
+      endedAt: new Date('2026-07-25T16:40:00.000Z'),
+    });
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game: { id: 'game-1', name: 'Dark Souls III' },
+      gameDeaths: 17,
+      sessions: [halflight, midir],
+      archiveGames: [
+        {
+          id: 'game-1',
+          name: 'Dark Souls III',
+          trackingSessions: [
+            { startDeaths: 0, deathCount: 17, finalDeaths: null },
+          ],
+          bosses: [],
+        },
+      ],
+    });
+    queries.getStreamInfo.mockResolvedValue({
+      current: null,
+      previous: {
+        startAt: new Date('2026-07-24T18:10:00.000Z'),
+        endAt: new Date('2026-07-24T22:10:00.000Z'),
+      },
+      next: {
+        startAt: new Date('2026-07-25T18:10:00.000Z'),
+        endAt: new Date('2026-07-25T22:10:00.000Z'),
+      },
+      timezone: 'America/Sao_Paulo',
+    });
+
+    await expect(
+      getEmbeddedAppStats('production-guild'),
+    ).resolves.toMatchObject({
+      streamEncounters: [
+        { name: 'Darkeater Midir', deaths: 16, outcome: 'PAUSED' },
+        {
+          name: 'Halflight Spear of the Church',
+          deaths: 1,
+          outcome: 'KILLED',
+        },
       ],
     });
   });

@@ -68,6 +68,7 @@ describe('stream reminder utils', () => {
     const data: StreamInfoResult = {
       timezone: 'America/Sao_Paulo',
       current: null,
+      previous: null,
       next,
     };
 
@@ -86,6 +87,7 @@ describe('stream reminder utils', () => {
       getStreamReminderOccurrence({
         timezone: 'America/Sao_Paulo',
         current,
+        previous: null,
         next: null,
       }),
     ).toBeNull();
