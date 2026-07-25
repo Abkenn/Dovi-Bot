@@ -15,7 +15,7 @@ describe('ArchivedGamePage', () => {
       name: 'Dark Souls III',
       deaths: 130,
       killedBossCount: 20,
-      killedBosses: [{ name: 'Iudex Gundyr', deaths: 6 }],
+      bosses: [{ name: 'Iudex Gundyr', deaths: 6, outcome: 'KILLED' as const }],
     };
 
     render(<ArchivedGamePage game={game} games={[game]} />);

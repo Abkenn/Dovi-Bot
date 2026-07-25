@@ -1,3 +1,4 @@
+import { BOT_GUILDS } from '../../config/discord-access';
 import { findEmbeddedAppGameStats } from '../../data/queries/embedded-app-stats';
 import {
   BossTrackingEndResult,
@@ -10,6 +11,7 @@ import {
 import { getStreamInfo } from '../stream-info/stream-info.service';
 import type {
   EmbeddedAppArchivedGame,
+  EmbeddedAppBoss,
   EmbeddedAppCurrentBoss,
   EmbeddedAppStats,
   EmbeddedAppStreamEncounter,
@@ -76,28 +78,49 @@ const toArchivedGame = (
       trackingSessions: boss.trackingSessions,
     })),
   };
-  const killedGameStats = {
-    ...gameStats,
-    trackedBosses: gameStats.trackedBosses.filter((boss) =>
-      hasTrackedBossKill(boss.trackingSessions),
-    ),
-  };
+  const outcomes = new Map<string, EmbeddedAppBoss['outcome']>();
 
-  const killedBosses = getGameBossStatsRows(killedGameStats, {
-    limit: null,
-  }).map(({ name, deaths }) => ({ name, deaths }));
+  for (const boss of game.bosses) {
+    if (boss.stats.length > 0 || hasTrackedBossKill(boss.trackingSessions)) {
+      outcomes.set(boss.name, 'KILLED');
+      continue;
+    }
+
+    const openSession = boss.trackingSessions.find((session) =>
+      OPEN_STATUSES.some((status) => status === session.status),
+    );
+
+    if (openSession) {
+      outcomes.set(
+        boss.name,
+        openSession.status === BossTrackingSessionStatus.ACTIVE
+          ? 'ACTIVE'
+          : 'PAUSED',
+      );
+    }
+  }
+
+  const bosses = getGameBossStatsRows(gameStats, { limit: null }).flatMap(
+    ({ name, deaths }) => {
+      const outcome = outcomes.get(name);
+      return outcome ? [{ name, deaths, outcome }] : [];
+    },
+  );
+  const killedBossCount = bosses.filter(
+    (boss) => boss.outcome === 'KILLED',
+  ).length;
   const latestSession = game.trackingSessions[0];
   const deaths = latestSession
     ? (latestSession.finalDeaths ??
       latestSession.startDeaths + latestSession.deathCount)
-    : killedBosses.reduce((total, boss) => total + boss.deaths, 0);
+    : bosses.reduce((total, boss) => total + boss.deaths, 0);
 
   return {
     id: game.id,
     name: game.name,
     deaths,
-    killedBossCount: killedBosses.length,
-    killedBosses,
+    killedBossCount,
+    bosses,
   };
 };
 
@@ -169,7 +192,10 @@ const toCurrentStreamEncounters = (
 export const getEmbeddedAppStats = async (
   guildId: string,
 ): Promise<EmbeddedAppStats> => {
-  const result = await findEmbeddedAppGameStats(guildId);
+  const result = await findEmbeddedAppGameStats([
+    BOT_GUILDS.STAGING_ENV,
+    BOT_GUILDS.PROD_ENV,
+  ]);
   const games = result.archiveGames.map(toArchivedGame).sort((left, right) => {
     if (left.id === result.game?.id) {
       return -1;
@@ -186,7 +212,7 @@ export const getEmbeddedAppStats = async (
       currentBoss: null,
       currentStreamWindow: null,
       streamEncounters: [],
-      killedBosses: [],
+      bosses: [],
       games,
     };
   }
@@ -197,14 +223,14 @@ export const getEmbeddedAppStats = async (
     ? toCurrentStreamEncounters(result.sessions, currentStream)
     : toLatestStreamEncounters(result.sessions);
   const currentGameArchive = games.find((game) => game.id === result.game?.id);
-  const killedBosses = currentGameArchive?.killedBosses ?? [];
+  const bosses = currentGameArchive?.bosses ?? [];
 
   return {
     game: {
       id: result.game.id,
       name: result.game.name,
       deaths: currentGameArchive?.deaths ?? result.gameDeaths,
-      killedBossCount: killedBosses.length,
+      killedBossCount: currentGameArchive?.killedBossCount ?? 0,
     },
     currentBoss: toCurrentBoss(result.sessions),
     currentStreamWindow: currentStream
@@ -214,7 +240,7 @@ export const getEmbeddedAppStats = async (
         }
       : null,
     streamEncounters,
-    killedBosses,
+    bosses,
     games,
   };
 };

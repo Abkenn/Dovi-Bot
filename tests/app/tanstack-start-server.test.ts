@@ -32,7 +32,7 @@ const emptyStats = {
   currentBoss: null,
   currentStreamWindow: null,
   streamEncounters: [],
-  killedBosses: [],
+  bosses: [],
   games: [],
 };
 

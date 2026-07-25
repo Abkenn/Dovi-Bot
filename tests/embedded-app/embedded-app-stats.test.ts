@@ -14,6 +14,13 @@ vi.mock('../../src/data/queries/embedded-app-stats', () => ({
   findEmbeddedAppGameStats: queries.findEmbeddedAppGameStats,
 }));
 
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: {
+    STAGING_ENV: 'staging-guild',
+    PROD_ENV: 'production-guild',
+  },
+}));
+
 vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
   getStreamInfo: queries.getStreamInfo,
 }));
@@ -95,7 +102,7 @@ describe('embedded app stats', () => {
     vi.clearAllMocks();
   });
 
-  it('returns the current encounter and every imported or tracked killed boss', async () => {
+  it('returns the current encounter and every imported, killed, or open boss', async () => {
     const killed = makeSession({
       id: 'killed',
       bossName: 'Iudex Gundyr',
@@ -146,14 +153,26 @@ describe('embedded app stats', () => {
               name: 'Iudex Gundyr',
               stats: [],
               trackingSessions: [
-                { deathCount: 7, endResult: BossTrackingEndResult.KILLED },
+                {
+                  deathCount: 7,
+                  endResult: BossTrackingEndResult.KILLED,
+                  status: BossTrackingSessionStatus.ENDED,
+                  focusedAt: killed.focusedAt,
+                },
               ],
             },
             {
               id: 'boss-current',
               name: 'Vordt',
               stats: [],
-              trackingSessions: [{ deathCount: 3, endResult: null }],
+              trackingSessions: [
+                {
+                  deathCount: 3,
+                  endResult: null,
+                  status: BossTrackingSessionStatus.ACTIVE,
+                  focusedAt: current.focusedAt,
+                },
+              ],
             },
           ],
         },
@@ -217,24 +236,144 @@ describe('embedded app stats', () => {
           name: 'Dark Souls II',
           deaths: 12,
           killedBossCount: 1,
-          killedBosses: [{ name: 'Old Boss', deaths: 12 }],
+          bosses: [{ name: 'Old Boss', deaths: 12, outcome: 'KILLED' }],
         },
       ],
     });
-    expect(stats.killedBosses).toHaveLength(20);
-    expect(stats.killedBosses).toContainEqual({
+    expect(stats.bosses).toHaveLength(21);
+    expect(stats.bosses).toContainEqual({
       name: 'Iudex Gundyr',
       deaths: 7,
+      outcome: 'KILLED',
     });
-    expect(stats.killedBosses).not.toContainEqual(
-      expect.objectContaining({ name: 'Vordt' }),
-    );
+    expect(stats.bosses).toContainEqual({
+      name: 'Vordt',
+      deaths: 3,
+      outcome: 'ACTIVE',
+    });
     const currentGame = stats.games.find((game) => game.id === stats.game?.id);
     expect(stats.game).toMatchObject({
       deaths: currentGame?.deaths,
       killedBossCount: currentGame?.killedBossCount,
     });
-    expect(stats.killedBosses).toEqual(currentGame?.killedBosses);
+    expect(stats.bosses).toEqual(currentGame?.bosses);
+    expect(queries.findEmbeddedAppGameStats).toHaveBeenCalledWith([
+      'staging-guild',
+      'production-guild',
+    ]);
+  });
+
+  it('ranks every paused boss and selects the latest one for PiP', async () => {
+    const gael = {
+      ...makeSession({
+        id: 'gael',
+        bossName: 'Slave Knight Gael',
+        status: BossTrackingSessionStatus.PAUSED,
+        endResult: null,
+        deathCount: 8,
+        startedAt: new Date('2026-07-25T16:51:01.334Z'),
+        endedAt: null,
+      }),
+      guildId: 'staging-guild',
+      focusedAt: new Date('2026-07-25T18:58:18.130Z'),
+      pausedAt: new Date('2026-07-25T18:58:18.130Z'),
+      attempts: [
+        {
+          ...attempt,
+          attemptNumber: 9,
+          startedAt: new Date('2026-07-25T18:58:08.489Z'),
+        },
+      ],
+    };
+    const midir = {
+      ...makeSession({
+        id: 'midir',
+        bossName: 'Darkeater Midir',
+        status: BossTrackingSessionStatus.PAUSED,
+        endResult: null,
+        deathCount: 16,
+        startedAt: new Date('2026-07-24T20:02:47.423Z'),
+        endedAt: null,
+      }),
+      guildId: 'production-guild',
+      focusedAt: new Date('2026-07-24T21:09:37.757Z'),
+      pausedAt: new Date('2026-07-24T21:09:37.757Z'),
+      attempts: [
+        {
+          ...attempt,
+          attemptNumber: 17,
+          startedAt: new Date('2026-07-24T21:08:58.908Z'),
+        },
+      ],
+    };
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game: { id: 'game-1', name: 'Dark Souls III' },
+      gameDeaths: 246,
+      sessions: [gael, midir],
+      archiveGames: [
+        {
+          id: 'game-1',
+          name: 'Dark Souls III',
+          trackingSessions: [
+            { startDeaths: 0, deathCount: 246, finalDeaths: null },
+          ],
+          bosses: [
+            {
+              id: 'boss-midir',
+              name: 'Darkeater Midir',
+              stats: [],
+              trackingSessions: [
+                {
+                  deathCount: 16,
+                  endResult: null,
+                  status: BossTrackingSessionStatus.PAUSED,
+                  focusedAt: midir.focusedAt,
+                },
+              ],
+            },
+            {
+              id: 'boss-gael',
+              name: 'Slave Knight Gael',
+              stats: [],
+              trackingSessions: [
+                {
+                  deathCount: 8,
+                  endResult: null,
+                  status: BossTrackingSessionStatus.PAUSED,
+                  focusedAt: gael.focusedAt,
+                },
+              ],
+            },
+            {
+              id: 'boss-pontiff',
+              name: 'Pontiff Sulyvahn',
+              stats: [{ deaths: 12 }],
+              trackingSessions: [],
+            },
+          ],
+        },
+      ],
+    });
+    queries.getStreamInfo.mockResolvedValue({
+      current: null,
+      next: null,
+      timezone: 'America/Sao_Paulo',
+    });
+
+    await expect(
+      getEmbeddedAppStats('production-guild'),
+    ).resolves.toMatchObject({
+      currentBoss: {
+        name: 'Slave Knight Gael',
+        status: 'PAUSED',
+        pausedAt: '2026-07-25T18:58:18.130Z',
+      },
+      bosses: [
+        { name: 'Darkeater Midir', deaths: 16, outcome: 'PAUSED' },
+        { name: 'Pontiff Sulyvahn', deaths: 12, outcome: 'KILLED' },
+        { name: 'Slave Knight Gael', deaths: 8, outcome: 'PAUSED' },
+      ],
+    });
   });
 
   it('uses the latest tracking run when no stream is currently happening', async () => {
@@ -264,7 +403,12 @@ describe('embedded app stats', () => {
               name: 'Abyss Watchers',
               stats: [],
               trackingSessions: [
-                { deathCount: 10, endResult: BossTrackingEndResult.KILLED },
+                {
+                  deathCount: 10,
+                  endResult: BossTrackingEndResult.KILLED,
+                  status: BossTrackingSessionStatus.ENDED,
+                  focusedAt: lastStreamBoss.focusedAt,
+                },
               ],
             },
           ],
@@ -298,7 +442,7 @@ describe('embedded app stats', () => {
       currentBoss: null,
       currentStreamWindow: null,
       streamEncounters: [],
-      killedBosses: [],
+      bosses: [],
       games: [],
     });
   });

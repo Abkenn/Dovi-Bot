@@ -37,7 +37,10 @@ const Stat = ({ value, label }: { value: string | number; label: string }) => (
 
 export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
   const paused = boss?.status === 'PAUSED';
-  const elapsed = useElapsedSeconds(boss?.attemptStartedAt ?? null, paused);
+  const elapsed = useElapsedSeconds(
+    boss?.attemptStartedAt ?? null,
+    paused ? (boss.pausedAt ?? null) : null,
+  );
 
   if (!boss) {
     return (

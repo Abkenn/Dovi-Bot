@@ -40,11 +40,9 @@ export const createEmbeddedAppStatsCache = (
     return pending;
   };
 
-  const invalidate = (guildId: string) => {
+  const invalidate = (_guildId: string) => {
     generation += 1;
-    if (cached?.guildId === guildId) {
-      cached = undefined;
-    }
+    cached = undefined;
   };
 
   return { get, invalidate };

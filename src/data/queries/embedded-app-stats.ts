@@ -6,7 +6,7 @@ import {
 import { prisma } from '../../lib/prisma';
 import { OPEN_BOSS_TRACKING_SESSION_STATUSES } from '../boss-tracking.constants';
 
-const findEmbeddedAppArchiveGames = () =>
+const findEmbeddedAppArchiveGames = (guildIds: string[]) =>
   prisma.bossGame.findMany({
     where: {
       bosses: {
@@ -22,7 +22,10 @@ const findEmbeddedAppArchiveGames = () =>
             },
             {
               trackingSessions: {
-                some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+                some: {
+                  guildId: { in: guildIds },
+                  status: { not: BossTrackingSessionStatus.CANCELLED },
+                },
               },
             },
           ],
@@ -34,8 +37,11 @@ const findEmbeddedAppArchiveGames = () =>
       id: true,
       name: true,
       trackingSessions: {
-        where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
-        orderBy: { focusedAt: 'desc' },
+        where: {
+          guildId: { in: guildIds },
+          status: { not: BossTrackingSessionStatus.CANCELLED },
+        },
+        orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
         take: 1,
         select: {
           startDeaths: true,
@@ -56,7 +62,10 @@ const findEmbeddedAppArchiveGames = () =>
             },
             {
               trackingSessions: {
-                some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+                some: {
+                  guildId: { in: guildIds },
+                  status: { not: BossTrackingSessionStatus.CANCELLED },
+                },
               },
             },
           ],
@@ -73,39 +82,48 @@ const findEmbeddedAppArchiveGames = () =>
             select: { deaths: true },
           },
           trackingSessions: {
-            where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
-            select: { deathCount: true, endResult: true },
+            where: {
+              guildId: { in: guildIds },
+              status: { not: BossTrackingSessionStatus.CANCELLED },
+            },
+            orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
+            select: {
+              deathCount: true,
+              endResult: true,
+              status: true,
+              focusedAt: true,
+            },
           },
         },
       },
     },
   });
 
-export const findEmbeddedAppGameStats = async (guildId: string) => {
-  const archiveGamesPromise = findEmbeddedAppArchiveGames();
+export const findEmbeddedAppGameStats = async (guildIds: string[]) => {
+  const archiveGamesPromise = findEmbeddedAppArchiveGames(guildIds);
   const latestSession = await prisma.bossTrackingSession.findFirst({
     where: {
-      guildId,
+      guildId: { in: guildIds },
       status: { in: OPEN_BOSS_TRACKING_SESSION_STATUSES },
     },
     select: {
       gameId: true,
       game: { select: { id: true, name: true } },
     },
-    orderBy: { focusedAt: 'desc' },
+    orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
   });
   const fallbackSession = latestSession
     ? null
     : await prisma.bossTrackingSession.findFirst({
         where: {
-          guildId,
+          guildId: { in: guildIds },
           status: { not: BossTrackingSessionStatus.CANCELLED },
         },
         select: {
           gameId: true,
           game: { select: { id: true, name: true } },
         },
-        orderBy: { focusedAt: 'desc' },
+        orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
       });
   const targetSession = latestSession ?? fallbackSession;
 
@@ -120,7 +138,7 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
 
   const sessions = await prisma.bossTrackingSession.findMany({
     where: {
-      guildId,
+      guildId: { in: guildIds },
       gameId: targetSession.gameId,
       status: { not: BossTrackingSessionStatus.CANCELLED },
     },
@@ -153,7 +171,7 @@ export const findEmbeddedAppGameStats = async (guildId: string) => {
         select: { reason: true },
       },
     },
-    orderBy: { focusedAt: 'desc' },
+    orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
   });
 
   const latestGameSession = sessions[0] ?? null;

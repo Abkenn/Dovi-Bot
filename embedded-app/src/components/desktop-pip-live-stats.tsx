@@ -47,7 +47,10 @@ export const DesktopPipLiveStats = ({
   boss,
 }: DesktopPipLiveStatsProps) => {
   const paused = boss.status === 'PAUSED';
-  const elapsed = useElapsedSeconds(boss.attemptStartedAt, paused);
+  const elapsed = useElapsedSeconds(
+    boss.attemptStartedAt,
+    paused ? boss.pausedAt : null,
+  );
   const attemptDisplay = getCurrentAttemptDisplay(boss, elapsed);
   const isIdle = attemptDisplay.state !== 'LIVE';
 

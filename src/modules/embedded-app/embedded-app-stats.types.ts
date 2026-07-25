@@ -9,9 +9,10 @@ export type EmbeddedAppCurrentBoss = {
   pauseReason: string | null;
 };
 
-export type EmbeddedAppKilledBoss = {
+export type EmbeddedAppBoss = {
   name: string;
   deaths: number;
+  outcome: 'ACTIVE' | 'PAUSED' | 'KILLED';
 };
 
 export type EmbeddedAppStreamEncounter = {
@@ -25,7 +26,7 @@ export type EmbeddedAppArchivedGame = {
   name: string;
   deaths: number;
   killedBossCount: number;
-  killedBosses: EmbeddedAppKilledBoss[];
+  bosses: EmbeddedAppBoss[];
 };
 
 export type EmbeddedAppStats = {
@@ -42,6 +43,6 @@ export type EmbeddedAppStats = {
     endAt: string;
   } | null;
   streamEncounters: EmbeddedAppStreamEncounter[];
-  killedBosses: EmbeddedAppKilledBoss[];
+  bosses: EmbeddedAppBoss[];
   games: EmbeddedAppArchivedGame[];
 };

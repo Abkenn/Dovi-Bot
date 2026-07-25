@@ -1,4 +1,4 @@
-import { Check, Skull } from 'lucide-react';
+import { Check, Pause, Radio, Skull } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AnimatedNumber } from '@/components/animated-number';
 import { Badge } from '@/components/ui/badge';
@@ -10,13 +10,36 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import type { KilledBoss } from '@/live-stats.types';
+import type { Boss } from '@/live-stats.types';
+
+const BossOutcome = ({ outcome }: { outcome: Boss['outcome'] }) => {
+  let label = 'Fighting';
+  let color = 'border-primary/30 text-primary';
+  let icon = <Radio className="size-4" aria-hidden="true" />;
+
+  if (outcome === 'KILLED') {
+    label = 'Killed';
+    color = 'border-emerald-500/30 text-emerald-400';
+    icon = <Check className="size-4" aria-hidden="true" />;
+  } else if (outcome === 'PAUSED') {
+    label = 'Paused';
+    color = 'border-amber-500/30 text-amber-300';
+    icon = <Pause className="size-4" aria-hidden="true" />;
+  }
+
+  return (
+    <Badge variant="outline" className={color} aria-label={label}>
+      {icon}
+      {label}
+    </Badge>
+  );
+};
 
 export const BossHistory = ({
   bosses,
   cacheKey = 'boss-history',
 }: {
-  bosses: KilledBoss[];
+  bosses: Boss[];
   cacheKey?: string;
 }) => (
   <Card className="gap-3 py-4 sm:gap-6 sm:py-6">
@@ -26,7 +49,7 @@ export const BossHistory = ({
           Journey
         </CardDescription>
         <CardTitle>
-          <h2 className="text-xl sm:text-2xl">Killed bosses</h2>
+          <h2 className="text-xl sm:text-2xl">Bosses</h2>
         </CardTitle>
       </div>
       <Badge variant="secondary" className="size-9 rounded-full p-0 text-sm">
@@ -41,7 +64,7 @@ export const BossHistory = ({
       {bosses.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-8 text-center text-muted-foreground">
           <Skull className="size-8 opacity-60" aria-hidden="true" />
-          <p>No defeated bosses recorded for this game yet.</p>
+          <p>No bosses recorded for this game yet.</p>
         </div>
       ) : (
         <motion.ol layout>
@@ -71,13 +94,7 @@ export const BossHistory = ({
                       deaths
                     </p>
                   </div>
-                  <span
-                    className="grid size-7 place-items-center rounded-full bg-emerald-500/10 text-emerald-400"
-                    role="img"
-                    aria-label="Killed"
-                  >
-                    <Check className="size-4" aria-hidden="true" />
-                  </span>
+                  <BossOutcome outcome={boss.outcome} />
                 </div>
               </motion.li>
             ))}

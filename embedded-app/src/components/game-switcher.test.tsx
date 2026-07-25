@@ -24,14 +24,14 @@ const games = [
     name: 'Dark Souls III',
     deaths: 130,
     killedBossCount: 20,
-    killedBosses: [],
+    bosses: [],
   },
   {
     id: 'elden-ring',
     name: 'Elden Ring',
     deaths: 200,
     killedBossCount: 40,
-    killedBosses: [],
+    bosses: [],
   },
 ];
 

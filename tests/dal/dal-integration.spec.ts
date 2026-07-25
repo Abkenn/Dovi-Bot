@@ -705,8 +705,9 @@ test('covers boss tracking transactions and queries', async () => {
     trackingSessions: [{ finalDeaths: 12 }],
   });
 
-  const embeddedStats =
-    await embeddedAppQueries.findEmbeddedAppGameStats(guildId);
+  const embeddedStats = await embeddedAppQueries.findEmbeddedAppGameStats([
+    guildId,
+  ]);
   expect(embeddedStats).toMatchObject({
     game: { name: 'Tracking Game' },
     gameDeaths: 12,

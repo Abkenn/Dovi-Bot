@@ -36,7 +36,7 @@ describe('LiveStatsPage', () => {
           currentBoss: null,
           currentStreamWindow: null,
           streamEncounters: [],
-          killedBosses: [],
+          bosses: [],
           games: [],
         }}
       />,
@@ -87,14 +87,14 @@ describe('LiveStatsPage', () => {
           currentBoss: null,
           currentStreamWindow: null,
           streamEncounters: [],
-          killedBosses: [],
+          bosses: [],
           games: [
             {
               id: 'game-1',
               name: 'Dark Souls III',
               deaths: 127,
               killedBossCount: 4,
-              killedBosses: [],
+              bosses: [],
             },
           ],
         }}
@@ -128,7 +128,7 @@ describe('LiveStatsPage', () => {
           },
           currentStreamWindow: null,
           streamEncounters: [],
-          killedBosses: [],
+          bosses: [],
           games: [],
         }}
       />,

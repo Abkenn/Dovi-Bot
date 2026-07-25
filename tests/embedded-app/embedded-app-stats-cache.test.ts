@@ -11,7 +11,7 @@ const emptyStats = {
   currentBoss: null,
   currentStreamWindow: null,
   streamEncounters: [],
-  killedBosses: [],
+  bosses: [],
   games: [],
 };
 
@@ -49,6 +49,17 @@ describe('embedded app stats cache', () => {
 
     cache.invalidate('staging-guild');
     await cache.get('staging-guild');
+
+    expect(loadStats).toHaveBeenCalledTimes(2);
+  });
+
+  it('reloads the combined snapshot after either guild changes', async () => {
+    const loadStats = vi.fn().mockResolvedValue(emptyStats);
+    const cache = createEmbeddedAppStatsCache(loadStats);
+    await cache.get('production-guild');
+
+    cache.invalidate('staging-guild');
+    await cache.get('production-guild');
 
     expect(loadStats).toHaveBeenCalledTimes(2);
   });

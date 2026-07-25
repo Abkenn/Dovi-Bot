@@ -1,35 +1,41 @@
 import { useEffect, useState } from 'react';
 
-const secondsSince = (startedAt: string | null) => {
+const elapsedSeconds = (startedAt: string | null, stoppedAt: string | null) => {
   if (!startedAt) {
     return null;
   }
 
   return Math.max(
     0,
-    Math.floor((Date.now() - new Date(startedAt).getTime()) / 1_000),
+    Math.floor(
+      ((stoppedAt ? new Date(stoppedAt).getTime() : Date.now()) -
+        new Date(startedAt).getTime()) /
+        1_000,
+    ),
   );
 };
 
 export const useElapsedSeconds = (
   startedAt: string | null,
-  paused: boolean,
+  stoppedAt: string | null,
 ) => {
-  const [seconds, setSeconds] = useState(() => secondsSince(startedAt));
+  const [seconds, setSeconds] = useState(() =>
+    elapsedSeconds(startedAt, stoppedAt),
+  );
 
   useEffect(() => {
-    setSeconds(secondsSince(startedAt));
+    setSeconds(elapsedSeconds(startedAt, stoppedAt));
 
-    if (!startedAt || paused) {
+    if (!startedAt || stoppedAt) {
       return;
     }
 
     const interval = window.setInterval(() => {
-      setSeconds(secondsSince(startedAt));
+      setSeconds(elapsedSeconds(startedAt, null));
     }, 1_000);
 
     return () => window.clearInterval(interval);
-  }, [paused, startedAt]);
+  }, [startedAt, stoppedAt]);
 
   return seconds;
 };
