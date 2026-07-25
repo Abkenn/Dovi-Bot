@@ -13,6 +13,7 @@ import type {
   EmbeddedAppArchivedGame,
   EmbeddedAppBoss,
   EmbeddedAppCurrentBoss,
+  EmbeddedAppLastKilledBoss,
   EmbeddedAppStats,
   EmbeddedAppStreamEncounter,
 } from './embedded-app-stats.types';
@@ -152,6 +153,28 @@ const toLatestStreamEncounters = (
   return toStreamEncounters(latestStreamSessions);
 };
 
+const toLastKilledBoss = (
+  sessions: EmbeddedAppStatsSession[],
+  bosses: EmbeddedAppBoss[],
+): EmbeddedAppLastKilledBoss | null => {
+  const latestKilledSession = sessions.find(
+    (session) => session.endResult === BossTrackingEndResult.KILLED,
+  );
+
+  if (!latestKilledSession) {
+    return null;
+  }
+
+  const boss = bosses.find(
+    (candidate) => candidate.name === latestKilledSession.boss.name,
+  );
+
+  return {
+    name: latestKilledSession.boss.name,
+    deaths: boss?.deaths ?? latestKilledSession.deathCount,
+  };
+};
+
 const toStreamEncounters = (
   sessions: EmbeddedAppStatsSession[],
 ): EmbeddedAppStreamEncounter[] => {
@@ -212,6 +235,7 @@ export const getEmbeddedAppStats = async (
     return {
       game: null,
       currentBoss: null,
+      lastKilledBoss: null,
       currentStreamWindow: null,
       streamEncounters: [],
       bosses: [],
@@ -236,6 +260,7 @@ export const getEmbeddedAppStats = async (
       killedBossCount: currentGameArchive?.killedBossCount ?? 0,
     },
     currentBoss: toCurrentBoss(result.sessions),
+    lastKilledBoss: toLastKilledBoss(result.sessions, bosses),
     currentStreamWindow: currentStream
       ? {
           startAt: currentStream.startAt.toISOString(),

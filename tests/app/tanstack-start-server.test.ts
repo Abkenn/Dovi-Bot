@@ -30,6 +30,7 @@ import {
 const emptyStats = {
   game: null,
   currentBoss: null,
+  lastKilledBoss: null,
   currentStreamWindow: null,
   streamEncounters: [],
   bosses: [],

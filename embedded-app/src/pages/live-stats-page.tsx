@@ -4,6 +4,7 @@ import { ViewTransition } from 'react';
 import { AnimatedNumber } from '@/components/animated-number';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
+import { DesktopPipLastBossStats } from '@/components/desktop-pip-last-boss-stats';
 import { DesktopPipLiveStats } from '@/components/desktop-pip-live-stats';
 import { GameSwitcher } from '@/components/game-switcher';
 import { MobilePipStats } from '@/components/mobile-pip-stats';
@@ -71,23 +72,39 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
     );
   }
 
+  const hasDesktopPipBoss = stats.currentBoss || stats.lastKilledBoss;
+  let desktopPip: React.ReactNode = null;
+
+  if (stats.currentBoss) {
+    desktopPip = (
+      <DesktopPipLiveStats
+        gameName={stats.game.name}
+        totalDeaths={stats.game.deaths}
+        killedBossCount={stats.game.killedBossCount}
+        boss={stats.currentBoss}
+      />
+    );
+  } else if (stats.lastKilledBoss) {
+    desktopPip = (
+      <DesktopPipLastBossStats
+        gameName={stats.game.name}
+        totalDeaths={stats.game.deaths}
+        killedBossCount={stats.game.killedBossCount}
+        boss={stats.lastKilledBoss}
+      />
+    );
+  }
+
   return (
     <main
-      className={`${stats.currentBoss ? 'desktop-pip-live-frame ' : ''}mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12`}
+      className={`${hasDesktopPipBoss ? 'desktop-pip-live-frame ' : ''}mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12`}
     >
       <MobilePipStats
         gameName={stats.game.name}
         deaths={stats.game.deaths}
         killedBossCount={stats.game.killedBossCount}
       />
-      {stats.currentBoss ? (
-        <DesktopPipLiveStats
-          gameName={stats.game.name}
-          totalDeaths={stats.game.deaths}
-          killedBossCount={stats.game.killedBossCount}
-          boss={stats.currentBoss}
-        />
-      ) : null}
+      {desktopPip}
       <StatsPageHeader
         eyebrow="Dovi Live Stats"
         title={stats.game.name}

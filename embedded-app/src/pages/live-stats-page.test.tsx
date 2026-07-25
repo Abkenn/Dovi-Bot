@@ -21,6 +21,11 @@ vi.mock('../components/desktop-pip-live-stats', () => ({
     <div className="desktop-pip-live-only">Desktop PiP live attempt</div>
   ),
 }));
+vi.mock('../components/desktop-pip-last-boss-stats', () => ({
+  DesktopPipLastBossStats: ({ boss }: { boss: { name: string } }) => (
+    <div className="desktop-pip-live-only">Last boss: {boss.name}</div>
+  ),
+}));
 
 describe('LiveStatsPage', () => {
   it('shows game totals and dashboard sections', () => {
@@ -34,6 +39,7 @@ describe('LiveStatsPage', () => {
             killedBossCount: 4,
           },
           currentBoss: null,
+          lastKilledBoss: null,
           currentStreamWindow: null,
           streamEncounters: [],
           bosses: [],
@@ -85,6 +91,7 @@ describe('LiveStatsPage', () => {
         stats={{
           game: null,
           currentBoss: null,
+          lastKilledBoss: null,
           currentStreamWindow: null,
           streamEncounters: [],
           bosses: [],
@@ -126,6 +133,10 @@ describe('LiveStatsPage', () => {
             status: 'ACTIVE',
             pauseReason: null,
           },
+          lastKilledBoss: {
+            name: 'Iudex Gundyr',
+            deaths: 7,
+          },
           currentStreamWindow: null,
           streamEncounters: [],
           bosses: [],
@@ -146,5 +157,37 @@ describe('LiveStatsPage', () => {
     expect(mobilePip).not.toContainElement(
       screen.getByText('Desktop PiP live attempt'),
     );
+    expect(
+      screen.queryByText('Last boss: Iudex Gundyr'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the latest killed boss in desktop PiP when no boss is open', () => {
+    render(
+      <LiveStatsPage
+        stats={{
+          game: {
+            id: 'game-1',
+            name: 'Dark Souls III',
+            deaths: 246,
+            killedBossCount: 23,
+          },
+          currentBoss: null,
+          lastKilledBoss: {
+            name: 'Halflight, Spear of the Church',
+            deaths: 1,
+          },
+          currentStreamWindow: null,
+          streamEncounters: [],
+          bosses: [],
+          games: [],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('main')).toHaveClass('desktop-pip-live-frame');
+    expect(
+      screen.getByText('Last boss: Halflight, Spear of the Church'),
+    ).toBeInTheDocument();
   });
 });

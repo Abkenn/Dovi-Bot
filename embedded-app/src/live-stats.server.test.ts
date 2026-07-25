@@ -4,6 +4,7 @@ import { loadLiveStatsPayload } from './live-stats.server';
 const emptyStats = {
   game: null,
   currentBoss: null,
+  lastKilledBoss: null,
   currentStreamWindow: null,
   streamEncounters: [],
   bosses: [],

@@ -15,6 +15,11 @@ export type EmbeddedAppBoss = {
   outcome: 'ACTIVE' | 'PAUSED' | 'KILLED';
 };
 
+export type EmbeddedAppLastKilledBoss = {
+  name: string;
+  deaths: number;
+};
+
 export type EmbeddedAppStreamEncounter = {
   name: string;
   deaths: number;
@@ -39,6 +44,7 @@ export type EmbeddedAppStats = {
     killedBossCount: number;
   } | null;
   currentBoss: EmbeddedAppCurrentBoss | null;
+  lastKilledBoss: EmbeddedAppLastKilledBoss | null;
   currentStreamWindow: {
     startAt: string;
     endAt: string;

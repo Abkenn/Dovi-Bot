@@ -216,6 +216,10 @@ describe('embedded app stats', () => {
         attemptStartedAt: '2026-07-10T18:00:00.000Z',
         runbackSeconds: 80,
       },
+      lastKilledBoss: {
+        name: 'Iudex Gundyr',
+        deaths: 7,
+      },
       currentStreamWindow: {
         startAt: '2026-07-10T16:00:00.000Z',
         endAt: '2026-07-10T20:00:00.000Z',
@@ -428,6 +432,10 @@ describe('embedded app stats', () => {
     });
 
     await expect(getEmbeddedAppStats('staging-guild')).resolves.toMatchObject({
+      lastKilledBoss: {
+        name: 'Abyss Watchers',
+        deaths: 10,
+      },
       currentStreamWindow: null,
       streamEncounters: [
         { name: 'Abyss Watchers', deaths: 10, outcome: 'KILLED' },
@@ -446,6 +454,7 @@ describe('embedded app stats', () => {
     await expect(getEmbeddedAppStats('staging-guild')).resolves.toEqual({
       game: null,
       currentBoss: null,
+      lastKilledBoss: null,
       currentStreamWindow: null,
       streamEncounters: [],
       bosses: [],
