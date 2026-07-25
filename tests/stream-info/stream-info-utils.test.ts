@@ -260,9 +260,16 @@ describe('stream info utils', () => {
       findPreviousOccurrence(
         [first, second],
         DateTime.fromISO('2026-06-14T12:00:00Z'),
-        second.dateKey,
+        second,
       ),
     ).toBe(first);
+    expect(
+      findPreviousOccurrence(
+        [first, second],
+        DateTime.fromISO('2026-06-14T12:00:00Z'),
+        null,
+      ),
+    ).toBe(second);
     expect(resolveTargetStream(first, second)).toEqual({
       target: 'current',
       occurrence: first,

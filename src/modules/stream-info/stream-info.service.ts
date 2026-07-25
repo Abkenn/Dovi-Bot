@@ -492,11 +492,7 @@ export const getStreamInfo = async (
   const current =
     youtubeResolution.current ??
     (shouldSuppressScheduledCurrent ? null : scheduledCurrent);
-  const previous = findPreviousOccurrence(
-    occurrences,
-    now,
-    current?.dateKey ?? youtubeResolution.suppressedScheduledDateKey,
-  );
+  const previous = findPreviousOccurrence(occurrences, now, current);
   const next = findNextOccurrence(
     current
       ? occurrences.filter(

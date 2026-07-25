@@ -1,6 +1,6 @@
 import { Radio, Skull, Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ViewTransition } from 'react';
+import { type ReactNode, ViewTransition } from 'react';
 import { AnimatedNumber } from '@/components/animated-number';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
@@ -11,19 +11,17 @@ import { MobilePipStats } from '@/components/mobile-pip-stats';
 import { StatsPageHeader } from '@/components/stats-page-header';
 import { StreamEncounters } from '@/components/stream-encounters';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { LiveStats } from '@/live-stats.types';
 
-const TotalCard = ({
-  icon,
-  value,
-  label,
-  cacheKey,
-}: {
-  icon: React.ReactNode;
+type TotalCardProps = {
+  icon: ReactNode;
   value: number;
   label: string;
   cacheKey: string;
-}) => (
+};
+
+const TotalCard = ({ icon, value, label, cacheKey }: TotalCardProps) => (
   <Card className="activity-compact:rounded-lg gap-0 py-0">
     <CardContent className="activity-compact:!p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
       <span className="activity-compact:hidden grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary sm:size-11 sm:rounded-xl">
@@ -42,6 +40,38 @@ const TotalCard = ({
     </CardContent>
   </Card>
 );
+
+type DesktopPipProps = {
+  game: NonNullable<LiveStats['game']>;
+  currentBoss: LiveStats['currentBoss'];
+  lastKilledBoss: LiveStats['lastKilledBoss'];
+};
+
+const DesktopPip = ({ game, currentBoss, lastKilledBoss }: DesktopPipProps) => {
+  if (currentBoss) {
+    return (
+      <DesktopPipLiveStats
+        gameName={game.name}
+        totalDeaths={game.deaths}
+        killedBossCount={game.killedBossCount}
+        boss={currentBoss}
+      />
+    );
+  }
+
+  if (!lastKilledBoss) {
+    return null;
+  }
+
+  return (
+    <DesktopPipLastBossStats
+      gameName={game.name}
+      totalDeaths={game.deaths}
+      killedBossCount={game.killedBossCount}
+      boss={lastKilledBoss}
+    />
+  );
+};
 
 export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
   if (!stats.game) {
@@ -72,39 +102,25 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
     );
   }
 
-  const hasDesktopPipBoss = stats.currentBoss || stats.lastKilledBoss;
-  let desktopPip: React.ReactNode = null;
-
-  if (stats.currentBoss) {
-    desktopPip = (
-      <DesktopPipLiveStats
-        gameName={stats.game.name}
-        totalDeaths={stats.game.deaths}
-        killedBossCount={stats.game.killedBossCount}
-        boss={stats.currentBoss}
-      />
-    );
-  } else if (stats.lastKilledBoss) {
-    desktopPip = (
-      <DesktopPipLastBossStats
-        gameName={stats.game.name}
-        totalDeaths={stats.game.deaths}
-        killedBossCount={stats.game.killedBossCount}
-        boss={stats.lastKilledBoss}
-      />
-    );
-  }
+  const hasDesktopPipBoss = Boolean(stats.currentBoss ?? stats.lastKilledBoss);
 
   return (
     <main
-      className={`${hasDesktopPipBoss ? 'desktop-pip-live-frame ' : ''}mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12`}
+      className={cn(
+        'mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12',
+        hasDesktopPipBoss && 'desktop-pip-live-frame',
+      )}
     >
       <MobilePipStats
         gameName={stats.game.name}
         deaths={stats.game.deaths}
         killedBossCount={stats.game.killedBossCount}
       />
-      {desktopPip}
+      <DesktopPip
+        game={stats.game}
+        currentBoss={stats.currentBoss}
+        lastKilledBoss={stats.lastKilledBoss}
+      />
       <StatsPageHeader
         eyebrow="Dovi Live Stats"
         title={stats.game.name}

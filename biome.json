@@ -48,7 +48,9 @@
       "style": {
         "noNestedTernary": "error",
         "noNonNullAssertion": "error",
-        "useAsConstAssertion": "error"
+        "noUselessElse": "error",
+        "useAsConstAssertion": "error",
+        "useConst": "error"
       }
     }
   }
