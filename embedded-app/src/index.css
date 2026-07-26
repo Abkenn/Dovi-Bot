@@ -13,6 +13,30 @@
   display: none;
 }
 
+.general-stats-pip-only {
+  display: none;
+}
+
+html[data-activity-layout="pip"] .general-stats-frame {
+  width: 100%;
+  max-width: none;
+  height: 100svh;
+  min-height: 0;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+html[data-activity-layout="pip"] .general-stats-full {
+  display: none;
+}
+
+html[data-activity-layout="pip"] .general-stats-pip-only {
+  display: flex;
+}
+
 .game-switcher-scroll {
   scrollbar-width: none;
   overscroll-behavior-inline: contain;

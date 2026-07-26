@@ -67,6 +67,23 @@ describe('general stats chart utilities', () => {
     ).toEqual({ slope: 30, intercept: -30 });
   });
 
+  it('keeps one extreme game from reversing the typical trend', () => {
+    const games = [
+      [1, 100],
+      [2, 90],
+      [3, 80],
+      [4, 70],
+      [5, 1_000],
+    ].map(([averageAttemptsPerBoss, averageWinningAttemptSeconds], index) => ({
+      ...game,
+      id: `game-${index}`,
+      averageAttemptsPerBoss,
+      averageWinningAttemptSeconds,
+    }));
+
+    expect(getGeneralStatsTrend(games)?.slope).toBe(-10);
+  });
+
   it('describes trends', () => {
     expect(describeGeneralStatsTrend(-2)).toContain('shorter');
     expect(describeGeneralStatsTrend(2)).toContain('longer');

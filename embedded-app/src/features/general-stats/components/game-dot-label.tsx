@@ -5,12 +5,7 @@ type GameDotLabelProps = {
   y?: number;
 };
 
-const LABEL_OFFSETS = [
-  { x: -10, y: -16 },
-  { x: 12, y: 24 },
-  { x: -18, y: -30 },
-  { x: 20, y: 38 },
-] as const;
+const LABEL_OFFSETS = [{ y: -16 }, { y: 24 }, { y: -32 }, { y: 40 }] as const;
 
 export const GameDotLabel = ({
   index = 0,
@@ -23,20 +18,33 @@ export const GameDotLabel = ({
   }
 
   const offset = LABEL_OFFSETS[index % LABEL_OFFSETS.length];
+  const lineStartY = offset.y < 0 ? y - 8 : y + 8;
+  const lineEndY = offset.y < 0 ? y + offset.y + 4 : y + offset.y - 12;
 
   return (
-    <text
-      x={x + offset.x}
-      y={y + offset.y}
-      fill="var(--foreground)"
-      fontSize={11}
-      fontWeight={600}
-      paintOrder="stroke"
-      stroke="var(--background)"
-      strokeWidth={4}
-      textAnchor="middle"
-    >
-      {value}
-    </text>
+    <g>
+      <line
+        x1={x}
+        x2={x}
+        y1={lineStartY}
+        y2={lineEndY}
+        stroke="var(--muted-foreground)"
+        strokeOpacity={0.45}
+        strokeWidth={1}
+      />
+      <text
+        x={x}
+        y={y + offset.y}
+        fill="var(--foreground)"
+        fontSize={11}
+        fontWeight={600}
+        paintOrder="stroke"
+        stroke="var(--background)"
+        strokeWidth={4}
+        textAnchor="middle"
+      >
+        {value}
+      </text>
+    </g>
   );
 };

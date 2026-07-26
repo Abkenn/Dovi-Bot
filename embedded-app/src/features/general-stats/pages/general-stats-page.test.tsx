@@ -196,7 +196,7 @@ describe('GeneralStatsPage', () => {
       />,
     );
 
-    expect(screen.getByText('General Stats')).toBeInTheDocument();
+    expect(screen.getAllByText('General Stats')).toHaveLength(2);
     expect(screen.getByText('Hardest by deaths')).toBeInTheDocument();
     expect(
       screen.getAllByText('Longest winning attempt').length,
@@ -208,6 +208,10 @@ describe('GeneralStatsPage', () => {
     expect(screen.getAllByText('Dark Souls III').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Elden Ring').length).toBeGreaterThan(0);
     expect(screen.queryByText('0.82')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'General stats PiP summary' }),
+    ).toHaveClass('general-stats-pip-only', 'activity-compact:flex');
+    expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
     const chart = screen.getByRole('img', {
       name: 'Game difficulty comparison chart',
@@ -294,7 +298,7 @@ describe('GeneralStatsPage', () => {
     expect(
       screen.getByText('Winning-attempt timing is not available yet.'),
     ).toBeInTheDocument();
-    expect(screen.getAllByText('Not enough data')).toHaveLength(3);
+    expect(screen.getAllByText('Not enough data')).toHaveLength(6);
   });
 
   it('renders one timed game without a regression line', () => {

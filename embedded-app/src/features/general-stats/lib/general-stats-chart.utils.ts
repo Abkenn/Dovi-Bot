@@ -26,32 +26,47 @@ export const isGameComparison = (
   );
 };
 
+const getMedian = (values: number[]) => {
+  const sortedValues = [...values].sort((left, right) => left - right);
+  const middleIndex = Math.floor(sortedValues.length / 2);
+  const middleValue = sortedValues[middleIndex] ?? 0;
+
+  if (sortedValues.length % 2 === 1) {
+    return middleValue;
+  }
+
+  return ((sortedValues[middleIndex - 1] ?? 0) + middleValue) / 2;
+};
+
 export const getGeneralStatsTrend = (games: GameComparison[]) => {
   if (games.length < 2) {
     return null;
   }
 
-  const averageX =
-    games.reduce((total, game) => total + game.averageAttemptsPerBoss, 0) /
-    games.length;
-  const averageY =
-    games.reduce(
-      (total, game) => total + (game.averageWinningAttemptSeconds ?? 0),
-      0,
-    ) / games.length;
-  const numerator = games.reduce(
-    (total, game) =>
-      total +
-      (game.averageAttemptsPerBoss - averageX) *
-        ((game.averageWinningAttemptSeconds ?? 0) - averageY),
-    0,
+  const slopes = games.flatMap((leftGame, leftIndex) =>
+    games.slice(leftIndex + 1).flatMap((rightGame) => {
+      const xDifference =
+        rightGame.averageAttemptsPerBoss - leftGame.averageAttemptsPerBoss;
+
+      if (xDifference === 0) {
+        return [];
+      }
+
+      return [
+        ((rightGame.averageWinningAttemptSeconds ?? 0) -
+          (leftGame.averageWinningAttemptSeconds ?? 0)) /
+          xDifference,
+      ];
+    }),
   );
-  const denominator = games.reduce(
-    (total, game) => total + (game.averageAttemptsPerBoss - averageX) ** 2,
-    0,
+  const slope = getMedian(slopes);
+  const intercept = getMedian(
+    games.map(
+      (game) =>
+        (game.averageWinningAttemptSeconds ?? 0) -
+        slope * game.averageAttemptsPerBoss,
+    ),
   );
-  const slope = denominator === 0 ? 0 : numerator / denominator;
-  const intercept = averageY - slope * averageX;
 
   return { slope, intercept };
 };

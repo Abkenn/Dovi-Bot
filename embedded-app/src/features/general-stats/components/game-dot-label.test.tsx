@@ -10,8 +10,19 @@ describe('GameDotLabel', () => {
       </svg>,
     );
 
-    expect(screen.getByText('Lies of P')).toHaveAttribute('x', '112');
+    expect(screen.getByText('Lies of P')).toHaveAttribute('x', '100');
     expect(screen.getByText('Lies of P')).toHaveAttribute('y', '104');
+    expect(document.querySelector('line')).toHaveAttribute('x1', '100');
+    expect(document.querySelector('line')).toHaveAttribute('x2', '100');
+
+    rerender(
+      <svg aria-hidden="true">
+        <GameDotLabel index={0} value="Nine Sols" x={120} y={90} />
+      </svg>,
+    );
+    expect(screen.getByText('Nine Sols')).toHaveAttribute('x', '120');
+    expect(document.querySelector('line')).toHaveAttribute('y1', '82');
+    expect(document.querySelector('line')).toHaveAttribute('y2', '78');
 
     rerender(
       <svg aria-hidden="true">

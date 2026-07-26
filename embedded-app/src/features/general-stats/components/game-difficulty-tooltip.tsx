@@ -24,8 +24,8 @@ export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
         ],
       }}
       transition={{
-        opacity: { duration: 0.1 },
-        y: { duration: 0.1 },
+        opacity: { duration: 0.18, ease: 'easeOut' },
+        y: { duration: 0.16, ease: 'easeOut' },
         boxShadow: { duration: 1.8, repeat: Number.POSITIVE_INFINITY },
       }}
       className="w-64 rounded-xl border border-primary/40 bg-[radial-gradient(circle_at_center,oklch(0.19_0.025_285/0.98),oklch(0.145_0.014_285/0.98))] p-3 backdrop-blur"
