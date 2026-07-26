@@ -1,45 +1,65 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
-  reloadActivityWhenAvailable: vi.fn().mockResolvedValue(undefined),
+  getLiveStats: vi.fn(),
+  snapshot: null as { cachedAt: string } | null,
 }));
 
 vi.mock('@/components/activity-state', () => ({
-  ActivityErrorState: ({
-    message,
-    onRetry,
-  }: {
-    message: string;
-    onRetry: () => void;
-  }) => (
-    <button type="button" onClick={onRetry}>
-      {message}
-    </button>
-  ),
+  ActivityErrorState: () => <div>Stats are resting</div>,
 }));
-vi.mock('@/hooks/use-deployment-recovery', () => ({
-  reloadActivityWhenAvailable: dependencies.reloadActivityWhenAvailable,
+vi.mock('@/live-stats.functions', () => ({
+  getLiveStats: dependencies.getLiveStats,
+}));
+vi.mock('../lib/live-stats-cache', () => ({
+  readCachedLiveStats: () => dependencies.snapshot,
+}));
+vi.mock('./cached-stats-content', () => ({
+  CachedStatsContent: () => <div>Offline snapshot</div>,
 }));
 
 import { RootErrorState } from './root-error-state';
 
 describe('RootErrorState', () => {
-  it('connects the root error UI to deployment recovery', () => {
-    render(<RootErrorState />);
-
-    fireEvent.click(screen.getByRole('button'));
-    expect(dependencies.reloadActivityWhenAvailable).toHaveBeenCalledWith(
-      expect.stringMatching(/^retry-/),
-    );
+  afterEach(() => {
+    vi.useRealTimers();
+    dependencies.snapshot = null;
+    dependencies.getLiveStats.mockReset();
   });
 
-  it('keeps the resting screen when a deployment probe fails', () => {
-    dependencies.reloadActivityWhenAvailable.mockRejectedValueOnce(
-      new Error('Unavailable'),
-    );
-    render(<RootErrorState />);
+  it('shows the cached snapshot within five seconds', async () => {
+    vi.useFakeTimers();
+    dependencies.snapshot = { cachedAt: '2026-07-26T12:00:00.000Z' };
+    render(<RootErrorState reset={vi.fn()} />);
 
-    expect(() => fireEvent.click(screen.getByRole('button'))).not.toThrow();
+    expect(screen.getByText('Stats are resting')).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(3_000));
+    expect(screen.getByText('Offline snapshot')).toBeInTheDocument();
+  });
+
+  it('keeps stale data stable while recovery fails in the background', async () => {
+    vi.useFakeTimers();
+    dependencies.snapshot = { cachedAt: '2026-07-26T12:00:00.000Z' };
+    dependencies.getLiveStats.mockRejectedValue(new Error('Unavailable'));
+    const reset = vi.fn();
+    render(<RootErrorState reset={reset} />);
+
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+
+    expect(screen.getByText('Offline snapshot')).toBeInTheDocument();
+    expect(dependencies.getLiveStats).toHaveBeenCalledTimes(2);
+    expect(reset).not.toHaveBeenCalled();
+  });
+
+  it('returns to live route data after a successful background recovery', async () => {
+    vi.useFakeTimers();
+    dependencies.getLiveStats.mockResolvedValue({});
+    const reset = vi.fn();
+    render(<RootErrorState reset={reset} />);
+
+    await act(() => vi.advanceTimersByTimeAsync(5_000));
+
+    expect(reset).toHaveBeenCalledOnce();
   });
 });

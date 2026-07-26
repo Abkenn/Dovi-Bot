@@ -2,6 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+const dependencies = vi.hoisted(() => ({
+  navigate: vi.fn(),
+}));
+
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
     children,
@@ -10,7 +14,16 @@ vi.mock('@tanstack/react-router', () => ({
     children: ReactNode;
     className?: string;
   }) => (
-    <a href="/" className={className}>
+    <a
+      href="/"
+      className={className}
+      onClick={(event) => {
+        if (!event.defaultPrevented) {
+          dependencies.navigate();
+        }
+        event.preventDefault();
+      }}
+    >
       {children}
     </a>
   ),
@@ -50,6 +63,14 @@ describe('GameSwitcher', () => {
     expect(screen.getByText('Stats')).toBeVisible();
     expect(screen.getByText('Dark Souls III')).toBeVisible();
     expect(screen.getByText('Elden Ring')).toBeVisible();
+  });
+
+  it('keeps ordinary badge clicks available for navigation', () => {
+    render(<GameSwitcher games={games} selectedGameId={null} />);
+
+    fireEvent.click(screen.getByText('Dark Souls III'));
+
+    expect(dependencies.navigate).toHaveBeenCalledOnce();
   });
 
   it('highlights the general stats page between live and games', () => {
@@ -98,8 +119,13 @@ describe('GameSwitcher', () => {
     const navigation = screen.getByRole('navigation', { name: 'Game stats' });
     const setPointerCapture = vi.fn();
     const releasePointerCapture = vi.fn();
+    const hasPointerCapture = vi
+      .fn()
+      .mockReturnValueOnce(false)
+      .mockReturnValue(true);
     navigation.setPointerCapture = setPointerCapture;
     navigation.releasePointerCapture = releasePointerCapture;
+    navigation.hasPointerCapture = hasPointerCapture;
 
     fireEvent.pointerMove(navigation, { clientX: 80, pointerId: 1 });
     fireEvent.pointerDown(navigation, { clientX: 100, pointerId: 1 });

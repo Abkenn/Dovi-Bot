@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useDiscordSdk } from '@/hooks/use-discord-sdk';
 import { resolveActivityTargetGame } from '@/lib/activity-target';
 import type { LiveStats } from '@/live-stats.types';
+import { cacheLiveStats } from '../lib/live-stats-cache';
 
 type CurrentBuildContentProps = {
   discordClientId: string;
@@ -16,6 +17,10 @@ export const CurrentBuildContent = ({
   const customId = useDiscordSdk(discordClientId);
   const navigate = useNavigate();
   const handledCustomId = useRef<string | null>(null);
+
+  useEffect(() => {
+    cacheLiveStats(stats);
+  }, [stats]);
 
   useEffect(() => {
     const requestedGameName = stats.initialGameName ?? customId;

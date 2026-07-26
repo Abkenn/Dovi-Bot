@@ -15,7 +15,6 @@ export const useDragScroll = () => {
       scrollLeft: event.currentTarget.scrollLeft,
     };
     dragged.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
@@ -25,12 +24,23 @@ export const useDragScroll = () => {
 
     const distance = event.clientX - dragStart.current.pointerX;
     dragged.current = Math.abs(distance) >= DRAG_CLICK_THRESHOLD_PX;
+
+    if (
+      dragged.current &&
+      !event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
     event.currentTarget.scrollLeft = dragStart.current.scrollLeft - distance;
   };
 
   const onPointerEnd = (event: PointerEvent<HTMLElement>) => {
     dragStart.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   const onClickCapture = (event: PointerEvent<HTMLElement>) => {

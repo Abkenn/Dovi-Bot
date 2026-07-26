@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
+  cacheLiveStats: vi.fn(),
   customId: null as string | null,
   navigate: vi.fn(),
 }));
@@ -12,6 +13,9 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 vi.mock('@/hooks/use-discord-sdk', () => ({
   useDiscordSdk: () => dependencies.customId,
+}));
+vi.mock('../lib/live-stats-cache', () => ({
+  cacheLiveStats: dependencies.cacheLiveStats,
 }));
 
 import { CurrentBuildContent } from './current-build-content';
@@ -45,6 +49,7 @@ const stats = {
 describe('CurrentBuildContent', () => {
   beforeEach(() => {
     dependencies.customId = null;
+    dependencies.cacheLiveStats.mockReset();
     dependencies.navigate.mockReset();
   });
 
@@ -52,6 +57,7 @@ describe('CurrentBuildContent', () => {
     render(<CurrentBuildContent discordClientId="client-1" stats={stats} />);
 
     expect(screen.getByText('Route outlet')).toBeInTheDocument();
+    expect(dependencies.cacheLiveStats).toHaveBeenCalledWith(stats);
     expect(dependencies.navigate).not.toHaveBeenCalled();
   });
 
