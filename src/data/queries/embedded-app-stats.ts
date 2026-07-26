@@ -79,7 +79,10 @@ const findEmbeddedAppArchiveGames = (guildIds: string[]) =>
               deaths: { not: null },
             },
             take: 1,
-            select: { deaths: true },
+            select: {
+              deaths: true,
+              winningAttemptTimeSeconds: true,
+            },
           },
           trackingSessions: {
             where: {
@@ -92,6 +95,17 @@ const findEmbeddedAppArchiveGames = (guildIds: string[]) =>
               endResult: true,
               status: true,
               focusedAt: true,
+              attempts: {
+                where: { result: BossTrackingAttemptResult.KILLED },
+                orderBy: { attemptNumber: 'desc' },
+                take: 1,
+                select: {
+                  startedAt: true,
+                  endedAt: true,
+                  vodStartSeconds: true,
+                  vodEndSeconds: true,
+                },
+              },
             },
           },
         },

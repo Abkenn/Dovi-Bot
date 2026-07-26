@@ -715,6 +715,17 @@ test('covers boss tracking transactions and queries', async () => {
   expect(
     embeddedStats?.sessions.every((session) => session.guildId === guildId),
   ).toBe(true);
+  expect(
+    embeddedStats.archiveGames
+      .find((game) => game.name === 'Tracking Game')
+      ?.bosses.find((boss) => boss.name === 'Tracking Boss Prime')
+      ?.trackingSessions[0]?.attempts,
+  ).toEqual([
+    expect.objectContaining({
+      startedAt: expect.any(Date),
+      endedAt: expect.any(Date),
+    }),
+  ]);
 
   await expect(
     trackingTransactions.updateBossTrackingInfo({

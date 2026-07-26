@@ -14,6 +14,12 @@ const emptyStats = {
   streamEncounters: [],
   bosses: [],
   games: [],
+  generalStats: {
+    games: [],
+    hardestByDeathsGameId: null,
+    longestWinningAttemptGameId: null,
+    toughestOverallGameId: null,
+  },
 };
 
 describe('embedded app stats cache', () => {

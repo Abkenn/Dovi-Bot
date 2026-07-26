@@ -37,6 +37,34 @@ export type EmbeddedAppArchivedGame = {
   killedBosses?: EmbeddedAppBoss[];
 };
 
+export type EmbeddedAppGameComparison = {
+  id: string;
+  name: string;
+  defeatedBossCount: number;
+  averageDeathsPerBoss: number;
+  averageAttemptsPerBoss: number;
+  averageWinningAttemptSeconds: number | null;
+  difficultyScore: number | null;
+  bossHighlights: {
+    mostAttempts: EmbeddedAppBossComparison;
+    longestWinningAttempt: EmbeddedAppBossComparison | null;
+    toughestOverall: EmbeddedAppBossComparison | null;
+  };
+};
+
+export type EmbeddedAppBossComparison = {
+  name: string;
+  attempts: number;
+  winningAttemptSeconds: number | null;
+};
+
+export type EmbeddedAppGeneralStats = {
+  games: EmbeddedAppGameComparison[];
+  hardestByDeathsGameId: string | null;
+  longestWinningAttemptGameId: string | null;
+  toughestOverallGameId: string | null;
+};
+
 export type EmbeddedAppStats = {
   initialGameName?: string | null;
   game: {
@@ -57,4 +85,5 @@ export type EmbeddedAppStats = {
   bosses: EmbeddedAppBoss[];
   killedBosses?: EmbeddedAppBoss[];
   games: EmbeddedAppArchivedGame[];
+  generalStats: EmbeddedAppGeneralStats;
 };

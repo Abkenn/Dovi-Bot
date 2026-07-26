@@ -2,6 +2,13 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { LiveStatsPage } from './live-stats-page';
 
+const EMPTY_GENERAL_STATS = {
+  games: [],
+  hardestByDeathsGameId: null,
+  longestWinningAttemptGameId: null,
+  toughestOverallGameId: null,
+};
+
 vi.mock('../components/current-boss-card', () => ({
   CurrentBossCard: ({ boss }: { boss: { name: string } | null }) => (
     <div>{boss?.name ?? 'Current boss card'}</div>
@@ -46,6 +53,7 @@ describe('LiveStatsPage', () => {
           streamEncounters: [],
           bosses: [],
           games: [],
+          generalStats: EMPTY_GENERAL_STATS,
         }}
       />,
     );
@@ -112,6 +120,7 @@ describe('LiveStatsPage', () => {
           streamEncounters: [],
           bosses: [],
           games: [],
+          generalStats: EMPTY_GENERAL_STATS,
         }}
       />,
     );
@@ -142,6 +151,7 @@ describe('LiveStatsPage', () => {
               bosses: [],
             },
           ],
+          generalStats: EMPTY_GENERAL_STATS,
         }}
       />,
     );
@@ -181,6 +191,7 @@ describe('LiveStatsPage', () => {
           streamEncounters: [],
           bosses: [],
           games: [],
+          generalStats: EMPTY_GENERAL_STATS,
         }}
       />,
     );
@@ -223,6 +234,7 @@ describe('LiveStatsPage', () => {
           streamEncounters: [],
           bosses: [],
           games: [],
+          generalStats: EMPTY_GENERAL_STATS,
         }}
       />,
     );

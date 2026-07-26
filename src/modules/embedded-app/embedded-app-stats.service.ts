@@ -10,6 +10,10 @@ import {
   summarizeGameDeathTotals,
 } from '../bosses/bosses.stats';
 import { getStreamInfo } from '../stream-info/stream-info.service';
+import {
+  type GeneralStatsGameInput,
+  summarizeEmbeddedAppGeneralStats,
+} from './embedded-app-general-stats';
 import type {
   EmbeddedAppArchivedGame,
   EmbeddedAppBoss,
@@ -29,6 +33,8 @@ type EmbeddedAppStatsQuery = NonNullable<
   Awaited<ReturnType<typeof findEmbeddedAppGameStats>>
 >;
 type EmbeddedAppStatsSession = EmbeddedAppStatsQuery['sessions'][number];
+type EmbeddedAppArchiveGame = EmbeddedAppStatsQuery['archiveGames'][number];
+type EmbeddedAppArchiveBoss = EmbeddedAppArchiveGame['bosses'][number];
 
 const toCurrentBoss = (
   sessions: EmbeddedAppStatsSession[],
@@ -64,7 +70,7 @@ const toCurrentBoss = (
 };
 
 const toArchivedGame = (
-  game: EmbeddedAppStatsQuery['archiveGames'][number],
+  game: EmbeddedAppArchiveGame,
 ): EmbeddedAppArchivedGame => {
   const gameStats = {
     game: { name: game.name },
@@ -130,6 +136,63 @@ const toArchivedGame = (
     killedBosses,
   };
 };
+
+const getTrackedWinningAttemptSeconds = (boss: EmbeddedAppArchiveBoss) => {
+  const killedAttempt = boss.trackingSessions.find(
+    (session) => session.endResult === BossTrackingEndResult.KILLED,
+  )?.attempts?.[0];
+
+  if (!killedAttempt) {
+    return null;
+  }
+
+  if (
+    killedAttempt.vodStartSeconds !== null &&
+    killedAttempt.vodEndSeconds !== null
+  ) {
+    return Math.max(
+      0,
+      killedAttempt.vodEndSeconds - killedAttempt.vodStartSeconds,
+    );
+  }
+
+  if (!killedAttempt.endedAt) {
+    return null;
+  }
+
+  return Math.max(
+    0,
+    Math.floor(
+      (killedAttempt.endedAt.getTime() - killedAttempt.startedAt.getTime()) /
+        1_000,
+    ),
+  );
+};
+
+const toGeneralStatsGame = (
+  game: EmbeddedAppArchiveGame,
+  archivedGame: EmbeddedAppArchivedGame,
+): GeneralStatsGameInput => ({
+  id: game.id,
+  name: game.name,
+  bosses: archivedGame.bosses
+    .filter((boss) => boss.outcome === 'KILLED')
+    .map((boss) => {
+      const sourceBoss = game.bosses.find(
+        (candidate) => candidate.name === boss.name,
+      );
+      const importedWinningAttemptSeconds =
+        sourceBoss?.stats[0]?.winningAttemptTimeSeconds ?? null;
+
+      return {
+        name: boss.name,
+        deaths: boss.deaths,
+        winningAttemptSeconds:
+          importedWinningAttemptSeconds ??
+          (sourceBoss ? getTrackedWinningAttemptSeconds(sourceBoss) : null),
+      };
+    }),
+});
 
 const toLatestStreamEncounters = (
   sessions: EmbeddedAppStatsSession[],
@@ -249,6 +312,13 @@ export const getEmbeddedAppStats = async (
     }
     return left.name.localeCompare(right.name);
   });
+  const archivedGamesById = new Map(games.map((game) => [game.id, game]));
+  const generalStats = summarizeEmbeddedAppGeneralStats(
+    result.archiveGames.flatMap((game) => {
+      const archivedGame = archivedGamesById.get(game.id);
+      return archivedGame ? [toGeneralStatsGame(game, archivedGame)] : [];
+    }),
+  );
 
   if (!result.game) {
     return {
@@ -260,6 +330,7 @@ export const getEmbeddedAppStats = async (
       bosses: [],
       killedBosses: [],
       games,
+      generalStats,
     };
   }
 
@@ -305,5 +376,6 @@ export const getEmbeddedAppStats = async (
     bosses,
     killedBosses: bosses.filter((boss) => boss.outcome === 'KILLED'),
     games,
+    generalStats,
   };
 };

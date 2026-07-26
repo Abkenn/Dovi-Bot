@@ -40,15 +40,31 @@ const games = [
 ];
 
 describe('GameSwitcher', () => {
-  it('offers live and archived game navigation', () => {
+  it('offers live, general stats, and archived game navigation', () => {
     render(<GameSwitcher games={games} selectedGameId="ds3" />);
 
     expect(
       screen.getByRole('navigation', { name: 'Game stats' }),
     ).toBeVisible();
     expect(screen.getByText('Live')).toBeVisible();
+    expect(screen.getByText('Stats')).toBeVisible();
     expect(screen.getByText('Dark Souls III')).toBeVisible();
     expect(screen.getByText('Elden Ring')).toBeVisible();
+  });
+
+  it('highlights the general stats page between live and games', () => {
+    render(<GameSwitcher games={games} selectedGameId="stats" />);
+
+    const links = screen.getAllByRole('link');
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Live',
+      'Stats',
+      'Dark Souls III',
+      'Elden Ring',
+    ]);
+    expect(screen.getByText('Stats').closest('a')).toHaveClass(
+      'text-primary-foreground',
+    );
   });
 
   it('highlights live stats when no archived game is selected', () => {

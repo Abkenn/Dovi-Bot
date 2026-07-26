@@ -145,7 +145,12 @@ describe('embedded app stats', () => {
             ...Array.from({ length: 19 }, (_, index) => ({
               id: `imported-${index}`,
               name: `Imported Boss ${index + 1}`,
-              stats: [{ deaths: 5 }],
+              stats: [
+                {
+                  deaths: 5,
+                  winningAttemptTimeSeconds: 60 + index,
+                },
+              ],
               trackingSessions: [],
             })),
             {
@@ -158,6 +163,14 @@ describe('embedded app stats', () => {
                   endResult: BossTrackingEndResult.KILLED,
                   status: BossTrackingSessionStatus.ENDED,
                   focusedAt: killed.focusedAt,
+                  attempts: [
+                    {
+                      startedAt: new Date('2026-07-10T17:28:00.000Z'),
+                      endedAt: new Date('2026-07-10T17:30:00.000Z'),
+                      vodStartSeconds: null,
+                      vodEndSeconds: null,
+                    },
+                  ],
                 },
               ],
             },
@@ -184,7 +197,7 @@ describe('embedded app stats', () => {
             {
               id: 'old-boss',
               name: 'Old Boss',
-              stats: [{ deaths: 12 }],
+              stats: [{ deaths: 12, winningAttemptTimeSeconds: 90 }],
               trackingSessions: [],
             },
           ],
@@ -269,6 +282,15 @@ describe('embedded app stats', () => {
     expect(stats.bosses).toEqual(currentGame?.bosses);
     expect(stats.killedBosses).toEqual(
       stats.bosses.filter((boss) => boss.outcome === 'KILLED'),
+    );
+    expect(stats.generalStats.games).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'game-1',
+          defeatedBossCount: 20,
+          averageWinningAttemptSeconds: 72,
+        }),
+      ]),
     );
     expect(currentGame?.killedBosses).toEqual(
       currentGame?.bosses.filter((boss) => boss.outcome === 'KILLED'),
@@ -588,6 +610,12 @@ describe('embedded app stats', () => {
       bosses: [],
       killedBosses: [],
       games: [],
+      generalStats: {
+        games: [],
+        hardestByDeathsGameId: null,
+        longestWinningAttemptGameId: null,
+        toughestOverallGameId: null,
+      },
     });
   });
 });
