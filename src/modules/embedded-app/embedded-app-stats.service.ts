@@ -7,6 +7,7 @@ import {
 import {
   getGameBossStatsRows,
   hasTrackedBossKill,
+  summarizeGameDeathTotals,
 } from '../bosses/bosses.stats';
 import { getStreamInfo } from '../stream-info/stream-info.service';
 import type {
@@ -112,15 +113,18 @@ const toArchivedGame = (
   ).length;
   const killedBosses = bosses.filter((boss) => boss.outcome === 'KILLED');
   const latestSession = game.trackingSessions[0];
-  const deaths = latestSession
-    ? (latestSession.finalDeaths ??
-      latestSession.startDeaths + latestSession.deathCount)
-    : bosses.reduce((total, boss) => total + boss.deaths, 0);
+  const trackedTotalDeaths = latestSession?.finalDeaths ?? null;
+  const deathTotals = summarizeGameDeathTotals({
+    bossDeaths: bosses.reduce((total, boss) => total + boss.deaths, 0),
+    trackedTotalDeaths,
+  });
 
   return {
     id: game.id,
     name: game.name,
-    deaths,
+    deaths: deathTotals.totalDeaths,
+    bossDeaths: deathTotals.bossDeaths,
+    nonBossDeaths: deathTotals.nonBossDeaths,
     killedBossCount,
     bosses,
     killedBosses,
@@ -285,6 +289,8 @@ export const getEmbeddedAppStats = async (
       id: result.game.id,
       name: result.game.name,
       deaths: currentGameArchive?.deaths ?? result.gameDeaths,
+      bossDeaths: currentGameArchive?.bossDeaths ?? result.gameDeaths,
+      nonBossDeaths: currentGameArchive?.nonBossDeaths ?? null,
       killedBossCount: currentGameArchive?.killedBossCount ?? 0,
     },
     currentBoss: toCurrentBoss(result.sessions),

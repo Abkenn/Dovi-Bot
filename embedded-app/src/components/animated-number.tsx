@@ -5,14 +5,25 @@ type AnimatedNumberProps = {
   value: number;
   className?: string;
   cacheKey?: string;
+  suffix?: string;
 };
 
 export const AnimatedNumber = ({
   value,
   className,
   cacheKey,
+  suffix,
 }: AnimatedNumberProps) => {
   const { displayValue, visit } = useAnimatedNumber({ value, cacheKey });
+
+  if (suffix) {
+    return (
+      <span className={className} data-animation-visit={visit}>
+        {value}
+        {suffix}
+      </span>
+    );
+  }
 
   return (
     <motion.span

@@ -145,7 +145,7 @@ describe('embedded app stats', () => {
             ...Array.from({ length: 19 }, (_, index) => ({
               id: `imported-${index}`,
               name: `Imported Boss ${index + 1}`,
-              stats: [{ deaths: 19 - index }],
+              stats: [{ deaths: 5 }],
               trackingSessions: [],
             })),
             {
@@ -207,6 +207,8 @@ describe('embedded app stats', () => {
         id: 'game-1',
         name: 'Dark Souls III',
         deaths: 178,
+        bossDeaths: 105,
+        nonBossDeaths: 73,
         killedBossCount: 20,
       },
       currentBoss: {
@@ -233,12 +235,16 @@ describe('embedded app stats', () => {
           id: 'game-1',
           name: 'Dark Souls III',
           deaths: 178,
+          bossDeaths: 105,
+          nonBossDeaths: 73,
           killedBossCount: 20,
         }),
         {
           id: 'game-0',
           name: 'Dark Souls II',
           deaths: 12,
+          bossDeaths: 12,
+          nonBossDeaths: null,
           killedBossCount: 1,
           bosses: [{ name: 'Old Boss', deaths: 12, outcome: 'KILLED' }],
         },

@@ -36,6 +36,8 @@ describe('LiveStatsPage', () => {
             id: 'game-1',
             name: 'Dark Souls III',
             deaths: 127,
+            bossDeaths: 100,
+            nonBossDeaths: 27,
             killedBossCount: 4,
           },
           currentBoss: null,
@@ -56,6 +58,13 @@ describe('LiveStatsPage', () => {
         screen.getByRole('region', { name: 'Game totals' }),
       ).getByLabelText('127'),
     ).toHaveClass('activity-compact:!text-xl');
+    const totals = within(screen.getByRole('region', { name: 'Game totals' }));
+    expect(totals.getByText('Total deaths')).toBeInTheDocument();
+    expect(totals.getByText('Boss deaths')).toBeInTheDocument();
+    expect(totals.getByText('Non-boss deaths')).toBeInTheDocument();
+    expect(totals.getByText('Bosses killed')).toBeInTheDocument();
+    expect(totals.getByLabelText('100')).toBeInTheDocument();
+    expect(totals.getByLabelText('27')).toBeInTheDocument();
     expect(screen.getByText('Current boss card')).toBeInTheDocument();
     expect(screen.getByText('Stream encounters')).toBeInTheDocument();
     expect(screen.getByText('Game switcher')).toBeInTheDocument();
@@ -85,6 +94,33 @@ describe('LiveStatsPage', () => {
     expect(screen.getByRole('main')).not.toHaveAttribute('style');
   });
 
+  it('shows a lower-bound total when non-boss deaths were not tracked', () => {
+    render(
+      <LiveStatsPage
+        stats={{
+          game: {
+            id: 'game-1',
+            name: 'Dark Souls II',
+            deaths: 84,
+            bossDeaths: 84,
+            nonBossDeaths: null,
+            killedBossCount: 3,
+          },
+          currentBoss: null,
+          lastKilledBoss: null,
+          currentStreamWindow: null,
+          streamEncounters: [],
+          bosses: [],
+          games: [],
+        }}
+      />,
+    );
+
+    const totals = within(screen.getByRole('region', { name: 'Game totals' }));
+    expect(totals.getByText('84+')).toBeInTheDocument();
+    expect(totals.getByText('Not tracked')).toBeInTheDocument();
+  });
+
   it('keeps archived games reachable from the no-tracking state', () => {
     render(
       <LiveStatsPage
@@ -100,6 +136,8 @@ describe('LiveStatsPage', () => {
               id: 'game-1',
               name: 'Dark Souls III',
               deaths: 127,
+              bossDeaths: 127,
+              nonBossDeaths: null,
               killedBossCount: 4,
               bosses: [],
             },
@@ -121,6 +159,8 @@ describe('LiveStatsPage', () => {
             id: 'game-1',
             name: 'Dark Souls III',
             deaths: 1,
+            bossDeaths: 1,
+            nonBossDeaths: null,
             killedBossCount: 0,
           },
           currentBoss: {
@@ -170,6 +210,8 @@ describe('LiveStatsPage', () => {
             id: 'game-1',
             name: 'Dark Souls III',
             deaths: 246,
+            bossDeaths: 246,
+            nonBossDeaths: null,
             killedBossCount: 23,
           },
           currentBoss: null,

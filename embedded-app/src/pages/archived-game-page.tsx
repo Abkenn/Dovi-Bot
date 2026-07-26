@@ -1,4 +1,4 @@
-import { History, Skull, Trophy } from 'lucide-react';
+import { CircleSlash2, History, Skull, Swords, Trophy } from 'lucide-react';
 import { ViewTransition } from 'react';
 import { AnimatedNumber } from '@/components/animated-number';
 import { BossHistory } from '@/components/boss-history';
@@ -13,11 +13,15 @@ const ArchiveTotal = ({
   value,
   label,
   cacheKey,
+  suffix,
+  fallback,
 }: {
   icon: React.ReactNode;
   value: number;
   label: string;
   cacheKey: string;
+  suffix?: string;
+  fallback?: string;
 }) => (
   <Card className="activity-compact:rounded-lg gap-0 py-0">
     <CardContent className="activity-compact:!p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
@@ -25,11 +29,18 @@ const ArchiveTotal = ({
         {icon}
       </span>
       <div className="min-w-0">
-        <AnimatedNumber
-          value={value}
-          cacheKey={cacheKey}
-          className="activity-compact:!text-xl block text-2xl font-bold tracking-tight tabular-nums sm:text-4xl"
-        />
+        {fallback ? (
+          <span className="activity-compact:!text-base block text-lg font-bold tracking-tight sm:text-2xl">
+            {fallback}
+          </span>
+        ) : (
+          <AnimatedNumber
+            value={value}
+            cacheKey={cacheKey}
+            suffix={suffix}
+            className="activity-compact:!text-xl block text-2xl font-bold tracking-tight tabular-nums sm:text-4xl"
+          />
+        )}
         <span className="activity-compact:!text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs">
           {label}
         </span>
@@ -49,6 +60,8 @@ export const ArchivedGamePage = ({
     <MobilePipStats
       gameName={game.name}
       deaths={game.deaths}
+      bossDeaths={game.bossDeaths}
+      nonBossDeaths={game.nonBossDeaths}
       killedBossCount={game.killedBossCount}
     />
     <StatsPageHeader
@@ -70,6 +83,20 @@ export const ArchivedGamePage = ({
           value={game.deaths}
           label="Total deaths"
           cacheKey={`${game.id}:deaths`}
+          suffix={game.nonBossDeaths === null ? '+' : undefined}
+        />
+        <ArchiveTotal
+          icon={<Swords aria-hidden="true" />}
+          value={game.bossDeaths}
+          label="Boss deaths"
+          cacheKey={`${game.id}:boss-deaths`}
+        />
+        <ArchiveTotal
+          icon={<CircleSlash2 aria-hidden="true" />}
+          value={game.nonBossDeaths ?? 0}
+          label="Non-boss deaths"
+          cacheKey={`${game.id}:non-boss-deaths`}
+          fallback={game.nonBossDeaths === null ? 'Not tracked' : undefined}
         />
         <ArchiveTotal
           icon={<Trophy aria-hidden="true" />}

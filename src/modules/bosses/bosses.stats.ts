@@ -53,6 +53,30 @@ type RecentBossEncounterStats = {
   trackingSessions: BossTrackingSessionView[];
 };
 
+type GameDeathTotalsInput = {
+  bossDeaths: number;
+  trackedTotalDeaths: number | null;
+};
+
+export const summarizeGameDeathTotals = ({
+  bossDeaths,
+  trackedTotalDeaths,
+}: GameDeathTotalsInput) => {
+  if (trackedTotalDeaths === null || trackedTotalDeaths < bossDeaths) {
+    return {
+      totalDeaths: bossDeaths,
+      bossDeaths,
+      nonBossDeaths: null,
+    };
+  }
+
+  return {
+    totalDeaths: trackedTotalDeaths,
+    bossDeaths,
+    nonBossDeaths: trackedTotalDeaths - bossDeaths,
+  };
+};
+
 export const getTrackedBossDeathCount = (sessions: { deathCount: number }[]) =>
   sessions.reduce((sum, session) => sum + session.deathCount, 0);
 

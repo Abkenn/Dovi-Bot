@@ -30,6 +30,8 @@ export type EmbeddedAppArchivedGame = {
   id: string;
   name: string;
   deaths: number;
+  bossDeaths: number;
+  nonBossDeaths: number | null;
   killedBossCount: number;
   bosses: EmbeddedAppBoss[];
   killedBosses?: EmbeddedAppBoss[];
@@ -41,6 +43,8 @@ export type EmbeddedAppStats = {
     id: string;
     name: string;
     deaths: number;
+    bossDeaths: number;
+    nonBossDeaths: number | null;
     killedBossCount: number;
   } | null;
   currentBoss: EmbeddedAppCurrentBoss | null;

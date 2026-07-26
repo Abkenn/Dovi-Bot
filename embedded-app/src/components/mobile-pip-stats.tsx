@@ -3,6 +3,8 @@ import { AnimatedNumber } from './animated-number';
 type MobilePipStatsProps = {
   gameName: string;
   deaths: number;
+  bossDeaths: number;
+  nonBossDeaths: number | null;
   killedBossCount: number;
 };
 
@@ -10,20 +12,29 @@ const MobilePipTotal = ({
   value,
   label,
   cacheKey,
+  suffix,
+  fallback,
 }: {
   value: number;
   label: string;
   cacheKey: string;
+  suffix?: string;
+  fallback?: string;
 }) => {
   const valueSize = Math.abs(value) >= 100 ? 'text-xl' : 'text-2xl';
 
   return (
     <div className="min-w-0 rounded-lg border border-border bg-card/70 px-2 py-3 text-center">
-      <AnimatedNumber
-        value={value}
-        cacheKey={cacheKey}
-        className={`${valueSize} block leading-none font-bold tabular-nums`}
-      />
+      {fallback ? (
+        <span className="block text-sm leading-none font-bold">{fallback}</span>
+      ) : (
+        <AnimatedNumber
+          value={value}
+          cacheKey={cacheKey}
+          suffix={suffix}
+          className={`${valueSize} block leading-none font-bold tabular-nums`}
+        />
+      )}
       <span className="mt-1.5 block text-[0.5rem] leading-tight font-semibold tracking-[0.08em] text-muted-foreground uppercase">
         {label}
       </span>
@@ -34,6 +45,8 @@ const MobilePipTotal = ({
 export const MobilePipStats = ({
   gameName,
   deaths,
+  bossDeaths,
+  nonBossDeaths,
   killedBossCount,
 }: MobilePipStatsProps) => (
   <div
@@ -46,8 +59,20 @@ export const MobilePipStats = ({
     <div className="grid grid-cols-2 gap-2">
       <MobilePipTotal
         value={deaths}
-        label="Deaths"
+        label="Total deaths"
         cacheKey={`${gameName}:deaths`}
+        suffix={nonBossDeaths === null ? '+' : undefined}
+      />
+      <MobilePipTotal
+        value={bossDeaths}
+        label="Boss deaths"
+        cacheKey={`${gameName}:boss-deaths`}
+      />
+      <MobilePipTotal
+        value={nonBossDeaths ?? 0}
+        label="Non-boss deaths"
+        cacheKey={`${gameName}:non-boss-deaths`}
+        fallback={nonBossDeaths === null ? 'Not tracked' : undefined}
       />
       <MobilePipTotal
         value={killedBossCount}

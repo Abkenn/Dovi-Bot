@@ -5,6 +5,7 @@ import {
   getTrackedBossDeathCount,
   hasTrackedBossKill,
   summarizeCombinedBossStats,
+  summarizeGameDeathTotals,
   summarizeTrackedGameStatus,
 } from '../../src/modules/bosses/bosses.stats';
 import {
@@ -120,6 +121,32 @@ describe('bosses stats', () => {
     expect(rows).toHaveLength(11);
     expect(rows[0]).toMatchObject({ name: 'Boss 0', deaths: 11 });
     expect(rows[10]).toMatchObject({ name: 'Boss 10', deaths: 1 });
+  });
+
+  it('separates known non-boss deaths from boss deaths', () => {
+    expect(
+      summarizeGameDeathTotals({
+        bossDeaths: 130,
+        trackedTotalDeaths: 178,
+      }),
+    ).toEqual({
+      totalDeaths: 178,
+      bossDeaths: 130,
+      nonBossDeaths: 48,
+    });
+  });
+
+  it('marks non-boss deaths unknown when only boss deaths were tracked', () => {
+    expect(
+      summarizeGameDeathTotals({
+        bossDeaths: 130,
+        trackedTotalDeaths: null,
+      }),
+    ).toEqual({
+      totalDeaths: 130,
+      bossDeaths: 130,
+      nonBossDeaths: null,
+    });
   });
 
   it('uses latest final game deaths and separates killed from pending tracked bosses', () => {
