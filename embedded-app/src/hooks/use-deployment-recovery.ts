@@ -7,6 +7,11 @@ type ActivityLocation = {
   replace: (url: string) => void;
 };
 
+type ActivityFetch = (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) => Promise<Pick<Response, 'ok'>>;
+
 export const reloadActivity = (
   deploymentVersion: string,
   location: ActivityLocation = window.location,
@@ -14,6 +19,21 @@ export const reloadActivity = (
   const url = new URL(location.href);
   url.searchParams.set('dovi_deployment', deploymentVersion);
   location.replace(url.toString());
+};
+
+export const reloadActivityWhenAvailable = async (
+  deploymentVersion: string,
+  activityFetch: ActivityFetch = fetch,
+  location: ActivityLocation = window.location,
+) => {
+  const response = await activityFetch(location.href, {
+    cache: 'no-store',
+    headers: { 'x-dovi-deployment-probe': 'true' },
+  });
+
+  if (response.ok) {
+    reloadActivity(deploymentVersion, location);
+  }
 };
 
 export const useDeploymentRecovery = (

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   CartesianGrid,
   LabelList,
@@ -16,10 +17,14 @@ import {
 } from '@/components/ui/chart';
 import type { GameComparison } from '@/live-stats.types';
 import {
+  describeGeneralStatsTrend,
   formatStatsDuration,
+  getChartDomain,
   getGeneralStatsTrend,
 } from '../lib/general-stats-chart.utils';
 import { GameChartTooltip } from './game-chart-tooltip';
+import { GameDotLabel } from './game-dot-label';
+import { TrendExplanation } from './trend-explanation';
 
 const difficultyChartConfig = {
   difficulty: {
@@ -33,6 +38,7 @@ type GameDifficultyChartProps = {
 };
 
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
+  const [isTrendHovered, setIsTrendHovered] = useState(false);
   const timedGames = games.filter(
     (
       game,
@@ -51,23 +57,36 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
     );
   }
 
-  const maximumX = Math.max(
-    1,
-    ...timedGames.map((game) => game.averageAttemptsPerBoss),
+  const xDomain = getChartDomain(
+    timedGames.map((game) => game.averageAttemptsPerBoss),
+    { minimumSpan: 2 },
   );
-  const maximumY = Math.max(
-    1,
-    ...timedGames.map((game) => game.averageWinningAttemptSeconds),
+  const yDomain = getChartDomain(
+    timedGames.map((game) => game.averageWinningAttemptSeconds),
+    { minimumSpan: 120 },
   );
   const trend = getGeneralStatsTrend(timedGames);
-  const trendStartY = trend ? Math.max(0, trend.intercept) : 0;
+  const trendStartY = trend
+    ? Math.min(
+        yDomain[1],
+        Math.max(yDomain[0], trend.intercept + trend.slope * xDomain[0]),
+      )
+    : 0;
   const trendEndY = trend
-    ? Math.min(maximumY, Math.max(0, trend.intercept + trend.slope * maximumX))
+    ? Math.min(
+        yDomain[1],
+        Math.max(yDomain[0], trend.intercept + trend.slope * xDomain[1]),
+      )
     : 0;
 
   return (
-    <Card className="overflow-visible">
-      <CardContent className="p-3 sm:p-6">
+    <Card className="overflow-hidden">
+      <CardContent className="relative p-3 sm:p-6">
+        {trend && isTrendHovered ? (
+          <TrendExplanation
+            description={describeGeneralStatsTrend(trend.slope)}
+          />
+        ) : null}
         <div className="mb-4">
           <h2 className="text-lg font-bold">Game difficulty map</h2>
           <p className="text-sm text-muted-foreground">
@@ -88,7 +107,8 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               type="number"
               dataKey="averageAttemptsPerBoss"
               name="Average attempts"
-              domain={[0, Math.ceil(maximumX * 1.1)]}
+              domain={xDomain}
+              allowDataOverflow
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               label={{
                 value: 'Average attempts per defeated boss',
@@ -102,7 +122,8 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               type="number"
               dataKey="averageWinningAttemptSeconds"
               name="Average winning attempt"
-              domain={[0, Math.ceil(maximumY * 1.1)]}
+              domain={yDomain}
+              allowDataOverflow
               tickFormatter={formatStatsDuration}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               width={62}
@@ -111,20 +132,24 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
             {trend ? (
               <ReferenceLine
                 segment={[
-                  { x: 0, y: trendStartY },
-                  { x: maximumX, y: trendEndY },
+                  { x: xDomain[0], y: trendStartY },
+                  { x: xDomain[1], y: trendEndY },
                 ]}
                 stroke="var(--primary)"
                 strokeOpacity={0.6}
                 strokeWidth={2}
                 strokeDasharray="7 7"
+                onMouseEnter={() => setIsTrendHovered(true)}
+                onMouseLeave={() => setIsTrendHovered(false)}
+                className="cursor-help"
               />
             ) : null}
             <ChartTooltip
               content={GameChartTooltip}
               cursor={{ stroke: 'var(--primary)', strokeDasharray: '4 4' }}
-              allowEscapeViewBox={{ x: true, y: true }}
-              animationDuration={180}
+              allowEscapeViewBox={{ x: false, y: false }}
+              animationDuration={60}
+              wrapperStyle={{ pointerEvents: 'none', zIndex: 30 }}
             />
             <Scatter
               data={timedGames}
@@ -135,14 +160,7 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               animationDuration={900}
               animationEasing="ease-out"
             >
-              <LabelList
-                dataKey="name"
-                position="top"
-                offset={12}
-                fill="var(--foreground)"
-                fontSize={11}
-                fontWeight={600}
-              />
+              <LabelList dataKey="name" content={<GameDotLabel />} />
             </Scatter>
           </ScatterChart>
         </ChartContainer>

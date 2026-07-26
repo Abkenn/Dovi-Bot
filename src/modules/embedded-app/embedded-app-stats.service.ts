@@ -118,8 +118,11 @@ const toArchivedGame = (
     (boss) => boss.outcome === 'KILLED',
   ).length;
   const killedBosses = bosses.filter((boss) => boss.outcome === 'KILLED');
-  const latestSession = game.trackingSessions[0];
-  const trackedTotalDeaths = latestSession?.finalDeaths ?? null;
+  const trackedTotalDeaths =
+    game.trackingSessions
+      .map((session) => session.finalDeaths)
+      .filter((deaths) => deaths !== null)
+      .sort((left, right) => right - left)[0] ?? null;
   const deathTotals = summarizeGameDeathTotals({
     bossDeaths: bosses.reduce((total, boss) => total + boss.deaths, 0),
     trackedTotalDeaths,
@@ -354,14 +357,30 @@ export const getEmbeddedAppStats = async (
   }
   const currentGameArchive = games.find((game) => game.id === result.game?.id);
   const bosses = currentGameArchive?.bosses ?? [];
+  const archivedTrackedTotal =
+    currentGameArchive?.nonBossDeaths === null ||
+    currentGameArchive?.nonBossDeaths === undefined
+      ? null
+      : currentGameArchive.deaths;
+  const liveTrackedTotal =
+    result.gameDeaths > (currentGameArchive?.bossDeaths ?? result.gameDeaths)
+      ? result.gameDeaths
+      : null;
+  const currentDeathTotals = summarizeGameDeathTotals({
+    bossDeaths: currentGameArchive?.bossDeaths ?? result.gameDeaths,
+    trackedTotalDeaths: Math.max(
+      archivedTrackedTotal ?? 0,
+      liveTrackedTotal ?? 0,
+    ),
+  });
 
   return {
     game: {
       id: result.game.id,
       name: result.game.name,
-      deaths: currentGameArchive?.deaths ?? result.gameDeaths,
-      bossDeaths: currentGameArchive?.bossDeaths ?? result.gameDeaths,
-      nonBossDeaths: currentGameArchive?.nonBossDeaths ?? null,
+      deaths: currentDeathTotals.totalDeaths,
+      bossDeaths: currentDeathTotals.bossDeaths,
+      nonBossDeaths: currentDeathTotals.nonBossDeaths,
       killedBossCount: currentGameArchive?.killedBossCount ?? 0,
     },
     currentBoss: toCurrentBoss(result.sessions),

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +8,21 @@ vi.mock('@/features/game-stats/components/game-switcher', () => ({
 vi.mock('recharts', () => ({
   CartesianGrid: () => <div>Grid</div>,
   LabelList: () => <div>Labels</div>,
-  ReferenceLine: () => <div>Trend</div>,
+  ReferenceLine: ({
+    onMouseEnter,
+    onMouseLeave,
+  }: {
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
+  }) => (
+    <button
+      type="button"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      Trend
+    </button>
+  ),
   Scatter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   ScatterChart: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
@@ -143,6 +157,11 @@ describe('GeneralStatsPage', () => {
     expect(screen.getAllByText('Dark Souls III').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Elden Ring').length).toBeGreaterThan(0);
     expect(screen.queryByText('0.82')).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Trend' }));
+    expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
+    fireEvent.mouseLeave(screen.getByRole('button', { name: 'Trend' }));
+    expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
   });
 
   it('shows honest empty states when timing and highlights are unavailable', () => {

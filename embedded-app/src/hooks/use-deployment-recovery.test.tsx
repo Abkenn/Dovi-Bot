@@ -2,6 +2,7 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   reloadActivity,
+  reloadActivityWhenAvailable,
   useDeploymentRecovery,
 } from './use-deployment-recovery';
 
@@ -30,6 +31,29 @@ describe('useDeploymentRecovery', () => {
 
     expect(result.current).toBe(false);
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('only reloads after the Activity endpoint is available', async () => {
+    const location = {
+      href: 'https://dovi.test/?instance_id=activity',
+      replace: vi.fn(),
+    };
+
+    await reloadActivityWhenAvailable(
+      'deploy-2',
+      vi.fn().mockResolvedValue({ ok: false }),
+      location,
+    );
+    expect(location.replace).not.toHaveBeenCalled();
+
+    await reloadActivityWhenAvailable(
+      'deploy-2',
+      vi.fn().mockResolvedValue({ ok: true }),
+      location,
+    );
+    expect(location.replace).toHaveBeenCalledWith(
+      'https://dovi.test/?instance_id=activity&dovi_deployment=deploy-2',
+    );
   });
 
   it('stops the old screen and reloads when the server deployment changes', () => {

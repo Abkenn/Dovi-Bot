@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -76,5 +76,42 @@ describe('GameSwitcher', () => {
     expect(screen.getByText('Dark Souls III').closest('a')).not.toHaveClass(
       'text-primary-foreground',
     );
+  });
+
+  it('hides the native scrollbar and converts mouse-wheel input to horizontal scrolling', () => {
+    render(<GameSwitcher games={games} selectedGameId={null} />);
+    const navigation = screen.getByRole('navigation', { name: 'Game stats' });
+
+    fireEvent.wheel(navigation, { deltaY: 40 });
+
+    expect(navigation).toHaveClass('game-switcher-scroll');
+    expect(navigation.scrollLeft).toBe(40);
+
+    fireEvent.wheel(navigation, { deltaX: 20, deltaY: 5 });
+    expect(navigation.scrollLeft).toBe(60);
+    fireEvent.wheel(navigation, { deltaX: 0, deltaY: 0 });
+    expect(navigation.scrollLeft).toBe(60);
+  });
+
+  it('supports pointer dragging without activating a dragged game link', () => {
+    render(<GameSwitcher games={games} selectedGameId={null} />);
+    const navigation = screen.getByRole('navigation', { name: 'Game stats' });
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    navigation.setPointerCapture = setPointerCapture;
+    navigation.releasePointerCapture = releasePointerCapture;
+
+    fireEvent.pointerMove(navigation, { clientX: 80, pointerId: 1 });
+    fireEvent.pointerDown(navigation, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(navigation, { clientX: 70, pointerId: 1 });
+    fireEvent.pointerUp(navigation, { clientX: 70, pointerId: 1 });
+
+    expect(setPointerCapture).toHaveBeenCalled();
+    expect(releasePointerCapture).toHaveBeenCalled();
+    expect(navigation.scrollLeft).toBe(30);
+
+    fireEvent.click(screen.getByText('Dark Souls III'));
+    fireEvent.pointerDown(navigation, { clientX: 70, pointerId: 2 });
+    fireEvent.pointerCancel(navigation, { clientX: 70, pointerId: 2 });
   });
 });

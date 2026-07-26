@@ -33,5 +33,8 @@ describe('Activity states', () => {
     expect(screen.getByText('Retrying automatically...')).toBeInTheDocument();
     await act(() => vi.advanceTimersByTimeAsync(5_000));
     expect(retry).toHaveBeenCalledOnce();
+    await act(() => vi.advanceTimersByTimeAsync(5_000));
+    expect(retry).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('main')).toHaveClass('overflow-hidden');
   });
 });

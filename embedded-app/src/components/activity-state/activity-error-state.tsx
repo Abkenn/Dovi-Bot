@@ -18,12 +18,12 @@ export const ActivityErrorState = ({
       return;
     }
 
-    const timeout = window.setTimeout(onRetry, ERROR_RETRY_DELAY_MS);
-    return () => window.clearTimeout(timeout);
+    const interval = window.setInterval(onRetry, ERROR_RETRY_DELAY_MS);
+    return () => window.clearInterval(interval);
   }, [onRetry]);
 
   return (
-    <CenteredShell>
+    <CenteredShell className="h-svh max-h-svh overflow-hidden">
       <Activity className="size-10 text-primary" aria-hidden="true" />
       <p className="text-xs font-bold tracking-[0.24em] text-primary uppercase">
         Dovi
