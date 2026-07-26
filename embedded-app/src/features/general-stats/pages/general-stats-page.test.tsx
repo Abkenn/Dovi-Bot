@@ -9,21 +9,67 @@ vi.mock('recharts', () => ({
   CartesianGrid: () => <div>Grid</div>,
   LabelList: () => <div>Labels</div>,
   ReferenceLine: ({
+    className,
     onMouseEnter,
     onMouseLeave,
+    onClick,
   }: {
+    className: string;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
+    onClick: () => void;
   }) => (
     <button
       type="button"
+      className={className}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onClick={onClick}
     >
       Trend
     </button>
   ),
-  Scatter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Scatter: ({
+    children,
+    data,
+    onClick,
+  }: {
+    children: ReactNode;
+    data: unknown[];
+    onClick: (entry: unknown) => void;
+  }) => (
+    <>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick(data[0])}
+      >
+        Game dots
+        {children}
+      </button>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick({ payload: data[0] })}
+      >
+        Wrapped game dot
+      </button>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick({ payload: {} })}
+      >
+        Invalid game dot
+      </button>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick(null)}
+      >
+        Empty game dot
+      </button>
+    </>
+  ),
   ScatterChart: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
@@ -162,6 +208,27 @@ describe('GeneralStatsPage', () => {
     expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
     fireEvent.mouseLeave(screen.getByRole('button', { name: 'Trend' }));
     expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Game dots/ }));
+    expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Invalid game dot' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Empty game dot' }));
+    expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Trend' }));
+    expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
+    expect(screen.queryByText('Darkeater Midir')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('img', {
+        name: 'Game difficulty comparison chart',
+      }),
+    );
+    expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Wrapped game dot' }));
+    expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
   });
 
   it('shows honest empty states when timing and highlights are unavailable', () => {
