@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../components/game-switcher', () => ({
+vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
 }));
 vi.mock('recharts', () => ({
@@ -19,7 +19,7 @@ vi.mock('recharts', () => ({
   ),
   ZAxis: () => <div>Z axis</div>,
 }));
-vi.mock('../components/ui/chart', () => ({
+vi.mock('@/components/ui/chart', () => ({
   ChartContainer: ({
     children,
     ...props

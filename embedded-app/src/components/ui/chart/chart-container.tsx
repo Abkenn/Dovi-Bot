@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
+import { ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 
 export type ChartConfig = Record<
@@ -10,9 +10,9 @@ export type ChartConfig = Record<
   }
 >;
 
-type ChartContainerProps = React.ComponentProps<'div'> & {
+type ChartContainerProps = ComponentProps<'div'> & {
   config: ChartConfig;
-  children: React.ComponentProps<typeof ResponsiveContainer>['children'];
+  children: ComponentProps<typeof ResponsiveContainer>['children'];
 };
 
 export const ChartContainer = ({
@@ -42,5 +42,3 @@ export const ChartContainer = ({
     </div>
   );
 };
-
-export const ChartTooltip = RechartsTooltip;

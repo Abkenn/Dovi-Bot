@@ -178,3 +178,4 @@ skills/*
 .local/
 data/boss-discussion-backfill-*.json
 data/boss-discussion-backfill-*.jsonl
+embedded-app/ARCHITECTURE.md

@@ -16,13 +16,15 @@ const OUTCOME_LABELS: Record<StreamEncounter['outcome'], string> = {
   LEFT: 'Moved on',
 };
 
+type StreamEncountersProps = {
+  encounters: StreamEncounter[];
+  currentStreamWindow: LiveStats['currentStreamWindow'];
+};
+
 export const StreamEncounters = ({
   encounters,
   currentStreamWindow,
-}: {
-  encounters: StreamEncounter[];
-  currentStreamWindow: LiveStats['currentStreamWindow'];
-}) => {
+}: StreamEncountersProps) => {
   const now = Date.now();
   const isCurrentStream =
     currentStreamWindow !== null &&

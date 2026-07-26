@@ -5,13 +5,12 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ArchivedGame } from '@/live-stats.types';
 
-export const GameSwitcher = ({
-  games,
-  selectedGameId,
-}: {
+type GameSwitcherProps = {
   games: ArchivedGame[];
   selectedGameId: string | null;
-}) => (
+};
+
+export const GameSwitcher = ({ games, selectedGameId }: GameSwitcherProps) => (
   <nav
     aria-label="Game stats"
     className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0"

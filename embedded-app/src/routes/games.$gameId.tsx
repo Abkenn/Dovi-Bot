@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from '@tanstack/react-router';
 import { ActivityErrorState } from '@/components/activity-state';
-import { ArchivedGamePage } from '@/pages/archived-game-page';
+import { ArchivedGamePage } from '@/features/archived-game/pages/archived-game-page';
 
 export const Route = createFileRoute('/games/$gameId')({
   component: ArchivedGameRoute,

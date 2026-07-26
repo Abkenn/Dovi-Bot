@@ -1,38 +1,13 @@
 import { motion } from 'motion/react';
-import type {
-  EmbeddedAppBossComparison,
-  EmbeddedAppGameComparison,
-} from '../../../src/modules/embedded-app/embedded-app-stats.types';
+import type { GameComparison } from '@/live-stats.types';
+import { formatStatsDuration } from '../lib/general-stats-chart.utils';
+import { BossHighlight } from './boss-highlight';
 
-const formatDuration = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}m ${remainingSeconds}s`;
+type GameDifficultyTooltipProps = {
+  game: GameComparison;
 };
 
-const BossHighlight = ({
-  label,
-  boss,
-  detail,
-}: {
-  label: string;
-  boss: EmbeddedAppBossComparison | null;
-  detail: string;
-}) => (
-  <div className="rounded-lg border border-border/70 bg-background/60 p-2.5">
-    <p className="text-[0.6rem] font-bold tracking-[0.1em] text-muted-foreground uppercase">
-      {label}
-    </p>
-    <p className="mt-0.5 font-semibold">{boss?.name ?? 'Timing unavailable'}</p>
-    <p className="text-xs text-muted-foreground">{boss ? detail : '-'}</p>
-  </div>
-);
-
-export const GameDifficultyTooltip = ({
-  game,
-}: {
-  game: EmbeddedAppGameComparison;
-}) => {
+export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
   const { mostAttempts, longestWinningAttempt, toughestOverall } =
     game.bossHighlights;
 
@@ -55,7 +30,7 @@ export const GameDifficultyTooltip = ({
           boss={longestWinningAttempt}
           detail={
             longestWinningAttempt?.winningAttemptSeconds
-              ? formatDuration(longestWinningAttempt.winningAttemptSeconds)
+              ? formatStatsDuration(longestWinningAttempt.winningAttemptSeconds)
               : ''
           }
         />
@@ -66,7 +41,7 @@ export const GameDifficultyTooltip = ({
             toughestOverall
               ? `${toughestOverall.attempts} attempts / ${
                   toughestOverall.winningAttemptSeconds
-                    ? formatDuration(toughestOverall.winningAttemptSeconds)
+                    ? formatStatsDuration(toughestOverall.winningAttemptSeconds)
                     : 'untimed win'
                 }`
               : ''

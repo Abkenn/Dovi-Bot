@@ -1,5 +1,5 @@
 import { createFileRoute, getRouteApi } from '@tanstack/react-router';
-import { GeneralStatsPage } from '@/pages/general-stats-page';
+import { GeneralStatsPage } from '@/features/general-stats/pages/general-stats-page';
 
 export const Route = createFileRoute('/stats')({
   component: GeneralStatsRoute,

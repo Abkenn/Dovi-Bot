@@ -1,17 +1,5 @@
-import { Activity } from 'lucide-react';
 import { motion } from 'motion/react';
-import { type ReactNode, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const ERROR_RETRY_DELAY_MS = 5_000;
-
-const CenteredShell = ({ children }: { children: ReactNode }) => (
-  <main className="grid min-h-svh place-content-center px-6 text-center">
-    <div className="mx-auto flex max-w-lg flex-col items-center gap-4">
-      {children}
-    </div>
-  </main>
-);
 
 const loadingItem = {
   hidden: { opacity: 0, y: 5 },
@@ -69,36 +57,3 @@ export const ActivityLoadingState = () => (
     <span className="sr-only">Waking up live stats...</span>
   </motion.main>
 );
-
-export const ActivityErrorState = ({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry?: () => void;
-}) => {
-  useEffect(() => {
-    if (!onRetry) {
-      return;
-    }
-
-    const timeout = window.setTimeout(onRetry, ERROR_RETRY_DELAY_MS);
-    return () => window.clearTimeout(timeout);
-  }, [onRetry]);
-
-  return (
-    <CenteredShell>
-      <Activity className="size-10 text-primary" aria-hidden="true" />
-      <p className="text-xs font-bold tracking-[0.24em] text-primary uppercase">
-        Dovi
-      </p>
-      <h1 className="text-3xl font-bold tracking-tight">Stats are resting</h1>
-      <p className="text-muted-foreground">{message}</p>
-      {onRetry ? (
-        <p className="text-muted-foreground text-sm">
-          Retrying automatically...
-        </p>
-      ) : null}
-    </CenteredShell>
-  );
-};

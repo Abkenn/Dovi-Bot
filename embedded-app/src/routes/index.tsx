@@ -4,8 +4,8 @@ import {
   useRouter,
 } from '@tanstack/react-router';
 import { useCallback } from 'react';
+import { LiveStatsPage } from '@/features/live-stats/pages/live-stats-page';
 import { useLiveStatsRefresh } from '@/hooks/use-live-stats-refresh';
-import { LiveStatsPage } from '@/pages/live-stats-page';
 
 export const Route = createFileRoute('/')({
   component: LiveStatsRoute,

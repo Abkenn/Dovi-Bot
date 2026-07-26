@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ChartContainer } from './chart';
+import { ChartContainer } from '.';
 
 describe('ChartContainer', () => {
   it('applies shadcn chart tokens and forwards container styling', () => {

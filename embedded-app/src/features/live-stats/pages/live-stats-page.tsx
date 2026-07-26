@@ -1,95 +1,22 @@
 import { CircleSlash2, Radio, Skull, Swords, Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
-import { type ReactNode, ViewTransition } from 'react';
-import { AnimatedNumber } from '@/components/animated-number';
+import { ViewTransition } from 'react';
 import { BossHistory } from '@/components/boss-history';
 import { CurrentBossCard } from '@/components/current-boss-card';
-import { DesktopPipLastBossStats } from '@/components/desktop-pip-last-boss-stats';
-import { DesktopPipLiveStats } from '@/components/desktop-pip-live-stats';
-import { GameSwitcher } from '@/components/game-switcher';
 import { MobilePipStats } from '@/components/mobile-pip-stats';
-import { StatsPageHeader } from '@/components/stats-page-header';
 import { StreamEncounters } from '@/components/stream-encounters';
-import { Card, CardContent } from '@/components/ui/card';
+import { GameSwitcher } from '@/features/game-stats/components/game-switcher';
+import { StatsPageHeader } from '@/features/game-stats/components/stats-page-header';
 import { cn } from '@/lib/utils';
 import type { LiveStats } from '@/live-stats.types';
+import { LiveStatsDesktopPip } from '../components/live-stats-desktop-pip';
+import { LiveTotalCard } from '../components/live-total-card';
 
-type TotalCardProps = {
-  icon: ReactNode;
-  value: number;
-  label: string;
-  cacheKey: string;
-  suffix?: string;
-  fallback?: string;
+type LiveStatsPageProps = {
+  stats: LiveStats;
 };
 
-const TotalCard = ({
-  icon,
-  value,
-  label,
-  cacheKey,
-  suffix,
-  fallback,
-}: TotalCardProps) => (
-  <Card className="activity-compact:rounded-lg gap-0 py-0">
-    <CardContent className="activity-compact:!p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
-      <span className="activity-compact:hidden grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary sm:size-11 sm:rounded-xl">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        {fallback ? (
-          <span className="activity-compact:!text-base block text-lg font-bold tracking-tight sm:text-2xl">
-            {fallback}
-          </span>
-        ) : (
-          <AnimatedNumber
-            value={value}
-            cacheKey={cacheKey}
-            suffix={suffix}
-            className="activity-compact:!text-xl block text-2xl font-bold tracking-tight tabular-nums sm:text-4xl"
-          />
-        )}
-        <span className="activity-compact:!text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs sm:tracking-[0.12em]">
-          {label}
-        </span>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-type DesktopPipProps = {
-  game: NonNullable<LiveStats['game']>;
-  currentBoss: LiveStats['currentBoss'];
-  lastKilledBoss: LiveStats['lastKilledBoss'];
-};
-
-const DesktopPip = ({ game, currentBoss, lastKilledBoss }: DesktopPipProps) => {
-  if (currentBoss) {
-    return (
-      <DesktopPipLiveStats
-        gameName={game.name}
-        totalDeaths={game.deaths}
-        killedBossCount={game.killedBossCount}
-        boss={currentBoss}
-      />
-    );
-  }
-
-  if (!lastKilledBoss) {
-    return null;
-  }
-
-  return (
-    <DesktopPipLastBossStats
-      gameName={game.name}
-      totalDeaths={game.deaths}
-      killedBossCount={game.killedBossCount}
-      boss={lastKilledBoss}
-    />
-  );
-};
-
-export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
+export const LiveStatsPage = ({ stats }: LiveStatsPageProps) => {
   if (!stats.game) {
     return (
       <main className="activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden mx-auto min-h-svh w-full max-w-5xl space-y-6 px-3 py-3 sm:px-8 sm:py-12">
@@ -134,7 +61,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
         nonBossDeaths={stats.game.nonBossDeaths}
         killedBossCount={stats.game.killedBossCount}
       />
-      <DesktopPip
+      <LiveStatsDesktopPip
         game={stats.game}
         currentBoss={stats.currentBoss}
         lastKilledBoss={stats.lastKilledBoss}
@@ -153,20 +80,20 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
           className="activity-compact:gap-2 mobile-pip-hide grid grid-cols-2 gap-3"
           aria-label="Game totals"
         >
-          <TotalCard
+          <LiveTotalCard
             icon={<Skull aria-hidden="true" />}
             value={stats.game.deaths}
             label="Total deaths"
             cacheKey={`${stats.game.id}:deaths`}
             suffix={stats.game.nonBossDeaths === null ? '+' : undefined}
           />
-          <TotalCard
+          <LiveTotalCard
             icon={<Swords aria-hidden="true" />}
             value={stats.game.bossDeaths}
             label="Boss deaths"
             cacheKey={`${stats.game.id}:boss-deaths`}
           />
-          <TotalCard
+          <LiveTotalCard
             icon={<CircleSlash2 aria-hidden="true" />}
             value={stats.game.nonBossDeaths ?? 0}
             label="Non-boss deaths"
@@ -175,7 +102,7 @@ export const LiveStatsPage = ({ stats }: { stats: LiveStats }) => {
               stats.game.nonBossDeaths === null ? 'Not tracked' : undefined
             }
           />
-          <TotalCard
+          <LiveTotalCard
             icon={<Trophy aria-hidden="true" />}
             value={stats.game.killedBossCount}
             label="Bosses killed"

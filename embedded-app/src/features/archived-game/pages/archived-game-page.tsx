@@ -1,61 +1,18 @@
 import { CircleSlash2, History, Skull, Swords, Trophy } from 'lucide-react';
 import { ViewTransition } from 'react';
-import { AnimatedNumber } from '@/components/animated-number';
 import { BossHistory } from '@/components/boss-history';
-import { GameSwitcher } from '@/components/game-switcher';
 import { MobilePipStats } from '@/components/mobile-pip-stats';
-import { StatsPageHeader } from '@/components/stats-page-header';
-import { Card, CardContent } from '@/components/ui/card';
+import { GameSwitcher } from '@/features/game-stats/components/game-switcher';
+import { StatsPageHeader } from '@/features/game-stats/components/stats-page-header';
 import type { ArchivedGame } from '@/live-stats.types';
+import { ArchivedGameTotalCard } from '../components/archived-game-total-card';
 
-const ArchiveTotal = ({
-  icon,
-  value,
-  label,
-  cacheKey,
-  suffix,
-  fallback,
-}: {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  cacheKey: string;
-  suffix?: string;
-  fallback?: string;
-}) => (
-  <Card className="activity-compact:rounded-lg gap-0 py-0">
-    <CardContent className="activity-compact:!p-2 flex items-center gap-2.5 p-3 sm:gap-4 sm:p-7">
-      <span className="activity-compact:hidden grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary sm:size-11 sm:rounded-xl">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        {fallback ? (
-          <span className="activity-compact:!text-base block text-lg font-bold tracking-tight sm:text-2xl">
-            {fallback}
-          </span>
-        ) : (
-          <AnimatedNumber
-            value={value}
-            cacheKey={cacheKey}
-            suffix={suffix}
-            className="activity-compact:!text-xl block text-2xl font-bold tracking-tight tabular-nums sm:text-4xl"
-          />
-        )}
-        <span className="activity-compact:!text-[0.55rem] text-muted-foreground text-[0.6rem] leading-tight font-semibold tracking-[0.08em] uppercase sm:text-xs">
-          {label}
-        </span>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-export const ArchivedGamePage = ({
-  game,
-  games,
-}: {
+type ArchivedGamePageProps = {
   game: ArchivedGame;
   games: ArchivedGame[];
-}) => (
+};
+
+export const ArchivedGamePage = ({ game, games }: ArchivedGamePageProps) => (
   <main className="mobile-pip-frame activity-compact:h-svh activity-compact:min-h-0 activity-compact:overflow-hidden activity-compact:!space-y-2 activity-compact:!p-3 activity-compact:flex activity-compact:flex-col activity-compact:justify-center mx-auto min-h-svh w-full max-w-5xl space-y-3 px-3 py-3 sm:space-y-5 sm:px-8 sm:py-12">
     <MobilePipStats
       gameName={game.name}
@@ -78,27 +35,27 @@ export const ArchivedGamePage = ({
         className="activity-compact:gap-2 mobile-pip-hide grid grid-cols-2 gap-3"
         aria-label="Archived game totals"
       >
-        <ArchiveTotal
+        <ArchivedGameTotalCard
           icon={<Skull aria-hidden="true" />}
           value={game.deaths}
           label="Total deaths"
           cacheKey={`${game.id}:deaths`}
           suffix={game.nonBossDeaths === null ? '+' : undefined}
         />
-        <ArchiveTotal
+        <ArchivedGameTotalCard
           icon={<Swords aria-hidden="true" />}
           value={game.bossDeaths}
           label="Boss deaths"
           cacheKey={`${game.id}:boss-deaths`}
         />
-        <ArchiveTotal
+        <ArchivedGameTotalCard
           icon={<CircleSlash2 aria-hidden="true" />}
           value={game.nonBossDeaths ?? 0}
           label="Non-boss deaths"
           cacheKey={`${game.id}:non-boss-deaths`}
           fallback={game.nonBossDeaths === null ? 'Not tracked' : undefined}
         />
-        <ArchiveTotal
+        <ArchivedGameTotalCard
           icon={<Trophy aria-hidden="true" />}
           value={game.killedBossCount}
           label="Bosses killed"

@@ -3,6 +3,7 @@ import {
   CURRENT_ATTEMPT_STATE_LABEL,
   getCurrentAttemptDisplay,
 } from '@/components/current-attempt-display';
+import { DesktopPipAttemptStat } from '@/components/desktop-pip-attempt-stat';
 import { useElapsedSeconds } from '@/hooks/use-elapsed-seconds';
 import type { CurrentBoss } from '@/live-stats.types';
 
@@ -22,23 +23,6 @@ const formatDuration = (seconds: number | null) => {
   const remainder = String(seconds % 60).padStart(2, '0');
   return `${minutes}:${remainder}`;
 };
-
-const AttemptStat = ({
-  value,
-  label,
-}: {
-  value: string | number;
-  label: string;
-}) => (
-  <div className="min-w-0">
-    <strong className="block truncate text-xl leading-none font-bold tabular-nums">
-      {value}
-    </strong>
-    <span className="mt-1 block text-[0.5rem] leading-none font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-      {label}
-    </span>
-  </div>
-);
 
 export const DesktopPipLiveStats = ({
   gameName,
@@ -87,9 +71,12 @@ export const DesktopPipLiveStats = ({
         </span>
       </div>
       <div className="mt-2.5 grid grid-cols-3 gap-2">
-        <AttemptStat value={boss.deaths} label="Deaths" />
-        <AttemptStat value={boss.attemptNumber ?? '–'} label="Attempt" />
-        <AttemptStat
+        <DesktopPipAttemptStat value={boss.deaths} label="Deaths" />
+        <DesktopPipAttemptStat
+          value={boss.attemptNumber ?? '–'}
+          label="Attempt"
+        />
+        <DesktopPipAttemptStat
           value={formatDuration(attemptDisplay.elapsedSeconds)}
           label="Attempt time"
         />

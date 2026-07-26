@@ -1,6 +1,7 @@
-import { Check, Pause, Radio, Skull } from 'lucide-react';
+import { Skull } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AnimatedNumber } from '@/components/animated-number';
+import { BossOutcome } from '@/components/boss-outcome';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -12,36 +13,15 @@ import {
 import { Separator } from '@/components/ui/separator';
 import type { Boss } from '@/live-stats.types';
 
-const BossOutcome = ({ outcome }: { outcome: Boss['outcome'] }) => {
-  let label = 'Fighting';
-  let color = 'border-primary/30 text-primary';
-  let icon = <Radio className="size-4" aria-hidden="true" />;
-
-  if (outcome === 'KILLED') {
-    label = 'Killed';
-    color = 'border-emerald-500/30 text-emerald-400';
-    icon = <Check className="size-4" aria-hidden="true" />;
-  } else if (outcome === 'PAUSED') {
-    label = 'Paused';
-    color = 'border-amber-500/30 text-amber-300';
-    icon = <Pause className="size-4" aria-hidden="true" />;
-  }
-
-  return (
-    <Badge variant="outline" className={color} aria-label={label}>
-      {icon}
-      {label}
-    </Badge>
-  );
+type BossHistoryProps = {
+  bosses: Boss[];
+  cacheKey?: string;
 };
 
 export const BossHistory = ({
   bosses,
   cacheKey = 'boss-history',
-}: {
-  bosses: Boss[];
-  cacheKey?: string;
-}) => (
+}: BossHistoryProps) => (
   <Card className="gap-3 py-4 sm:gap-6 sm:py-6">
     <CardHeader className="grid-cols-[1fr_auto] px-4 sm:px-6">
       <div className="space-y-1 sm:space-y-2">

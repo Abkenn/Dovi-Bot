@@ -3,6 +3,7 @@ import {
   CURRENT_ATTEMPT_STATE_LABEL,
   getCurrentAttemptDisplay,
 } from '@/components/current-attempt-display';
+import { CurrentBossStat } from '@/components/current-boss-stat';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -24,18 +25,11 @@ const formatDuration = (seconds: number | null) => {
   return `${minutes}:${remainder}`;
 };
 
-const Stat = ({ value, label }: { value: string | number; label: string }) => (
-  <div className="space-y-1">
-    <strong className="block text-2xl font-bold tracking-tight sm:text-4xl">
-      {value}
-    </strong>
-    <span className="text-muted-foreground text-[0.68rem] font-semibold tracking-[0.14em] uppercase">
-      {label}
-    </span>
-  </div>
-);
+type CurrentBossCardProps = {
+  boss: CurrentBoss | null;
+};
 
-export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
+export const CurrentBossCard = ({ boss }: CurrentBossCardProps) => {
   const paused = boss?.status === 'PAUSED';
   const elapsed = useElapsedSeconds(
     boss?.attemptStartedAt ?? null,
@@ -92,9 +86,9 @@ export const CurrentBossCard = ({ boss }: { boss: CurrentBoss | null }) => {
       </CardHeader>
       <CardContent className="space-y-4 px-4 sm:space-y-6 sm:px-6">
         <div className="grid grid-cols-3 gap-3 sm:gap-5">
-          <Stat value={boss.deaths} label="Deaths" />
-          <Stat value={boss.attemptNumber ?? '–'} label="Attempt" />
-          <Stat
+          <CurrentBossStat value={boss.deaths} label="Deaths" />
+          <CurrentBossStat value={boss.attemptNumber ?? '–'} label="Attempt" />
+          <CurrentBossStat
             value={formatDuration(attemptDisplay.elapsedSeconds)}
             label="Attempt time"
           />

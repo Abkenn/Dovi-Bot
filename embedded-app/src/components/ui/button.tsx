@@ -24,12 +24,10 @@ export const buttonVariants = cva(
   },
 );
 
-export const Button = ({
-  className,
-  variant,
-  size,
-  ...props
-}: React.ComponentProps<'button'> & VariantProps<typeof buttonVariants>) => (
+type ButtonProps = React.ComponentProps<'button'> &
+  VariantProps<typeof buttonVariants>;
+
+export const Button = ({ className, variant, size, ...props }: ButtonProps) => (
   <button
     data-slot="button"
     className={cn(buttonVariants({ variant, size }), className)}

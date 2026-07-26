@@ -9,26 +9,26 @@ const EMPTY_GENERAL_STATS = {
   toughestOverallGameId: null,
 };
 
-vi.mock('../components/current-boss-card', () => ({
+vi.mock('@/components/current-boss-card', () => ({
   CurrentBossCard: ({ boss }: { boss: { name: string } | null }) => (
     <div>{boss?.name ?? 'Current boss card'}</div>
   ),
 }));
-vi.mock('../components/boss-history', () => ({
+vi.mock('@/components/boss-history', () => ({
   BossHistory: () => <div>Boss history</div>,
 }));
-vi.mock('../components/stream-encounters', () => ({
+vi.mock('@/components/stream-encounters', () => ({
   StreamEncounters: () => <div>Stream encounters</div>,
 }));
-vi.mock('../components/game-switcher', () => ({
+vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
 }));
-vi.mock('../components/desktop-pip-live-stats', () => ({
+vi.mock('@/components/desktop-pip-live-stats', () => ({
   DesktopPipLiveStats: () => (
     <div className="desktop-pip-live-only">Desktop PiP live attempt</div>
   ),
 }));
-vi.mock('../components/desktop-pip-last-boss-stats', () => ({
+vi.mock('@/components/desktop-pip-last-boss-stats', () => ({
   DesktopPipLastBossStats: ({ boss }: { boss: { name: string } }) => (
     <div className="desktop-pip-live-only">Last boss: {boss.name}</div>
   ),
