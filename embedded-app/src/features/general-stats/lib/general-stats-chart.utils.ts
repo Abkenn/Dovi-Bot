@@ -1,13 +1,9 @@
 import type { GameComparison } from '@/live-stats.types';
 
-type ChartDomainOptions = {
-  minimumSpan: number;
-  paddingRatio?: number;
-};
-
 export const formatStatsDuration = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const roundedSeconds = Math.round(seconds);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const remainingSeconds = roundedSeconds % 60;
   return `${minutes}m ${remainingSeconds}s`;
 };
 
@@ -58,18 +54,6 @@ export const getGeneralStatsTrend = (games: GameComparison[]) => {
   const intercept = averageY - slope * averageX;
 
   return { slope, intercept };
-};
-
-export const getChartDomain = (
-  values: number[],
-  { minimumSpan, paddingRatio = 0.12 }: ChartDomainOptions,
-): [number, number] => {
-  const minimum = Math.min(...values);
-  const maximum = Math.max(...values);
-  const span = Math.max(maximum - minimum, minimumSpan);
-  const padding = span * paddingRatio;
-
-  return [Math.max(0, minimum - padding), maximum + padding];
 };
 
 export const describeGeneralStatsTrend = (slope: number) => {

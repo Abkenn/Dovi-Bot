@@ -13,10 +13,10 @@ export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0.65, scale: 0.99 }}
+      initial={{ opacity: 0, y: 2 }}
       animate={{
         opacity: 1,
-        scale: 1,
+        y: 0,
         boxShadow: [
           '0 12px 32px oklch(0 0 0 / 0.32), 0 0 10px oklch(0.65 0.225 20 / 0.08)',
           '0 12px 32px oklch(0 0 0 / 0.32), 0 0 16px oklch(0.65 0.225 20 / 0.13)',
@@ -24,8 +24,8 @@ export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
         ],
       }}
       transition={{
-        opacity: { duration: 0.07 },
-        scale: { duration: 0.07 },
+        opacity: { duration: 0.1 },
+        y: { duration: 0.1 },
         boxShadow: { duration: 1.8, repeat: Number.POSITIVE_INFINITY },
       }}
       className="w-64 rounded-xl border border-primary/40 bg-[radial-gradient(circle_at_center,oklch(0.19_0.025_285/0.98),oklch(0.145_0.014_285/0.98))] p-3 backdrop-blur"

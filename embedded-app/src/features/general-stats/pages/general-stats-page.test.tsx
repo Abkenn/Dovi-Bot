@@ -14,21 +14,24 @@ vi.mock('recharts', () => ({
     onMouseLeave,
     onClick,
   }: {
-    className: string;
-    onMouseEnter: () => void;
-    onMouseLeave: () => void;
-    onClick: () => void;
-  }) => (
-    <button
-      type="button"
-      className={className}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
-    >
-      Trend
-    </button>
-  ),
+    className?: string;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
+    onClick?: () => void;
+  }) =>
+    onClick ? (
+      <button
+        type="button"
+        className={className}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+      >
+        Trend
+      </button>
+    ) : (
+      <div>Trend line</div>
+    ),
   Scatter: ({
     children,
     data,
@@ -73,7 +76,9 @@ vi.mock('recharts', () => ({
   ScatterChart: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
-  XAxis: () => <div>X axis</div>,
+  XAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
+    <div>X axis {tickFormatter(3.9999999998)}</div>
+  ),
   YAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
     <div>{tickFormatter(60)}</div>
   ),
@@ -204,8 +209,35 @@ describe('GeneralStatsPage', () => {
     expect(screen.getAllByText('Elden Ring').length).toBeGreaterThan(0);
     expect(screen.queryByText('0.82')).not.toBeInTheDocument();
 
+    const chart = screen.getByRole('img', {
+      name: 'Game difficulty comparison chart',
+    });
+    const chartCardContent = chart.closest('[data-slot="card-content"]');
+
+    if (!(chartCardContent instanceof HTMLElement)) {
+      throw new Error('Expected chart card content');
+    }
+
+    chartCardContent.getBoundingClientRect = () => ({
+      bottom: 600,
+      height: 600,
+      left: 0,
+      right: 1_000,
+      top: 0,
+      width: 1_000,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    fireEvent.mouseMove(chartCardContent, { clientX: 100, clientY: 100 });
     fireEvent.mouseEnter(screen.getByRole('button', { name: 'Trend' }));
+    fireEvent.mouseMove(chartCardContent, { clientX: 200, clientY: 200 });
     expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
+    expect(screen.getByText('Difficulty trend').parentElement).toHaveStyle({
+      left: '212px',
+      top: '212px',
+    });
+    expect(screen.getByText('X axis 4')).toBeInTheDocument();
     fireEvent.mouseLeave(screen.getByRole('button', { name: 'Trend' }));
     expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
 
@@ -220,11 +252,7 @@ describe('GeneralStatsPage', () => {
     expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
     expect(screen.queryByText('Darkeater Midir')).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole('img', {
-        name: 'Game difficulty comparison chart',
-      }),
-    );
+    fireEvent.click(chart);
     expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Wrapped game dot' }));

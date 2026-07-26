@@ -3,7 +3,6 @@ import {
   describeGeneralStatsTrend,
   findGeneralStatsGame,
   formatStatsDuration,
-  getChartDomain,
   getGeneralStatsTrend,
   isGameComparison,
 } from './general-stats-chart.utils';
@@ -30,6 +29,7 @@ const game = {
 describe('general stats chart utilities', () => {
   it('formats and finds chart data', () => {
     expect(formatStatsDuration(125)).toBe('2m 5s');
+    expect(formatStatsDuration(125.999999)).toBe('2m 6s');
     expect(findGeneralStatsGame([game], game.id)).toBe(game);
     expect(findGeneralStatsGame([game], null)).toBeNull();
   });
@@ -67,11 +67,7 @@ describe('general stats chart utilities', () => {
     ).toEqual({ slope: 30, intercept: -30 });
   });
 
-  it('pads chart domains around the observed data and describes trends', () => {
-    expect(getChartDomain([4, 5, 13], { minimumSpan: 2 })).toEqual([
-      2.92, 14.08,
-    ]);
-    expect(getChartDomain([5], { minimumSpan: 10 })).toEqual([3.8, 6.2]);
+  it('describes trends', () => {
     expect(describeGeneralStatsTrend(-2)).toContain('shorter');
     expect(describeGeneralStatsTrend(2)).toContain('longer');
     expect(describeGeneralStatsTrend(0.5)).toContain('level');

@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   CartesianGrid,
   LabelList,
@@ -20,7 +20,6 @@ import type { GameComparison } from '@/live-stats.types';
 import {
   describeGeneralStatsTrend,
   formatStatsDuration,
-  getChartDomain,
   getGeneralStatsTrend,
   isGameComparison,
 } from '../lib/general-stats-chart.utils';
@@ -45,6 +44,11 @@ type LockedChartPopup =
   | { kind: 'trend' }
   | null;
 
+type TrendPopupPosition = {
+  x: number;
+  y: number;
+};
+
 const isPopupInteractionTarget = (target: EventTarget) =>
   target instanceof Element &&
   target.closest(
@@ -66,12 +70,18 @@ const getClickedGame = (entry: unknown) => {
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
   const [isTrendHovered, setIsTrendHovered] = useState(false);
   const [lockedPopup, setLockedPopup] = useState<LockedChartPopup>(null);
-  const timedGames = games.filter(
-    (
-      game,
-    ): game is GameComparison & {
-      averageWinningAttemptSeconds: number;
-    } => game.averageWinningAttemptSeconds !== null,
+  const [trendPopupPosition, setTrendPopupPosition] =
+    useState<TrendPopupPosition>({ x: 12, y: 12 });
+  const timedGames = useMemo(
+    () =>
+      games.filter(
+        (
+          game,
+        ): game is GameComparison & {
+          averageWinningAttemptSeconds: number;
+        } => game.averageWinningAttemptSeconds !== null,
+      ),
+    [games],
   );
 
   if (timedGames.length === 0) {
@@ -84,26 +94,28 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
     );
   }
 
-  const xDomain = getChartDomain(
-    timedGames.map((game) => game.averageAttemptsPerBoss),
-    { minimumSpan: 2 },
+  const maximumX = Math.max(
+    1,
+    Math.ceil(
+      Math.max(...timedGames.map((game) => game.averageAttemptsPerBoss)) * 1.1,
+    ),
   );
-  const yDomain = getChartDomain(
-    timedGames.map((game) => game.averageWinningAttemptSeconds),
-    { minimumSpan: 120 },
+  const maximumY = Math.max(
+    60,
+    Math.ceil(
+      (Math.max(
+        ...timedGames.map((game) => game.averageWinningAttemptSeconds),
+      ) *
+        1.1) /
+        60,
+    ) * 60,
   );
   const trend = getGeneralStatsTrend(timedGames);
   const trendStartY = trend
-    ? Math.min(
-        yDomain[1],
-        Math.max(yDomain[0], trend.intercept + trend.slope * xDomain[0]),
-      )
+    ? Math.min(maximumY, Math.max(0, trend.intercept))
     : 0;
   const trendEndY = trend
-    ? Math.min(
-        yDomain[1],
-        Math.max(yDomain[0], trend.intercept + trend.slope * xDomain[1]),
-      )
+    ? Math.min(maximumY, Math.max(0, trend.intercept + trend.slope * maximumX))
     : 0;
   const showTrendExplanation =
     lockedPopup?.kind === 'trend' || (lockedPopup === null && isTrendHovered);
@@ -119,14 +131,36 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
       setLockedPopup({ kind: 'game', game });
     }
   };
+  const positionTrendPopup = (event: MouseEvent<HTMLElement>) => {
+    if (!isTrendHovered) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(
+      8,
+      Math.min(event.clientX - bounds.left + 12, bounds.width - 296),
+    );
+    const y = Math.max(
+      8,
+      Math.min(event.clientY - bounds.top + 12, bounds.height - 88),
+    );
+    setTrendPopupPosition({ x, y });
+  };
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="relative p-3 sm:p-6" onClick={closeLockedPopup}>
+      <CardContent
+        className="relative p-3 sm:p-6"
+        onClick={closeLockedPopup}
+        onMouseMove={positionTrendPopup}
+      >
         {trend && showTrendExplanation ? (
           <div className="locked-chart-popup">
             <TrendExplanation
               description={describeGeneralStatsTrend(trend.slope)}
+              x={trendPopupPosition.x}
+              y={trendPopupPosition.y}
             />
           </div>
         ) : null}
@@ -155,8 +189,9 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               type="number"
               dataKey="averageAttemptsPerBoss"
               name="Average attempts"
-              domain={xDomain}
-              allowDataOverflow
+              domain={[0, maximumX]}
+              allowDecimals={false}
+              tickFormatter={(value: number) => Math.round(value).toString()}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               label={{
                 value: 'Average attempts per defeated boss',
@@ -170,35 +205,45 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               type="number"
               dataKey="averageWinningAttemptSeconds"
               name="Average winning attempt"
-              domain={yDomain}
-              allowDataOverflow
+              domain={[0, maximumY]}
               tickFormatter={formatStatsDuration}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               width={62}
             />
             <ZAxis type="number" dataKey="difficultyScore" range={[140, 500]} />
             {trend ? (
-              <ReferenceLine
-                segment={[
-                  { x: xDomain[0], y: trendStartY },
-                  { x: xDomain[1], y: trendEndY },
-                ]}
-                stroke="var(--primary)"
-                strokeOpacity={0.6}
-                strokeWidth={2}
-                strokeDasharray="7 7"
-                onMouseEnter={() => setIsTrendHovered(true)}
-                onMouseLeave={() => setIsTrendHovered(false)}
-                onClick={() => setLockedPopup({ kind: 'trend' })}
-                className="difficulty-trend cursor-help"
-              />
+              <>
+                <ReferenceLine
+                  segment={[
+                    { x: 0, y: trendStartY },
+                    { x: maximumX, y: trendEndY },
+                  ]}
+                  stroke="var(--primary)"
+                  strokeOpacity={0.6}
+                  strokeWidth={2}
+                  strokeDasharray="7 7"
+                  pointerEvents="none"
+                />
+                <ReferenceLine
+                  segment={[
+                    { x: 0, y: trendStartY },
+                    { x: maximumX, y: trendEndY },
+                  ]}
+                  stroke="transparent"
+                  strokeWidth={18}
+                  onMouseEnter={() => setIsTrendHovered(true)}
+                  onMouseLeave={() => setIsTrendHovered(false)}
+                  onClick={() => setLockedPopup({ kind: 'trend' })}
+                  className="difficulty-trend cursor-help"
+                />
+              </>
             ) : null}
             {lockedPopup === null ? (
               <ChartTooltip
                 content={GameChartTooltip}
                 cursor={{ stroke: 'var(--primary)', strokeDasharray: '4 4' }}
                 allowEscapeViewBox={{ x: false, y: false }}
-                animationDuration={60}
+                isAnimationActive={false}
                 wrapperStyle={{ pointerEvents: 'none', zIndex: 30 }}
               />
             ) : null}
@@ -207,9 +252,7 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               fill="var(--primary)"
               stroke="var(--background)"
               strokeWidth={3}
-              isAnimationActive
-              animationDuration={900}
-              animationEasing="ease-out"
+              isAnimationActive={false}
               onClick={lockGamePopup}
             >
               <LabelList dataKey="name" content={<GameDotLabel />} />
