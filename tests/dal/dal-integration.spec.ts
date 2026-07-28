@@ -722,6 +722,14 @@ test('covers boss tracking transactions and queries', async () => {
       ?.trackingSessions[0]?.attempts,
   ).toEqual([
     expect.objectContaining({
+      attemptNumber: 1,
+      result: 'DEATH',
+      startedAt: expect.any(Date),
+      endedAt: expect.any(Date),
+    }),
+    expect.objectContaining({
+      attemptNumber: 2,
+      result: 'KILLED',
       startedAt: expect.any(Date),
       endedAt: expect.any(Date),
     }),
