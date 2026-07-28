@@ -8,22 +8,49 @@ describe('embedded app general stats', () => {
         id: 'death-heavy',
         name: 'Death Heavy',
         bosses: [
-          { name: 'Wall', deaths: 19, winningAttemptSeconds: 60 },
-          { name: 'Runner', deaths: 9, winningAttemptSeconds: 120 },
+          {
+            name: 'Wall',
+            deaths: 19,
+            averageAttemptSeconds: 45,
+            winningAttemptSeconds: 60,
+          },
+          {
+            name: 'Runner',
+            deaths: 9,
+            averageAttemptSeconds: 75,
+            winningAttemptSeconds: 120,
+          },
         ],
       },
       {
         id: 'balanced',
         name: 'Balanced',
         bosses: [
-          { name: 'Balanced Wall', deaths: 14, winningAttemptSeconds: 180 },
-          { name: 'Marathon', deaths: 10, winningAttemptSeconds: 240 },
+          {
+            name: 'Balanced Wall',
+            deaths: 14,
+            averageAttemptSeconds: 90,
+            winningAttemptSeconds: 180,
+          },
+          {
+            name: 'Marathon',
+            deaths: 10,
+            averageAttemptSeconds: 150,
+            winningAttemptSeconds: 240,
+          },
         ],
       },
       {
         id: 'slow',
         name: 'Slow Finish',
-        bosses: [{ name: 'Slow Boss', deaths: 4, winningAttemptSeconds: 600 }],
+        bosses: [
+          {
+            name: 'Slow Boss',
+            deaths: 4,
+            averageAttemptSeconds: 180,
+            winningAttemptSeconds: 600,
+          },
+        ],
       },
     ]);
 
@@ -36,6 +63,7 @@ describe('embedded app general stats', () => {
           id: 'balanced',
           averageDeathsPerBoss: 12,
           averageAttemptsPerBoss: 13,
+          averageAttemptSeconds: 120,
           averageWinningAttemptSeconds: 210,
         }),
       ]),
@@ -55,13 +83,25 @@ describe('embedded app general stats', () => {
         id: 'untimed',
         name: 'Untimed',
         bosses: [
-          { name: 'Mystery Boss', deaths: 20, winningAttemptSeconds: null },
+          {
+            name: 'Mystery Boss',
+            deaths: 20,
+            averageAttemptSeconds: null,
+            winningAttemptSeconds: null,
+          },
         ],
       },
       {
         id: 'timed',
         name: 'Timed',
-        bosses: [{ name: 'Timed Boss', deaths: 3, winningAttemptSeconds: 90 }],
+        bosses: [
+          {
+            name: 'Timed Boss',
+            deaths: 3,
+            averageAttemptSeconds: 60,
+            winningAttemptSeconds: 90,
+          },
+        ],
       },
     ]);
 

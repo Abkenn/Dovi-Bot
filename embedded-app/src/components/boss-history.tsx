@@ -1,6 +1,8 @@
 import { Skull } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AnimatedNumber } from '@/components/animated-number';
+import { BossAchievements } from '@/components/boss-achievements';
+import { BossMetrics } from '@/components/boss-metrics';
 import { BossOutcome } from '@/components/boss-outcome';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -64,7 +66,12 @@ export const BossHistory = ({
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <div>
-                    <p className="font-semibold">{boss.name}</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <p className="font-semibold">{boss.name}</p>
+                      <BossAchievements
+                        achievements={boss.achievements ?? []}
+                      />
+                    </div>
                     <p className="text-muted-foreground text-sm">
                       <AnimatedNumber
                         value={boss.deaths}
@@ -73,6 +80,11 @@ export const BossHistory = ({
                       />{' '}
                       deaths
                     </p>
+                    <BossMetrics
+                      attempts={boss.attempts ?? boss.deaths + 1}
+                      averageAttemptSeconds={boss.averageAttemptSeconds ?? null}
+                      winningAttemptSeconds={boss.winningAttemptSeconds ?? null}
+                    />
                   </div>
                   <BossOutcome outcome={boss.outcome} />
                 </div>

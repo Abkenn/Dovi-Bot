@@ -11,6 +11,10 @@ describe('BossHistory', () => {
             name: 'Darkeater Midir',
             deaths: 16,
             outcome: 'PAUSED',
+            attempts: 17,
+            averageAttemptSeconds: 95,
+            winningAttemptSeconds: null,
+            achievements: ['MOST_DEATHS', 'TOUGHEST_OVERALL'],
           },
           { name: 'Pontiff Sulyvahn', deaths: 12, outcome: 'KILLED' },
         ]}
@@ -23,6 +27,19 @@ describe('BossHistory', () => {
     expect(screen.getByLabelText('16')).toBeInTheDocument();
     expect(screen.getByLabelText('Paused')).toBeInTheDocument();
     expect(screen.getByLabelText('Killed')).toBeInTheDocument();
+    expect(screen.getByText(/17 attempts/)).toHaveTextContent(
+      '17 attempts · 1m 35s avg',
+    );
+    expect(
+      screen.getByRole('button', {
+        name: /Most deaths: Highest death count in this game/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Toughest overall: Strongest balance/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('keeps existing rows mounted while values change and new rows enter', () => {

@@ -7,6 +7,7 @@ import {
 import {
   getGameBossStatsRows,
   hasTrackedBossKill,
+  summarizeCombinedBossStats,
   summarizeGameDeathTotals,
 } from '../bosses/bosses.stats';
 import { getStreamInfo } from '../stream-info/stream-info.service';
@@ -17,7 +18,10 @@ import {
 import type {
   EmbeddedAppArchivedGame,
   EmbeddedAppBoss,
+  EmbeddedAppBossAchievement,
+  EmbeddedAppBossMetrics,
   EmbeddedAppCurrentBoss,
+  EmbeddedAppGeneralStats,
   EmbeddedAppLastKilledBoss,
   EmbeddedAppStats,
   EmbeddedAppStreamEncounter,
@@ -34,11 +38,48 @@ type EmbeddedAppStatsQuery = NonNullable<
 >;
 type EmbeddedAppStatsSession = EmbeddedAppStatsQuery['sessions'][number];
 type EmbeddedAppArchiveGame = EmbeddedAppStatsQuery['archiveGames'][number];
-type EmbeddedAppArchiveBoss = EmbeddedAppArchiveGame['bosses'][number];
+type EmbeddedAppCurrentBossState = Omit<
+  EmbeddedAppCurrentBoss,
+  keyof EmbeddedAppBossMetrics
+>;
+type EmbeddedAppStreamEncounterState = Omit<
+  EmbeddedAppStreamEncounter,
+  keyof EmbeddedAppBossMetrics
+>;
+
+const canSummarizeTrackingSessions = (
+  sessions: EmbeddedAppArchiveGame['bosses'][number]['trackingSessions'],
+) =>
+  sessions.every(
+    (session) =>
+      'boss' in session &&
+      Array.isArray(session.attempts) &&
+      Array.isArray(session.pauses),
+  );
+
+const getFallbackWinningAttemptSeconds = (
+  sessions: EmbeddedAppArchiveGame['bosses'][number]['trackingSessions'],
+) => {
+  const killedSession = sessions.find(
+    (session) => session.endResult === BossTrackingEndResult.KILLED,
+  );
+  const winningAttempt = Array.isArray(killedSession?.attempts)
+    ? killedSession.attempts.at(-1)
+    : null;
+
+  if (!winningAttempt?.endedAt) {
+    return null;
+  }
+
+  return Math.round(
+    (winningAttempt.endedAt.getTime() - winningAttempt.startedAt.getTime()) /
+      1_000,
+  );
+};
 
 const toCurrentBoss = (
   sessions: EmbeddedAppStatsSession[],
-): EmbeddedAppCurrentBoss | null => {
+): EmbeddedAppCurrentBossState | null => {
   const session = sessions.find((candidate) =>
     OPEN_STATUSES.some((status) => status === candidate.status),
   );
@@ -87,8 +128,41 @@ const toArchivedGame = (
     })),
   };
   const outcomes = new Map<string, EmbeddedAppBoss['outcome']>();
+  const metrics = new Map<
+    string,
+    Pick<
+      EmbeddedAppBoss,
+      'attempts' | 'averageAttemptSeconds' | 'winningAttemptSeconds'
+    >
+  >();
 
   for (const boss of game.bosses) {
+    const combinedStats = canSummarizeTrackingSessions(boss.trackingSessions)
+      ? summarizeCombinedBossStats(boss)
+      : null;
+    const importedStat = boss.stats[0];
+    const deaths =
+      combinedStats?.deaths ??
+      importedStat?.deaths ??
+      boss.trackingSessions.reduce(
+        (total, session) => total + session.deathCount,
+        0,
+      );
+    metrics.set(boss.name, {
+      attempts: deaths + 1,
+      averageAttemptSeconds:
+        combinedStats?.averageAttemptSeconds ??
+        (importedStat?.totalAttemptTimeSeconds === null ||
+        importedStat?.totalAttemptTimeSeconds === undefined
+          ? null
+          : Math.round(importedStat.totalAttemptTimeSeconds / (deaths + 1))),
+      winningAttemptSeconds:
+        combinedStats?.winningAttemptSeconds ??
+        importedStat?.winningAttemptTimeSeconds ??
+        getFallbackWinningAttemptSeconds(boss.trackingSessions) ??
+        null,
+    });
+
     if (boss.stats.length > 0 || hasTrackedBossKill(boss.trackingSessions)) {
       outcomes.set(boss.name, 'KILLED');
       continue;
@@ -111,7 +185,18 @@ const toArchivedGame = (
   const bosses = getGameBossStatsRows(gameStats, { limit: null }).flatMap(
     ({ name, deaths }) => {
       const outcome = outcomes.get(name);
-      return outcome ? [{ name, deaths, outcome }] : [];
+      const bossMetrics = metrics.get(name);
+      return outcome && bossMetrics
+        ? [
+            {
+              name,
+              deaths,
+              outcome,
+              ...bossMetrics,
+              achievements: [],
+            },
+          ]
+        : [];
     },
   );
   const killedBossCount = bosses.filter(
@@ -140,38 +225,6 @@ const toArchivedGame = (
   };
 };
 
-const getTrackedWinningAttemptSeconds = (boss: EmbeddedAppArchiveBoss) => {
-  const killedAttempt = boss.trackingSessions.find(
-    (session) => session.endResult === BossTrackingEndResult.KILLED,
-  )?.attempts?.[0];
-
-  if (!killedAttempt) {
-    return null;
-  }
-
-  if (
-    killedAttempt.vodStartSeconds !== null &&
-    killedAttempt.vodEndSeconds !== null
-  ) {
-    return Math.max(
-      0,
-      killedAttempt.vodEndSeconds - killedAttempt.vodStartSeconds,
-    );
-  }
-
-  if (!killedAttempt.endedAt) {
-    return null;
-  }
-
-  return Math.max(
-    0,
-    Math.floor(
-      (killedAttempt.endedAt.getTime() - killedAttempt.startedAt.getTime()) /
-        1_000,
-    ),
-  );
-};
-
 const toGeneralStatsGame = (
   game: EmbeddedAppArchiveGame,
   archivedGame: EmbeddedAppArchivedGame,
@@ -180,26 +233,62 @@ const toGeneralStatsGame = (
   name: game.name,
   bosses: archivedGame.bosses
     .filter((boss) => boss.outcome === 'KILLED')
-    .map((boss) => {
-      const sourceBoss = game.bosses.find(
-        (candidate) => candidate.name === boss.name,
-      );
-      const importedWinningAttemptSeconds =
-        sourceBoss?.stats[0]?.winningAttemptTimeSeconds ?? null;
+    .map((boss) => ({
+      name: boss.name,
+      deaths: boss.deaths,
+      averageAttemptSeconds: boss.averageAttemptSeconds ?? null,
+      winningAttemptSeconds: boss.winningAttemptSeconds ?? null,
+    })),
+});
 
-      return {
-        name: boss.name,
-        deaths: boss.deaths,
-        winningAttemptSeconds:
-          importedWinningAttemptSeconds ??
-          (sourceBoss ? getTrackedWinningAttemptSeconds(sourceBoss) : null),
-      };
-    }),
+const addGameBossAchievements = (
+  game: EmbeddedAppArchivedGame,
+  comparison: EmbeddedAppGeneralStats['games'][number] | undefined,
+): EmbeddedAppArchivedGame => {
+  const getAchievements = (bossName: string) => {
+    if (!comparison) {
+      return [];
+    }
+
+    const achievements: EmbeddedAppBossAchievement[] = [];
+
+    if (comparison.bossHighlights.mostAttempts.name === bossName) {
+      achievements.push('MOST_DEATHS');
+    }
+    if (comparison.bossHighlights.longestWinningAttempt?.name === bossName) {
+      achievements.push('LONGEST_WINNING_ATTEMPT');
+    }
+    if (comparison.bossHighlights.toughestOverall?.name === bossName) {
+      achievements.push('TOUGHEST_OVERALL');
+    }
+
+    return achievements;
+  };
+  const bosses = game.bosses.map((boss) => ({
+    ...boss,
+    achievements: getAchievements(boss.name),
+  }));
+
+  return {
+    ...game,
+    bosses,
+    killedBosses: bosses.filter((boss) => boss.outcome === 'KILLED'),
+  };
+};
+
+const getBossMetrics = (
+  boss: EmbeddedAppBoss | undefined,
+  deaths: number,
+): EmbeddedAppBossMetrics => ({
+  attempts: boss?.attempts ?? deaths + 1,
+  averageAttemptSeconds: boss?.averageAttemptSeconds ?? null,
+  winningAttemptSeconds: boss?.winningAttemptSeconds ?? null,
+  achievements: boss?.achievements ?? [],
 });
 
 const toLatestStreamEncounters = (
   sessions: EmbeddedAppStatsSession[],
-): EmbeddedAppStreamEncounter[] => {
+): EmbeddedAppStreamEncounterState[] => {
   const latestSession = sessions[0];
 
   if (!latestSession) {
@@ -247,8 +336,8 @@ const toLastKilledBoss = (
 
 const toStreamEncounters = (
   sessions: EmbeddedAppStatsSession[],
-): EmbeddedAppStreamEncounter[] => {
-  const encounters = new Map<string, EmbeddedAppStreamEncounter>();
+): EmbeddedAppStreamEncounterState[] => {
+  const encounters = new Map<string, EmbeddedAppStreamEncounterState>();
 
   for (const session of [...sessions].reverse()) {
     const existing = encounters.get(session.boss.name);
@@ -306,21 +395,29 @@ export const getEmbeddedAppStats = async (
     BOT_GUILDS.STAGING_ENV,
     BOT_GUILDS.PROD_ENV,
   ]);
-  const games = result.archiveGames.map(toArchivedGame).sort((left, right) => {
-    if (left.id === result.game?.id) {
-      return -1;
-    }
-    if (right.id === result.game?.id) {
-      return 1;
-    }
-    return left.name.localeCompare(right.name);
-  });
-  const archivedGamesById = new Map(games.map((game) => [game.id, game]));
+  const baseGames = result.archiveGames
+    .map(toArchivedGame)
+    .sort((left, right) => {
+      if (left.id === result.game?.id) {
+        return -1;
+      }
+      if (right.id === result.game?.id) {
+        return 1;
+      }
+      return left.name.localeCompare(right.name);
+    });
+  const archivedGamesById = new Map(baseGames.map((game) => [game.id, game]));
   const generalStats = summarizeEmbeddedAppGeneralStats(
     result.archiveGames.flatMap((game) => {
       const archivedGame = archivedGamesById.get(game.id);
       return archivedGame ? [toGeneralStatsGame(game, archivedGame)] : [];
     }),
+  );
+  const comparisonsByGameId = new Map(
+    generalStats.games.map((game) => [game.id, game]),
+  );
+  const games = baseGames.map((game) =>
+    addGameBossAchievements(game, comparisonsByGameId.get(game.id)),
   );
 
   if (!result.game) {
@@ -339,24 +436,39 @@ export const getEmbeddedAppStats = async (
 
   const streamInfo = await getStreamInfo(guildId);
   const currentStream = streamInfo.current;
-  let streamEncounters: EmbeddedAppStreamEncounter[];
+  let streamEncounterStates: EmbeddedAppStreamEncounterState[];
 
   if (currentStream) {
-    streamEncounters = toCurrentStreamEncounters(
+    streamEncounterStates = toCurrentStreamEncounters(
       result.sessions,
       currentStream,
     );
   } else if (streamInfo.previous) {
-    streamEncounters = toPreviousStreamEncounters(
+    streamEncounterStates = toPreviousStreamEncounters(
       result.sessions,
       streamInfo.previous,
       streamInfo.next,
     );
   } else {
-    streamEncounters = toLatestStreamEncounters(result.sessions);
+    streamEncounterStates = toLatestStreamEncounters(result.sessions);
   }
   const currentGameArchive = games.find((game) => game.id === result.game?.id);
   const bosses = currentGameArchive?.bosses ?? [];
+  const bossesByName = new Map(bosses.map((boss) => [boss.name, boss]));
+  const streamEncounters = streamEncounterStates.map((encounter) => ({
+    ...encounter,
+    ...getBossMetrics(bossesByName.get(encounter.name), encounter.deaths),
+  }));
+  const currentBossState = toCurrentBoss(result.sessions);
+  const currentBoss = currentBossState
+    ? {
+        ...currentBossState,
+        ...getBossMetrics(
+          bossesByName.get(currentBossState.name),
+          currentBossState.deaths,
+        ),
+      }
+    : null;
   const archivedTrackedTotal =
     currentGameArchive?.nonBossDeaths === null ||
     currentGameArchive?.nonBossDeaths === undefined
@@ -383,7 +495,7 @@ export const getEmbeddedAppStats = async (
       nonBossDeaths: currentDeathTotals.nonBossDeaths,
       killedBossCount: currentGameArchive?.killedBossCount ?? 0,
     },
-    currentBoss: toCurrentBoss(result.sessions),
+    currentBoss,
     lastKilledBoss: toLastKilledBoss(result.sessions, bosses),
     currentStreamWindow: currentStream
       ? {

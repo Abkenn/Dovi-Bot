@@ -1,6 +1,7 @@
 import type {
   EmbeddedAppArchivedGame,
   EmbeddedAppBoss,
+  EmbeddedAppBossAchievement,
   EmbeddedAppBossComparison,
   EmbeddedAppCurrentBoss,
   EmbeddedAppGameComparison,
@@ -14,6 +15,7 @@ export type CurrentBoss = EmbeddedAppCurrentBoss;
 export type LastKilledBoss = EmbeddedAppLastKilledBoss;
 export type ArchivedGame = EmbeddedAppArchivedGame;
 export type Boss = EmbeddedAppBoss;
+export type BossAchievement = EmbeddedAppBossAchievement;
 export type BossComparison = EmbeddedAppBossComparison;
 export type GameComparison = EmbeddedAppGameComparison;
 export type GeneralStats = EmbeddedAppGeneralStats;

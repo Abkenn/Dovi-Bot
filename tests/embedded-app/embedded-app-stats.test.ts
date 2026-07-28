@@ -264,16 +264,27 @@ describe('embedded app stats', () => {
       ],
     });
     expect(stats.bosses).toHaveLength(21);
-    expect(stats.bosses).toContainEqual({
-      name: 'Iudex Gundyr',
-      deaths: 7,
-      outcome: 'KILLED',
-    });
-    expect(stats.bosses).toContainEqual({
-      name: 'Vordt',
-      deaths: 3,
-      outcome: 'ACTIVE',
-    });
+    expect(stats.bosses).toContainEqual(
+      expect.objectContaining({
+        name: 'Iudex Gundyr',
+        deaths: 7,
+        outcome: 'KILLED',
+        attempts: 8,
+        achievements: [
+          'MOST_DEATHS',
+          'LONGEST_WINNING_ATTEMPT',
+          'TOUGHEST_OVERALL',
+        ],
+      }),
+    );
+    expect(stats.bosses).toContainEqual(
+      expect.objectContaining({
+        name: 'Vordt',
+        deaths: 3,
+        outcome: 'ACTIVE',
+        attempts: 4,
+      }),
+    );
     const currentGame = stats.games.find((game) => game.id === stats.game?.id);
     expect(stats.game).toMatchObject({
       deaths: currentGame?.deaths,

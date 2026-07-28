@@ -54,6 +54,10 @@ describe('CurrentBossCard', () => {
           runbackSeconds: 80,
           pausedAt: '2026-07-10T18:00:00.000Z',
           pauseReason: 'Dinner break',
+          attempts: 20,
+          averageAttemptSeconds: 84,
+          winningAttemptSeconds: null,
+          achievements: ['MOST_DEATHS'],
         }}
       />,
     );
@@ -61,6 +65,11 @@ describe('CurrentBossCard', () => {
     expect(screen.getByText('Paused')).toBeInTheDocument();
     expect(screen.getByText('--:--')).toBeInTheDocument();
     expect(screen.getByText('Dinner break')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Most deaths: Highest death count in this game/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('shows runback before the boss attempt begins', () => {

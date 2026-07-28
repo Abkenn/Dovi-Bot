@@ -1,6 +1,7 @@
 import { BrainCircuit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { GameComparison } from '@/live-stats.types';
+import { formatStatsDuration } from '../lib/general-stats-chart.utils';
 
 type GeneralStatsPipSummaryProps = {
   hardestByDeaths: GameComparison | null;
@@ -44,8 +45,24 @@ export const GeneralStatsPipSummary = ({
               <dt className="text-[0.65rem] font-semibold tracking-wide text-muted-foreground uppercase">
                 {label}
               </dt>
-              <dd className="truncate text-right text-sm font-bold">
-                {game?.name ?? 'Not enough data'}
+              <dd className="min-w-0 text-right">
+                <span className="block truncate text-sm font-bold">
+                  {game?.name ?? 'Not enough data'}
+                </span>
+                {game ? (
+                  <span className="block truncate text-[0.65rem] text-muted-foreground">
+                    {game.averageAttemptsPerBoss} attempts ·{' '}
+                    {game.averageAttemptSeconds == null
+                      ? 'avg untracked'
+                      : `${formatStatsDuration(game.averageAttemptSeconds)} avg`}{' '}
+                    ·{' '}
+                    {game.averageWinningAttemptSeconds === null
+                      ? 'win untracked'
+                      : `${formatStatsDuration(
+                          game.averageWinningAttemptSeconds,
+                        )} win`}
+                  </span>
+                ) : null}
               </dd>
             </div>
           ))}

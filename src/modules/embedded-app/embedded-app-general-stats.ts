@@ -6,6 +6,7 @@ import type {
 type GeneralStatsBossInput = {
   name: string;
   deaths: number;
+  averageAttemptSeconds: number | null;
   winningAttemptSeconds: number | null;
 };
 
@@ -63,6 +64,7 @@ const toBossComparison = (boss: GeneralStatsBossInput | null) =>
     ? {
         name: boss.name,
         attempts: boss.deaths + 1,
+        averageAttemptSeconds: boss.averageAttemptSeconds,
         winningAttemptSeconds: boss.winningAttemptSeconds,
       }
     : null;
@@ -106,6 +108,7 @@ const getBossHighlights = (bosses: GeneralStatsBossInput[]) => {
     mostAttempts: {
       name: mostAttempts.name,
       attempts: mostAttempts.deaths + 1,
+      averageAttemptSeconds: mostAttempts.averageAttemptSeconds,
       winningAttemptSeconds: mostAttempts.winningAttemptSeconds,
     },
     longestWinningAttempt: toBossComparison(longestWinningAttempt),
@@ -125,6 +128,9 @@ export const summarizeEmbeddedAppGeneralStats = (
       const winningAttempts = game.bosses.flatMap((boss) =>
         boss.winningAttemptSeconds === null ? [] : [boss.winningAttemptSeconds],
       );
+      const averageAttempts = game.bosses.flatMap((boss) =>
+        boss.averageAttemptSeconds === null ? [] : [boss.averageAttemptSeconds],
+      );
 
       return {
         id: game.id,
@@ -132,6 +138,10 @@ export const summarizeEmbeddedAppGeneralStats = (
         defeatedBossCount: game.bosses.length,
         averageDeathsPerBoss: roundToOneDecimal(averageDeathsPerBoss),
         averageAttemptsPerBoss: roundToOneDecimal(averageDeathsPerBoss + 1),
+        averageAttemptSeconds:
+          averageAttempts.length > 0
+            ? Math.round(average(averageAttempts))
+            : null,
         averageWinningAttemptSeconds:
           winningAttempts.length > 0
             ? Math.round(average(winningAttempts))

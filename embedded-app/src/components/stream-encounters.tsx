@@ -1,3 +1,5 @@
+import { BossAchievements } from '@/components/boss-achievements';
+import { BossMetrics } from '@/components/boss-metrics';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -53,10 +55,24 @@ export const StreamEncounters = ({
               {index > 0 ? <Separator /> : null}
               <div className="grid grid-cols-[1fr_auto] items-center gap-3 py-3 sm:py-4">
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{encounter.name}</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="truncate font-semibold">{encounter.name}</p>
+                    <BossAchievements
+                      achievements={encounter.achievements ?? []}
+                    />
+                  </div>
                   <p className="text-muted-foreground text-sm">
                     {encounter.deaths} deaths
                   </p>
+                  <BossMetrics
+                    attempts={encounter.attempts ?? encounter.deaths + 1}
+                    averageAttemptSeconds={
+                      encounter.averageAttemptSeconds ?? null
+                    }
+                    winningAttemptSeconds={
+                      encounter.winningAttemptSeconds ?? null
+                    }
+                  />
                 </div>
                 <Badge
                   variant={

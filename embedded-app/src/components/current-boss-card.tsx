@@ -1,4 +1,5 @@
 import { Pause, Radio } from 'lucide-react';
+import { BossAchievements } from '@/components/boss-achievements';
 import {
   CURRENT_ATTEMPT_STATE_LABEL,
   getCurrentAttemptDisplay,
@@ -69,7 +70,10 @@ export const CurrentBossCard = ({ boss }: CurrentBossCardProps) => {
             Current boss
           </CardDescription>
           <CardTitle>
-            <h2 className="text-xl sm:text-3xl">{boss.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl sm:text-3xl">{boss.name}</h2>
+              <BossAchievements achievements={boss.achievements ?? []} />
+            </div>
           </CardTitle>
         </div>
         <Badge

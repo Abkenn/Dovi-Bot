@@ -1,3 +1,15 @@
+export type EmbeddedAppBossAchievement =
+  | 'MOST_DEATHS'
+  | 'LONGEST_WINNING_ATTEMPT'
+  | 'TOUGHEST_OVERALL';
+
+export type EmbeddedAppBossMetrics = {
+  attempts?: number;
+  averageAttemptSeconds?: number | null;
+  winningAttemptSeconds?: number | null;
+  achievements?: EmbeddedAppBossAchievement[];
+};
+
 export type EmbeddedAppCurrentBoss = {
   name: string;
   status: 'ACTIVE' | 'PAUSED';
@@ -7,9 +19,9 @@ export type EmbeddedAppCurrentBoss = {
   runbackSeconds: number | null;
   pausedAt: string | null;
   pauseReason: string | null;
-};
+} & EmbeddedAppBossMetrics;
 
-export type EmbeddedAppBoss = {
+export type EmbeddedAppBoss = EmbeddedAppBossMetrics & {
   name: string;
   deaths: number;
   outcome: 'ACTIVE' | 'PAUSED' | 'KILLED';
@@ -20,7 +32,7 @@ export type EmbeddedAppLastKilledBoss = {
   deaths: number;
 };
 
-export type EmbeddedAppStreamEncounter = {
+export type EmbeddedAppStreamEncounter = EmbeddedAppBossMetrics & {
   name: string;
   deaths: number;
   outcome: 'ACTIVE' | 'PAUSED' | 'KILLED' | 'LEFT';
@@ -43,6 +55,7 @@ export type EmbeddedAppGameComparison = {
   defeatedBossCount: number;
   averageDeathsPerBoss: number;
   averageAttemptsPerBoss: number;
+  averageAttemptSeconds?: number | null;
   averageWinningAttemptSeconds: number | null;
   difficultyScore: number | null;
   bossHighlights: {
@@ -55,6 +68,7 @@ export type EmbeddedAppGameComparison = {
 export type EmbeddedAppBossComparison = {
   name: string;
   attempts: number;
+  averageAttemptSeconds?: number | null;
   winningAttemptSeconds: number | null;
 };
 

@@ -11,7 +11,15 @@ describe('StreamEncounters', () => {
           endAt: new Date(Date.now() + 60_000).toISOString(),
         }}
         encounters={[
-          { name: 'Iudex Gundyr', deaths: 6, outcome: 'KILLED' },
+          {
+            name: 'Iudex Gundyr',
+            deaths: 6,
+            outcome: 'KILLED',
+            attempts: 7,
+            averageAttemptSeconds: 70,
+            winningAttemptSeconds: 102,
+            achievements: ['LONGEST_WINNING_ATTEMPT'],
+          },
           { name: 'Vordt', deaths: 3, outcome: 'ACTIVE' },
           { name: 'Dancer', deaths: 2, outcome: 'LEFT' },
         ]}
@@ -26,6 +34,14 @@ describe('StreamEncounters', () => {
     expect(screen.getByText('Killed')).toBeInTheDocument();
     expect(screen.getByText('Fighting')).toBeInTheDocument();
     expect(screen.getByText('Moved on')).toBeInTheDocument();
+    expect(screen.getByText(/7 attempts/)).toHaveTextContent(
+      '7 attempts · 1m 10s avg · 1m 42s win',
+    );
+    expect(
+      screen.getByRole('button', {
+        name: /Longest winning attempt: Longest final successful attempt/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('labels encounters as the last stream outside a current stream window', () => {
