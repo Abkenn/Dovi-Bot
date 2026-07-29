@@ -1,5 +1,19 @@
 import type { GameComparison } from '@/live-stats.types';
 
+type ClusterableGame = {
+  id: string;
+  averageAttemptsPerBoss: number;
+  averageWinningAttemptSeconds: number | null;
+};
+
+export type GameChartCluster<Game extends ClusterableGame = ClusterableGame> = {
+  id: string;
+  games: Game[];
+};
+
+const GAME_CLUSTER_X_DISTANCE = 0.11;
+const GAME_CLUSTER_Y_DISTANCE = 0.14;
+
 export const formatStatsDuration = (seconds: number) => {
   const roundedSeconds = Math.round(seconds);
   const minutes = Math.floor(roundedSeconds / 60);
@@ -24,6 +38,61 @@ export const isGameComparison = (
     typeof candidate.id === 'string' &&
     'bossHighlights' in candidate
   );
+};
+
+export const getGameChartClusters = <Game extends ClusterableGame>(
+  games: Game[],
+  maximumX: number,
+  maximumY: number,
+): GameChartCluster<Game>[] => {
+  const remainingGames = new Set(games);
+  const clusters: GameChartCluster<Game>[] = [];
+  const gamesAreNear = (left: Game, right: Game) => {
+    const xDistance =
+      Math.abs(left.averageAttemptsPerBoss - right.averageAttemptsPerBoss) /
+      maximumX;
+    const leftY = left.averageWinningAttemptSeconds ?? 0;
+    const rightY = right.averageWinningAttemptSeconds ?? 0;
+    const yDistance = Math.abs(leftY - rightY) / maximumY;
+
+    return (
+      xDistance <= GAME_CLUSTER_X_DISTANCE &&
+      yDistance <= GAME_CLUSTER_Y_DISTANCE
+    );
+  };
+
+  for (const startingGame of games) {
+    if (!remainingGames.has(startingGame)) {
+      continue;
+    }
+
+    const clusterGames: Game[] = [];
+    const gamesToVisit = [startingGame];
+    remainingGames.delete(startingGame);
+
+    while (gamesToVisit.length > 0) {
+      const currentGame = gamesToVisit.shift();
+
+      if (!currentGame) {
+        continue;
+      }
+
+      clusterGames.push(currentGame);
+
+      for (const candidate of remainingGames) {
+        if (gamesAreNear(currentGame, candidate)) {
+          remainingGames.delete(candidate);
+          gamesToVisit.push(candidate);
+        }
+      }
+    }
+
+    if (clusterGames.length > 1) {
+      clusters.push({ id: startingGame.id, games: clusterGames });
+    }
+  }
+
+  return clusters;
 };
 
 const getMedian = (values: number[]) => {

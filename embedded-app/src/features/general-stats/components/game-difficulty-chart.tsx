@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
   LabelList,
@@ -16,13 +16,17 @@ import {
   ChartContainer,
   ChartTooltip,
 } from '@/components/ui/chart';
+import { cn } from '@/lib/utils';
 import type { GameComparison } from '@/live-stats.types';
 import {
   describeGeneralStatsTrend,
   formatStatsDuration,
+  type GameChartCluster,
+  getGameChartClusters,
   getGeneralStatsTrend,
   isGameComparison,
 } from '../lib/general-stats-chart.utils';
+import { ClusterFocusLens } from './cluster-focus-lens';
 import { GameChartTooltip } from './game-chart-tooltip';
 import { GameDifficultyTooltip } from './game-difficulty-tooltip';
 import { GameDotLabel } from './game-dot-label';
@@ -49,10 +53,15 @@ type TrendPopupPosition = {
   y: number;
 };
 
+type ActiveCluster = {
+  cluster: GameChartCluster<GameComparison>;
+  isPinned: boolean;
+};
+
 const isPopupInteractionTarget = (target: EventTarget) =>
   target instanceof Element &&
   target.closest(
-    '.recharts-scatter-symbol, .difficulty-trend, .locked-chart-popup',
+    '.recharts-scatter-symbol, .difficulty-label, .difficulty-trend, .locked-chart-popup',
   ) !== null;
 
 const getClickedGame = (entry: unknown) => {
@@ -70,6 +79,12 @@ const getClickedGame = (entry: unknown) => {
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
   const [isTrendHovered, setIsTrendHovered] = useState(false);
   const [lockedPopup, setLockedPopup] = useState<LockedChartPopup>(null);
+  const [hoveredLabelGame, setHoveredLabelGame] =
+    useState<GameComparison | null>(null);
+  const [activeCluster, setActiveCluster] = useState<ActiveCluster | null>(
+    null,
+  );
+  const clusterCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [trendPopupPosition, setTrendPopupPosition] =
     useState<TrendPopupPosition>({ x: 12, y: 12 });
   const timedGames = useMemo(
@@ -82,6 +97,14 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
         } => game.averageWinningAttemptSeconds !== null,
       ),
     [games],
+  );
+  useEffect(
+    () => () => {
+      if (clusterCloseTimer.current) {
+        clearTimeout(clusterCloseTimer.current);
+      }
+    },
+    [],
   );
 
   if (timedGames.length === 0) {
@@ -110,6 +133,15 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
         60,
     ) * 60,
   );
+  const clusters = getGameChartClusters(timedGames, maximumX, maximumY);
+  const activeClusterIsOnRight = activeCluster
+    ? activeCluster.cluster.games.reduce(
+        (total, game) => total + game.averageAttemptsPerBoss,
+        0,
+      ) /
+        activeCluster.cluster.games.length >
+      maximumX / 2
+    : false;
   const trend = getGeneralStatsTrend(timedGames);
   const trendStartY = trend
     ? Math.min(maximumY, Math.max(0, trend.intercept))
@@ -122,7 +154,34 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
   const closeLockedPopup = (event: MouseEvent<HTMLElement>) => {
     if (!isPopupInteractionTarget(event.target)) {
       setLockedPopup(null);
+      setActiveCluster(null);
     }
+  };
+  const cancelClusterClose = () => {
+    if (clusterCloseTimer.current) {
+      clearTimeout(clusterCloseTimer.current);
+      clusterCloseTimer.current = null;
+    }
+  };
+  const openCluster = (
+    cluster: GameChartCluster<GameComparison>,
+    isPinned: boolean,
+  ) => {
+    cancelClusterClose();
+    setHoveredLabelGame(null);
+    setLockedPopup(null);
+    setActiveCluster({ cluster, isPinned });
+  };
+  const scheduleClusterClose = () => {
+    cancelClusterClose();
+    clusterCloseTimer.current = setTimeout(() => {
+      setActiveCluster((current) => (current?.isPinned ? current : null));
+    }, 220);
+  };
+  const selectClusterGame = (game: GameComparison) => {
+    cancelClusterClose();
+    setActiveCluster(null);
+    setLockedPopup({ kind: 'game', game });
   };
   const lockGamePopup = (entry: unknown) => {
     const game = getClickedGame(entry);
@@ -167,6 +226,11 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
         {lockedPopup?.kind === 'game' ? (
           <div className="locked-chart-popup absolute top-3 right-3 z-30">
             <GameDifficultyTooltip game={lockedPopup.game} />
+          </div>
+        ) : null}
+        {lockedPopup === null && hoveredLabelGame ? (
+          <div className="locked-chart-popup pointer-events-none absolute top-24 right-6 z-30">
+            <GameDifficultyTooltip game={hoveredLabelGame} />
           </div>
         ) : null}
         <div className="mb-4">
@@ -238,7 +302,7 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
                 />
               </>
             ) : null}
-            {lockedPopup === null ? (
+            {lockedPopup === null && activeCluster === null ? (
               <ChartTooltip
                 content={GameChartTooltip}
                 cursor={{ stroke: 'var(--primary)', strokeDasharray: '4 4' }}
@@ -255,10 +319,42 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               isAnimationActive={false}
               onClick={lockGamePopup}
             >
-              <LabelList dataKey="name" content={<GameDotLabel />} />
+              <LabelList
+                dataKey="name"
+                content={
+                  <GameDotLabel
+                    games={timedGames}
+                    clusters={clusters}
+                    onClusterEnter={(cluster) => openCluster(cluster, false)}
+                    onClusterLeave={scheduleClusterClose}
+                    onClusterSelect={(cluster) => openCluster(cluster, true)}
+                    onGameEnter={setHoveredLabelGame}
+                    onGameLeave={() => setHoveredLabelGame(null)}
+                    onGameSelect={(game) =>
+                      setLockedPopup({ kind: 'game', game })
+                    }
+                  />
+                }
+              />
             </Scatter>
           </ScatterChart>
         </ChartContainer>
+        {activeCluster ? (
+          <div
+            className={cn(
+              'locked-chart-popup absolute top-24 z-40',
+              activeClusterIsOnRight ? 'left-6' : 'right-6',
+            )}
+          >
+            <ClusterFocusLens
+              key={activeCluster.cluster.id}
+              games={activeCluster.cluster.games}
+              onMouseEnter={cancelClusterClose}
+              onMouseLeave={scheduleClusterClose}
+              onGameSelect={selectClusterGame}
+            />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

@@ -3,6 +3,7 @@ import {
   describeGeneralStatsTrend,
   findGeneralStatsGame,
   formatStatsDuration,
+  getGameChartClusters,
   getGeneralStatsTrend,
   isGameComparison,
 } from './general-stats-chart.utils';
@@ -27,6 +28,52 @@ const game = {
 };
 
 describe('general stats chart utilities', () => {
+  it('groups nearby chart points without swallowing isolated games', () => {
+    const games = [
+      {
+        id: 'bloodborne',
+        averageAttemptsPerBoss: 4,
+        averageWinningAttemptSeconds: 290,
+      },
+      {
+        id: 'lies-of-p',
+        averageAttemptsPerBoss: 4.4,
+        averageWinningAttemptSeconds: 220,
+      },
+      {
+        id: 'sekiro',
+        averageAttemptsPerBoss: 4,
+        averageWinningAttemptSeconds: 170,
+      },
+      {
+        id: 'undertale',
+        averageAttemptsPerBoss: 9.6,
+        averageWinningAttemptSeconds: 590,
+      },
+      {
+        id: 'nine-sols',
+        averageAttemptsPerBoss: 10,
+        averageWinningAttemptSeconds: 210,
+      },
+      {
+        id: 'elden-ring',
+        averageAttemptsPerBoss: 10.4,
+        averageWinningAttemptSeconds: 175,
+      },
+    ];
+
+    expect(getGameChartClusters(games, 14, 660)).toEqual([
+      {
+        id: 'bloodborne',
+        games: [games[0], games[1], games[2]],
+      },
+      {
+        id: 'nine-sols',
+        games: [games[4], games[5]],
+      },
+    ]);
+  });
+
   it('formats and finds chart data', () => {
     expect(formatStatsDuration(125)).toBe('2m 5s');
     expect(formatStatsDuration(125.999999)).toBe('2m 6s');

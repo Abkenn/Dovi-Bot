@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { cloneElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/game-stats/components/game-switcher', () => ({
@@ -7,7 +7,31 @@ vi.mock('@/features/game-stats/components/game-switcher', () => ({
 }));
 vi.mock('recharts', () => ({
   CartesianGrid: () => <div>Grid</div>,
-  LabelList: () => <div>Labels</div>,
+  LabelList: ({
+    content,
+  }: {
+    content: ReactElement<{
+      index?: number;
+      value?: string;
+      x?: number;
+      y?: number;
+    }>;
+  }) => (
+    <>
+      {cloneElement(content, {
+        index: 0,
+        value: 'First chart game',
+        x: 100,
+        y: 100,
+      })}
+      {cloneElement(content, {
+        index: 1,
+        value: 'Second chart game',
+        x: 120,
+        y: 110,
+      })}
+    </>
+  ),
   ReferenceLine: ({
     className,
     onMouseEnter,
@@ -129,7 +153,72 @@ vi.mock('@/components/ui/chart', () => ({
 
 import { GeneralStatsPage } from './general-stats-page';
 
+const makeComparison = (
+  id: string,
+  name: string,
+  attempts: number,
+  winningSeconds: number,
+) => ({
+  id,
+  name,
+  defeatedBossCount: 3,
+  averageDeathsPerBoss: attempts - 1,
+  averageAttemptsPerBoss: attempts,
+  averageWinningAttemptSeconds: winningSeconds,
+  difficultyScore: attempts * winningSeconds,
+  bossHighlights: {
+    mostAttempts: {
+      name: `${name} boss`,
+      attempts,
+      winningAttemptSeconds: winningSeconds,
+    },
+    longestWinningAttempt: null,
+    toughestOverall: null,
+  },
+});
+
 describe('GeneralStatsPage', () => {
+  it('opens a nearby-game lens that can be entered and selected', () => {
+    const clusteredGames = [
+      makeComparison('bloodborne', 'Bloodborne', 4, 240),
+      makeComparison('lies-of-p', 'Lies of P', 4.4, 220),
+    ];
+
+    render(
+      <GeneralStatsPage
+        games={[]}
+        generalStats={{
+          hardestByDeathsGameId: 'bloodborne',
+          longestWinningAttemptGameId: 'bloodborne',
+          toughestOverallGameId: 'bloodborne',
+          games: clusteredGames,
+        }}
+      />,
+    );
+
+    const clusterTarget = screen.getByRole('button', {
+      name: 'Explore 2 nearby games',
+    });
+    fireEvent.mouseEnter(clusterTarget);
+
+    const lens = screen.getByRole('dialog', { name: '2 nearby games' });
+    fireEvent.mouseLeave(clusterTarget);
+    fireEvent.mouseEnter(lens);
+    fireEvent.mouseLeave(lens);
+    fireEvent.mouseEnter(lens);
+
+    const liesOfP = screen.getByRole('button', { name: /Lies of P/ });
+    fireEvent.mouseEnter(liesOfP);
+    fireEvent.click(liesOfP);
+    expect(screen.getByText('Lies of P boss')).toBeInTheDocument();
+
+    fireEvent.mouseEnter(clusterTarget);
+    fireEvent.click(clusterTarget);
+    expect(
+      screen.getByRole('dialog', { name: '2 nearby games' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows comparison highlights and a labelled game chart', () => {
     render(
       <GeneralStatsPage
