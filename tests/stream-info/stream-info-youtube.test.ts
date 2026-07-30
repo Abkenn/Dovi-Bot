@@ -17,6 +17,8 @@ const makeOccurrence = (
   streamKind: StreamKind.GAME,
   musicMode: null,
   title: 'Game Stream',
+  customTitle: null,
+  musicTheme: null,
   gameName: 'Test Game',
   isOverride: false,
   ...overrides,

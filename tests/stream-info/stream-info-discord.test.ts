@@ -27,6 +27,8 @@ const makeOccurrence = (
   streamKind: StreamKind.GAME,
   musicMode: null,
   title: 'Game Stream',
+  customTitle: null,
+  musicTheme: null,
   gameName: 'Test Game',
   isOverride: false,
   ...overrides,
@@ -244,6 +246,45 @@ describe('stream info discord output', () => {
 
     expect(value).toContain('Democracy Stream');
     expect(value).not.toContain('Game: Hidden Game');
+  });
+
+  it('shows a custom title as secondary context without hiding music mode', () => {
+    const value = getEmbedFieldValue(
+      buildStreamInfoEmbed({
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: makeOccurrence({
+          streamKind: StreamKind.MUSIC,
+          musicMode: MusicMode.DEMOCRACY,
+          title: 'Democracy Stream',
+          customTitle: 'PACIFISM',
+          musicTheme: 'Peace songs',
+        }),
+      }),
+      'Next stream',
+    );
+
+    expect(value?.split('\n')).toEqual([
+      'Democracy Stream',
+      'Title: PACIFISM',
+      'Theme: Peace songs',
+      '<t:1781287800:F> (<t:1781287800:R>)',
+    ]);
+  });
+
+  it('does not show a music theme on game streams', () => {
+    const value = getEmbedFieldValue(
+      buildStreamInfoEmbed({
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: makeOccurrence({ musicTheme: 'Hidden theme' }),
+      }),
+      'Next stream',
+    );
+
+    expect(value).not.toContain('Theme:');
   });
 
   it('shows game names for dictatorship music streams', () => {

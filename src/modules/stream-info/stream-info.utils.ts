@@ -182,7 +182,7 @@ export const buildDefaultOccurrence = (
 
   const streamKind = resolveBaseStreamKind(config, rule);
   const musicMode = resolveBaseMusicMode(config, rule);
-  const title = resolveBaseTitle(config, rule, streamKind, musicMode);
+  const title = resolveTitle(streamKind, musicMode, null);
   const gameName = resolveBaseGameName(config, rule, streamKind);
 
   return {
@@ -196,6 +196,8 @@ export const buildDefaultOccurrence = (
     streamKind,
     musicMode,
     title,
+    customTitle: rule.titleOverride ?? config.defaultTitleOverride ?? null,
+    musicTheme: null,
     gameName,
     isOverride: false,
   };
@@ -225,11 +227,7 @@ export const applyOverrideToOccurrence = (
 
   const streamKind = override.streamKind ?? occurrence.streamKind;
   const musicMode = override.musicMode ?? occurrence.musicMode;
-  const title = resolveTitle(
-    streamKind,
-    musicMode,
-    override.titleOverride ?? null,
-  );
+  const title = resolveTitle(streamKind, musicMode, null);
 
   let gameName: string | null;
 
@@ -252,6 +250,8 @@ export const applyOverrideToOccurrence = (
     streamKind,
     musicMode,
     title,
+    customTitle: override.titleOverride ?? null,
+    musicTheme: override.musicTheme ?? null,
     gameName,
     isOverride: true,
   };

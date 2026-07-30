@@ -72,6 +72,7 @@ const makeOverride = (
   durationMinutes: null,
   streamKind: null,
   musicMode: null,
+  musicTheme: null,
   titleOverride: null,
   gameName: null,
   createdAt: now,
@@ -169,6 +170,11 @@ describe('stream info utils', () => {
     expect(
       resolveBaseGameName(config, makeDefaultRule(), StreamKind.GAME),
     ).toBe('Default Game');
+
+    expect(buildDefaultOccurrence(config, rule, friday)).toMatchObject({
+      title: 'Democracy Stream',
+      customTitle: 'Rule Title',
+    });
   });
 
   it('applies scheduled overrides and keeps derived end time consistent', () => {
@@ -194,6 +200,7 @@ describe('stream info utils', () => {
       streamKind: StreamKind.MUSIC,
       musicMode: MusicMode.DEMOCRACY,
       title: 'Democracy Stream',
+      customTitle: null,
       gameName: 'Default Game',
       isOverride: true,
     });

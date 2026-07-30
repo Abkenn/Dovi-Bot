@@ -55,6 +55,11 @@ export class SetStreamInfoCommand extends Command {
           )
           .addStringOption((option) =>
             option
+              .setName('music_theme')
+              .setDescription('Optional theme for a music stream'),
+          )
+          .addStringOption((option) =>
+            option
               .setName('day')
               .setDescription('Optional earlier day to move the target stream')
               .setAutocomplete(true),
@@ -89,6 +94,7 @@ export class SetStreamInfoCommand extends Command {
           musicMode: interaction.options.getString(
             'music_mode',
           ) as MusicMode | null,
+          musicTheme: interaction.options.getString('music_theme'),
           gameName: interaction.options.getString('game'),
           title: interaction.options.getString('title'),
         });

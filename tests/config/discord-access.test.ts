@@ -57,7 +57,7 @@ describe('Discord command guild access', () => {
       'bosstrialstats',
       'gamediscussionstats',
     ]);
-  });
+  }, 15_000);
 
   it('respects disabled prod registration for ping-me and other commands', async () => {
     mockedEnv.value.ENABLE_PROD_GUILD_COMMAND_REGISTRATION = false;

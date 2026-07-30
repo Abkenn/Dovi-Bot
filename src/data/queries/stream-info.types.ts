@@ -20,6 +20,7 @@ export type TargetStreamOverrideInput = {
   status?: ScheduleStatus;
   streamKind?: StreamKind | null;
   musicMode?: MusicMode | null;
+  musicTheme?: string | null;
   titleOverride?: string | null;
   gameName?: string | null;
   createGameName?: string | null;

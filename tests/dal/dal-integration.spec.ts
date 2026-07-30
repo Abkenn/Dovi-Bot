@@ -370,6 +370,7 @@ test('covers stream-info queries and transactions', async () => {
     status: ScheduleStatus.SCHEDULED,
     streamKind: StreamKind.MUSIC,
     musicMode: MusicMode.DEMOCRACY,
+    musicTheme: 'Peace songs',
     titleOverride: 'Override Stream',
   });
   await expect(
@@ -378,7 +379,7 @@ test('covers stream-info queries and transactions', async () => {
       start: '2026-06-01',
       end: '2026-06-30',
     }),
-  ).resolves.toHaveLength(1);
+  ).resolves.toMatchObject([{ musicTheme: 'Peace songs' }]);
 
   await queries.upsertStreamTitleResetOverride({
     guildId,

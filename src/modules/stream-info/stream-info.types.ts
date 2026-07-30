@@ -12,6 +12,8 @@ export type StreamOccurrence = {
   streamKind: StreamKind;
   musicMode: MusicMode | null;
   title: string | null;
+  customTitle: string | null;
+  musicTheme: string | null;
   gameName: string | null;
   streamUrl?: string | undefined;
   videoTitle?: string | undefined;
@@ -46,6 +48,7 @@ export type SetStreamInfoInput = {
   targetWeekday?: Weekday | null;
   streamKind?: StreamKind | null;
   musicMode?: MusicMode | null;
+  musicTheme?: string | null;
   title?: string | null;
   gameName?: string | null;
 };

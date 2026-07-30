@@ -121,7 +121,7 @@ const buildOverrideOnlyOccurrence = (
   const musicMode = override.musicMode ?? config.defaultMusicMode ?? null;
   const durationMinutes =
     override.durationMinutes ?? config.currentWindowMinutes;
-  const title = resolveTitle(streamKind, musicMode, override.titleOverride);
+  const title = resolveTitle(streamKind, musicMode, null);
   const gameName =
     override.gameName ??
     (streamKind === StreamKind.GAME ? config.defaultGameName : null);
@@ -144,6 +144,8 @@ const buildOverrideOnlyOccurrence = (
     streamKind,
     musicMode,
     title,
+    customTitle: override.titleOverride,
+    musicTheme: override.musicTheme,
     gameName,
     isOverride: true,
   };
@@ -556,6 +558,7 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     resolvedFromWeekday: typeof targetOccurrence.weekday;
     streamKind?: typeof input.streamKind;
     musicMode?: typeof input.musicMode;
+    musicTheme?: string | null;
     titleOverride?: string | null;
     gameName?: string | null;
   } = {
@@ -572,9 +575,9 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     updateData.musicMode = input.musicMode;
   }
 
-  if (input.title !== null && input.title !== undefined) {
-    updateData.titleOverride = input.title;
-  }
+  updateData.titleOverride = input.title ?? null;
+  updateData.musicTheme =
+    inferredStreamKind === StreamKind.MUSIC ? (input.musicTheme ?? null) : null;
 
   if (shouldPersistGameName) {
     updateData.gameName = null;

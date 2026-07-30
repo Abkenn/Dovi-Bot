@@ -119,6 +119,7 @@ model StreamScheduleOverride {
 
   streamKind    StreamKind?
   musicMode     MusicMode?
+  musicTheme    String?
   titleOverride String?
   gameName      String?
 

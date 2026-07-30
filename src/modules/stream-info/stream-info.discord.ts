@@ -54,6 +54,17 @@ const buildOccurrenceValue = (
 
   const lines = [occurrence.title ?? 'Stream'];
 
+  if (occurrence.customTitle?.trim()) {
+    lines.push(`Title: ${occurrence.customTitle.trim()}`);
+  }
+
+  if (
+    occurrence.streamKind === StreamKind.MUSIC &&
+    occurrence.musicTheme?.trim()
+  ) {
+    lines.push(`Theme: ${occurrence.musicTheme.trim()}`);
+  }
+
   if (occurrence.videoTitle?.trim() && occurrence.streamUrl) {
     lines.push(`[${occurrence.videoTitle.trim()}](${occurrence.streamUrl})`);
   }

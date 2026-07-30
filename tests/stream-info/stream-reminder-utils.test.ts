@@ -19,6 +19,8 @@ const makeOccurrence = (
   streamKind: StreamKind.GAME,
   musicMode: null,
   title: 'Game Stream',
+  customTitle: null,
+  musicTheme: null,
   gameName: 'Dark Souls III',
   streamUrl: 'https://youtube.test/watch?v=stream',
   videoTitle: 'Upcoming Stream',
