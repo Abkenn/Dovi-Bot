@@ -1,11 +1,13 @@
 import {
   countBossesByNormalizedName,
+  findAllGameBossDeathRankings,
   findBossesForAutocomplete,
   findBossGamesForAutocomplete,
   findBossWithDaviSpreadsheetStats,
   findGameBossDeathRanking,
 } from '@data/queries/boss-stats';
 import type { AsyncReturnType } from 'type-fest';
+import { getGameBossStatsRows } from './bosses.stats';
 import type {
   BossAutocompleteValueInput,
   GetBossAutocompleteInput,
@@ -15,6 +17,7 @@ import { normalizeBossName } from './bosses.utils';
 
 const BOSS_LOOKUP_SEPARATOR = '::';
 const AUTOCOMPLETE_LIMIT = 25;
+export const ALL_GAMES_OPTION_VALUE = '__all_games__';
 
 export const getBossGameAutocomplete = async (query: string) => {
   const normalizedQuery = normalizeBossName(query);
@@ -109,7 +112,33 @@ export const getGameBossDeathRanking = async (
   return gameStats;
 };
 
+export const getAllGameBossDeathRanking = async (
+  options: { limit?: number | null } = {},
+) => {
+  const rankings = await findAllGameBossDeathRankings();
+  const bosses = rankings
+    .flatMap((ranking) =>
+      getGameBossStatsRows(ranking, { limit: null }).map((boss) => ({
+        name: boss.name,
+        gameName: ranking.game.name,
+        deaths: boss.deaths,
+      })),
+    )
+    .sort(
+      (left, right) =>
+        right.deaths - left.deaths ||
+        left.name.localeCompare(right.name) ||
+        left.gameName.localeCompare(right.gameName),
+    );
+  const limit = options.limit === undefined ? 10 : options.limit;
+
+  return { bosses: limit === null ? bosses : bosses.slice(0, limit) };
+};
+
 export type BossView = AsyncReturnType<typeof getBossView>;
 export type GameBossDeathRankingView = AsyncReturnType<
   typeof getGameBossDeathRanking
+>;
+export type AllGameBossDeathRankingView = AsyncReturnType<
+  typeof getAllGameBossDeathRanking
 >;

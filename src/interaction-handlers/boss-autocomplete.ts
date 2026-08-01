@@ -14,6 +14,7 @@ import {
   BOSS_TRIAL_DURATION_OPTIONS,
 } from '../modules/boss-trials/boss-trial.config';
 import {
+  ALL_GAMES_OPTION_VALUE,
   getBossAutocomplete,
   getBossGameAutocomplete,
   toBossAutocompleteValue,
@@ -118,6 +119,10 @@ const getAutocompleteGameName = async (
 ) => {
   const gameName = interaction.options.getString('game');
 
+  if (gameName === ALL_GAMES_OPTION_VALUE) {
+    return null;
+  }
+
   if (gameName) {
     return gameName;
   }
@@ -185,10 +190,20 @@ export class BossAutocompleteHandler extends InteractionHandler {
         return;
       }
 
-      return respondSafely(
-        interaction,
-        games.map((game) => ({ name: game.name, value: game.name })),
-      );
+      const choices = games.map((game) => ({
+        name: game.name,
+        value: game.name,
+      }));
+      const query = String(focusedOption.value).trim().toLowerCase();
+
+      if (
+        interaction.commandName === 'showgamestats' &&
+        'all games'.includes(query)
+      ) {
+        choices.unshift({ name: 'All games', value: ALL_GAMES_OPTION_VALUE });
+      }
+
+      return respondSafely(interaction, choices);
     }
 
     if (focusedOption.name === 'bump') {

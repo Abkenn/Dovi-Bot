@@ -5,6 +5,7 @@ const queries = vi.hoisted(() => ({
   findBossesForAutocomplete: vi.fn(),
   findBossGamesForAutocomplete: vi.fn(),
   findBossWithDaviSpreadsheetStats: vi.fn(),
+  findAllGameBossDeathRankings: vi.fn(),
   findGameBossDeathRanking: vi.fn(),
 }));
 
@@ -13,10 +14,12 @@ vi.mock('@data/queries/boss-stats', () => ({
   findBossesForAutocomplete: queries.findBossesForAutocomplete,
   findBossGamesForAutocomplete: queries.findBossGamesForAutocomplete,
   findBossWithDaviSpreadsheetStats: queries.findBossWithDaviSpreadsheetStats,
+  findAllGameBossDeathRankings: queries.findAllGameBossDeathRankings,
   findGameBossDeathRanking: queries.findGameBossDeathRanking,
 }));
 
 import {
+  getAllGameBossDeathRanking,
   getBossAutocomplete,
   getBossGameAutocomplete,
   getBossView,
@@ -127,6 +130,28 @@ describe('bosses service', () => {
     expect(queries.findGameBossDeathRanking).toHaveBeenLastCalledWith({
       normalizedGameName: 'elden ring',
       limit: null,
+    });
+  });
+
+  it('combines and sorts boss rankings across every game', async () => {
+    queries.findAllGameBossDeathRankings.mockResolvedValue([
+      {
+        game: { name: 'Game A' },
+        stats: [{ deaths: 4, boss: { id: 'a', name: 'Boss A' } }],
+        trackedBosses: [],
+      },
+      {
+        game: { name: 'Game B' },
+        stats: [{ deaths: 7, boss: { id: 'b', name: 'Boss B' } }],
+        trackedBosses: [],
+      },
+    ]);
+
+    await expect(getAllGameBossDeathRanking()).resolves.toEqual({
+      bosses: [
+        { name: 'Boss B', gameName: 'Game B', deaths: 7 },
+        { name: 'Boss A', gameName: 'Game A', deaths: 4 },
+      ],
     });
   });
 

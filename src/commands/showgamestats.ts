@@ -2,8 +2,13 @@ import { Command } from '@sapphire/framework';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildShowBossStatsEmbed } from '../modules/boss-encounter-stats/boss/boss-encounter-stats.discord';
-import { buildShowGameStatsEmbed } from '../modules/boss-encounter-stats/game/game-encounter-stats.discord';
 import {
+  buildShowAllGameStatsEmbed,
+  buildShowGameStatsEmbed,
+} from '../modules/boss-encounter-stats/game/game-encounter-stats.discord';
+import {
+  ALL_GAMES_OPTION_VALUE,
+  getAllGameBossDeathRanking,
   getBossView,
   getGameBossDeathRanking,
 } from '../modules/bosses/bosses.service';
@@ -70,6 +75,35 @@ export class ShowGameStatsCommand extends Command {
       run: async ({ editReply, preflight: guildId }) => {
         const selectedGameName =
           interaction.options.getString('game')?.trim() || null;
+        const showAllGames = selectedGameName === ALL_GAMES_OPTION_VALUE;
+        const bossName = interaction.options.getString('boss');
+        const results = interaction.options.getString('results') ?? 'top10';
+
+        if (showAllGames) {
+          if (bossName) {
+            const boss = await getBossView({ bossName });
+            const statsButton = buildEmbeddedAppStatsButton(
+              guildId,
+              boss.game.name,
+            );
+
+            return editReply({
+              embeds: [buildShowBossStatsEmbed(boss)],
+              components: statsButton ? [statsButton] : [],
+            });
+          }
+
+          const options = results === 'all' ? ALL_BOSS_STATS_OPTIONS : {};
+
+          return editReply({
+            embeds: [
+              buildShowAllGameStatsEmbed(
+                await getAllGameBossDeathRanking(options),
+              ),
+            ],
+          });
+        }
+
         const defaultGameName = selectedGameName
           ? null
           : await getDefaultStreamGameName(guildId);
@@ -77,8 +111,6 @@ export class ShowGameStatsCommand extends Command {
           selectedGameName,
           defaultGameName,
         );
-        const bossName = interaction.options.getString('boss');
-        const results = interaction.options.getString('results') ?? 'top10';
         const statsButton = buildEmbeddedAppStatsButton(guildId, gameName);
         const components = statsButton ? [statsButton] : [];
 

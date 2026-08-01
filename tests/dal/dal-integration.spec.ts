@@ -55,6 +55,7 @@ const coveredDalExports = {
     'findBossGamesForAutocomplete',
     'findBossesForAutocomplete',
     'findBossWithDaviSpreadsheetStats',
+    'findAllGameBossDeathRankings',
     'findGameBossDeathRanking',
   ],
   '../../src/data/queries/boss-tracking': [
@@ -602,6 +603,14 @@ test('covers boss stats queries and spreadsheet sync transaction', async () => {
     game: { name: 'Stats Game' },
     stats: [{ deaths: 3 }],
   });
+  await expect(statsQueries.findAllGameBossDeathRankings()).resolves.toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        game: { id: game.id, name: 'Stats Game' },
+        stats: [expect.objectContaining({ deaths: 3 })],
+      }),
+    ]),
+  );
 });
 
 test('covers boss tracking transactions and queries', async () => {

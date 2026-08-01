@@ -240,3 +240,55 @@ export const findGameBossDeathRanking = async ({
 
   return { game, stats, trackedBosses };
 };
+
+export const findAllGameBossDeathRankings = async () => {
+  const games = await prisma.bossGame.findMany({
+    where: {
+      bosses: {
+        some: {
+          OR: [
+            { stats: { some: { deaths: { not: null } } } },
+            {
+              trackingSessions: {
+                some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+              },
+            },
+          ],
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true },
+  });
+
+  return Promise.all(
+    games.map(async (game) => {
+      const [stats, trackedBosses] = await Promise.all([
+        prisma.bossEncounterStat.findMany({
+          where: {
+            source: BossEncounterSource.DAVI_SPREADSHEET,
+            deaths: { not: null },
+            boss: { gameId: game.id },
+          },
+          include: { boss: true },
+        }),
+        prisma.boss.findMany({
+          where: {
+            gameId: game.id,
+            trackingSessions: {
+              some: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+            },
+          },
+          include: {
+            trackingSessions: {
+              where: { status: { not: BossTrackingSessionStatus.CANCELLED } },
+              select: { deathCount: true, endResult: true },
+            },
+          },
+        }),
+      ]);
+
+      return { game, stats, trackedBosses };
+    }),
+  );
+};

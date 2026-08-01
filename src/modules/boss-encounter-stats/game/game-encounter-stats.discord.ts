@@ -3,7 +3,10 @@ import {
   COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
 } from '../../../config/discord-command-categories';
-import type { GameBossDeathRankingView } from '../../bosses/bosses.service';
+import type {
+  AllGameBossDeathRankingView,
+  GameBossDeathRankingView,
+} from '../../bosses/bosses.service';
 import { getGameBossStatsRows } from '../../bosses/bosses.stats';
 
 const EMBED_FIELD_VALUE_LIMIT = 1024;
@@ -68,3 +71,19 @@ export const buildShowGameStatsEmbed = (
       ...buildBossStatsFields(bossRows),
     );
 };
+
+export const buildShowAllGameStatsEmbed = (
+  ranking: AllGameBossDeathRankingView,
+) =>
+  new EmbedBuilder()
+    .setTitle('All Games Stats')
+    .setColor(getCommandCategoryAccentColor(COMMAND_CATEGORIES.BOSSES))
+    .addFields(
+      ...buildBossStatsFields(
+        ranking.bosses.map((boss) => ({
+          name: `${boss.name} (${boss.gameName})`,
+          deaths: boss.deaths,
+          hasDeaths: true,
+        })),
+      ),
+    );
