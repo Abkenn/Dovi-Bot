@@ -48,6 +48,7 @@ import type {
 import {
   getBossTrackingReconciliation,
   getBossTrackingReconciliationFromBossDeaths,
+  parseBossTrackingSelection,
 } from './boss-tracking.utils';
 
 const assertNonEmptyName = (value: string, label: string) => {
@@ -347,9 +348,13 @@ export const resumeLiveBossTracking = async ({
   vod,
   vodTime,
 }: ResumeLiveBossTrackingInput) => {
-  const cleanBossName = bossName?.trim();
+  const selection = parseBossTrackingSelection({ bossName, gameName });
+  const cleanBossName = selection.bossName;
   const cleanGameName = cleanBossName
-    ? await resolveGameNameFromOption({ guildId, gameName })
+    ? await resolveGameNameFromOption({
+        guildId,
+        gameName: selection.gameName,
+      })
     : null;
   const vodResumeSeconds = parseVodTimestamp(vodTime);
   const resumeSessionInput: Parameters<typeof resumeBossTrackingSession>[0] = {

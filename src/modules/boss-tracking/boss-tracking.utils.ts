@@ -5,6 +5,40 @@ import type {
   GetBossTrackingReconciliationInput,
 } from './boss-tracking.types';
 
+const AUTOCOMPLETE_BOSS_SEPARATOR = ' - ';
+
+export const parseBossTrackingSelection = ({
+  bossName,
+  gameName,
+}: {
+  bossName: string | null | undefined;
+  gameName: string | null | undefined;
+}) => {
+  const cleanBossName = bossName?.trim() || null;
+  const cleanGameName = gameName?.trim() || null;
+
+  if (!cleanBossName || cleanGameName) {
+    return { bossName: cleanBossName, gameName: cleanGameName };
+  }
+
+  const separatorIndex = cleanBossName.indexOf(AUTOCOMPLETE_BOSS_SEPARATOR);
+
+  if (separatorIndex < 1) {
+    return { bossName: cleanBossName, gameName: cleanGameName };
+  }
+
+  const parsedGameName = cleanBossName.slice(0, separatorIndex).trim();
+  const parsedBossName = cleanBossName
+    .slice(separatorIndex + AUTOCOMPLETE_BOSS_SEPARATOR.length)
+    .trim();
+
+  if (!parsedGameName || !parsedBossName) {
+    return { bossName: cleanBossName, gameName: cleanGameName };
+  }
+
+  return { bossName: parsedBossName, gameName: parsedGameName };
+};
+
 export const getBossTrackingReconciliationFromBossDeaths = ({
   deathCount,
   recordedDeathCount,

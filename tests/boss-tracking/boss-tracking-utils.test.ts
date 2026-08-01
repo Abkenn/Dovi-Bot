@@ -3,9 +3,34 @@ import { BossTrackingAttemptTimingStatus } from '../../src/generated/prisma/enum
 import {
   getBossTrackingReconciliation,
   getBossTrackingReconciliationFromBossDeaths,
+  parseBossTrackingSelection,
 } from '../../src/modules/boss-tracking/boss-tracking.utils';
 
 describe('boss tracking utils', () => {
+  it('recovers game and boss names from a submitted autocomplete label', () => {
+    expect(
+      parseBossTrackingSelection({
+        bossName: 'Dark Souls III - Darkeater Midir',
+        gameName: null,
+      }),
+    ).toEqual({
+      bossName: 'Darkeater Midir',
+      gameName: 'Dark Souls III',
+    });
+  });
+
+  it('leaves a normal boss selection unchanged', () => {
+    expect(
+      parseBossTrackingSelection({
+        bossName: 'Darkeater Midir',
+        gameName: 'Dark Souls III',
+      }),
+    ).toEqual({
+      bossName: 'Darkeater Midir',
+      gameName: 'Dark Souls III',
+    });
+  });
+
   it('trusts matching final and recorded boss deaths', () => {
     expect(
       getBossTrackingReconciliationFromBossDeaths({
