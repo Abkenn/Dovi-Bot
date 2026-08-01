@@ -21,6 +21,48 @@ type DurableGameData = {
   };
 };
 
+const BOSS_IDENTITY_PUNCTUATION = new Set([
+  '.',
+  ',',
+  '!',
+  '?',
+  ':',
+  ';',
+  "'",
+  '"',
+  '-',
+  '_',
+  '(',
+  ')',
+  '[',
+  ']',
+]);
+
+export const normalizeBossIdentity = (value: string) => {
+  let normalized = '';
+  let needsSpace = false;
+
+  for (const character of value.trim().toLowerCase()) {
+    if (BOSS_IDENTITY_PUNCTUATION.has(character)) {
+      continue;
+    }
+
+    if (!character.trim()) {
+      needsSpace = normalized.length > 0;
+      continue;
+    }
+
+    if (needsSpace) {
+      normalized += ' ';
+      needsSpace = false;
+    }
+
+    normalized += character;
+  }
+
+  return normalized;
+};
+
 const hasSystemOwnedTopicTerm = (topicTerms: DurableTopicTerm[]) =>
   topicTerms.some((term) => term.createdByUserId === null);
 

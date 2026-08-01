@@ -44,6 +44,7 @@ const coveredDalExports = {
   '../../src/data/boss-catalog.utils': [
     'hasDurableBossData',
     'hasDurableGameData',
+    'normalizeBossIdentity',
   ],
   '../../src/data/boss-tracking.constants': [
     'OPEN_BOSS_TRACKING_SESSION_STATUSES',
@@ -603,11 +604,36 @@ test('covers boss stats queries and spreadsheet sync transaction', async () => {
     game: { name: 'Stats Game' },
     stats: [{ deaths: 3 }],
   });
+  await expect(
+    upsertDaviSpreadsheetBossEncounter({
+      gameName: 'Stats Game',
+      normalizedGameName: 'stats game',
+      bossName: 'Stats Boss.',
+      normalizedBossName: 'stats boss.',
+      daviDiscordUserId: 'davi',
+      parsedRow: {
+        deaths: 4,
+        totalAttemptTimeSeconds: 400,
+        winningAttemptTimeSeconds: 80,
+        difficultyCoefficient: '2.500',
+      },
+      rawTotalAttemptTime: '6m40s',
+      rawWinningAttemptTime: '1m20s',
+      rawDifficultyCoefficient: '2.5',
+      sourceRowNumber: 3,
+    }),
+  ).resolves.toBe('updated');
+  await expect(prisma.boss.count({ where: { gameId: game.id } })).resolves.toBe(
+    1,
+  );
+  await expect(
+    prisma.boss.findUnique({ where: { id: boss.id } }),
+  ).resolves.toMatchObject({ name: 'Stats Boss Updated' });
   await expect(statsQueries.findAllGameBossDeathRankings()).resolves.toEqual(
     expect.arrayContaining([
       expect.objectContaining({
         game: { id: game.id, name: 'Stats Game' },
-        stats: [expect.objectContaining({ deaths: 3 })],
+        stats: [expect.objectContaining({ deaths: 4 })],
       }),
     ]),
   );

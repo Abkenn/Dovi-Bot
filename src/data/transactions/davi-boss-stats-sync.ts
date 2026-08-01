@@ -1,5 +1,6 @@
 import { BossEncounterSource } from '../../generated/prisma/enums';
 import { prisma } from '../../lib/prisma';
+import { normalizeBossIdentity } from '../boss-catalog.utils';
 
 type ParsedDaviBossStatsRow = {
   deaths: number | null;
@@ -44,20 +45,51 @@ export const upsertDaviSpreadsheetBossEncounter = async ({
       },
     });
 
-    const boss = await tx.boss.upsert({
-      where: {
-        gameId_normalizedName: {
+    const existingBosses = await tx.boss.findMany({
+      where: { gameId: game.id },
+    });
+    const exactBoss = existingBosses.find(
+      (candidate) => candidate.normalizedName === normalizedBossName,
+    );
+    const aliasedBoss = exactBoss
+      ? null
+      : await tx.boss.findFirst({
+          where: {
+            gameId: game.id,
+            topicTerms: { some: { normalizedValue: normalizedBossName } },
+          },
+        });
+    const fuzzyBoss =
+      exactBoss || aliasedBoss
+        ? null
+        : existingBosses.find(
+            (candidate) =>
+              normalizeBossIdentity(candidate.normalizedName) ===
+              normalizeBossIdentity(normalizedBossName),
+          );
+    const resolveBoss = async () => {
+      if (exactBoss) {
+        return tx.boss.update({
+          where: { id: exactBoss.id },
+          data: { name: bossName },
+        });
+      }
+
+      const matchingBoss = aliasedBoss ?? fuzzyBoss;
+
+      if (matchingBoss) {
+        return matchingBoss;
+      }
+
+      return tx.boss.create({
+        data: {
           gameId: game.id,
+          name: bossName,
           normalizedName: normalizedBossName,
         },
-      },
-      update: { name: bossName },
-      create: {
-        gameId: game.id,
-        name: bossName,
-        normalizedName: normalizedBossName,
-      },
-    });
+      });
+    };
+    const boss = await resolveBoss();
 
     const statKey = {
       bossId: boss.id,
