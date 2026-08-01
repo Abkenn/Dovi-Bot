@@ -1,4 +1,10 @@
-import { EmbedBuilder } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+  type MessageEditOptions,
+} from 'discord.js';
 import {
   COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
@@ -8,11 +14,15 @@ import type {
   GameBossDeathRankingView,
 } from '../../bosses/bosses.service';
 import { getGameBossStatsRows } from '../../bosses/bosses.stats';
+import { buildComponentEmbedMessageFromEmbeds } from '../../discord/component-embed';
 
 const EMBED_FIELD_VALUE_LIMIT = 1024;
+const ALL_GAME_STATS_PAGE_SIZE = 10;
+const ALL_GAME_STATS_CUSTOM_ID_PREFIX = 'all-game-stats';
 
 const buildBossStatsFields = (
   bossRows: ReturnType<typeof getGameBossStatsRows>,
+  options: { startIndex?: number } = {},
 ) => {
   if (bossRows.length === 0) {
     return [
@@ -28,9 +38,8 @@ const buildBossStatsFields = (
   let currentValue = '';
 
   for (const [index, boss] of bossRows.entries()) {
-    const line = [`${index + 1}. ${boss.name}`, `${boss.deaths} deaths`].join(
-      ' - ',
-    );
+    const rank = (options.startIndex ?? 0) + index + 1;
+    const line = [`${rank}. ${boss.name}`, `${boss.deaths} deaths`].join(' - ');
     const nextValue = currentValue ? `${currentValue}\n${line}` : line;
 
     if (nextValue.length > EMBED_FIELD_VALUE_LIMIT && currentValue) {
@@ -87,3 +96,76 @@ export const buildShowAllGameStatsEmbed = (
         })),
       ),
     );
+
+export const parseAllGameStatsPageAction = (customId: string) => {
+  const [prefix, requesterUserId, pageText] = customId.split(':');
+  const page = Number(pageText);
+
+  if (
+    prefix !== ALL_GAME_STATS_CUSTOM_ID_PREFIX ||
+    !requesterUserId ||
+    !Number.isInteger(page) ||
+    page < 1
+  ) {
+    return null;
+  }
+
+  return { requesterUserId, page };
+};
+
+export const buildShowAllGameStatsPageMessage = ({
+  ranking,
+  page,
+  requesterUserId,
+}: {
+  ranking: AllGameBossDeathRankingView;
+  page: number;
+  requesterUserId: string;
+}): MessageEditOptions => {
+  const pageCount = Math.max(
+    1,
+    Math.ceil(ranking.bosses.length / ALL_GAME_STATS_PAGE_SIZE),
+  );
+  const safePage = Math.min(Math.max(page, 1), pageCount);
+  const startIndex = (safePage - 1) * ALL_GAME_STATS_PAGE_SIZE;
+  const pageBosses = ranking.bosses.slice(
+    startIndex,
+    startIndex + ALL_GAME_STATS_PAGE_SIZE,
+  );
+  const embed = new EmbedBuilder()
+    .setTitle('All Games Stats')
+    .setDescription(`Page ${safePage} of ${pageCount}`)
+    .setColor(getCommandCategoryAccentColor(COMMAND_CATEGORIES.BOSSES))
+    .addFields(
+      ...buildBossStatsFields(
+        pageBosses.map((boss) => ({
+          name: `${boss.name} (${boss.gameName})`,
+          deaths: boss.deaths,
+          hasDeaths: true,
+        })),
+        { startIndex },
+      ),
+    );
+  const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(
+        `${ALL_GAME_STATS_CUSTOM_ID_PREFIX}:${requesterUserId}:${safePage - 1}`,
+      )
+      .setLabel('Previous')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(safePage === 1),
+    new ButtonBuilder()
+      .setCustomId(
+        `${ALL_GAME_STATS_CUSTOM_ID_PREFIX}:${requesterUserId}:${safePage + 1}`,
+      )
+      .setLabel('Next')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(safePage === pageCount),
+  );
+  const componentMessage = buildComponentEmbedMessageFromEmbeds([embed]);
+
+  return {
+    ...componentMessage,
+    components: [...(componentMessage.components ?? []), buttons],
+  };
+};

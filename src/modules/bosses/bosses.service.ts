@@ -17,7 +17,7 @@ import { normalizeBossName } from './bosses.utils';
 
 const BOSS_LOOKUP_SEPARATOR = '::';
 const AUTOCOMPLETE_LIMIT = 25;
-export const ALL_GAMES_OPTION_VALUE = '__all_games__';
+export const ALL_GAMES_OPTION_VALUE = 'All games';
 
 export const getBossGameAutocomplete = async (query: string) => {
   const normalizedQuery = normalizeBossName(query);

@@ -4,6 +4,7 @@ import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { buildShowBossStatsEmbed } from '../modules/boss-encounter-stats/boss/boss-encounter-stats.discord';
 import {
   buildShowAllGameStatsEmbed,
+  buildShowAllGameStatsPageMessage,
   buildShowGameStatsEmbed,
 } from '../modules/boss-encounter-stats/game/game-encounter-stats.discord';
 import {
@@ -94,13 +95,20 @@ export class ShowGameStatsCommand extends Command {
           }
 
           const options = results === 'all' ? ALL_BOSS_STATS_OPTIONS : {};
+          const ranking = await getAllGameBossDeathRanking(options);
+
+          if (results === 'all') {
+            return editReply({
+              componentMessage: buildShowAllGameStatsPageMessage({
+                ranking,
+                page: 1,
+                requesterUserId: interaction.user.id,
+              }),
+            });
+          }
 
           return editReply({
-            embeds: [
-              buildShowAllGameStatsEmbed(
-                await getAllGameBossDeathRanking(options),
-              ),
-            ],
+            embeds: [buildShowAllGameStatsEmbed(ranking)],
           });
         }
 
