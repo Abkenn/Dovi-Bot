@@ -547,6 +547,53 @@ describe('embedded app stats', () => {
     });
   });
 
+  it('shows the latest tracking run when the previous scheduled stream had no activity', async () => {
+    const gael = makeSession({
+      id: 'gael-last-friday',
+      bossName: 'Slave Knight Gael',
+      status: BossTrackingSessionStatus.PAUSED,
+      endResult: null,
+      deathCount: 8,
+      startedAt: new Date('2026-07-24T20:02:47.423Z'),
+      endedAt: null,
+    });
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game: { id: 'game-1', name: 'Dark Souls III' },
+      gameDeaths: 8,
+      sessions: [gael],
+      archiveGames: [
+        {
+          id: 'game-1',
+          name: 'Dark Souls III',
+          trackingSessions: [
+            { startDeaths: 0, deathCount: 8, finalDeaths: null },
+          ],
+          bosses: [],
+        },
+      ],
+    });
+    queries.getStreamInfo.mockResolvedValue({
+      current: null,
+      previous: {
+        startAt: new Date('2026-07-25T18:10:00.000Z'),
+        endAt: new Date('2026-07-25T22:10:00.000Z'),
+      },
+      next: {
+        startAt: new Date('2026-07-31T18:10:00.000Z'),
+        endAt: new Date('2026-07-31T22:10:00.000Z'),
+      },
+      timezone: 'America/Sao_Paulo',
+    });
+
+    await expect(
+      getEmbeddedAppStats('production-guild'),
+    ).resolves.toMatchObject({
+      streamEncounters: [
+        { name: 'Slave Knight Gael', deaths: 8, outcome: 'PAUSED' },
+      ],
+    });
+  });
+
   it('uses the latest tracking run when no stream is currently happening', async () => {
     const lastStreamBoss = makeSession({
       id: 'last-stream',

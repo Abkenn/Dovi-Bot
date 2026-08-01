@@ -444,11 +444,14 @@ export const getEmbeddedAppStats = async (
       currentStream,
     );
   } else if (streamInfo.previous) {
-    streamEncounterStates = toPreviousStreamEncounters(
+    const previousStreamEncounters = toPreviousStreamEncounters(
       result.sessions,
       streamInfo.previous,
       streamInfo.next,
     );
+    streamEncounterStates = previousStreamEncounters.length
+      ? previousStreamEncounters
+      : toLatestStreamEncounters(result.sessions);
   } else {
     streamEncounterStates = toLatestStreamEncounters(result.sessions);
   }
