@@ -8,6 +8,7 @@ export const upsertLastStreamInfoMessage = ({
   guildId,
   channelId,
   messageId,
+  announcementDateKey,
 }: UpsertStreamInfoMessageInput) =>
   prisma.streamInfoMessage.upsert({
     where: {
@@ -16,14 +17,24 @@ export const upsertLastStreamInfoMessage = ({
         channelId,
       },
     },
-    update: {
-      messageId,
-    },
+    update:
+      announcementDateKey === undefined
+        ? { messageId }
+        : { messageId, announcementDateKey },
     create: {
       guildId,
       channelId,
       messageId,
+      announcementDateKey: announcementDateKey ?? null,
     },
+  });
+
+export const findStreamInfoMessageForChannel = (
+  guildId: string,
+  channelId: string,
+) =>
+  prisma.streamInfoMessage.findUnique({
+    where: { guildId_channelId: { guildId, channelId } },
   });
 
 export const findLastStreamInfoMessages = (since: Date) =>
@@ -60,6 +71,7 @@ export const deleteLastStreamInfoMessage = (messageId: string) =>
 export const deleteExpiredStreamInfoMessages = (before: Date) =>
   prisma.streamInfoMessage.deleteMany({
     where: {
+      announcementDateKey: null,
       updatedAt: {
         lt: before,
       },

@@ -14,6 +14,7 @@ const streamInfoMessageQueries = vi.hoisted(() => ({
   findLatestStreamInfoCommandTargets: vi.fn(),
   findLastStreamInfoMessages: vi.fn(),
   findLastStreamInfoMessagesForGuild: vi.fn(),
+  findStreamInfoMessageForChannel: vi.fn(),
   upsertLastStreamInfoMessage: vi.fn(),
 }));
 
@@ -45,6 +46,8 @@ vi.mock('@data/queries/stream-info-message', () => ({
     streamInfoMessageQueries.findLastStreamInfoMessages,
   findLastStreamInfoMessagesForGuild:
     streamInfoMessageQueries.findLastStreamInfoMessagesForGuild,
+  findStreamInfoMessageForChannel:
+    streamInfoMessageQueries.findStreamInfoMessageForChannel,
   upsertLastStreamInfoMessage:
     streamInfoMessageQueries.upsertLastStreamInfoMessage,
 }));
@@ -75,6 +78,7 @@ vi.mock('../../src/modules/stream-info/stream-reminder.service', () => ({
 
 import {
   adoptLastStreamInfoMessage,
+  announcePlannedStreamInfo,
   refreshGuildStreamInfoMessages,
   refreshLastStreamInfoMessages,
   refreshStreamInfoMessage,
@@ -126,12 +130,78 @@ describe('stream info message updater', () => {
     streamInfoMessageQueries.findLastStreamInfoMessagesForGuild.mockResolvedValue(
       [],
     );
+    streamInfoMessageQueries.findStreamInfoMessageForChannel.mockResolvedValue(
+      null,
+    );
     streamInfoMessageQueries.upsertLastStreamInfoMessage.mockResolvedValue(
       undefined,
     );
     streamInfoMessageQueries.findLatestStreamInfoCommandTargets.mockResolvedValue(
       [],
     );
+  });
+
+  it('announces planned production stream info once when a URL is available', async () => {
+    const send = vi.fn().mockResolvedValue({ id: 'announcement-1' });
+    const existingMessage = makeMessage();
+    const client = makeClient({
+      channel: {
+        send,
+        messages: { fetch: vi.fn().mockResolvedValue(existingMessage) },
+      },
+    });
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next: {
+        dateKey: '2026-08-01',
+        startAt: new Date('2026-08-01T18:10:00.000Z'),
+        streamUrl: 'https://youtube.test/watch?v=planned',
+      },
+    });
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(new EmbedBuilder());
+
+    await announcePlannedStreamInfo(client);
+
+    expect(send).toHaveBeenCalledOnce();
+    expect(
+      streamInfoMessageQueries.upsertLastStreamInfoMessage,
+    ).toHaveBeenCalledWith({
+      guildId: 'production-guild',
+      channelId: '1137094933711429659',
+      messageId: 'announcement-1',
+      announcementDateKey: '2026-08-01',
+    });
+
+    send.mockClear();
+    streamInfoMessageQueries.findStreamInfoMessageForChannel.mockResolvedValue({
+      guildId: 'production-guild',
+      channelId: '1137094933711429659',
+      messageId: 'announcement-1',
+      announcementDateKey: '2026-08-01',
+    });
+
+    await announcePlannedStreamInfo(client);
+
+    expect(send).not.toHaveBeenCalled();
+    expect(existingMessage.edit).toHaveBeenCalledOnce();
+  });
+
+  it('does not announce a scheduled stream before a URL is available', async () => {
+    const send = vi.fn();
+    const client = makeClient({ channel: { send } });
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next: {
+        dateKey: '2026-08-01',
+        startAt: new Date('2026-08-01T18:10:00.000Z'),
+      },
+    });
+
+    await announcePlannedStreamInfo(client);
+
+    expect(send).not.toHaveBeenCalled();
   });
 
   it('registers the last stream info command message for a guild', async () => {

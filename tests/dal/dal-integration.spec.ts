@@ -464,6 +464,43 @@ test('covers stream-info queries and transactions', async () => {
   ).resolves.toMatchObject({ count: 1 });
 });
 
+test('keeps one durable automatic stream info announcement per channel', async () => {
+  const queries = await import('../../src/data/queries/stream-info-message');
+  const channelId = 'stream-announcement-channel';
+
+  await queries.upsertLastStreamInfoMessage({
+    guildId,
+    channelId,
+    messageId: 'automatic-stream-info-message',
+    announcementDateKey: '2026-08-01',
+  });
+  await expect(
+    queries.findStreamInfoMessageForChannel(guildId, channelId),
+  ).resolves.toMatchObject({
+    messageId: 'automatic-stream-info-message',
+    announcementDateKey: '2026-08-01',
+  });
+
+  await queries.upsertLastStreamInfoMessage({
+    guildId,
+    channelId,
+    messageId: 'new-message-pointer',
+  });
+  await expect(
+    queries.findStreamInfoMessageForChannel(guildId, channelId),
+  ).resolves.toMatchObject({
+    messageId: 'new-message-pointer',
+    announcementDateKey: '2026-08-01',
+  });
+
+  await queries.deleteExpiredStreamInfoMessages(
+    new Date('2100-01-01T00:00:00.000Z'),
+  );
+  await expect(
+    queries.findStreamInfoMessageForChannel(guildId, channelId),
+  ).resolves.not.toBeNull();
+});
+
 test('covers boss stats queries and spreadsheet sync transaction', async () => {
   const statsQueries = await import('../../src/data/queries/boss-stats');
   const { upsertDaviSpreadsheetBossEncounter } = await import(

@@ -4,18 +4,20 @@ import {
   findLastStreamInfoMessages,
   findLastStreamInfoMessagesForGuild,
   findLatestStreamInfoCommandTargets,
+  findStreamInfoMessageForChannel,
   upsertLastStreamInfoMessage,
 } from '@data/queries/stream-info-message';
 import {
   type Client,
   type Collection,
   type Message,
-  type MessageEditOptions,
+  type MessageCreateOptions,
   MessageFlags,
   type MessageManager,
   type Snowflake,
 } from 'discord.js';
 import { DateTime } from 'luxon';
+import { BOT_GUILDS } from '../../config/discord-access';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 import {
   buildComponentEmbedMessageFromEmbeds,
@@ -35,6 +37,7 @@ const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
 const UNKNOWN_CHANNEL_CODE = 10003;
 const STREAM_INFO_MESSAGE_RETENTION_HOURS = 24;
+const PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID = '1137094933711429659';
 
 const getRecentMessageCutoff = () =>
   DateTime.utc()
@@ -59,8 +62,15 @@ type MessageBackedChannel = {
   messages: MessageManager;
 };
 
+type SendableChannel = {
+  send: (options: MessageCreateOptions) => Promise<Message>;
+};
+
 const hasMessages = (channel: unknown): channel is MessageBackedChannel =>
   typeof channel === 'object' && channel !== null && 'messages' in channel;
+
+const canSendMessages = (channel: unknown): channel is SendableChannel =>
+  typeof channel === 'object' && channel !== null && 'send' in channel;
 
 const hasContent = (value: unknown, content: string): boolean => {
   if (typeof value === 'string') {
@@ -125,15 +135,50 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
   );
   const actionRows =
     buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
-  const { flags: _flags, ...componentMessage } =
-    buildComponentEmbedMessageFromEmbeds([embed]);
+  const componentMessage = buildComponentEmbedMessageFromEmbeds([embed]);
 
   return {
-    ...componentMessage,
     components: [...(componentMessage.components ?? []), ...actionRows],
     allowedMentions: { parse: [] },
-    flags: MessageFlags.IsComponentsV2,
-  } satisfies MessageEditOptions;
+    flags: MessageFlags.IsComponentsV2 as const,
+  };
+};
+
+export const announcePlannedStreamInfo = async (client: Client) => {
+  const streamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
+  const occurrence = [streamInfo.current, streamInfo.next].find(
+    (candidate) => candidate?.streamUrl,
+  );
+
+  if (!occurrence) {
+    return;
+  }
+
+  const existing = await findStreamInfoMessageForChannel(
+    BOT_GUILDS.PROD_ENV,
+    PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID,
+  );
+  if (existing?.announcementDateKey === occurrence.dateKey) {
+    await refreshStreamInfoMessage({ client, pointer: existing });
+    return;
+  }
+
+  const channel = await client.channels.fetch(
+    PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID,
+  );
+  if (!canSendMessages(channel)) {
+    return;
+  }
+
+  const message = await channel.send(
+    await buildStreamInfoMessageEdit(BOT_GUILDS.PROD_ENV, client),
+  );
+  await upsertLastStreamInfoMessage({
+    guildId: BOT_GUILDS.PROD_ENV,
+    channelId: PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID,
+    messageId: message.id,
+    announcementDateKey: occurrence.dateKey,
+  });
 };
 
 const editStreamInfoMessage = async ({
@@ -277,6 +322,8 @@ export const refreshLastStreamInfoMessages = async (client: Client) => {
       pointer: target,
     });
   }
+
+  await announcePlannedStreamInfo(client);
 };
 
 export const refreshGuildStreamInfoMessages = async ({
