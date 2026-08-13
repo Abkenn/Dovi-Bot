@@ -14,9 +14,11 @@ import {
   extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
   findNextOccurrence,
+  findOccurrenceForWeekday,
   findPreviousOccurrence,
   isOngoingOccurrence,
   makeDateKey,
+  parseWeekday,
   resolveBaseGameName,
   resolveBaseMusicMode,
   resolveBaseStreamKind,
@@ -93,6 +95,15 @@ describe('stream info utils', () => {
     );
   });
 
+  it('accepts typed weekday labels without relying on an unsafe cast', () => {
+    expect(parseWeekday('Friday')).toBe('FRIDAY');
+    expect(parseWeekday('friday')).toBe('FRIDAY');
+    expect(parseWeekday('FRIDAY')).toBe('FRIDAY');
+    expect(parseWeekday(' Friday ')).toBe('FRIDAY');
+    expect(parseWeekday(null)).toBeNull();
+    expect(() => parseWeekday('not-a-day')).toThrow('Unknown weekday');
+  });
+
   it('resolves stream titles from overrides, kind, and music mode', () => {
     expect(resolveTitle(StreamKind.GAME, null, 'Custom Title')).toBe(
       'Custom Title',
@@ -106,6 +117,9 @@ describe('stream info utils', () => {
     expect(resolveTitle(StreamKind.MUSIC, MusicMode.CAPITALISM, null)).toBe(
       'Capitalism Stream',
     );
+    expect(
+      resolveTitle(StreamKind.MUSIC, MusicMode.PATREON_CAPITALISM, null),
+    ).toBe('Patreon Capitalism Stream');
     expect(resolveTitle(StreamKind.MUSIC, MusicMode.UNKNOWN, null)).toBe(
       'Music Stream',
     );
@@ -254,6 +268,7 @@ describe('stream info utils', () => {
     const second = {
       ...first,
       dateKey: '2026-06-13',
+      weekday: 'SATURDAY' as const,
       startAt: new Date('2026-06-13T18:00:00.000Z'),
       endAt: new Date('2026-06-13T20:00:00.000Z'),
     };
@@ -285,5 +300,8 @@ describe('stream info utils', () => {
       target: 'next',
       occurrence: second,
     });
+    expect(findOccurrenceForWeekday(first, second, 'FRIDAY')).toBe(first);
+    expect(findOccurrenceForWeekday(first, second, 'SATURDAY')).toBe(second);
+    expect(findOccurrenceForWeekday(first, second, 'SUNDAY')).toBeNull();
   });
 });

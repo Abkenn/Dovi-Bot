@@ -30,6 +30,22 @@ export const LUXON_WEEKDAY_TO_WEEKDAY: Record<number, Weekday> = {
   7: 'SUNDAY',
 };
 
+const isWeekday = (value: string): value is Weekday =>
+  Object.hasOwn(WEEKDAY_TO_LUXON, value);
+
+export const parseWeekday = (value: string | null): Weekday | null => {
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  if (!isWeekday(normalized)) {
+    throw new Error(`Unknown weekday: ${value}`);
+  }
+
+  return normalized;
+};
+
 export const makeDateKey = (value: DateTime): string =>
   value.toFormat('yyyy-LL-dd');
 
@@ -102,6 +118,13 @@ export const resolveTargetStream = (
   };
 };
 
+export const findOccurrenceForWeekday = (
+  current: StreamOccurrence | null,
+  next: StreamOccurrence | null,
+  weekday: Weekday,
+): StreamOccurrence | null =>
+  [current, next].find((occurrence) => occurrence?.weekday === weekday) ?? null;
+
 export const resolveTitle = (
   streamKind: StreamKind,
   musicMode: MusicMode | null,
@@ -119,6 +142,8 @@ export const resolveTitle = (
         return 'Dictatorship Stream';
       case MusicMode.CAPITALISM:
         return 'Capitalism Stream';
+      case MusicMode.PATREON_CAPITALISM:
+        return 'Patreon Capitalism Stream';
       default:
         return 'Music Stream';
     }

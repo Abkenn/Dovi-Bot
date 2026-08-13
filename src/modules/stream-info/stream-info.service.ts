@@ -36,6 +36,7 @@ import {
   extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
   findNextOccurrence,
+  findOccurrenceForWeekday,
   findPreviousOccurrence,
   LUXON_WEEKDAY_TO_WEEKDAY,
   makeDateKey,
@@ -292,6 +293,18 @@ const buildTargetOccurrenceForWeekday = async ({
     throw new Error('No target stream found');
   }
 
+  const existingWeekdayOccurrence = findOccurrenceForWeekday(
+    info.current,
+    info.next,
+    targetWeekday,
+  );
+  if (existingWeekdayOccurrence) {
+    return {
+      occurrence: existingWeekdayOccurrence,
+      movedFromOccurrence: null,
+    };
+  }
+
   const nowLocal = DateTime.utc().setZone(config.canonicalTimezone);
   const targetStreamDate = DateTime.fromJSDate(target.occurrence.startAt, {
     zone: 'utc',
@@ -414,28 +427,46 @@ export const getStreamInfoDayAutocomplete = async ({
     .setZone(config.canonicalTimezone)
     .startOf('day');
   const daysBeforeTarget = Math.floor(targetDate.diff(today, 'days').days);
+  const moveOptions = Array.from({
+    length: Math.max(daysBeforeTarget, 0),
+  }).flatMap((_, index) => {
+    const date = today.plus({ days: index });
+    const weekday = LUXON_WEEKDAY_TO_WEEKDAY[date.weekday];
 
-  if (daysBeforeTarget <= 0) {
-    return [];
-  }
+    if (!weekday) {
+      return [];
+    }
 
-  const options = Array.from({ length: daysBeforeTarget }).flatMap(
-    (_, index) => {
-      const date = today.plus({ days: index });
-      const weekday = LUXON_WEEKDAY_TO_WEEKDAY[date.weekday];
+    return [
+      {
+        name: `${WEEKDAY_LABELS[weekday]} before ${target.occurrence?.title ?? 'target stream'}`,
+        value: weekday,
+      },
+    ];
+  });
+  const existingOptions = [
+    { occurrence: info.next, position: 'next' },
+    { occurrence: info.current, position: 'current' },
+  ].flatMap(({ occurrence, position }) => {
+    if (!occurrence?.weekday) {
+      return [];
+    }
 
-      if (!weekday) {
-        return [];
-      }
-
-      return [
-        {
-          name: `${WEEKDAY_LABELS[weekday]} before ${target.occurrence?.title ?? 'target stream'}`,
-          value: weekday,
-        },
-      ];
-    },
-  );
+    return [
+      {
+        name: `${WEEKDAY_LABELS[occurrence.weekday]} ${position} stream`,
+        value: occurrence.weekday,
+      },
+    ];
+  });
+  const options = [
+    ...new Map(
+      [...moveOptions, ...existingOptions].map((option) => [
+        option.value,
+        option,
+      ]),
+    ).values(),
+  ];
 
   if (!normalizedQuery) {
     return options;

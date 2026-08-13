@@ -2,17 +2,14 @@ import { Command } from '@sapphire/framework';
 import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import {
-  MusicMode,
-  StreamKind,
-  type Weekday,
-} from '../generated/prisma/client';
+import { MusicMode, StreamKind } from '../generated/prisma/client';
 import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { setStreamInfo } from '../modules/stream-info/stream-info.service';
+import { parseWeekday } from '../modules/stream-info/stream-info.utils';
 
 const METADATA = COMMAND_METADATA.SET_STREAM_INFO;
 
@@ -50,6 +47,10 @@ export class SetStreamInfoCommand extends Command {
                 { name: 'Democracy', value: MusicMode.DEMOCRACY },
                 { name: 'Dictatorship', value: MusicMode.DICTATORSHIP },
                 { name: 'Capitalism', value: MusicMode.CAPITALISM },
+                {
+                  name: 'Patreon Capitalism',
+                  value: MusicMode.PATREON_CAPITALISM,
+                },
                 { name: 'Unknown', value: MusicMode.UNKNOWN },
               ),
           )
@@ -61,7 +62,9 @@ export class SetStreamInfoCommand extends Command {
           .addStringOption((option) =>
             option
               .setName('day')
-              .setDescription('Optional earlier day to move the target stream')
+              .setDescription(
+                'Current/next stream day, or earlier day to move it',
+              )
               .setAutocomplete(true),
           )
           .addStringOption((option) =>
@@ -87,7 +90,7 @@ export class SetStreamInfoCommand extends Command {
       run: async ({ editReply, preflight: guildId }) => {
         await setStreamInfo({
           guildId,
-          targetWeekday: interaction.options.getString('day') as Weekday | null,
+          targetWeekday: parseWeekday(interaction.options.getString('day')),
           streamKind: interaction.options.getString(
             'type',
           ) as StreamKind | null,
