@@ -209,13 +209,13 @@ describe('stream info discord output', () => {
     expect(value).not.toContain('[](');
   });
 
-  it('marks already-started current streams with started relative text', () => {
+  it('marks live current streams with started relative text', () => {
     vi.setSystemTime(new Date('2026-06-12T18:20:00.000Z'));
 
     const value = getEmbedFieldValue(
       buildStreamInfoEmbed({
         timezone: 'America/Sao_Paulo',
-        current: makeOccurrence(),
+        current: makeOccurrence({ streamIsLive: true }),
         previous: null,
         next: null,
       }),
@@ -223,6 +223,22 @@ describe('stream info discord output', () => {
     );
 
     expect(value).toContain('started <t:1781287800:R>');
+  });
+
+  it('keeps delayed upcoming streams at a one-minute countdown', () => {
+    vi.setSystemTime(new Date('2026-06-12T18:20:00.000Z'));
+
+    const value = getEmbedFieldValue(
+      buildStreamInfoEmbed({
+        timezone: 'America/Sao_Paulo',
+        current: makeOccurrence({ streamIsLive: false }),
+        previous: null,
+        next: null,
+      }),
+      'Current stream',
+    );
+
+    expect(value).toContain('starts <t:1781288460:R>');
   });
 
   it('links next stream fields and hides non-dictatorship music game names', () => {

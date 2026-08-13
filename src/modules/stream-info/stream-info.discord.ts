@@ -46,7 +46,15 @@ const buildOccurrenceValue = (
     return label === 'Next' ? 'No upcoming stream found.' : '-';
   }
 
-  const startsInFuture = occurrence.startAt.getTime() > Date.now();
+  const now = Date.now();
+  const isDelayedUpcomingStream =
+    label === 'Current' &&
+    occurrence.streamIsLive === false &&
+    occurrence.startAt.getTime() <= now;
+  const displayedStartAt = isDelayedUpcomingStream
+    ? new Date(now + 60_000)
+    : occurrence.startAt;
+  const startsInFuture = displayedStartAt.getTime() > now;
   let relativePrefix = '';
   if (label === 'Current') {
     relativePrefix = startsInFuture ? 'starts ' : 'started ';
@@ -70,8 +78,8 @@ const buildOccurrenceValue = (
   }
 
   lines.push(
-    `${discordTs(occurrence.startAt, 'F')} (${relativePrefix}${discordTs(
-      occurrence.startAt,
+    `${discordTs(displayedStartAt, 'F')} (${relativePrefix}${discordTs(
+      displayedStartAt,
       'R',
     )})`,
   );
