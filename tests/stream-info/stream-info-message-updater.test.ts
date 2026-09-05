@@ -18,7 +18,16 @@ const streamInfoMessageQueries = vi.hoisted(() => ({
   upsertLastStreamInfoMessage: vi.fn(),
 }));
 
+const streamAnnouncementQueries = vi.hoisted(() => ({
+  createStreamAnnouncement: vi.fn(),
+  findStreamAnnouncementByDate: vi.fn(),
+  findStreamAnnouncementPlan: vi.fn(),
+  markStreamAnnouncementReviewSent: vi.fn(),
+}));
+
 const streamInfoDiscord = vi.hoisted(() => ({
+  buildStreamAnnouncementMessage: vi.fn(),
+  buildStreamAnnouncementReviewMessage: vi.fn(),
   buildStreamInfoEmbed: vi.fn(),
   buildStreamReminderButton: vi.fn(),
 }));
@@ -51,6 +60,7 @@ vi.mock('@data/queries/stream-info-message', () => ({
   upsertLastStreamInfoMessage:
     streamInfoMessageQueries.upsertLastStreamInfoMessage,
 }));
+vi.mock('@data/queries/stream-announcement', () => streamAnnouncementQueries);
 
 vi.mock('../../src/config/discord-access', () => ({
   BOT_GUILDS: {
@@ -60,6 +70,11 @@ vi.mock('../../src/config/discord-access', () => ({
 }));
 
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
+  STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX: 'stream-staging-reminder',
+  buildStreamAnnouncementMessage:
+    streamInfoDiscord.buildStreamAnnouncementMessage,
+  buildStreamAnnouncementReviewMessage:
+    streamInfoDiscord.buildStreamAnnouncementReviewMessage,
   buildStreamInfoEmbed: streamInfoDiscord.buildStreamInfoEmbed,
   buildStreamReminderButton: streamInfoDiscord.buildStreamReminderButton,
 }));
@@ -79,10 +94,12 @@ vi.mock('../../src/modules/stream-info/stream-reminder.service', () => ({
 import {
   adoptLastStreamInfoMessage,
   announcePlannedStreamInfo,
+  postStagingStreamAnnouncement,
   refreshGuildStreamInfoMessages,
   refreshLastStreamInfoMessages,
   refreshStreamInfoMessage,
   registerLastStreamInfoMessage,
+  sendStreamAnnouncementReviewReminder,
 } from '../../src/modules/stream-info/stream-info-message-updater.service';
 
 const makeClient = ({
@@ -121,6 +138,18 @@ describe('stream info message updater', () => {
       next: null,
     });
     streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
+    streamInfoDiscord.buildStreamAnnouncementMessage.mockReturnValue({
+      content: 'announcement',
+    });
+    streamInfoDiscord.buildStreamAnnouncementReviewMessage.mockReturnValue({
+      content: 'review',
+    });
+    streamAnnouncementQueries.findStreamAnnouncementByDate.mockResolvedValue(
+      null,
+    );
+    streamAnnouncementQueries.findStreamAnnouncementPlan.mockResolvedValue(
+      null,
+    );
     embeddedAppDiscord.buildEmbeddedAppStatsButton.mockReturnValue(null);
     streamReminderService.deliverStreamReminders.mockResolvedValue(undefined);
     streamInfoMessageQueries.deleteExpiredStreamInfoMessages.mockResolvedValue(
@@ -142,6 +171,8 @@ describe('stream info message updater', () => {
   });
 
   it('announces planned production stream info once when a URL is available', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-01T17:40:00.000Z'));
     const send = vi.fn().mockResolvedValue({ id: 'announcement-1' });
     const existingMessage = makeMessage();
     const client = makeClient({
@@ -165,26 +196,29 @@ describe('stream info message updater', () => {
 
     expect(send).toHaveBeenCalledOnce();
     expect(
-      streamInfoMessageQueries.upsertLastStreamInfoMessage,
-    ).toHaveBeenCalledWith({
-      guildId: 'production-guild',
-      channelId: '1137094933711429659',
-      messageId: 'announcement-1',
-      announcementDateKey: '2026-08-01',
-    });
+      streamAnnouncementQueries.createStreamAnnouncement,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guildId: 'production-guild',
+        channelId: '1137241032568868865',
+        messageId: 'announcement-1',
+        streamDateKey: '2026-08-01',
+        streamUrl: 'https://youtube.test/watch?v=planned',
+      }),
+    );
 
     send.mockClear();
-    streamInfoMessageQueries.findStreamInfoMessageForChannel.mockResolvedValue({
+    streamAnnouncementQueries.findStreamAnnouncementByDate.mockResolvedValue({
       guildId: 'production-guild',
-      channelId: '1137094933711429659',
+      channelId: '1137241032568868865',
       messageId: 'announcement-1',
-      announcementDateKey: '2026-08-01',
+      streamDateKey: '2026-08-01',
     });
 
     await announcePlannedStreamInfo(client);
 
     expect(send).not.toHaveBeenCalled();
-    expect(existingMessage.edit).toHaveBeenCalledOnce();
+    expect(existingMessage.edit).not.toHaveBeenCalled();
   });
 
   it('does not announce a scheduled stream before a URL is available', async () => {
@@ -200,6 +234,142 @@ describe('stream info message updater', () => {
     });
 
     await announcePlannedStreamInfo(client);
+
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('does not automatically post a stream Abken declined', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-01T17:40:00.000Z'));
+    const send = vi.fn();
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: {
+        dateKey: '2026-08-01',
+        startAt: new Date('2026-08-01T18:10:00.000Z'),
+        streamUrl: 'https://youtube.test/watch?v=planned',
+      },
+    });
+    streamAnnouncementQueries.findStreamAnnouncementPlan.mockResolvedValue({
+      automaticDecision: 'DECLINED',
+    });
+
+    await announcePlannedStreamInfo(makeClient({ channel: { send } }));
+
+    expect(send).not.toHaveBeenCalled();
+    expect(streamReminderService.deliverStreamReminders).not.toHaveBeenCalled();
+  });
+
+  it('does not post an upload announcement days before the stream', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-01T18:10:00.000Z'));
+    const send = vi.fn();
+    const client = makeClient({ channel: { send } });
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next: {
+        dateKey: '2026-08-07',
+        startAt: new Date('2026-08-07T18:10:00.000Z'),
+        streamUrl: 'https://youtube.test/watch?v=planned',
+      },
+    });
+
+    await announcePlannedStreamInfo(client);
+
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('posts a manual staging preview with the example YouTube URL', async () => {
+    const send = vi.fn().mockResolvedValue({ id: 'staging-announcement' });
+    const client = makeClient({ channel: { send } });
+    const next = {
+      dateKey: '2026-09-11',
+      startAt: new Date('2026-09-11T18:10:00.000Z'),
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next,
+    });
+
+    await postStagingStreamAnnouncement(client);
+
+    expect(
+      streamInfoDiscord.buildStreamAnnouncementMessage,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occurrence: expect.objectContaining({
+          dateKey: '2026-09-11',
+          streamUrl: 'https://www.youtube.com/watch?v=JtHjAIFQnqA',
+        }),
+        reminderCustomIdPrefix: 'stream-staging-reminder',
+      }),
+    );
+    expect(send).toHaveBeenCalledOnce();
+    expect(
+      streamAnnouncementQueries.createStreamAnnouncement,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guildId: 'staging-guild',
+        messageId: 'staging-announcement',
+      }),
+    );
+  });
+
+  it('sends one personal review reminder fifty minutes before an irregular stream', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-09T17:20:00.000Z'));
+    const send = vi.fn().mockResolvedValue({ id: 'review-1' });
+    const client = makeClient({ channel: { send } });
+    const occurrence = {
+      dateKey: '2026-09-09',
+      startAt: new Date('2026-09-09T18:10:00.000Z'),
+    };
+    const streamInfo = {
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: occurrence,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue(streamInfo);
+
+    await sendStreamAnnouncementReviewReminder(client);
+
+    expect(
+      streamInfoDiscord.buildStreamAnnouncementReviewMessage,
+    ).toHaveBeenCalledWith('255447271192264704', streamInfo, occurrence);
+    expect(
+      streamAnnouncementQueries.markStreamAnnouncementReviewSent,
+    ).toHaveBeenCalledWith({
+      guildId: 'production-guild',
+      streamDateKey: '2026-09-09',
+      messageId: 'review-1',
+    });
+  });
+
+  it('does not repeat a personal review reminder already sent', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-11T17:20:00.000Z'));
+    const send = vi.fn();
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: {
+        dateKey: '2026-09-11',
+        startAt: new Date('2026-09-11T18:10:00.000Z'),
+      },
+    });
+    streamAnnouncementQueries.findStreamAnnouncementPlan.mockResolvedValue({
+      reviewReminderNotifiedAt: new Date(),
+    });
+
+    await sendStreamAnnouncementReviewReminder(
+      makeClient({ channel: { send } }),
+    );
 
     expect(send).not.toHaveBeenCalled();
   });
@@ -333,7 +503,7 @@ describe('stream info message updater', () => {
     );
   });
 
-  it('processes a next-stream announcement before the scheduled start', async () => {
+  it('does not deliver reminders while refreshing a general stream info message', async () => {
     const message = makeMessage();
     const channel = {
       messages: {
@@ -367,14 +537,10 @@ describe('stream info message updater', () => {
       },
     });
 
-    expect(streamReminderService.deliverStreamReminders).toHaveBeenCalledWith({
-      client,
-      guildId: 'guild-1',
-      occurrence: nextOccurrence,
-    });
+    expect(streamReminderService.deliverStreamReminders).not.toHaveBeenCalled();
   });
 
-  it('removes the reminder row when the announced stream becomes live', async () => {
+  it('keeps reminder controls out of general stream info messages', async () => {
     const message = makeMessage();
     const channel = {
       messages: {
@@ -408,9 +574,7 @@ describe('stream info message updater', () => {
       },
     });
 
-    expect(streamInfoDiscord.buildStreamReminderButton).toHaveBeenCalledWith(
-      null,
-    );
+    expect(streamInfoDiscord.buildStreamReminderButton).not.toHaveBeenCalled();
     expect(message.edit).toHaveBeenCalledWith(
       expect.objectContaining({
         components: [expect.objectContaining({ type: 17 })],

@@ -1,10 +1,15 @@
 import {
+  createStreamAnnouncement,
+  findStreamAnnouncementByDate,
+  findStreamAnnouncementPlan,
+  markStreamAnnouncementReviewSent,
+} from '@data/queries/stream-announcement';
+import {
   deleteExpiredStreamInfoMessages,
   deleteLastStreamInfoMessage,
   findLastStreamInfoMessages,
   findLastStreamInfoMessagesForGuild,
   findLatestStreamInfoCommandTargets,
-  findStreamInfoMessageForChannel,
   upsertLastStreamInfoMessage,
 } from '@data/queries/stream-info-message';
 import {
@@ -25,19 +30,33 @@ import {
 } from '../discord/component-embed';
 import { buildEmbeddedAppStatsButton } from '../embedded-app/embedded-app-stats.discord';
 import {
+  PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+  PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
+  STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+  STAGING_STREAM_ANNOUNCEMENT_VIDEO_TITLE,
+  STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
+  STREAM_ANNOUNCEMENT_REVIEW_USER_ID,
+} from './stream-announcement.config';
+import { serializeStreamAnnouncementSnapshot } from './stream-announcement.snapshot';
+import {
+  applyStreamAnnouncementEdits,
+  isStreamAnnouncementReviewDue,
+} from './stream-announcement.utils';
+import {
+  buildStreamAnnouncementMessage,
+  buildStreamAnnouncementReviewMessage,
   buildStreamInfoEmbed,
-  buildStreamReminderButton,
+  STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
 } from './stream-info.discord';
 import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
 import { deliverStreamReminders } from './stream-reminder.service';
-import { getStreamReminderOccurrence } from './stream-reminder.utils';
+import { isStreamReminderEligible } from './stream-reminder.utils';
 
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
 const UNKNOWN_CHANNEL_CODE = 10003;
 const STREAM_INFO_MESSAGE_RETENTION_HOURS = 24;
-const PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID = '1137094933711429659';
 
 const getRecentMessageCutoff = () =>
   DateTime.utc()
@@ -118,21 +137,11 @@ const findRecentStreamInfoMessage = async ({
   );
 };
 
-const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
+const buildStreamInfoMessageEdit = async (guildId: string) => {
   const streamInfo = await getStreamInfo(guildId);
-  await deliverStreamReminders({
-    client,
-    guildId,
-    occurrence: streamInfo.current ?? streamInfo.next,
-  });
   const embed = buildStreamInfoEmbed(streamInfo);
-  const reminderButton = buildStreamReminderButton(
-    getStreamReminderOccurrence(streamInfo),
-  );
   const statsButton = buildEmbeddedAppStatsButton(guildId);
-  const buttonRows = [reminderButton, statsButton].filter(
-    (button) => button !== null,
-  );
+  const buttonRows = [statsButton].filter((button) => button !== null);
   const actionRows =
     buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
   const componentMessage = buildComponentEmbedMessageFromEmbeds([embed]);
@@ -146,51 +155,158 @@ const buildStreamInfoMessageEdit = async (guildId: string, client: Client) => {
 
 export const announcePlannedStreamInfo = async (client: Client) => {
   const streamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
-  const occurrence = [streamInfo.current, streamInfo.next].find(
-    (candidate) => candidate?.streamUrl,
+  const scheduledOccurrence = [streamInfo.current, streamInfo.next].find(
+    (candidate) => candidate && isStreamReminderEligible(candidate),
   );
 
-  if (!occurrence) {
+  if (!scheduledOccurrence) {
     return;
   }
-
-  const existing = await findStreamInfoMessageForChannel(
-    BOT_GUILDS.PROD_ENV,
-    PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID,
+  const plan = await findStreamAnnouncementPlan({
+    guildId: BOT_GUILDS.PROD_ENV,
+    streamDateKey: scheduledOccurrence.dateKey,
+  });
+  const streamUrl =
+    plan?.streamUrlOverride ?? scheduledOccurrence.streamUrl ?? null;
+  if (!streamUrl || plan?.automaticDecision === 'DECLINED') {
+    return;
+  }
+  const occurrence = { ...scheduledOccurrence, streamUrl };
+  const announcementStreamInfo = applyStreamAnnouncementEdits(
+    streamInfo,
+    occurrence.dateKey,
+    { streamUrl },
   );
-  if (existing?.announcementDateKey === occurrence.dateKey) {
-    await refreshStreamInfoMessage({ client, pointer: existing });
+
+  await deliverStreamReminders({
+    client,
+    guildId: BOT_GUILDS.PROD_ENV,
+    occurrence,
+  });
+
+  const existing = await findStreamAnnouncementByDate(
+    BOT_GUILDS.PROD_ENV,
+    occurrence.dateKey,
+  );
+  if (existing) {
     return;
   }
 
   const channel = await client.channels.fetch(
-    PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID,
+    PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
   );
   if (!canSendMessages(channel)) {
     return;
   }
 
   const message = await channel.send(
-    await buildStreamInfoMessageEdit(BOT_GUILDS.PROD_ENV, client),
+    buildStreamAnnouncementMessage({
+      occurrence,
+      roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
+      streamInfo: announcementStreamInfo,
+    }),
   );
-  await upsertLastStreamInfoMessage({
+  await createStreamAnnouncement({
     guildId: BOT_GUILDS.PROD_ENV,
-    channelId: PROD_STREAM_INFO_ANNOUNCEMENT_CHANNEL_ID,
+    channelId: PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
     messageId: message.id,
-    announcementDateKey: occurrence.dateKey,
+    streamDateKey: occurrence.dateKey,
+    streamInfoJson: serializeStreamAnnouncementSnapshot(announcementStreamInfo),
+    streamUrl,
+  });
+};
+
+export const sendStreamAnnouncementReviewReminder = async (client: Client) => {
+  const streamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
+  const occurrence = [streamInfo.current, streamInfo.next].find(
+    (candidate) => candidate && isStreamAnnouncementReviewDue(candidate),
+  );
+  if (!occurrence) {
+    return;
+  }
+
+  const planKey = {
+    guildId: BOT_GUILDS.PROD_ENV,
+    streamDateKey: occurrence.dateKey,
+  };
+  const plan = await findStreamAnnouncementPlan(planKey);
+  if (plan?.reviewReminderNotifiedAt) {
+    return;
+  }
+  const reviewStreamInfo = plan?.streamUrlOverride
+    ? applyStreamAnnouncementEdits(streamInfo, occurrence.dateKey, {
+        streamUrl: plan.streamUrlOverride,
+      })
+    : streamInfo;
+
+  const channel = await client.channels.fetch(
+    STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+  );
+  if (!canSendMessages(channel)) {
+    return;
+  }
+
+  const message = await channel.send(
+    buildStreamAnnouncementReviewMessage(
+      STREAM_ANNOUNCEMENT_REVIEW_USER_ID,
+      reviewStreamInfo,
+      occurrence,
+    ),
+  );
+  await markStreamAnnouncementReviewSent({
+    ...planKey,
+    messageId: message.id,
+  });
+};
+
+export const postStagingStreamAnnouncement = async (client: Client) => {
+  const streamInfo = await getStreamInfo(BOT_GUILDS.STAGING_ENV);
+  const sourceOccurrence = streamInfo.current ?? streamInfo.next;
+  if (!sourceOccurrence) {
+    throw new Error('No current or upcoming staging stream was found.');
+  }
+
+  const occurrence = {
+    ...sourceOccurrence,
+    streamUrl: STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
+    videoTitle: STAGING_STREAM_ANNOUNCEMENT_VIDEO_TITLE,
+    streamIsLive: false,
+  };
+  const previewStreamInfo = streamInfo.current
+    ? { ...streamInfo, current: occurrence }
+    : { ...streamInfo, next: occurrence };
+  const channel = await client.channels.fetch(
+    STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+  );
+  if (!canSendMessages(channel)) {
+    throw new Error('The staging announcement channel is unavailable.');
+  }
+
+  const message = await channel.send(
+    buildStreamAnnouncementMessage({
+      occurrence,
+      reminderCustomIdPrefix: STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
+      streamInfo: previewStreamInfo,
+    }),
+  );
+  await createStreamAnnouncement({
+    guildId: BOT_GUILDS.STAGING_ENV,
+    channelId: STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+    messageId: message.id,
+    streamDateKey: occurrence.dateKey,
+    streamInfoJson: serializeStreamAnnouncementSnapshot(previewStreamInfo),
+    streamUrl: STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
   });
 };
 
 const editStreamInfoMessage = async ({
-  client,
   guildId,
   message,
 }: {
-  client: Client;
   guildId: string;
   message: Message;
 }) => {
-  await message.edit(await buildStreamInfoMessageEdit(guildId, client));
+  await message.edit(await buildStreamInfoMessageEdit(guildId));
 };
 
 export const registerLastStreamInfoMessage = async ({
@@ -231,7 +347,6 @@ export const refreshStreamInfoMessage = async ({
 
     const message = await channel.messages.fetch(pointer.messageId);
     await editStreamInfoMessage({
-      client,
       guildId: pointer.guildId,
       message,
     });
@@ -277,7 +392,6 @@ export const adoptLastStreamInfoMessage = async ({
     };
 
     await editStreamInfoMessage({
-      client,
       guildId: pointer.guildId,
       message,
     });
@@ -323,6 +437,7 @@ export const refreshLastStreamInfoMessages = async (client: Client) => {
     });
   }
 
+  await sendStreamAnnouncementReviewReminder(client);
   await announcePlannedStreamInfo(client);
 };
 

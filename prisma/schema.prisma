@@ -167,6 +167,65 @@ model StreamReminder {
   @@index([guildId, streamDateKey, notifiedAt])
 }
 
+model PermanentStreamReminder {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId])
+}
+
+model StreamAnnouncement {
+  id             String   @id @default(cuid())
+  guildId        String
+  channelId      String
+  messageId      String   @unique
+  streamDateKey  String
+  streamUrl      String
+  streamInfoJson String
+  announcedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([guildId, streamDateKey, announcedAt])
+  @@index([guildId, announcedAt])
+}
+
+model StreamAnnouncementPlan {
+  id                       String    @id @default(cuid())
+  guildId                  String
+  streamDateKey            String
+  streamUrlOverride        String?
+  reviewReminderMessageId  String?
+  reviewReminderNotifiedAt DateTime?
+  automaticDecision        StreamAnnouncementDecision?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@unique([guildId, streamDateKey])
+  @@index([guildId, reviewReminderNotifiedAt])
+}
+
+model StreamAnnouncementChangeRequest {
+  id                String                         @id @default(cuid())
+  requestedByUserId String
+  action            StreamAnnouncementChangeAction
+  status            StreamAnnouncementChangeStatus @default(PENDING)
+  targetGuildId     String
+  targetChannelId   String
+  targetMessageId   String?
+  streamDateKey     String
+  streamUrl         String
+  streamInfoJson    String
+  createdAt         DateTime                       @default(now())
+  completedAt       DateTime?
+
+  @@index([requestedByUserId, status])
+  @@index([createdAt])
+}
+
 model PingMeSubscription {
   id            String   @id @default(cuid())
   userId        String
@@ -184,6 +243,23 @@ enum CommandExecutionStatus {
   ERROR
   TIMEOUT
   DENIED
+}
+
+enum StreamAnnouncementDecision {
+  APPROVED
+  DECLINED
+}
+
+enum StreamAnnouncementChangeAction {
+  UPDATE
+  PUSH
+  DELETE
+}
+
+enum StreamAnnouncementChangeStatus {
+  PENDING
+  APPLIED
+  DECLINED
 }
 
 enum BossEncounterSource {

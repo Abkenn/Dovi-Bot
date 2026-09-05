@@ -3,13 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StreamKind } from '../../src/generated/prisma/client';
 
 const queries = vi.hoisted(() => ({
+  deletePermanentStreamReminder: vi.fn(),
+  ensureStreamReminder: vi.fn(),
+  findPermanentStreamReminderUserIds: vi.fn(),
   setStreamLiveReminderEnabled: vi.fn(),
   findAnnouncedStreamReminders: vi.fn(),
   findPendingStreamReminders: vi.fn(),
+  findStreamReminderForUser: vi.fn(),
+  hasPermanentStreamReminder: vi.fn(),
   markStreamReminderAnnouncementNotified: vi.fn(),
   markStreamReminderNotified: vi.fn(),
   updateStreamReminderAnnouncement: vi.fn(),
   upsertStreamReminder: vi.fn(),
+  upsertPermanentStreamReminder: vi.fn(),
 }));
 
 vi.mock('@data/queries/stream-reminder', () => queries);
@@ -20,7 +26,10 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 import type { StreamOccurrence } from '../../src/modules/stream-info/stream-info.types';
 import {
   deliverStreamReminders,
+  getPermanentStreamReminderEnabled,
+  getStreamReminderMessageState,
   setLiveReminderEnabled,
+  setPermanentStreamReminder,
   subscribeToStreamReminder,
 } from '../../src/modules/stream-info/stream-reminder.service';
 
@@ -44,6 +53,96 @@ const occurrence: StreamOccurrence = {
 describe('stream reminders', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queries.findPermanentStreamReminderUserIds.mockResolvedValue([]);
+  });
+
+  it('enables and disables reminders for all future streams', async () => {
+    await setPermanentStreamReminder({
+      enabled: true,
+      guildId: 'guild-1',
+      userId: 'user-1',
+    });
+    await setPermanentStreamReminder({
+      enabled: false,
+      guildId: 'guild-1',
+      userId: 'user-1',
+    });
+
+    expect(queries.upsertPermanentStreamReminder).toHaveBeenCalledWith({
+      guildId: 'guild-1',
+      userId: 'user-1',
+    });
+    expect(queries.deletePermanentStreamReminder).toHaveBeenCalledWith({
+      guildId: 'guild-1',
+      userId: 'user-1',
+    });
+  });
+
+  it('reads the permanent preference and an owned reminder message state', async () => {
+    queries.hasPermanentStreamReminder.mockResolvedValue(true);
+    queries.findStreamReminderForUser.mockResolvedValue({
+      guildId: 'guild-1',
+      id: 'reminder-1',
+      liveReminderDisabledAt: null,
+      scheduledStartAt: occurrence.startAt,
+      streamUrl: occurrence.streamUrl,
+    });
+
+    await expect(
+      getPermanentStreamReminderEnabled('guild-1', 'user-1'),
+    ).resolves.toBe(true);
+    await expect(
+      getStreamReminderMessageState('reminder-1', 'user-1'),
+    ).resolves.toEqual({
+      guildId: 'guild-1',
+      liveAlertEnabled: true,
+      reminderId: 'reminder-1',
+      scheduledStartAt: occurrence.startAt,
+      streamUrl: occurrence.streamUrl,
+    });
+  });
+
+  it('rejects a missing owned reminder message state', async () => {
+    queries.findStreamReminderForUser.mockResolvedValue(null);
+
+    await expect(
+      getStreamReminderMessageState('missing', 'user-1'),
+    ).rejects.toThrow('This reminder is no longer available.');
+  });
+
+  it('rejects subscriptions after a stream has started', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(occurrence.startAt);
+
+    await expect(
+      subscribeToStreamReminder({
+        guildId: 'guild-1',
+        userId: 'user-1',
+        occurrence,
+      }),
+    ).rejects.toThrow('That stream is no longer available for reminders.');
+  });
+
+  it('creates the current stream reminder for permanent subscribers before delivery', async () => {
+    queries.findPermanentStreamReminderUserIds.mockResolvedValue([
+      'user-1',
+      'user-2',
+    ]);
+    queries.findAnnouncedStreamReminders.mockResolvedValue([]);
+
+    await deliverStreamReminders({
+      client: { users: { fetch: vi.fn() } } as unknown as Client,
+      guildId: 'guild-1',
+      occurrence,
+    });
+
+    expect(queries.ensureStreamReminder).toHaveBeenCalledTimes(2);
+    expect(queries.ensureStreamReminder).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+    );
+    expect(queries.ensureStreamReminder).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-2' }),
+    );
   });
 
   afterEach(() => {
@@ -126,6 +225,7 @@ describe('stream reminders', () => {
 
   it('updates the live reminder state only for its owner', async () => {
     queries.setStreamLiveReminderEnabled.mockResolvedValue({
+      guildId: 'guild-1',
       id: 'reminder-1',
       streamUrl: occurrence.streamUrl,
       scheduledStartAt: occurrence.startAt,
@@ -138,6 +238,7 @@ describe('stream reminders', () => {
         enabled: true,
       }),
     ).resolves.toEqual({
+      guildId: 'guild-1',
       reminderId: 'reminder-1',
       scheduledStartAt: occurrence.startAt,
       streamUrl: occurrence.streamUrl,

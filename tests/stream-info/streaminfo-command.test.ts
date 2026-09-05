@@ -173,7 +173,7 @@ describe('/streaminfo response privacy', () => {
     });
   });
 
-  it('keeps the combined buttons in thread responses', async () => {
+  it('keeps only the stats button in thread responses', async () => {
     const interaction = makeInteraction(false, true);
     const reminderButton = { type: 'reminder-button' };
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
@@ -188,12 +188,12 @@ describe('/streaminfo response privacy', () => {
     );
     expect(dependencies.editReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        components: [{ type: 'merged-row' }],
+        components: [{ type: 'stats-button' }],
       }),
     );
   });
 
-  it('combines the buttons into one row in production', async () => {
+  it('does not add the old reminder button in production', async () => {
     const reminderButton = { type: 'reminder-button' };
     const statsButton = { type: 'stats-button' };
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
@@ -203,12 +203,9 @@ describe('/streaminfo response privacy', () => {
       makeInteraction(false) as never,
     );
 
-    expect(dependencies.mergeButtonActionRows).toHaveBeenCalledWith([
-      reminderButton,
-      statsButton,
-    ]);
+    expect(dependencies.mergeButtonActionRows).not.toHaveBeenCalled();
     expect(dependencies.editReply).toHaveBeenCalledWith(
-      expect.objectContaining({ components: [{ type: 'merged-row' }] }),
+      expect.objectContaining({ components: [{ type: 'stats-button' }] }),
     );
   });
 });

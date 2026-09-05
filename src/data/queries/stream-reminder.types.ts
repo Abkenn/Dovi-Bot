@@ -19,3 +19,8 @@ export type SetStreamLiveReminderEnabledInput = {
   reminderId: string;
   userId: string;
 };
+
+export type PermanentStreamReminderInput = {
+  guildId: string;
+  userId: string;
+};

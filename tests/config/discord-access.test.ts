@@ -52,6 +52,7 @@ describe('Discord command guild access', () => {
       'help',
       'botstatus',
       'streaminfo',
+      'stream-remind-me',
       'showbossstats',
       'showgamestats',
       'bosstrialstats',

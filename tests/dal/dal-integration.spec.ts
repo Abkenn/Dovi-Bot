@@ -134,6 +134,35 @@ const coveredDalExports = {
     'upsertStreamTitleResetOverride',
     'upsertTargetStreamOverride',
   ],
+  '../../src/data/queries/stream-announcement': [
+    'completeStreamAnnouncementChangeRequest',
+    'createStreamAnnouncement',
+    'createStreamAnnouncementChangeRequest',
+    'deleteStreamAnnouncementByMessageId',
+    'findPendingStreamAnnouncementChangeRequest',
+    'findStreamAnnouncementByDate',
+    'findStreamAnnouncementByMessageId',
+    'findStreamAnnouncementPlan',
+    'markStreamAnnouncementReviewSent',
+    'setStreamAnnouncementDecision',
+    'updateStreamAnnouncementSnapshot',
+    'upsertStreamAnnouncementUrlOverride',
+  ],
+  '../../src/data/queries/stream-reminder': [
+    'deletePermanentStreamReminder',
+    'ensureStreamReminder',
+    'findAnnouncedStreamReminders',
+    'findPendingStreamReminders',
+    'findPermanentStreamReminderUserIds',
+    'findStreamReminderForUser',
+    'hasPermanentStreamReminder',
+    'markStreamReminderAnnouncementNotified',
+    'markStreamReminderNotified',
+    'setStreamLiveReminderEnabled',
+    'updateStreamReminderAnnouncement',
+    'upsertPermanentStreamReminder',
+    'upsertStreamReminder',
+  ],
   '../../src/data/transactions/boss-topic-info': [
     'importCommunityTopicSeed',
     'updateBossGameTopicInfo',
@@ -501,6 +530,80 @@ test('keeps one durable automatic stream info announcement per channel', async (
   await expect(
     queries.findStreamInfoMessageForChannel(guildId, channelId),
   ).resolves.not.toBeNull();
+});
+
+test('stores and removes a permanent stream reminder preference', async () => {
+  const queries = await import('../../src/data/queries/stream-reminder');
+  const input = { guildId, userId: 'permanent-reminder-user' };
+
+  await queries.upsertPermanentStreamReminder(input);
+  await queries.upsertPermanentStreamReminder(input);
+
+  await expect(queries.hasPermanentStreamReminder(input)).resolves.toBe(true);
+  await expect(
+    queries.findPermanentStreamReminderUserIds(guildId),
+  ).resolves.toEqual(['permanent-reminder-user']);
+
+  await queries.deletePermanentStreamReminder(input);
+  await expect(queries.hasPermanentStreamReminder(input)).resolves.toBe(false);
+});
+
+test('stores announcement snapshots, review decisions, and approval requests', async () => {
+  const queries = await import('../../src/data/queries/stream-announcement');
+  await queries.createStreamAnnouncement({
+    guildId,
+    channelId: 'announcement-channel',
+    messageId: 'announcement-message',
+    streamDateKey: '2026-09-11',
+    streamUrl: 'https://youtube.test/watch?v=stream',
+    streamInfoJson: '{"timezone":"UTC"}',
+  });
+  await expect(
+    queries.findStreamAnnouncementByMessageId('announcement-message'),
+  ).resolves.toMatchObject({ guildId, streamDateKey: '2026-09-11' });
+
+  await queries.upsertStreamAnnouncementUrlOverride(
+    { guildId, streamDateKey: '2026-09-11' },
+    'https://youtube.test/watch?v=override',
+  );
+  await queries.markStreamAnnouncementReviewSent({
+    guildId,
+    streamDateKey: '2026-09-11',
+    messageId: 'review-message',
+  });
+  await queries.setStreamAnnouncementDecision({
+    guildId,
+    streamDateKey: '2026-09-11',
+    decision: 'DECLINED',
+  });
+  await expect(
+    queries.findStreamAnnouncementPlan({
+      guildId,
+      streamDateKey: '2026-09-11',
+    }),
+  ).resolves.toMatchObject({
+    automaticDecision: 'DECLINED',
+    reviewReminderMessageId: 'review-message',
+    streamUrlOverride: 'https://youtube.test/watch?v=override',
+  });
+
+  const request = await queries.createStreamAnnouncementChangeRequest({
+    requestedByUserId: 'user-1',
+    action: 'UPDATE',
+    targetGuildId: guildId,
+    targetChannelId: 'announcement-channel',
+    targetMessageId: 'announcement-message',
+    streamDateKey: '2026-09-11',
+    streamUrl: 'https://youtube.test/watch?v=override',
+    streamInfoJson: '{"timezone":"UTC"}',
+  });
+  await expect(
+    queries.findPendingStreamAnnouncementChangeRequest(request.id, 'user-1'),
+  ).resolves.toMatchObject({ status: 'PENDING' });
+  await queries.completeStreamAnnouncementChangeRequest(request.id, 'APPLIED');
+  await expect(
+    queries.findPendingStreamAnnouncementChangeRequest(request.id, 'user-1'),
+  ).resolves.toBeNull();
 });
 
 test('covers boss stats queries and spreadsheet sync transaction', async () => {

@@ -1,21 +1,31 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
-import { isAllowedGuildForCommand } from '../config/discord-access';
+import { BOT_GUILDS, isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { CommandExecutionStatus } from '../generated/prisma/client';
 import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
 import {
+  STAGING_STREAM_ANNOUNCEMENT_VIDEO_TITLE,
+  STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
+} from '../modules/stream-info/stream-announcement.config';
+import {
   buildStreamAnnouncementReminderMessage,
   STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX,
   STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX,
+  STREAM_PERMANENT_DISABLE_CUSTOM_ID_PREFIX,
+  STREAM_PERMANENT_ENABLE_CUSTOM_ID_PREFIX,
   STREAM_REMINDER_CUSTOM_ID_PREFIX,
+  STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
 } from '../modules/stream-info/stream-info.discord';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
 import {
+  deliverStreamReminders,
+  getPermanentStreamReminderEnabled,
+  getStreamReminderMessageState,
   setLiveReminderEnabled,
+  setPermanentStreamReminder,
   subscribeToStreamReminder,
 } from '../modules/stream-info/stream-reminder.service';
-import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
 
 const STREAM_REMIND_ME_LOG_NAME = 'streaminfo:remind-me';
 
@@ -80,6 +90,11 @@ export class StreamReminderButtonsListener extends Listener {
           reminderId: interaction.customId.slice(prefix.length),
           userId: interaction.user.id,
         });
+        const permanentReminderEnabled =
+          await getPermanentStreamReminderEnabled(
+            reminder.guildId,
+            interaction.user.id,
+          );
 
         return interaction.update(
           buildStreamAnnouncementReminderMessage(
@@ -87,6 +102,8 @@ export class StreamReminderButtonsListener extends Listener {
             reminder.scheduledStartAt,
             reminder.reminderId,
             enabled,
+            permanentReminderEnabled,
+            reminder.guildId,
           ),
         );
       } catch {
@@ -94,16 +111,76 @@ export class StreamReminderButtonsListener extends Listener {
       }
     }
 
-    const prefix = `${STREAM_REMINDER_CUSTOM_ID_PREFIX}:`;
-    if (!interaction.customId.startsWith(prefix)) {
+    const permanentDisablePrefix = `${STREAM_PERMANENT_DISABLE_CUSTOM_ID_PREFIX}:`;
+    const permanentEnablePrefix = `${STREAM_PERMANENT_ENABLE_CUSTOM_ID_PREFIX}:`;
+    const isPermanentDisable = interaction.customId.startsWith(
+      permanentDisablePrefix,
+    );
+    const isPermanentEnable = interaction.customId.startsWith(
+      permanentEnablePrefix,
+    );
+    if (isPermanentDisable || isPermanentEnable) {
+      try {
+        const prefix = isPermanentDisable
+          ? permanentDisablePrefix
+          : permanentEnablePrefix;
+        const [guildId, reminderId] = interaction.customId
+          .slice(prefix.length)
+          .split(':');
+        if (!guildId || !reminderId) {
+          throw new Error('Invalid permanent reminder button.');
+        }
+
+        const enabled = isPermanentEnable;
+        await setPermanentStreamReminder({
+          enabled,
+          guildId,
+          userId: interaction.user.id,
+        });
+        const reminder = await getStreamReminderMessageState(
+          reminderId,
+          interaction.user.id,
+        );
+
+        return interaction.update(
+          buildStreamAnnouncementReminderMessage(
+            reminder.streamUrl,
+            reminder.scheduledStartAt,
+            reminder.reminderId,
+            reminder.liveAlertEnabled,
+            enabled,
+            guildId,
+          ),
+        );
+      } catch {
+        return interaction.deferUpdate();
+      }
+    }
+
+    const reminderPrefix = `${STREAM_REMINDER_CUSTOM_ID_PREFIX}:`;
+    const stagingReminderPrefix = `${STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX}:`;
+    const isStagingReminder = interaction.customId.startsWith(
+      stagingReminderPrefix,
+    );
+    if (
+      !interaction.customId.startsWith(reminderPrefix) &&
+      !isStagingReminder
+    ) {
       return;
     }
 
+    const prefix = isStagingReminder ? stagingReminderPrefix : reminderPrefix;
     const dateKey = interaction.customId.slice(prefix.length);
     const guildId = interaction.guildId;
+    const isAllowedStagingReminder =
+      isStagingReminder && guildId === BOT_GUILDS.STAGING_ENV;
     if (
       !guildId ||
-      !isAllowedGuildForCommand(guildId, COMMAND_METADATA.STREAM_INFO.guildIds)
+      (!isAllowedStagingReminder &&
+        !isAllowedGuildForCommand(
+          guildId,
+          COMMAND_METADATA.STREAM_INFO.guildIds,
+        ))
     ) {
       await logStreamReminderSafely({
         interaction,
@@ -123,15 +200,30 @@ export class StreamReminderButtonsListener extends Listener {
 
     try {
       const streamInfo = await getStreamInfo(guildId);
-      const occurrence = getStreamReminderOccurrence(streamInfo);
+      const matchingOccurrence = [streamInfo.current, streamInfo.next].find(
+        (occurrence) => occurrence?.dateKey === dateKey,
+      );
 
-      if (!occurrence || occurrence.dateKey !== dateKey) {
+      if (!matchingOccurrence) {
         throw new Error('That stream is no longer available for reminders.');
       }
+      const occurrence = isStagingReminder
+        ? {
+            ...matchingOccurrence,
+            streamUrl: STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
+            videoTitle: STAGING_STREAM_ANNOUNCEMENT_VIDEO_TITLE,
+            streamIsLive: false,
+          }
+        : matchingOccurrence;
 
       await subscribeToStreamReminder({
         guildId,
         userId: interaction.user.id,
+        occurrence,
+      });
+      await deliverStreamReminders({
+        client: interaction.client,
+        guildId,
         occurrence,
       });
 

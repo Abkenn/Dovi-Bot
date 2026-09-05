@@ -1,10 +1,16 @@
 import {
+  deletePermanentStreamReminder,
+  ensureStreamReminder,
   findAnnouncedStreamReminders,
   findPendingStreamReminders,
+  findPermanentStreamReminderUserIds,
+  findStreamReminderForUser,
+  hasPermanentStreamReminder,
   markStreamReminderAnnouncementNotified,
   markStreamReminderNotified,
   setStreamLiveReminderEnabled,
   updateStreamReminderAnnouncement,
+  upsertPermanentStreamReminder,
   upsertStreamReminder,
 } from '@data/queries/stream-reminder';
 import type { Client } from 'discord.js';
@@ -13,7 +19,7 @@ import {
   buildStreamLiveReminderMessage,
 } from './stream-info.discord';
 import type { StreamOccurrence } from './stream-info.types';
-import { isStreamReminderEligible } from './stream-reminder.utils';
+import { isStreamAnnouncementReminderEligible } from './stream-reminder.utils';
 
 export const subscribeToStreamReminder = async ({
   guildId,
@@ -24,7 +30,7 @@ export const subscribeToStreamReminder = async ({
   userId: string;
   occurrence: StreamOccurrence;
 }) => {
-  if (!isStreamReminderEligible(occurrence)) {
+  if (!isStreamAnnouncementReminderEligible(occurrence)) {
     throw new Error('That stream is no longer available for reminders.');
   }
 
@@ -37,6 +43,29 @@ export const subscribeToStreamReminder = async ({
     scheduledStartAt: occurrence.startAt,
   });
 };
+
+export const setPermanentStreamReminder = async ({
+  enabled,
+  guildId,
+  userId,
+}: {
+  enabled: boolean;
+  guildId: string;
+  userId: string;
+}) => {
+  const input = { guildId, userId };
+  if (enabled) {
+    await upsertPermanentStreamReminder(input);
+    return;
+  }
+
+  await deletePermanentStreamReminder(input);
+};
+
+export const getPermanentStreamReminderEnabled = (
+  guildId: string,
+  userId: string,
+) => hasPermanentStreamReminder({ guildId, userId });
 
 export const setLiveReminderEnabled = async ({
   enabled,
@@ -57,6 +86,25 @@ export const setLiveReminderEnabled = async ({
   }
 
   return {
+    guildId: reminder.guildId,
+    reminderId: reminder.id,
+    scheduledStartAt: reminder.scheduledStartAt,
+    streamUrl: reminder.streamUrl,
+  };
+};
+
+export const getStreamReminderMessageState = async (
+  reminderId: string,
+  userId: string,
+) => {
+  const reminder = await findStreamReminderForUser(reminderId, userId);
+  if (!reminder?.streamUrl) {
+    throw new Error('This reminder is no longer available.');
+  }
+
+  return {
+    guildId: reminder.guildId,
+    liveAlertEnabled: reminder.liveReminderDisabledAt === null,
     reminderId: reminder.id,
     scheduledStartAt: reminder.scheduledStartAt,
     streamUrl: reminder.streamUrl,
@@ -77,6 +125,19 @@ export const deliverStreamReminders = async ({
   if (!occurrence || !streamUrl || !videoTitle) {
     return;
   }
+
+  const permanentUserIds = await findPermanentStreamReminderUserIds(guildId);
+  for (const userId of permanentUserIds) {
+    await ensureStreamReminder({
+      guildId,
+      userId,
+      streamDateKey: occurrence.dateKey,
+      streamUrl,
+      videoTitle,
+      scheduledStartAt: occurrence.startAt,
+    });
+  }
+  const permanentUsers = new Set(permanentUserIds);
 
   await updateStreamReminderAnnouncement({
     guildId,
@@ -100,6 +161,8 @@ export const deliverStreamReminders = async ({
             occurrence.startAt,
             reminder.id,
             true,
+            permanentUsers.has(reminder.userId),
+            guildId,
           ),
         );
         await markStreamReminderAnnouncementNotified(reminder.id);

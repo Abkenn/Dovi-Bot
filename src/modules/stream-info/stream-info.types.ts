@@ -28,6 +28,13 @@ export type StreamInfoResult = {
   next: StreamOccurrence | null;
 };
 
+export type BuildStreamAnnouncementMessageInput = {
+  occurrence: StreamOccurrence;
+  roleId?: string;
+  streamInfo: StreamInfoResult;
+  reminderCustomIdPrefix?: string;
+};
+
 export type YouTubeStreamStatus = {
   title: string;
   url: string;

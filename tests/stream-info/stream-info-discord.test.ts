@@ -7,7 +7,11 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 }));
 
 import {
+  buildStreamAnnouncementChangePreview,
+  buildStreamAnnouncementMessage,
+  buildStreamAnnouncementReminderButton,
   buildStreamAnnouncementReminderMessage,
+  buildStreamAnnouncementReviewMessage,
   buildStreamInfoEmbed,
   buildStreamReminderButton,
 } from '../../src/modules/stream-info/stream-info.discord';
@@ -94,6 +98,108 @@ describe('stream info discord output', () => {
     ).toBeNull();
   });
 
+  it('keeps a reminder button on an upload announcement outside the short reminder window', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-07T18:10:00.000Z'));
+
+    expect(
+      buildStreamAnnouncementReminderButton(makeOccurrence())?.toJSON(),
+    ).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-reminder:2026-06-12',
+          label: 'Remind Me',
+        },
+      ],
+    });
+  });
+
+  it('builds an upload announcement with the role ping, raw YouTube URL, and unchanged embed', () => {
+    const occurrence = makeOccurrence({
+      streamUrl: 'https://youtube.test/watch?v=stream',
+      videoTitle: 'Upcoming Stream',
+    });
+    const streamInfo: StreamInfoResult = {
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: occurrence,
+    };
+
+    const message = buildStreamAnnouncementMessage({
+      occurrence,
+      roleId: 'video-role',
+      streamInfo,
+    });
+
+    expect(message.content).toBe(
+      '<@&video-role>\nhttps://youtube.test/watch?v=stream',
+    );
+    expect(message.allowedMentions).toEqual({ roles: ['video-role'] });
+    expect(message.embeds).toHaveLength(1);
+    expect(message.components).toHaveLength(1);
+  });
+
+  it('builds the personal review reminder with automatic approve and decline controls', () => {
+    const occurrence = makeOccurrence();
+    const streamInfo: StreamInfoResult = {
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: occurrence,
+    };
+
+    const message = buildStreamAnnouncementReviewMessage(
+      'user-1',
+      streamInfo,
+      occurrence,
+    );
+
+    expect(message.content).toContain('<@user-1>');
+    const actionRow = message.components?.[0];
+    if (!actionRow || !('toJSON' in actionRow)) {
+      throw new Error('Expected an action row builder.');
+    }
+    expect(actionRow.toJSON()).toMatchObject({
+      components: [
+        { custom_id: 'stream-announcement-auto-approve:2026-06-12' },
+        { custom_id: 'stream-announcement-auto-decline:2026-06-12' },
+      ],
+    });
+  });
+
+  it('builds an approved-change preview without any mentions', () => {
+    const message = buildStreamAnnouncementChangePreview({
+      action: 'PUSH',
+      requestId: 'request-1',
+      roleId: 'video-role',
+      streamInfo: {
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: makeOccurrence(),
+      },
+      streamUrl: 'https://youtube.test/watch?v=stream',
+    });
+
+    expect(message.content).toBe(
+      '<@&video-role>\nhttps://youtube.test/watch?v=stream\nPush this announcement?',
+    );
+    expect(message.allowedMentions).toEqual({ parse: [] });
+    expect(message.components[0]?.toJSON()).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-announcement-change-approve:request-1',
+          label: 'Approve Push',
+        },
+        {
+          custom_id: 'stream-announcement-change-decline:request-1',
+          label: 'Decline',
+        },
+      ],
+    });
+  });
+
   it('offers the same reminder button before a scheduled stream has a URL', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-12T16:10:00.000Z'));
@@ -138,6 +244,8 @@ describe('stream info discord output', () => {
         new Date('2026-06-12T18:10:00.000Z'),
         'reminder-1',
         true,
+        false,
+        'guild-1',
       ),
     ).toMatchObject({
       components: [
@@ -145,7 +253,7 @@ describe('stream info discord output', () => {
           components: [
             {
               content:
-                '# Stream starts <t:1781287800:R>\n**Live reminder: On**',
+                '# Stream starts <t:1781287800:R>\n**Live reminder: On**\n**All future streams: Off**',
             },
             {
               components: [
@@ -153,6 +261,10 @@ describe('stream info discord output', () => {
                 expect.objectContaining({
                   customId: 'stream-live-alert-disable:reminder-1',
                   label: 'Disable Live Reminder',
+                }),
+                expect.objectContaining({
+                  customId: 'stream-permanent-enable:guild-1:reminder-1',
+                  label: 'Remind Me for All Future Streams',
                 }),
               ],
             },
@@ -169,6 +281,8 @@ describe('stream info discord output', () => {
         new Date('2026-06-12T18:10:00.000Z'),
         'reminder-1',
         false,
+        true,
+        'guild-1',
       ),
     ).toMatchObject({
       components: [
@@ -176,7 +290,7 @@ describe('stream info discord output', () => {
           components: [
             {
               content:
-                '# Stream starts <t:1781287800:R>\n**Live reminder: Off**',
+                '# Stream starts <t:1781287800:R>\n**Live reminder: Off**\n**All future streams: On**',
             },
             {
               components: [
@@ -184,6 +298,10 @@ describe('stream info discord output', () => {
                 expect.objectContaining({
                   customId: 'stream-live-alert-enable:reminder-1',
                   label: 'Enable Live Reminder',
+                }),
+                expect.objectContaining({
+                  customId: 'stream-permanent-disable:guild-1:reminder-1',
+                  label: 'Disable All Future Reminders',
                 }),
               ],
             },

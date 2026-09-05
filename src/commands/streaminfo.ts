@@ -5,15 +5,10 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
-import { mergeButtonActionRows } from '../modules/discord/component-embed';
 import { buildEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
-import {
-  buildStreamInfoEmbed,
-  buildStreamReminderButton,
-} from '../modules/stream-info/stream-info.discord';
+import { buildStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { getStreamInfo } from '../modules/stream-info/stream-info.service';
 import { registerLastStreamInfoMessage } from '../modules/stream-info/stream-info-message-updater.service';
-import { getStreamReminderOccurrence } from '../modules/stream-info/stream-reminder.utils';
 
 const METADATA = COMMAND_METADATA.STREAM_INFO;
 
@@ -56,15 +51,8 @@ export class StreamInfoCommand extends Command {
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
         const streamInfo = await getStreamInfo(guildId);
-        const reminderButton = buildStreamReminderButton(
-          getStreamReminderOccurrence(streamInfo),
-        );
         const statsButton = buildEmbeddedAppStatsButton(guildId);
-        const buttonRows = [reminderButton, statsButton].filter(
-          (button) => button !== null,
-        );
-        const components =
-          buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
+        const components = statsButton ? [statsButton] : [];
         const message = await editReply({
           embeds: [buildStreamInfoEmbed(streamInfo)],
           components,

@@ -20,6 +20,14 @@ export const isStreamReminderEligible = (
   );
 };
 
+export const isStreamAnnouncementReminderEligible = (
+  occurrence: StreamOccurrence | null,
+  now = new Date(),
+): occurrence is StreamOccurrence =>
+  occurrence !== null &&
+  occurrence.streamIsLive !== true &&
+  now.getTime() < occurrence.startAt.getTime();
+
 export const getStreamReminderOccurrence = (
   streamInfo: StreamInfoResult,
 ): StreamOccurrence | null => {

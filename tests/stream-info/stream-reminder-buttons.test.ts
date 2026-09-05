@@ -6,11 +6,16 @@ vi.mock('@sapphire/framework', () => ({
 }));
 
 const reminderService = vi.hoisted(() => ({
+  deliverStreamReminders: vi.fn(),
+  getPermanentStreamReminderEnabled: vi.fn(),
+  getStreamReminderMessageState: vi.fn(),
   setLiveReminderEnabled: vi.fn(),
+  setPermanentStreamReminder: vi.fn(),
   subscribeToStreamReminder: vi.fn(),
 }));
 const streamInfoService = vi.hoisted(() => ({ getStreamInfo: vi.fn() }));
 const discordAccess = vi.hoisted(() => ({
+  BOT_GUILDS: { STAGING_ENV: 'staging-guild' },
   isAllowedGuildForCommand: vi.fn(),
 }));
 const commandLogging = vi.hoisted(() => ({
@@ -41,6 +46,8 @@ describe('stream reminder DM buttons', () => {
     vi.clearAllMocks();
     discordAccess.isAllowedGuildForCommand.mockReturnValue(true);
     commandLogging.createInteractionExecutionLog.mockResolvedValue(undefined);
+    reminderService.deliverStreamReminders.mockResolvedValue(undefined);
+    reminderService.getPermanentStreamReminderEnabled.mockResolvedValue(false);
   });
 
   it('registers as an interaction listener', () => {
@@ -51,6 +58,7 @@ describe('stream reminder DM buttons', () => {
 
   it('toggles the owner preference and updates the pre-stream DM in place', async () => {
     reminderService.setLiveReminderEnabled.mockResolvedValue({
+      guildId: 'guild-1',
       reminderId: 'reminder-1',
       streamUrl: 'https://youtube.test/watch?v=stream',
       scheduledStartAt: new Date('2026-07-10T18:10:00.000Z'),
@@ -94,6 +102,7 @@ describe('stream reminder DM buttons', () => {
 
   it('re-enables the live reminder from the same DM', async () => {
     reminderService.setLiveReminderEnabled.mockResolvedValue({
+      guildId: 'guild-1',
       reminderId: 'reminder-1',
       streamUrl: 'https://youtube.test/watch?v=stream',
       scheduledStartAt: new Date('2026-07-10T18:10:00.000Z'),
@@ -129,6 +138,37 @@ describe('stream reminder DM buttons', () => {
           }),
         ],
       }),
+    );
+  });
+
+  it('enables all future reminders from the pre-stream DM', async () => {
+    reminderService.getStreamReminderMessageState.mockResolvedValue({
+      guildId: 'guild-1',
+      liveAlertEnabled: true,
+      reminderId: 'reminder-1',
+      scheduledStartAt: new Date('2026-07-10T18:10:00.000Z'),
+      streamUrl: 'https://youtube.test/watch?v=stream',
+    });
+    const update = vi.fn();
+    const interaction = {
+      customId: 'stream-permanent-enable:guild-1:reminder-1',
+      isButton: () => true,
+      update,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      interaction,
+    );
+
+    expect(reminderService.setPermanentStreamReminder).toHaveBeenCalledWith({
+      enabled: true,
+      guildId: 'guild-1',
+      userId: 'user-1',
+    });
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ components: expect.any(Array) }),
     );
   });
 
