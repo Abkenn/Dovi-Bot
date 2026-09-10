@@ -238,6 +238,7 @@ describe('stream info utils', () => {
 
     expect(updated).toMatchObject({
       streamKind: StreamKind.GAME,
+      musicMode: null,
       title: 'Game Stream',
       gameName: 'Fallback Game',
     });

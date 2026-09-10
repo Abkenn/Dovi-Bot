@@ -393,6 +393,39 @@ test('covers stream-info queries and transactions', async () => {
     queries.findEnabledStreamScheduleDefaults(guildId),
   ).resolves.toHaveLength(2);
 
+  const { prisma } = await import('../../src/lib/prisma');
+  await prisma.streamScheduleDefault.update({
+    where: {
+      guildId_weekday: { guildId, weekday: 'FRIDAY' },
+    },
+    data: {
+      streamKind: StreamKind.GAME,
+      musicMode: MusicMode.UNKNOWN,
+    },
+  });
+  await queries.ensureGuildStreamConfig({
+    guildId,
+    defaultConfig: DEFAULT_GUILD_STREAM_CONFIG,
+    defaultSchedule: DEFAULT_STREAM_SCHEDULE,
+    startTimeToMinutes,
+  });
+  await expect(
+    queries.findEnabledStreamScheduleDefaults(guildId),
+  ).resolves.toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        weekday: 'FRIDAY',
+        streamKind: StreamKind.MUSIC,
+        musicMode: MusicMode.PATREON_CAPITALISM,
+      }),
+      expect.objectContaining({
+        weekday: 'SATURDAY',
+        streamKind: StreamKind.GAME,
+        musicMode: null,
+      }),
+    ]),
+  );
+
   await queries.upsertTargetStreamOverride({
     guildId,
     streamDateKey: '2026-06-12',

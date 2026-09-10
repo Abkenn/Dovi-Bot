@@ -10,6 +10,10 @@ export type DefaultStreamScheduleRule = {
   startTime: string;
   durationMinutes: number;
   isEnabled: boolean;
+  streamKind?: StreamKind | null;
+  musicMode?: MusicMode | null;
+  titleOverride?: string | null;
+  gameName?: string | null;
 };
 
 export type TargetStreamOverrideInput = {

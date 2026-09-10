@@ -66,4 +66,10 @@ export type SkipStreamInput = {
   targetWeekday?: Weekday | null;
 };
 
+export type ChangeStreamScheduleInput = {
+  guildId: string;
+  targetWeekday: 'FRIDAY' | 'SATURDAY';
+  streamKind: typeof StreamKind.GAME | typeof StreamKind.MUSIC;
+};
+
 export type TargetStream = 'current' | 'next';

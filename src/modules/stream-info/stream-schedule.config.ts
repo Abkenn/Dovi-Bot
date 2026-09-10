@@ -1,11 +1,19 @@
 import { DateTime } from 'luxon';
-import { StreamKind, type Weekday } from '../../generated/prisma/client';
+import {
+  MusicMode,
+  StreamKind,
+  type Weekday,
+} from '../../generated/prisma/client';
 
 type DefaultStreamScheduleRule = {
   weekday: Weekday;
   startTime: string;
   durationMinutes: number;
   isEnabled: boolean;
+  streamKind?: StreamKind | null;
+  musicMode?: MusicMode | null;
+  titleOverride?: string | null;
+  gameName?: string | null;
 };
 
 export const DEFAULT_GUILD_STREAM_CONFIG = {
@@ -20,18 +28,26 @@ export const STREAM_ENDED_LINK_GRACE_MINUTES = 10;
 export const STREAM_REMINDER_EARLY_WINDOW_MINUTES = 120;
 export const STREAM_SCHEDULE_HISTORY_DAYS = 21;
 
+export const getDefaultStreamKindForDay = (
+  weekday: 'FRIDAY' | 'SATURDAY',
+): StreamKind => (weekday === 'FRIDAY' ? StreamKind.MUSIC : StreamKind.GAME);
+
 export const DEFAULT_STREAM_SCHEDULE = [
   {
     weekday: 'FRIDAY',
     startTime: '15:10',
     durationMinutes: 240,
     isEnabled: true,
+    streamKind: getDefaultStreamKindForDay('FRIDAY'),
+    musicMode: MusicMode.PATREON_CAPITALISM,
   },
   {
     weekday: 'SATURDAY',
     startTime: '15:10',
     durationMinutes: 240,
     isEnabled: true,
+    streamKind: getDefaultStreamKindForDay('SATURDAY'),
+    musicMode: null,
   },
 ] as const satisfies readonly DefaultStreamScheduleRule[];
 

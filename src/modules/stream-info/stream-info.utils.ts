@@ -251,7 +251,10 @@ export const applyOverrideToOccurrence = (
     .toJSDate();
 
   const streamKind = override.streamKind ?? occurrence.streamKind;
-  const musicMode = override.musicMode ?? occurrence.musicMode;
+  const musicMode =
+    streamKind === StreamKind.MUSIC
+      ? (override.musicMode ?? occurrence.musicMode)
+      : null;
   const title = resolveTitle(streamKind, musicMode, null);
 
   let gameName: string | null;

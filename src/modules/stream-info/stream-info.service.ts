@@ -19,12 +19,13 @@ import type {
   StreamScheduleOverride,
   Weekday,
 } from '../../generated/prisma/client';
+import { ScheduleStatus, StreamKind } from '../../generated/prisma/client';
 import {
-  MusicMode,
-  ScheduleStatus,
-  StreamKind,
-} from '../../generated/prisma/client';
+  applyFridayMusicRotation,
+  FRIDAY_ROTATION_START_DATE_KEY,
+} from './stream-friday-rotation';
 import type {
+  ChangeStreamScheduleInput,
   SetStreamInfoInput,
   SkipStreamInput,
   StreamInfoResult,
@@ -48,6 +49,7 @@ import { getYouTubeStreamResolution } from './stream-info.youtube';
 import {
   DEFAULT_GUILD_STREAM_CONFIG,
   DEFAULT_STREAM_SCHEDULE,
+  getDefaultStreamKindForDay,
   STREAM_SCHEDULE_HISTORY_DAYS,
   startTimeToMinutes,
 } from './stream-schedule.config';
@@ -69,45 +71,6 @@ const getCandidateDates = (
   }
 
   return dates;
-};
-
-const isLastFridayOfMonth = (date: DateTime): boolean =>
-  date.weekday === WEEKDAY_TO_LUXON.FRIDAY &&
-  date.plus({ days: 7 }).month !== date.month;
-
-const shouldApplyAutomaticMusicFriday = (
-  nowLocal: DateTime,
-  streamDate: DateTime,
-): boolean => {
-  if (!isLastFridayOfMonth(streamDate)) {
-    return false;
-  }
-
-  const activationStart = streamDate.minus({ days: 4 }).startOf('day');
-
-  return nowLocal >= activationStart;
-};
-
-const applyAutomaticMusicFridayToOccurrence = (
-  nowLocal: DateTime,
-  occurrence: StreamOccurrence,
-): StreamOccurrence => {
-  const streamDate = DateTime.fromJSDate(occurrence.startAt, {
-    zone: 'utc',
-  }).setZone(nowLocal.zoneName ?? 'utc');
-
-  if (!shouldApplyAutomaticMusicFriday(nowLocal, streamDate)) {
-    return occurrence;
-  }
-
-  return {
-    ...occurrence,
-    streamKind: StreamKind.MUSIC,
-    musicMode: MusicMode.UNKNOWN,
-    title: resolveTitle(StreamKind.MUSIC, MusicMode.UNKNOWN, null),
-    gameName: occurrence.gameName,
-    isOverride: true,
-  };
 };
 
 const buildOverrideOnlyOccurrence = (
@@ -165,14 +128,15 @@ const buildOccurrences = (
 
     for (const date of dates) {
       const base = buildDefaultOccurrence(config, rule, date);
+      const rotatedBase = applyFridayMusicRotation(base, overrides);
       const override = overrides.get(base.dateKey);
 
       if (!override) {
-        occurrences.push(applyAutomaticMusicFridayToOccurrence(nowLocal, base));
+        occurrences.push(rotatedBase);
         continue;
       }
 
-      const resolved = applyOverrideToOccurrence(config, base, override);
+      const resolved = applyOverrideToOccurrence(config, rotatedBase, override);
       if (resolved) {
         occurrences.push(resolved);
       }
@@ -489,10 +453,14 @@ export const getStreamInfo = async (
   const defaults = await findEnabledStreamScheduleDefaults(guildId);
 
   const nowLocal = DateTime.utc().setZone(config.canonicalTimezone);
-  const start = nowLocal
+  const rollingHistoryStart = nowLocal
     .minus({ days: STREAM_SCHEDULE_HISTORY_DAYS })
     .startOf('day')
     .toFormat('yyyy-LL-dd');
+  const start =
+    rollingHistoryStart < FRIDAY_ROTATION_START_DATE_KEY
+      ? rollingHistoryStart
+      : FRIDAY_ROTATION_START_DATE_KEY;
   const end = nowLocal
     .plus({ days: config.lookaheadDays })
     .endOf('day')
@@ -677,6 +645,50 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
   });
 
   return override;
+};
+
+export const changeStreamSchedule = async (
+  input: ChangeStreamScheduleInput,
+) => {
+  const config = await ensureGuildStreamConfig(input.guildId);
+  const defaults = await findEnabledStreamScheduleDefaults(input.guildId);
+  const rule = getDefaultRuleForWeekday(defaults, input.targetWeekday);
+
+  if (!rule) {
+    throw new Error(
+      `No ${WEEKDAY_LABELS[input.targetWeekday]} schedule found.`,
+    );
+  }
+
+  const nowLocal = DateTime.utc().setZone(config.canonicalTimezone);
+  const initialDate = getNextDateForWeekday(nowLocal, input.targetWeekday);
+  const initialOccurrence = buildDefaultOccurrence(config, rule, initialDate);
+  const targetDate =
+    DateTime.fromJSDate(initialOccurrence.endAt) <= DateTime.utc()
+      ? initialDate.plus({ days: 7 })
+      : initialDate;
+  const targetOccurrence = buildDefaultOccurrence(config, rule, targetDate);
+  const defaultStreamKind = getDefaultStreamKindForDay(input.targetWeekday);
+
+  if (input.streamKind === defaultStreamKind) {
+    return deleteStreamScheduleOverrideForDate({
+      guildId: input.guildId,
+      streamDateKey: targetOccurrence.dateKey,
+    });
+  }
+
+  return upsertTargetStreamOverride({
+    guildId: input.guildId,
+    streamDateKey: targetOccurrence.dateKey,
+    resolvedFromWeekday: input.targetWeekday,
+    startAtUtc: targetOccurrence.startAt,
+    status: ScheduleStatus.SCHEDULED,
+    streamKind: input.streamKind,
+    musicMode: null,
+    musicTheme: null,
+    titleOverride: null,
+    gameName: null,
+  });
 };
 
 export const skipStream = async (input: SkipStreamInput) => {

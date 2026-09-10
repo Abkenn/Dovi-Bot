@@ -89,13 +89,25 @@ const upsertStreamScheduleDefaultForRule = ({
         weekday: rule.weekday,
       },
     },
-    update: {},
+    update: {
+      startMinutes: startTimeToMinutes(rule.startTime),
+      durationMinutes: rule.durationMinutes,
+      isEnabled: rule.isEnabled,
+      streamKind: rule.streamKind ?? null,
+      musicMode: rule.musicMode ?? null,
+      titleOverride: rule.titleOverride ?? null,
+      gameName: rule.gameName ?? null,
+    },
     create: {
       guildId,
       weekday: rule.weekday,
       startMinutes: startTimeToMinutes(rule.startTime),
       durationMinutes: rule.durationMinutes,
       isEnabled: rule.isEnabled,
+      streamKind: rule.streamKind ?? null,
+      musicMode: rule.musicMode ?? null,
+      titleOverride: rule.titleOverride ?? null,
+      gameName: rule.gameName ?? null,
     },
   });
 
