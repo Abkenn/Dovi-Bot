@@ -371,8 +371,8 @@ export const applyStreamAnnouncementChange = async ({
         roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
         streamInfo,
       });
-      const message = await channel.send(announcement.info);
       const linkMessage = await channel.send(announcement.link);
+      const message = await channel.send(announcement.info);
       await createStreamAnnouncement({
         guildId: request.targetGuildId,
         channelId: request.targetChannelId,

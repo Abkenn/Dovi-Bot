@@ -290,8 +290,8 @@ describe('stream announcement changes', () => {
   it('applies an approved manual push and records the posted message', async () => {
     const send = vi
       .fn()
-      .mockResolvedValueOnce({ id: 'new-info-message' })
-      .mockResolvedValueOnce({ id: 'new-link-message' });
+      .mockResolvedValueOnce({ id: 'new-link-message' })
+      .mockResolvedValueOnce({ id: 'new-info-message' });
     queries.findPendingStreamAnnouncementChangeRequest.mockResolvedValue({
       id: 'request-1',
       action: 'PUSH',

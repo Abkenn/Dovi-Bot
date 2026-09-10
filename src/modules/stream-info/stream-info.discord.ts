@@ -115,17 +115,6 @@ const buildOccurrenceValue = (
   return lines.join('\n');
 };
 
-const getOccurrenceFieldName = (
-  label: 'Current stream' | 'Next stream',
-  occurrence: StreamOccurrence | null,
-) => {
-  if (!occurrence?.streamUrl) {
-    return label;
-  }
-
-  return `[${label}](${occurrence.streamUrl})`;
-};
-
 export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
   const embed = new EmbedBuilder()
     .setTitle('Stream Info')
@@ -133,13 +122,13 @@ export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
 
   if (data.current) {
     embed.addFields({
-      name: getOccurrenceFieldName('Current stream', data.current),
+      name: 'Current stream',
       value: buildOccurrenceValue('Current', data.current),
     });
   }
 
   embed.addFields({
-    name: getOccurrenceFieldName('Next stream', data.next),
+    name: 'Next stream',
     value: buildOccurrenceValue('Next', data.next),
   });
 

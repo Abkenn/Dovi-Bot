@@ -204,8 +204,8 @@ export const announcePlannedStreamInfo = async (client: Client) => {
     roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
     streamInfo: announcementStreamInfo,
   });
-  const message = await channel.send(announcement.info);
   const linkMessage = await channel.send(announcement.link);
+  const message = await channel.send(announcement.info);
   await createStreamAnnouncement({
     guildId: BOT_GUILDS.PROD_ENV,
     channelId: PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
@@ -289,8 +289,8 @@ export const postStagingStreamAnnouncement = async (client: Client) => {
     streamInfo: previewStreamInfo,
     userId: STREAM_ANNOUNCEMENT_REVIEW_USER_ID,
   });
-  const message = await channel.send(announcement.info);
   const linkMessage = await channel.send(announcement.link);
+  const message = await channel.send(announcement.info);
   await createStreamAnnouncement({
     guildId: BOT_GUILDS.STAGING_ENV,
     channelId: STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,

@@ -176,8 +176,8 @@ describe('stream info message updater', () => {
     vi.setSystemTime(new Date('2026-08-01T17:40:00.000Z'));
     const send = vi
       .fn()
-      .mockResolvedValueOnce({ id: 'announcement-info-1' })
-      .mockResolvedValueOnce({ id: 'announcement-link-1' });
+      .mockResolvedValueOnce({ id: 'announcement-link-1' })
+      .mockResolvedValueOnce({ id: 'announcement-info-1' });
     const existingMessage = makeMessage();
     const client = makeClient({
       channel: {
@@ -199,8 +199,8 @@ describe('stream info message updater', () => {
     await announcePlannedStreamInfo(client);
 
     expect(send).toHaveBeenCalledTimes(2);
-    expect(send).toHaveBeenNthCalledWith(1, { content: 'stream info' });
-    expect(send).toHaveBeenNthCalledWith(2, { content: 'youtube link' });
+    expect(send).toHaveBeenNthCalledWith(1, { content: 'youtube link' });
+    expect(send).toHaveBeenNthCalledWith(2, { content: 'stream info' });
     expect(
       streamAnnouncementQueries.createStreamAnnouncement,
     ).toHaveBeenCalledWith(
@@ -292,8 +292,8 @@ describe('stream info message updater', () => {
   it('posts a manual staging preview with the example YouTube URL', async () => {
     const send = vi
       .fn()
-      .mockResolvedValueOnce({ id: 'staging-info' })
-      .mockResolvedValueOnce({ id: 'staging-link' });
+      .mockResolvedValueOnce({ id: 'staging-link' })
+      .mockResolvedValueOnce({ id: 'staging-info' });
     const client = makeClient({ channel: { send } });
     const next = {
       dateKey: '2026-09-11',

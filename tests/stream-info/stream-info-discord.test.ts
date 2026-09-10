@@ -45,7 +45,7 @@ describe('stream info discord output', () => {
     vi.useRealTimers();
   });
 
-  it('uses a linked current stream field for public pre-stream URLs', () => {
+  it('keeps the stream label plain and the YouTube title clickable', () => {
     vi.setSystemTime(new Date('2026-06-12T18:00:00.000Z'));
 
     const embed = buildStreamInfoEmbed({
@@ -58,10 +58,7 @@ describe('stream info discord output', () => {
       next: null,
     });
 
-    const currentValue = getEmbedFieldValue(
-      embed,
-      '[Current stream](https://youtube.test/watch?v=stream)',
-    );
+    const currentValue = getEmbedFieldValue(embed, 'Current stream');
 
     expect(embedJson(embed).title).toBe('Stream Info');
     expect(currentValue).toContain('Game Stream');
@@ -344,7 +341,7 @@ describe('stream info discord output', () => {
         previous: null,
         next: null,
       }),
-      '[Current stream](https://youtube.test/watch?v=stream)',
+      'Current stream',
     );
 
     expect(value).not.toContain('[](');
@@ -382,7 +379,7 @@ describe('stream info discord output', () => {
     expect(value).toContain('starts <t:1781288460:R>');
   });
 
-  it('links next stream fields and hides non-dictatorship music game names', () => {
+  it('keeps next stream labels plain and hides non-dictatorship music game names', () => {
     const embed = buildStreamInfoEmbed({
       timezone: 'America/Sao_Paulo',
       current: null,
@@ -396,10 +393,7 @@ describe('stream info discord output', () => {
       }),
     });
 
-    const value = getEmbedFieldValue(
-      embed,
-      '[Next stream](https://youtube.test/watch?v=next)',
-    );
+    const value = getEmbedFieldValue(embed, 'Next stream');
 
     expect(value).toContain('Democracy Stream');
     expect(value).not.toContain('Game: Hidden Game');
