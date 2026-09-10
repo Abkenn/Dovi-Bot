@@ -1,5 +1,6 @@
 import { env } from '@zod-schemas/env.zod';
 import { DateTime } from 'luxon';
+import { isStreamAnnouncementWatchWindow } from './stream-announcement-watch';
 import type {
   StreamOccurrence,
   YouTubeStreamResolution,
@@ -51,8 +52,7 @@ type YouTubeVideosResponse = {
 };
 
 const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
-const YOUTUBE_ACTIVE_CACHE_MS = 60 * 1000;
-const YOUTUBE_INACTIVE_CACHE_MS = 5 * 60 * 1000;
+const YOUTUBE_POLL_INTERVAL_MS = 5 * 60 * 1000;
 const YOUTUBE_MAX_UPLOADS_PER_CHANNEL = 5;
 
 let channelCache: YouTubeChannel[] | undefined;
@@ -282,8 +282,13 @@ const getYouTubeStreamStatus = async (
       DateTime.fromJSDate(cachedStatus.actualEndAt).plus({
         milliseconds: YOUTUBE_RECENT_END_GRACE_MS,
       }) >= now);
+  const isWatchWindow = isStreamAnnouncementWatchWindow(now);
 
-  if (streamCache && streamCache.expiresAt > nowMs) {
+  if (
+    streamCache &&
+    streamCache.expiresAt > nowMs &&
+    (streamCache.status !== null || !isWatchWindow)
+  ) {
     return streamCache.status;
   }
 
@@ -293,9 +298,9 @@ const getYouTubeStreamStatus = async (
 
   try {
     const status = await getFreshYouTubeStreamStatus();
+    const cacheMs = status || !isWatchWindow ? YOUTUBE_POLL_INTERVAL_MS : 0;
     streamCache = {
-      expiresAt:
-        nowMs + (status ? YOUTUBE_ACTIVE_CACHE_MS : YOUTUBE_INACTIVE_CACHE_MS),
+      expiresAt: nowMs + cacheMs,
       status,
     };
 

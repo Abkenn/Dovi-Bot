@@ -40,6 +40,7 @@ import {
 import { serializeStreamAnnouncementSnapshot } from './stream-announcement.snapshot';
 import {
   applyStreamAnnouncementEdits,
+  isStreamAnnouncementEligible,
   isStreamAnnouncementReviewDue,
 } from './stream-announcement.utils';
 import {
@@ -51,7 +52,6 @@ import {
 import { getStreamInfo } from './stream-info.service';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
 import { deliverStreamReminders } from './stream-reminder.service';
-import { isStreamReminderEligible } from './stream-reminder.utils';
 
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
@@ -156,7 +156,7 @@ const buildStreamInfoMessageEdit = async (guildId: string) => {
 export const announcePlannedStreamInfo = async (client: Client) => {
   const streamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
   const scheduledOccurrence = [streamInfo.current, streamInfo.next].find(
-    (candidate) => candidate && isStreamReminderEligible(candidate),
+    (candidate) => isStreamAnnouncementEligible(candidate),
   );
 
   if (!scheduledOccurrence) {

@@ -3,6 +3,7 @@ import { StreamKind } from '../../src/generated/prisma/client';
 import {
   applyStreamAnnouncementEdits,
   findEditableStreamAnnouncementOccurrence,
+  isStreamAnnouncementEligible,
   isStreamAnnouncementReviewDue,
 } from '../../src/modules/stream-info/stream-announcement.utils';
 import type {
@@ -32,6 +33,12 @@ const streamInfo: StreamInfoResult = {
 };
 
 describe('stream announcement timing', () => {
+  it('allows a late automatic announcement when a stream is already live', () => {
+    expect(
+      isStreamAnnouncementEligible({ ...occurrence, streamIsLive: true }),
+    ).toBe(true);
+  });
+
   it('starts the personal review window fifty minutes before any scheduled occurrence', () => {
     expect(
       isStreamAnnouncementReviewDue(
