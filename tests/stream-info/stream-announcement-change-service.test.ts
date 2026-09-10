@@ -21,7 +21,7 @@ const streamInfoService = vi.hoisted(() => ({
   setStreamInfo: vi.fn(),
 }));
 const discord = vi.hoisted(() => ({
-  buildStreamAnnouncementMessage: vi.fn(),
+  buildStreamAnnouncementMessages: vi.fn(),
 }));
 
 vi.mock('@data/queries/stream-announcement', () => queries);
@@ -78,8 +78,9 @@ describe('stream announcement changes', () => {
     queries.findStreamAnnouncementByDate.mockResolvedValue(null);
     queries.findStreamAnnouncementPlan.mockResolvedValue(null);
     streamInfoService.getStreamInfo.mockResolvedValue(streamInfo);
-    discord.buildStreamAnnouncementMessage.mockReturnValue({
-      content: 'announcement',
+    discord.buildStreamAnnouncementMessages.mockReturnValue({
+      info: { content: 'stream info' },
+      link: { content: 'youtube link' },
     });
   });
 
@@ -264,6 +265,7 @@ describe('stream announcement changes', () => {
     queries.findStreamAnnouncementByDate.mockResolvedValue({
       channelId: 'prod-channel',
       guildId: 'prod-guild',
+      linkMessageId: 'posted-link',
       messageId: 'posted-message',
       streamDateKey: occurrence.dateKey,
       streamInfoJson: snapshot,
@@ -286,7 +288,10 @@ describe('stream announcement changes', () => {
   });
 
   it('applies an approved manual push and records the posted message', async () => {
-    const send = vi.fn().mockResolvedValue({ id: 'new-message' });
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'new-info-message' })
+      .mockResolvedValueOnce({ id: 'new-link-message' });
     queries.findPendingStreamAnnouncementChangeRequest.mockResolvedValue({
       id: 'request-1',
       action: 'PUSH',
@@ -304,9 +309,12 @@ describe('stream announcement changes', () => {
       userId: 'user-1',
     });
 
-    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledTimes(2);
     expect(queries.createStreamAnnouncement).toHaveBeenCalledWith(
-      expect.objectContaining({ messageId: 'new-message' }),
+      expect.objectContaining({
+        linkMessageId: 'new-link-message',
+        messageId: 'new-info-message',
+      }),
     );
     expect(
       queries.completeStreamAnnouncementChangeRequest,
@@ -322,6 +330,15 @@ describe('stream announcement changes', () => {
       targetChannelId: 'staging-channel',
       targetGuildId: 'staging-guild',
       targetMessageId: 'staging-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+    });
+    queries.findStreamAnnouncementByMessageId.mockResolvedValue({
+      channelId: 'staging-channel',
+      guildId: 'staging-guild',
+      linkMessageId: 'staging-link',
+      messageId: 'staging-message',
       streamDateKey: occurrence.dateKey,
       streamInfoJson: snapshot,
       streamUrl: occurrence.streamUrl,
@@ -342,7 +359,12 @@ describe('stream announcement changes', () => {
   });
 
   it('deletes an approved announcement and its tracked record', async () => {
-    const remove = vi.fn();
+    const removeInfo = vi.fn();
+    const removeLink = vi.fn();
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ delete: removeInfo })
+      .mockResolvedValueOnce({ delete: removeLink });
     queries.findPendingStreamAnnouncementChangeRequest.mockResolvedValue({
       id: 'request-1',
       action: 'DELETE',
@@ -353,16 +375,26 @@ describe('stream announcement changes', () => {
       streamInfoJson: snapshot,
       streamUrl: occurrence.streamUrl,
     });
+    queries.findStreamAnnouncementByMessageId.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'prod-guild',
+      linkMessageId: 'prod-link',
+      messageId: 'prod-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+    });
 
     await applyStreamAnnouncementChange({
       client: makeClient({
-        messages: { fetch: vi.fn().mockResolvedValue({ delete: remove }) },
+        messages: { fetch },
       }),
       requestId: 'request-1',
       userId: 'user-1',
     });
 
-    expect(remove).toHaveBeenCalledOnce();
+    expect(removeInfo).toHaveBeenCalledOnce();
+    expect(removeLink).toHaveBeenCalledOnce();
     expect(queries.deleteStreamAnnouncementByMessageId).toHaveBeenCalledWith(
       'prod-message',
     );

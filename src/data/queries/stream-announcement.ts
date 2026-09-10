@@ -18,7 +18,9 @@ export const findStreamAnnouncementByDate = (
   });
 
 export const findStreamAnnouncementByMessageId = (messageId: string) =>
-  prisma.streamAnnouncement.findUnique({ where: { messageId } });
+  prisma.streamAnnouncement.findFirst({
+    where: { OR: [{ messageId }, { linkMessageId: messageId }] },
+  });
 
 export const createStreamAnnouncement = (
   input: CreateStreamAnnouncementInput,
@@ -26,17 +28,25 @@ export const createStreamAnnouncement = (
 
 export const updateStreamAnnouncementSnapshot = (
   input: UpdateStreamAnnouncementSnapshotInput,
-) =>
-  prisma.streamAnnouncement.update({
+) => {
+  const data = {
+    streamUrl: input.streamUrl,
+    streamInfoJson: input.streamInfoJson,
+  };
+  const linkMessageId = input.linkMessageId
+    ? { linkMessageId: input.linkMessageId }
+    : {};
+
+  return prisma.streamAnnouncement.update({
     where: { messageId: input.messageId },
-    data: {
-      streamUrl: input.streamUrl,
-      streamInfoJson: input.streamInfoJson,
-    },
+    data: { ...data, ...linkMessageId },
   });
+};
 
 export const deleteStreamAnnouncementByMessageId = (messageId: string) =>
-  prisma.streamAnnouncement.deleteMany({ where: { messageId } });
+  prisma.streamAnnouncement.deleteMany({
+    where: { OR: [{ messageId }, { linkMessageId: messageId }] },
+  });
 
 export const findStreamAnnouncementPlan = (key: StreamAnnouncementPlanKey) =>
   prisma.streamAnnouncementPlan.findUnique({

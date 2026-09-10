@@ -33,6 +33,7 @@ export type BuildStreamAnnouncementMessageInput = {
   roleId?: string;
   streamInfo: StreamInfoResult;
   reminderCustomIdPrefix?: string;
+  userId?: string;
 };
 
 export type YouTubeStreamStatus = {

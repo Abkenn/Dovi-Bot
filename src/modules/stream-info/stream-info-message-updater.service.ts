@@ -43,7 +43,7 @@ import {
   isStreamAnnouncementReviewDue,
 } from './stream-announcement.utils';
 import {
-  buildStreamAnnouncementMessage,
+  buildStreamAnnouncementMessages,
   buildStreamAnnouncementReviewMessage,
   buildStreamInfoEmbed,
   STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
@@ -199,17 +199,18 @@ export const announcePlannedStreamInfo = async (client: Client) => {
     return;
   }
 
-  const message = await channel.send(
-    buildStreamAnnouncementMessage({
-      occurrence,
-      roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
-      streamInfo: announcementStreamInfo,
-    }),
-  );
+  const announcement = buildStreamAnnouncementMessages({
+    occurrence,
+    roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
+    streamInfo: announcementStreamInfo,
+  });
+  const message = await channel.send(announcement.info);
+  const linkMessage = await channel.send(announcement.link);
   await createStreamAnnouncement({
     guildId: BOT_GUILDS.PROD_ENV,
     channelId: PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
     messageId: message.id,
+    linkMessageId: linkMessage.id,
     streamDateKey: occurrence.dateKey,
     streamInfoJson: serializeStreamAnnouncementSnapshot(announcementStreamInfo),
     streamUrl,
@@ -282,17 +283,19 @@ export const postStagingStreamAnnouncement = async (client: Client) => {
     throw new Error('The staging announcement channel is unavailable.');
   }
 
-  const message = await channel.send(
-    buildStreamAnnouncementMessage({
-      occurrence,
-      reminderCustomIdPrefix: STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
-      streamInfo: previewStreamInfo,
-    }),
-  );
+  const announcement = buildStreamAnnouncementMessages({
+    occurrence,
+    reminderCustomIdPrefix: STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
+    streamInfo: previewStreamInfo,
+    userId: STREAM_ANNOUNCEMENT_REVIEW_USER_ID,
+  });
+  const message = await channel.send(announcement.info);
+  const linkMessage = await channel.send(announcement.link);
   await createStreamAnnouncement({
     guildId: BOT_GUILDS.STAGING_ENV,
     channelId: STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,
     messageId: message.id,
+    linkMessageId: linkMessage.id,
     streamDateKey: occurrence.dateKey,
     streamInfoJson: serializeStreamAnnouncementSnapshot(previewStreamInfo),
     streamUrl: STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,

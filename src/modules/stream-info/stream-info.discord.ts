@@ -179,11 +179,27 @@ export const buildStreamAnnouncementReminderButton = (
   );
 };
 
-export const buildStreamAnnouncementMessage = ({
+const getStreamAnnouncementMention = (roleId?: string, userId?: string) => {
+  if (roleId) return `<@&${roleId}>`;
+  if (userId) return `<@${userId}>`;
+  return null;
+};
+
+const getStreamAnnouncementAllowedMentions = (
+  roleId?: string,
+  userId?: string,
+) => {
+  if (roleId) return { roles: [roleId] };
+  if (userId) return { users: [userId] };
+  return { parse: [] };
+};
+
+export const buildStreamAnnouncementMessages = ({
   occurrence,
   roleId,
   streamInfo,
   reminderCustomIdPrefix,
+  userId,
 }: BuildStreamAnnouncementMessageInput) => {
   if (!occurrence.streamUrl) {
     throw new Error('A stream URL is required for an announcement.');
@@ -193,14 +209,21 @@ export const buildStreamAnnouncementMessage = ({
     occurrence,
     reminderCustomIdPrefix,
   );
-  const contentParts = roleId ? [`<@&${roleId}>`] : [];
-  contentParts.push(occurrence.streamUrl);
+  const mention = getStreamAnnouncementMention(roleId, userId);
+  const allowedMentions = getStreamAnnouncementAllowedMentions(roleId, userId);
 
   return {
-    content: contentParts.join('\n'),
-    embeds: [buildStreamInfoEmbed(streamInfo)],
-    components: reminderButton ? [reminderButton] : [],
-    allowedMentions: roleId ? { roles: [roleId] } : { parse: [] },
+    info: {
+      embeds: [buildStreamInfoEmbed(streamInfo)],
+      components: reminderButton ? [reminderButton] : [],
+      allowedMentions: { parse: [] },
+    },
+    link: {
+      content: [mention, occurrence.streamUrl]
+        .filter((line) => line !== null)
+        .join('\n'),
+      allowedMentions,
+    },
   };
 };
 

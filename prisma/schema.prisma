@@ -183,6 +183,7 @@ model StreamAnnouncement {
   guildId        String
   channelId      String
   messageId      String   @unique
+  linkMessageId  String?  @unique
   streamDateKey  String
   streamUrl      String
   streamInfoJson String

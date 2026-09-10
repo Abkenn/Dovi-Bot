@@ -26,7 +26,7 @@ const streamAnnouncementQueries = vi.hoisted(() => ({
 }));
 
 const streamInfoDiscord = vi.hoisted(() => ({
-  buildStreamAnnouncementMessage: vi.fn(),
+  buildStreamAnnouncementMessages: vi.fn(),
   buildStreamAnnouncementReviewMessage: vi.fn(),
   buildStreamInfoEmbed: vi.fn(),
   buildStreamReminderButton: vi.fn(),
@@ -71,8 +71,8 @@ vi.mock('../../src/config/discord-access', () => ({
 
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
   STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX: 'stream-staging-reminder',
-  buildStreamAnnouncementMessage:
-    streamInfoDiscord.buildStreamAnnouncementMessage,
+  buildStreamAnnouncementMessages:
+    streamInfoDiscord.buildStreamAnnouncementMessages,
   buildStreamAnnouncementReviewMessage:
     streamInfoDiscord.buildStreamAnnouncementReviewMessage,
   buildStreamInfoEmbed: streamInfoDiscord.buildStreamInfoEmbed,
@@ -138,8 +138,9 @@ describe('stream info message updater', () => {
       next: null,
     });
     streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
-    streamInfoDiscord.buildStreamAnnouncementMessage.mockReturnValue({
-      content: 'announcement',
+    streamInfoDiscord.buildStreamAnnouncementMessages.mockReturnValue({
+      info: { content: 'stream info' },
+      link: { content: 'youtube link' },
     });
     streamInfoDiscord.buildStreamAnnouncementReviewMessage.mockReturnValue({
       content: 'review',
@@ -173,7 +174,10 @@ describe('stream info message updater', () => {
   it('announces planned production stream info once when a URL is available', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-01T17:40:00.000Z'));
-    const send = vi.fn().mockResolvedValue({ id: 'announcement-1' });
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'announcement-info-1' })
+      .mockResolvedValueOnce({ id: 'announcement-link-1' });
     const existingMessage = makeMessage();
     const client = makeClient({
       channel: {
@@ -194,14 +198,17 @@ describe('stream info message updater', () => {
 
     await announcePlannedStreamInfo(client);
 
-    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenNthCalledWith(1, { content: 'stream info' });
+    expect(send).toHaveBeenNthCalledWith(2, { content: 'youtube link' });
     expect(
       streamAnnouncementQueries.createStreamAnnouncement,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
         guildId: 'production-guild',
         channelId: '1137241032568868865',
-        messageId: 'announcement-1',
+        messageId: 'announcement-info-1',
+        linkMessageId: 'announcement-link-1',
         streamDateKey: '2026-08-01',
         streamUrl: 'https://youtube.test/watch?v=planned',
       }),
@@ -283,7 +290,10 @@ describe('stream info message updater', () => {
   });
 
   it('posts a manual staging preview with the example YouTube URL', async () => {
-    const send = vi.fn().mockResolvedValue({ id: 'staging-announcement' });
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'staging-info' })
+      .mockResolvedValueOnce({ id: 'staging-link' });
     const client = makeClient({ channel: { send } });
     const next = {
       dateKey: '2026-09-11',
@@ -298,7 +308,7 @@ describe('stream info message updater', () => {
     await postStagingStreamAnnouncement(client);
 
     expect(
-      streamInfoDiscord.buildStreamAnnouncementMessage,
+      streamInfoDiscord.buildStreamAnnouncementMessages,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
         occurrence: expect.objectContaining({
@@ -306,15 +316,17 @@ describe('stream info message updater', () => {
           streamUrl: 'https://www.youtube.com/watch?v=JtHjAIFQnqA',
         }),
         reminderCustomIdPrefix: 'stream-staging-reminder',
+        userId: '255447271192264704',
       }),
     );
-    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledTimes(2);
     expect(
       streamAnnouncementQueries.createStreamAnnouncement,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
         guildId: 'staging-guild',
-        messageId: 'staging-announcement',
+        messageId: 'staging-info',
+        linkMessageId: 'staging-link',
       }),
     );
   });

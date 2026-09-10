@@ -8,7 +8,7 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 
 import {
   buildStreamAnnouncementChangePreview,
-  buildStreamAnnouncementMessage,
+  buildStreamAnnouncementMessages,
   buildStreamAnnouncementReminderButton,
   buildStreamAnnouncementReminderMessage,
   buildStreamAnnouncementReviewMessage,
@@ -114,7 +114,7 @@ describe('stream info discord output', () => {
     });
   });
 
-  it('builds an upload announcement with the role ping, raw YouTube URL, and unchanged embed', () => {
+  it('separates the stream-info embed from the native YouTube preview message', () => {
     const occurrence = makeOccurrence({
       streamUrl: 'https://youtube.test/watch?v=stream',
       videoTitle: 'Upcoming Stream',
@@ -126,18 +126,41 @@ describe('stream info discord output', () => {
       next: occurrence,
     };
 
-    const message = buildStreamAnnouncementMessage({
+    const messages = buildStreamAnnouncementMessages({
       occurrence,
       roleId: 'video-role',
       streamInfo,
     });
 
-    expect(message.content).toBe(
+    expect(messages.link.content).toBe(
       '<@&video-role>\nhttps://youtube.test/watch?v=stream',
     );
-    expect(message.allowedMentions).toEqual({ roles: ['video-role'] });
-    expect(message.embeds).toHaveLength(1);
-    expect(message.components).toHaveLength(1);
+    expect(messages.link.allowedMentions).toEqual({ roles: ['video-role'] });
+    expect(messages.link).not.toHaveProperty('embeds');
+    expect(messages.info.embeds).toHaveLength(1);
+    expect(messages.info.components).toHaveLength(1);
+    expect(messages.info).not.toHaveProperty('content');
+  });
+
+  it('supports a direct user ping for staging YouTube previews', () => {
+    const occurrence = makeOccurrence({
+      streamUrl: 'https://youtube.test/watch?v=stream',
+    });
+    const messages = buildStreamAnnouncementMessages({
+      occurrence,
+      streamInfo: {
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: occurrence,
+      },
+      userId: 'review-user',
+    });
+
+    expect(messages.link.content).toBe(
+      '<@review-user>\nhttps://youtube.test/watch?v=stream',
+    );
+    expect(messages.link.allowedMentions).toEqual({ users: ['review-user'] });
   });
 
   it('builds the personal review reminder with automatic approve and decline controls', () => {

@@ -8,6 +8,7 @@
       "!embedded-app/dist",
       "!embedded-app/src/routeTree.gen.ts",
       "!node_modules",
+      "!supabase/.temp",
       "!.local",
       "!coverage",
       "!**/coverage",

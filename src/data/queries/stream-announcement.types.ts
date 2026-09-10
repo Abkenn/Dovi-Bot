@@ -2,6 +2,7 @@ export type CreateStreamAnnouncementInput = {
   guildId: string;
   channelId: string;
   messageId: string;
+  linkMessageId?: string;
   streamDateKey: string;
   streamUrl: string;
   streamInfoJson: string;
@@ -19,6 +20,7 @@ export type MarkStreamAnnouncementReviewSentInput =
 
 export type UpdateStreamAnnouncementSnapshotInput = {
   messageId: string;
+  linkMessageId?: string;
   streamUrl: string;
   streamInfoJson: string;
 };

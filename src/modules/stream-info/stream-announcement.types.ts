@@ -50,6 +50,7 @@ export type EditTrackedStreamAnnouncementInput = {
   channelId: string;
   client: Client;
   guildId: string;
+  linkMessageId?: string | null;
   messageId: string;
   streamDateKey: string;
   streamInfo: StreamInfoResult;

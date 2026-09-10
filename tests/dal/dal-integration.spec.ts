@@ -553,6 +553,7 @@ test('stores announcement snapshots, review decisions, and approval requests', a
   await queries.createStreamAnnouncement({
     guildId,
     channelId: 'announcement-channel',
+    linkMessageId: 'announcement-link-message',
     messageId: 'announcement-message',
     streamDateKey: '2026-09-11',
     streamUrl: 'https://youtube.test/watch?v=stream',
@@ -561,6 +562,13 @@ test('stores announcement snapshots, review decisions, and approval requests', a
   await expect(
     queries.findStreamAnnouncementByMessageId('announcement-message'),
   ).resolves.toMatchObject({ guildId, streamDateKey: '2026-09-11' });
+  await expect(
+    queries.findStreamAnnouncementByMessageId('announcement-link-message'),
+  ).resolves.toMatchObject({
+    guildId,
+    messageId: 'announcement-message',
+    streamDateKey: '2026-09-11',
+  });
 
   await queries.upsertStreamAnnouncementUrlOverride(
     { guildId, streamDateKey: '2026-09-11' },

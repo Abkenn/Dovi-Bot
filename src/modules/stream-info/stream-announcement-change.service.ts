@@ -38,7 +38,7 @@ import {
   applyStreamAnnouncementEdits,
   findEditableStreamAnnouncementOccurrence,
 } from './stream-announcement.utils';
-import { buildStreamAnnouncementMessage } from './stream-info.discord';
+import { buildStreamAnnouncementMessages } from './stream-info.discord';
 import { getStreamInfo, setStreamInfo } from './stream-info.service';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 
@@ -266,6 +266,7 @@ const editTrackedAnnouncement = async ({
   channelId,
   client,
   guildId,
+  linkMessageId,
   messageId,
   streamDateKey,
   streamInfo,
@@ -287,18 +288,32 @@ const editTrackedAnnouncement = async ({
   };
   const announcement =
     guildId === BOT_GUILDS.PROD_ENV
-      ? buildStreamAnnouncementMessage({
+      ? buildStreamAnnouncementMessages({
           ...announcementInput,
           roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
         })
-      : buildStreamAnnouncementMessage(announcementInput);
-  const payload = {
-    ...announcement,
+      : buildStreamAnnouncementMessages(announcementInput);
+  const infoPayload = {
+    ...announcement.info,
+    content: null,
     allowedMentions: { parse: [] },
   } satisfies MessageEditOptions;
   const message = await channel.messages.fetch(messageId);
-  await message.edit(payload);
+  await message.edit(infoPayload);
+
+  let resolvedLinkMessageId = linkMessageId ?? null;
+  if (resolvedLinkMessageId) {
+    const linkMessage = await channel.messages.fetch(resolvedLinkMessageId);
+    await linkMessage.edit(announcement.link);
+  } else {
+    if (!canSendMessages(channel)) {
+      throw new Error('The announcement channel is unavailable.');
+    }
+    const linkMessage = await channel.send(announcement.link);
+    resolvedLinkMessageId = linkMessage.id;
+  }
   await updateStreamAnnouncementSnapshot({
+    linkMessageId: resolvedLinkMessageId,
     messageId,
     streamInfoJson: serializeStreamAnnouncementSnapshot(updatedStreamInfo),
     streamUrl,
@@ -337,6 +352,7 @@ export const applyStreamAnnouncementChange = async ({
         channelId: posted.channelId,
         client,
         guildId: posted.guildId,
+        linkMessageId: posted.linkMessageId,
         messageId: posted.messageId,
         streamDateKey: request.streamDateKey,
         streamInfo,
@@ -350,17 +366,18 @@ export const applyStreamAnnouncementChange = async ({
       if (!canSendMessages(channel)) {
         throw new Error('The announcement channel is unavailable.');
       }
-      const message = await channel.send(
-        buildStreamAnnouncementMessage({
-          occurrence: { ...occurrence, streamUrl: request.streamUrl },
-          roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
-          streamInfo,
-        }),
-      );
+      const announcement = buildStreamAnnouncementMessages({
+        occurrence: { ...occurrence, streamUrl: request.streamUrl },
+        roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
+        streamInfo,
+      });
+      const message = await channel.send(announcement.info);
+      const linkMessage = await channel.send(announcement.link);
       await createStreamAnnouncement({
         guildId: request.targetGuildId,
         channelId: request.targetChannelId,
         messageId: message.id,
+        linkMessageId: linkMessage.id,
         streamDateKey: request.streamDateKey,
         streamUrl: request.streamUrl,
         streamInfoJson: request.streamInfoJson,
@@ -370,11 +387,26 @@ export const applyStreamAnnouncementChange = async ({
       if (!targetMessageId || !hasMessages(channel)) {
         throw new Error('The announcement channel is unavailable.');
       }
+      const trackedAnnouncement =
+        await findStreamAnnouncementByMessageId(targetMessageId);
+      if (!trackedAnnouncement) {
+        throw new Error('This announcement is no longer tracked.');
+      }
 
       if (request.action === 'DELETE') {
-        const message = await channel.messages.fetch(targetMessageId);
+        const message = await channel.messages.fetch(
+          trackedAnnouncement.messageId,
+        );
         await message.delete();
-        await deleteStreamAnnouncementByMessageId(targetMessageId);
+        if (trackedAnnouncement.linkMessageId) {
+          const linkMessage = await channel.messages.fetch(
+            trackedAnnouncement.linkMessageId,
+          );
+          await linkMessage.delete();
+        }
+        await deleteStreamAnnouncementByMessageId(
+          trackedAnnouncement.messageId,
+        );
         await setStreamAnnouncementDecision({
           guildId: request.targetGuildId,
           streamDateKey: request.streamDateKey,
@@ -385,7 +417,8 @@ export const applyStreamAnnouncementChange = async ({
           channelId: request.targetChannelId,
           client,
           guildId: request.targetGuildId,
-          messageId: targetMessageId,
+          linkMessageId: trackedAnnouncement.linkMessageId,
+          messageId: trackedAnnouncement.messageId,
           streamDateKey: request.streamDateKey,
           streamInfo,
           streamUrl: request.streamUrl,
