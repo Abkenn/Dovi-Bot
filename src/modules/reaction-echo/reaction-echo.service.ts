@@ -69,6 +69,7 @@ export const processReactionEchoMessage = async ({
       ruleId: rule.id,
       every: rule.threshold,
       incrementBy,
+      authorId: message.authorId,
     });
 
     if (shouldEcho) {

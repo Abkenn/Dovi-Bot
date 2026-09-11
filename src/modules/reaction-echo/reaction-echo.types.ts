@@ -18,6 +18,7 @@ export type ReactionEchoRule = {
 export type ReactionEchoMessage = {
   guildId: string;
   channelId: string;
+  authorId: string;
   authorIsBot: boolean;
   content: string;
   stickerIds: readonly string[];

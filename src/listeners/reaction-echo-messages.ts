@@ -24,6 +24,7 @@ export class ReactionEchoMessagesListener extends Listener {
         message: {
           guildId: message.guildId,
           channelId: message.channelId,
+          authorId: message.author.id,
           authorIsBot: message.author.bot,
           content: message.content,
           stickerIds: [...message.stickers.keys()],

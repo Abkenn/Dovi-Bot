@@ -35,9 +35,11 @@ datasource db {
 }
 
 model ReactionEchoCounter {
-  ruleId    String   @id
-  count     Int      @default(0)
-  updatedAt DateTime @updatedAt
+  ruleId               String   @id
+  count                Int      @default(0)
+  lastEchoAuthorId     String?
+  lastAdvanceTriggered Boolean  @default(false)
+  updatedAt            DateTime @updatedAt
 }
 
 enum Weekday {

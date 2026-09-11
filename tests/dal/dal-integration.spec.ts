@@ -1728,11 +1728,12 @@ test('atomically advances and resets reaction echo counters', async () => {
     '../../src/data/queries/reaction-echo'
   );
   const results = await Promise.all(
-    Array.from({ length: 20 }, () =>
+    Array.from({ length: 20 }, (_, index) =>
       advanceReactionEchoCounter({
         ruleId: 'choccy-milk-sticker',
         every: 20,
         incrementBy: 1,
+        authorId: `user-${index + 1}`,
       }),
     ),
   );
@@ -1743,6 +1744,7 @@ test('atomically advances and resets reaction echo counters', async () => {
       ruleId: 'choccy-milk-sticker',
       every: 20,
       incrementBy: 1,
+      authorId: 'user-21',
     }),
   ).resolves.toBe(false);
 
@@ -1753,4 +1755,36 @@ test('atomically advances and resets reaction echo counters', async () => {
       select: { count: true },
     }),
   ).resolves.toEqual({ count: 1 });
+});
+
+test('holds an armed reaction echo until a different person matches', async () => {
+  const { advanceReactionEchoCounter } = await import(
+    '../../src/data/queries/reaction-echo'
+  );
+  const ruleId = 'same-person-echo-guard';
+
+  await expect(
+    advanceReactionEchoCounter({
+      ruleId,
+      every: 2,
+      incrementBy: 2,
+      authorId: 'user-1',
+    }),
+  ).resolves.toBe(true);
+  await expect(
+    advanceReactionEchoCounter({
+      ruleId,
+      every: 2,
+      incrementBy: 2,
+      authorId: 'user-1',
+    }),
+  ).resolves.toBe(false);
+  await expect(
+    advanceReactionEchoCounter({
+      ruleId,
+      every: 2,
+      incrementBy: 1,
+      authorId: 'user-2',
+    }),
+  ).resolves.toBe(true);
 });

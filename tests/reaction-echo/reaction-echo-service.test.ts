@@ -40,6 +40,7 @@ describe('reaction echo service', () => {
       message: {
         guildId: 'prod',
         channelId: 'general',
+        authorId: 'user-1',
         authorIsBot: true,
         content: '',
         stickerIds: ['choccy-sticker'],
@@ -52,6 +53,7 @@ describe('reaction echo service', () => {
       message: {
         guildId: 'prod',
         channelId: 'general',
+        authorId: 'user-1',
         authorIsBot: false,
         content: '',
         stickerIds: ['another-sticker'],
@@ -74,6 +76,7 @@ describe('reaction echo service', () => {
     const stickerMessage = {
       guildId: 'prod',
       channelId: 'general',
+      authorId: 'user-1',
       authorIsBot: false,
       content: '',
       stickerIds: ['choccy-sticker'],
@@ -104,6 +107,7 @@ describe('reaction echo service', () => {
       ruleId: 'choccy-milk-sticker',
       every: 20,
       incrementBy: 1,
+      authorId: 'user-1',
     });
     expect(sendSticker).toHaveBeenCalledOnce();
     expect(sendSticker).toHaveBeenCalledWith('choccy');
@@ -125,6 +129,7 @@ describe('reaction echo service', () => {
       message: {
         guildId: 'prod',
         channelId: 'general',
+        authorId: 'user-1',
         authorIsBot: false,
         content: 'hello <:wave:123> <:wave:123>',
         stickerIds: [],
@@ -138,6 +143,7 @@ describe('reaction echo service', () => {
       ruleId: 'wave-emoji',
       every: 40,
       incrementBy: 1,
+      authorId: 'user-1',
     });
     expect(addReaction).toHaveBeenCalledWith('123');
   });

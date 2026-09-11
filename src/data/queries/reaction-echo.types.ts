@@ -2,8 +2,9 @@ export type AdvanceReactionEchoCounterInput = {
   ruleId: string;
   every: number;
   incrementBy: number;
+  authorId: string;
 };
 
 export type ReactionEchoCounterRow = {
-  count: number;
+  lastAdvanceTriggered: boolean;
 };
