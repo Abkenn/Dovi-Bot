@@ -98,6 +98,18 @@ describe('stream reminder DM buttons', () => {
       }),
     );
     expect(reply).not.toHaveBeenCalled();
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interaction,
+        commandName: 'streaminfo:remind-me',
+        optionsJson: {
+          action: 'live-alert',
+          enabled: false,
+          reminderId: 'reminder-1',
+        },
+        status: 'SUCCESS',
+      }),
+    );
   });
 
   it('re-enables the live reminder from the same DM', async () => {
@@ -139,6 +151,18 @@ describe('stream reminder DM buttons', () => {
         ],
       }),
     );
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interaction,
+        commandName: 'streaminfo:remind-me',
+        optionsJson: {
+          action: 'live-alert',
+          enabled: true,
+          reminderId: 'reminder-1',
+        },
+        status: 'SUCCESS',
+      }),
+    );
   });
 
   it('enables all future reminders from the pre-stream DM', async () => {
@@ -169,6 +193,78 @@ describe('stream reminder DM buttons', () => {
     });
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({ components: expect.any(Array) }),
+    );
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interaction,
+        commandName: 'streaminfo:remind-me',
+        optionsJson: {
+          action: 'permanent-reminder',
+          enabled: true,
+          guildId: 'guild-1',
+          reminderId: 'reminder-1',
+        },
+        status: 'SUCCESS',
+      }),
+    );
+  });
+
+  it('logs malformed permanent reminder buttons', async () => {
+    const deferUpdate = vi.fn();
+    const interaction = {
+      customId: 'stream-permanent-enable:missing-reminder-id',
+      deferUpdate,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      interaction,
+    );
+
+    expect(deferUpdate).toHaveBeenCalledOnce();
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        optionsJson: {
+          action: 'permanent-reminder',
+          enabled: true,
+          guildId: 'missing-reminder-id',
+          reminderId: null,
+        },
+        status: 'ERROR',
+        note: 'Invalid permanent reminder button.',
+      }),
+    );
+  });
+
+  it('logs non-error permanent reminder failures', async () => {
+    reminderService.setPermanentStreamReminder.mockRejectedValue('offline');
+    const deferUpdate = vi.fn();
+    const interaction = {
+      customId: 'stream-permanent-disable:guild-1:reminder-1',
+      deferUpdate,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      interaction,
+    );
+
+    expect(deferUpdate).toHaveBeenCalledOnce();
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        optionsJson: {
+          action: 'permanent-reminder',
+          enabled: false,
+          guildId: 'guild-1',
+          reminderId: 'reminder-1',
+        },
+        status: 'ERROR',
+        note: 'offline',
+      }),
     );
   });
 
@@ -209,6 +305,19 @@ describe('stream reminder DM buttons', () => {
     );
 
     expect(deferUpdate).toHaveBeenCalledOnce();
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interaction,
+        commandName: 'streaminfo:remind-me',
+        optionsJson: {
+          action: 'live-alert',
+          enabled: false,
+          reminderId: 'missing',
+        },
+        status: 'ERROR',
+        note: 'stale',
+      }),
+    );
   });
 
   it('rejects reminder buttons outside an allowed guild', async () => {

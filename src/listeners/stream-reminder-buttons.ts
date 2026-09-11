@@ -2,7 +2,10 @@ import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { BOT_GUILDS, isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
-import { CommandExecutionStatus } from '../generated/prisma/client';
+import {
+  CommandExecutionStatus,
+  type Prisma,
+} from '../generated/prisma/client';
 import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
 import {
   STAGING_STREAM_ANNOUNCEMENT_VIDEO_TITLE,
@@ -29,27 +32,26 @@ import {
 
 const STREAM_REMIND_ME_LOG_NAME = 'streaminfo:remind-me';
 
-const logStreamReminderSafely = async ({
-  interaction,
-  dateKey,
-  status,
-  startedAt,
-  note,
-}: {
+type StreamReminderInteractionLogInput = {
   interaction: Interaction;
-  dateKey: string;
+  optionsJson: Prisma.InputJsonValue;
   status: CommandExecutionStatus;
   startedAt: number;
   note?: string | null;
-}) => {
+};
+
+const logStreamReminderSafely = async ({
+  interaction,
+  optionsJson,
+  status,
+  startedAt,
+  note,
+}: StreamReminderInteractionLogInput) => {
   try {
     await createInteractionExecutionLog({
       interaction,
       commandName: STREAM_REMIND_ME_LOG_NAME,
-      optionsJson: {
-        customId: interaction.isButton() ? interaction.customId : null,
-        dateKey,
-      },
+      optionsJson,
       status,
       note: note ?? null,
       durationMs: Date.now() - startedAt,
@@ -82,12 +84,19 @@ export class StreamReminderButtonsListener extends Listener {
     const isDisable = interaction.customId.startsWith(disablePrefix);
     const isEnable = interaction.customId.startsWith(enablePrefix);
     if (isDisable || isEnable) {
+      const prefix = isDisable ? disablePrefix : enablePrefix;
+      const enabled = isEnable;
+      const reminderId = interaction.customId.slice(prefix.length);
+      const optionsJson = {
+        action: 'live-alert',
+        enabled,
+        reminderId,
+      } satisfies Prisma.InputJsonValue;
+
       try {
-        const prefix = isDisable ? disablePrefix : enablePrefix;
-        const enabled = isEnable;
         const reminder = await setLiveReminderEnabled({
           enabled,
-          reminderId: interaction.customId.slice(prefix.length),
+          reminderId,
           userId: interaction.user.id,
         });
         const permanentReminderEnabled =
@@ -96,7 +105,7 @@ export class StreamReminderButtonsListener extends Listener {
             interaction.user.id,
           );
 
-        return interaction.update(
+        await interaction.update(
           buildStreamAnnouncementReminderMessage(
             reminder.streamUrl,
             reminder.scheduledStartAt,
@@ -106,9 +115,26 @@ export class StreamReminderButtonsListener extends Listener {
             reminder.guildId,
           ),
         );
-      } catch {
+
+        await logStreamReminderSafely({
+          interaction,
+          optionsJson,
+          status: CommandExecutionStatus.SUCCESS,
+          startedAt,
+        });
+      } catch (error) {
+        await logStreamReminderSafely({
+          interaction,
+          optionsJson,
+          status: CommandExecutionStatus.ERROR,
+          startedAt,
+          note: error instanceof Error ? error.message : String(error),
+        });
+
         return interaction.deferUpdate();
       }
+
+      return;
     }
 
     const permanentDisablePrefix = `${STREAM_PERMANENT_DISABLE_CUSTOM_ID_PREFIX}:`;
@@ -132,6 +158,12 @@ export class StreamReminderButtonsListener extends Listener {
         }
 
         const enabled = isPermanentEnable;
+        const optionsJson = {
+          action: 'permanent-reminder',
+          enabled,
+          guildId,
+          reminderId,
+        } satisfies Prisma.InputJsonValue;
         await setPermanentStreamReminder({
           enabled,
           guildId,
@@ -142,7 +174,7 @@ export class StreamReminderButtonsListener extends Listener {
           interaction.user.id,
         );
 
-        return interaction.update(
+        await interaction.update(
           buildStreamAnnouncementReminderMessage(
             reminder.streamUrl,
             reminder.scheduledStartAt,
@@ -152,9 +184,39 @@ export class StreamReminderButtonsListener extends Listener {
             guildId,
           ),
         );
-      } catch {
+
+        await logStreamReminderSafely({
+          interaction,
+          optionsJson,
+          status: CommandExecutionStatus.SUCCESS,
+          startedAt,
+        });
+      } catch (error) {
+        const parts = interaction.customId
+          .slice(
+            (isPermanentDisable
+              ? permanentDisablePrefix
+              : permanentEnablePrefix
+            ).length,
+          )
+          .split(':');
+        await logStreamReminderSafely({
+          interaction,
+          optionsJson: {
+            action: 'permanent-reminder',
+            enabled: isPermanentEnable,
+            guildId: parts[0] ?? null,
+            reminderId: parts[1] ?? null,
+          },
+          status: CommandExecutionStatus.ERROR,
+          startedAt,
+          note: error instanceof Error ? error.message : String(error),
+        });
+
         return interaction.deferUpdate();
       }
+
+      return;
     }
 
     const reminderPrefix = `${STREAM_REMINDER_CUSTOM_ID_PREFIX}:`;
@@ -184,7 +246,10 @@ export class StreamReminderButtonsListener extends Listener {
     ) {
       await logStreamReminderSafely({
         interaction,
-        dateKey,
+        optionsJson: {
+          customId: interaction.customId,
+          dateKey,
+        },
         status: CommandExecutionStatus.DENIED,
         startedAt,
         note: 'This stream reminder is no longer available.',
@@ -229,7 +294,10 @@ export class StreamReminderButtonsListener extends Listener {
 
       await logStreamReminderSafely({
         interaction,
-        dateKey,
+        optionsJson: {
+          customId: interaction.customId,
+          dateKey,
+        },
         status: CommandExecutionStatus.SUCCESS,
         startedAt,
       });
@@ -243,7 +311,10 @@ export class StreamReminderButtonsListener extends Listener {
 
       await logStreamReminderSafely({
         interaction,
-        dateKey,
+        optionsJson: {
+          customId: interaction.customId,
+          dateKey,
+        },
         status: CommandExecutionStatus.ERROR,
         startedAt,
         note: message,
