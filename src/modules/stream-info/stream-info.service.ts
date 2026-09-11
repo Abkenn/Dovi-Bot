@@ -441,8 +441,9 @@ export const getStreamInfoDayAutocomplete = async ({
   );
 };
 
-export const getStreamInfo = async (
+const getStreamInfoForOccurrence = async (
   guildId: string,
+  currentDateKey?: string,
 ): Promise<StreamInfoResult> => {
   const config = await ensureGuildStreamConfig(guildId);
 
@@ -490,7 +491,13 @@ export const getStreamInfo = async (
   });
   const shouldSuppressScheduledCurrent =
     scheduledCurrent?.dateKey === youtubeResolution.suppressedScheduledDateKey;
+  const previewCurrent = currentDateKey
+    ? (occurrences.find(
+        (occurrence) => occurrence.dateKey === currentDateKey,
+      ) ?? null)
+    : null;
   const current =
+    previewCurrent ??
     youtubeResolution.current ??
     (shouldSuppressScheduledCurrent ? null : scheduledCurrent);
   const previous = findPreviousOccurrence(occurrences, now, current);
@@ -510,6 +517,16 @@ export const getStreamInfo = async (
     next,
   };
 };
+
+export const getStreamInfo = async (
+  guildId: string,
+): Promise<StreamInfoResult> => getStreamInfoForOccurrence(guildId);
+
+export const getStreamInfoForAnnouncementPreview = async (
+  guildId: string,
+  streamDateKey: string,
+): Promise<StreamInfoResult> =>
+  getStreamInfoForOccurrence(guildId, streamDateKey);
 
 export const setDefaultGameName = async (guildId: string, gameName: string) => {
   await ensureGuildStreamConfig(guildId);

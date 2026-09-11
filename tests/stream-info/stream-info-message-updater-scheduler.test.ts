@@ -14,6 +14,7 @@ describe('stream info message updater scheduler', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-10T12:00:00.000Z'));
     vi.clearAllMocks();
   });
 

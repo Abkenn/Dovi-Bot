@@ -49,7 +49,10 @@ import {
   buildStreamInfoEmbed,
   STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
 } from './stream-info.discord';
-import { getStreamInfo } from './stream-info.service';
+import {
+  getStreamInfo,
+  getStreamInfoForAnnouncementPreview,
+} from './stream-info.service';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
 import { deliverStreamReminders } from './stream-reminder.service';
 
@@ -234,11 +237,15 @@ export const sendStreamAnnouncementReviewReminder = async (client: Client) => {
   if (plan?.reviewReminderNotifiedAt) {
     return;
   }
+  const predictedStreamInfo = await getStreamInfoForAnnouncementPreview(
+    BOT_GUILDS.PROD_ENV,
+    occurrence.dateKey,
+  );
   const reviewStreamInfo = plan?.streamUrlOverride
-    ? applyStreamAnnouncementEdits(streamInfo, occurrence.dateKey, {
+    ? applyStreamAnnouncementEdits(predictedStreamInfo, occurrence.dateKey, {
         streamUrl: plan.streamUrlOverride,
       })
-    : streamInfo;
+    : predictedStreamInfo;
 
   const channel = await client.channels.fetch(
     STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,

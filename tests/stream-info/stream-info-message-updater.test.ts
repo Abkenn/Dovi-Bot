@@ -38,6 +38,7 @@ const embeddedAppDiscord = vi.hoisted(() => ({
 
 const streamInfoService = vi.hoisted(() => ({
   getStreamInfo: vi.fn(),
+  getStreamInfoForAnnouncementPreview: vi.fn(),
 }));
 
 const streamReminderService = vi.hoisted(() => ({
@@ -85,6 +86,8 @@ vi.mock('../../src/modules/embedded-app/embedded-app-stats.discord', () => ({
 
 vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
   getStreamInfo: streamInfoService.getStreamInfo,
+  getStreamInfoForAnnouncementPreview:
+    streamInfoService.getStreamInfoForAnnouncementPreview,
 }));
 
 vi.mock('../../src/modules/stream-info/stream-reminder.service', () => ({
@@ -135,6 +138,12 @@ describe('stream info message updater', () => {
     streamInfoService.getStreamInfo.mockResolvedValue({
       timezone: 'America/Sao_Paulo',
       current: null,
+      next: null,
+    });
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
       next: null,
     });
     streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
@@ -347,12 +356,24 @@ describe('stream info message updater', () => {
       next: occurrence,
     };
     streamInfoService.getStreamInfo.mockResolvedValue(streamInfo);
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue({
+      ...streamInfo,
+      current: occurrence,
+      next: {
+        dateKey: '2026-09-12',
+        startAt: new Date('2026-09-12T18:10:00.000Z'),
+      },
+    });
 
     await sendStreamAnnouncementReviewReminder(client);
 
     expect(
       streamInfoDiscord.buildStreamAnnouncementReviewMessage,
-    ).toHaveBeenCalledWith('255447271192264704', streamInfo, occurrence);
+    ).toHaveBeenCalledWith(
+      '255447271192264704',
+      expect.objectContaining({ current: occurrence }),
+      occurrence,
+    );
     expect(
       streamAnnouncementQueries.markStreamAnnouncementReviewSent,
     ).toHaveBeenCalledWith({
