@@ -337,7 +337,10 @@ describe('stream info discord output', () => {
     const enabled = buildExpiredStreamReminderMessage('guild-1', true);
 
     expect(disabled.content).toBe(
-      'That stream is no longer available for reminders.',
+      'That stream is no longer available for reminders.\nCurrently you have all future reminders turned off.',
+    );
+    expect(enabled.content).toBe(
+      'That stream is no longer available for reminders.\nCurrently you have all future reminders turned on.',
     );
     expect(disabled.components[0]?.toJSON()).toMatchObject({
       components: [

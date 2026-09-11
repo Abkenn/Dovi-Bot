@@ -389,7 +389,7 @@ export const buildExpiredStreamReminderMessage = (
     : STREAM_EXPIRED_PERMANENT_ENABLE_CUSTOM_ID_PREFIX;
 
   return {
-    content: 'That stream is no longer available for reminders.',
+    content: `That stream is no longer available for reminders.\nCurrently you have all future reminders turned ${permanentReminderEnabled ? 'on' : 'off'}.`,
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()

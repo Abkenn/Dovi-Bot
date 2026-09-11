@@ -245,7 +245,8 @@ describe('stream reminder DM buttons', () => {
     expect(enableUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         components: expect.any(Array),
-        content: 'That stream is no longer available for reminders.',
+        content:
+          'That stream is no longer available for reminders.\nCurrently you have all future reminders turned on.',
       }),
     );
     expect(disableUpdate).toHaveBeenCalledWith(
@@ -467,7 +468,8 @@ describe('stream reminder DM buttons', () => {
     expect(editReply).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        content: 'That stream is no longer available for reminders.',
+        content:
+          'That stream is no longer available for reminders.\nCurrently you have all future reminders turned off.',
         components: expect.any(Array),
       }),
     );

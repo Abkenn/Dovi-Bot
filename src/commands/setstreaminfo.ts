@@ -7,7 +7,7 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
-import { refreshTrackedStreamAnnouncement } from '../modules/stream-info/stream-announcement-change.service';
+import { refreshRelevantTrackedStreamAnnouncements } from '../modules/stream-info/stream-announcement-refresh.service';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { setStreamInfo } from '../modules/stream-info/stream-info.service';
 import { parseWeekday } from '../modules/stream-info/stream-info.utils';
@@ -108,10 +108,10 @@ export class SetStreamInfoCommand extends Command {
           combined: interaction.options.getBoolean('combined'),
           title: interaction.options.getString('title'),
         });
-        await refreshTrackedStreamAnnouncement({
+        await refreshRelevantTrackedStreamAnnouncements({
+          additionalStreamDateKey: override.streamDateKey,
           client: this.container.client,
           guildId,
-          streamDateKey: override.streamDateKey,
         });
 
         return editReply({

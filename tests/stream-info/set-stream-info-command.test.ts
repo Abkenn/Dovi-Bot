@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const dependencies = vi.hoisted(() => ({
   editReply: vi.fn(),
   getStreamInfoEmbed: vi.fn(),
-  refreshTrackedStreamAnnouncement: vi.fn(),
+  refreshRelevantTrackedStreamAnnouncements: vi.fn(),
   runCommand: vi.fn(),
   setStreamInfo: vi.fn(),
 }));
@@ -44,10 +44,10 @@ vi.mock('../../src/modules/command-runner/run-command', () => ({
   runCommand: dependencies.runCommand,
 }));
 vi.mock(
-  '../../src/modules/stream-info/stream-announcement-change.service',
+  '../../src/modules/stream-info/stream-announcement-refresh.service',
   () => ({
-    refreshTrackedStreamAnnouncement:
-      dependencies.refreshTrackedStreamAnnouncement,
+    refreshRelevantTrackedStreamAnnouncements:
+      dependencies.refreshRelevantTrackedStreamAnnouncements,
   }),
 );
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
@@ -136,10 +136,12 @@ describe('set stream info commands', () => {
         guildId: 'interaction-guild',
       }),
     );
-    expect(dependencies.refreshTrackedStreamAnnouncement).toHaveBeenCalledWith({
+    expect(
+      dependencies.refreshRelevantTrackedStreamAnnouncements,
+    ).toHaveBeenCalledWith({
+      additionalStreamDateKey: '2026-09-11',
       client: { id: 'client' },
       guildId: 'interaction-guild',
-      streamDateKey: '2026-09-11',
     });
   });
 
@@ -155,10 +157,12 @@ describe('set stream info commands', () => {
         guildId: 'production-guild',
       }),
     );
-    expect(dependencies.refreshTrackedStreamAnnouncement).toHaveBeenCalledWith({
+    expect(
+      dependencies.refreshRelevantTrackedStreamAnnouncements,
+    ).toHaveBeenCalledWith({
+      additionalStreamDateKey: '2026-09-11',
       client: { id: 'client' },
       guildId: 'production-guild',
-      streamDateKey: '2026-09-11',
     });
   });
 });
