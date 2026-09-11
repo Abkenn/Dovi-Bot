@@ -209,6 +209,50 @@ describe('stream reminder DM buttons', () => {
     );
   });
 
+  it('toggles all future reminders from an expired ephemeral response', async () => {
+    const enableUpdate = vi.fn();
+    const disableUpdate = vi.fn();
+    const enableInteraction = {
+      customId: 'stream-expired-permanent-enable:guild-1',
+      isButton: () => true,
+      update: enableUpdate,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+    const disableInteraction = {
+      customId: 'stream-expired-permanent-disable:guild-1',
+      isButton: () => true,
+      update: disableUpdate,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      enableInteraction,
+    );
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      disableInteraction,
+    );
+
+    expect(reminderService.setPermanentStreamReminder).toHaveBeenNthCalledWith(
+      1,
+      { enabled: true, guildId: 'guild-1', userId: 'user-1' },
+    );
+    expect(reminderService.setPermanentStreamReminder).toHaveBeenNthCalledWith(
+      2,
+      { enabled: false, guildId: 'guild-1', userId: 'user-1' },
+    );
+    expect(enableUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.any(Array),
+        content: 'That stream is no longer available for reminders.',
+      }),
+    );
+    expect(disableUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ components: expect.any(Array) }),
+    );
+  });
+
   it('logs malformed permanent reminder buttons', async () => {
     const deferUpdate = vi.fn();
     const interaction = {
@@ -422,7 +466,10 @@ describe('stream reminder DM buttons', () => {
 
     expect(editReply).toHaveBeenNthCalledWith(
       1,
-      'That stream is no longer available for reminders.',
+      expect.objectContaining({
+        content: 'That stream is no longer available for reminders.',
+        components: expect.any(Array),
+      }),
     );
     expect(editReply).toHaveBeenNthCalledWith(
       2,

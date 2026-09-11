@@ -33,6 +33,10 @@ export const STREAM_PERMANENT_DISABLE_CUSTOM_ID_PREFIX =
   'stream-permanent-disable';
 export const STREAM_PERMANENT_ENABLE_CUSTOM_ID_PREFIX =
   'stream-permanent-enable';
+export const STREAM_EXPIRED_PERMANENT_DISABLE_CUSTOM_ID_PREFIX =
+  'stream-expired-permanent-disable';
+export const STREAM_EXPIRED_PERMANENT_ENABLE_CUSTOM_ID_PREFIX =
+  'stream-expired-permanent-enable';
 export const STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX =
   'stream-staging-reminder';
 export const STREAM_ANNOUNCEMENT_AUTO_APPROVE_CUSTOM_ID_PREFIX =
@@ -374,6 +378,31 @@ export const buildStreamAnnouncementReminderMessage = (
     ],
     flags: MessageFlags.IsComponentsV2,
   } satisfies MessageCreateOptions;
+};
+
+export const buildExpiredStreamReminderMessage = (
+  guildId: string,
+  permanentReminderEnabled: boolean,
+) => {
+  const togglePrefix = permanentReminderEnabled
+    ? STREAM_EXPIRED_PERMANENT_DISABLE_CUSTOM_ID_PREFIX
+    : STREAM_EXPIRED_PERMANENT_ENABLE_CUSTOM_ID_PREFIX;
+
+  return {
+    content: 'That stream is no longer available for reminders.',
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`${togglePrefix}:${guildId}`)
+          .setLabel(
+            permanentReminderEnabled
+              ? 'Disable All Future Reminders'
+              : 'Remind Me for All Future Streams',
+          )
+          .setStyle(ButtonStyle.Secondary),
+      ),
+    ],
+  };
 };
 
 export const getStreamInfoEmbed = async (

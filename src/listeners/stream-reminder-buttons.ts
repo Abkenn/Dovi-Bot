@@ -12,7 +12,10 @@ import {
   STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
 } from '../modules/stream-info/stream-announcement.config';
 import {
+  buildExpiredStreamReminderMessage,
   buildStreamAnnouncementReminderMessage,
+  STREAM_EXPIRED_PERMANENT_DISABLE_CUSTOM_ID_PREFIX,
+  STREAM_EXPIRED_PERMANENT_ENABLE_CUSTOM_ID_PREFIX,
   STREAM_LIVE_ALERT_DISABLE_CUSTOM_ID_PREFIX,
   STREAM_LIVE_ALERT_ENABLE_CUSTOM_ID_PREFIX,
   STREAM_PERMANENT_DISABLE_CUSTOM_ID_PREFIX,
@@ -116,6 +119,60 @@ export class StreamReminderButtonsListener extends Listener {
           ),
         );
 
+        await logStreamReminderSafely({
+          interaction,
+          optionsJson,
+          status: CommandExecutionStatus.SUCCESS,
+          startedAt,
+        });
+      } catch (error) {
+        await logStreamReminderSafely({
+          interaction,
+          optionsJson,
+          status: CommandExecutionStatus.ERROR,
+          startedAt,
+          note: error instanceof Error ? error.message : String(error),
+        });
+
+        return interaction.deferUpdate();
+      }
+
+      return;
+    }
+
+    const expiredPermanentDisablePrefix = `${STREAM_EXPIRED_PERMANENT_DISABLE_CUSTOM_ID_PREFIX}:`;
+    const expiredPermanentEnablePrefix = `${STREAM_EXPIRED_PERMANENT_ENABLE_CUSTOM_ID_PREFIX}:`;
+    const isExpiredPermanentDisable = interaction.customId.startsWith(
+      expiredPermanentDisablePrefix,
+    );
+    const isExpiredPermanentEnable = interaction.customId.startsWith(
+      expiredPermanentEnablePrefix,
+    );
+    if (isExpiredPermanentDisable || isExpiredPermanentEnable) {
+      const prefix = isExpiredPermanentDisable
+        ? expiredPermanentDisablePrefix
+        : expiredPermanentEnablePrefix;
+      const guildId = interaction.customId.slice(prefix.length);
+      const enabled = isExpiredPermanentEnable;
+      const optionsJson = {
+        action: 'permanent-reminder',
+        enabled,
+        guildId: guildId || null,
+        reminderId: null,
+      } satisfies Prisma.InputJsonValue;
+
+      try {
+        if (!guildId) {
+          throw new Error('Invalid permanent reminder button.');
+        }
+        await setPermanentStreamReminder({
+          enabled,
+          guildId,
+          userId: interaction.user.id,
+        });
+        await interaction.update(
+          buildExpiredStreamReminderMessage(guildId, enabled),
+        );
         await logStreamReminderSafely({
           interaction,
           optionsJson,
@@ -319,6 +376,27 @@ export class StreamReminderButtonsListener extends Listener {
         startedAt,
         note: message,
       });
+
+      if (message === 'That stream is no longer available for reminders.') {
+        try {
+          const permanentReminderEnabled =
+            await getPermanentStreamReminderEnabled(
+              guildId,
+              interaction.user.id,
+            );
+          return interaction.editReply(
+            buildExpiredStreamReminderMessage(
+              guildId,
+              permanentReminderEnabled,
+            ),
+          );
+        } catch (preferenceError) {
+          console.error(
+            'Failed to load permanent stream reminder preference',
+            preferenceError,
+          );
+        }
+      }
 
       return interaction.editReply(message);
     }

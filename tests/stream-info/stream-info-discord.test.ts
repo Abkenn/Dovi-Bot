@@ -7,6 +7,7 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 }));
 
 import {
+  buildExpiredStreamReminderMessage,
   buildStreamAnnouncementChangePreview,
   buildStreamAnnouncementMessages,
   buildStreamAnnouncementReminderButton,
@@ -327,6 +328,31 @@ describe('stream info discord output', () => {
             },
           ],
         },
+      ],
+    });
+  });
+
+  it('offers a permanent reminder toggle when a stream reminder has expired', () => {
+    const disabled = buildExpiredStreamReminderMessage('guild-1', false);
+    const enabled = buildExpiredStreamReminderMessage('guild-1', true);
+
+    expect(disabled.content).toBe(
+      'That stream is no longer available for reminders.',
+    );
+    expect(disabled.components[0]?.toJSON()).toMatchObject({
+      components: [
+        expect.objectContaining({
+          custom_id: 'stream-expired-permanent-enable:guild-1',
+          label: 'Remind Me for All Future Streams',
+        }),
+      ],
+    });
+    expect(enabled.components[0]?.toJSON()).toMatchObject({
+      components: [
+        expect.objectContaining({
+          custom_id: 'stream-expired-permanent-disable:guild-1',
+          label: 'Disable All Future Reminders',
+        }),
       ],
     });
   });

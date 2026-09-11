@@ -6,8 +6,8 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
+import { setDefaultStreamGame } from '../modules/stream-info/stream-default-game.service';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
-import { setDefaultGameName } from '../modules/stream-info/stream-info.service';
 
 const METADATA = COMMAND_METADATA.SET_GAME;
 
@@ -72,7 +72,11 @@ export class SetGameCommand extends Command {
           aliases,
           contextWords: tags,
         });
-        await setDefaultGameName(guildId, result.gameName);
+        await setDefaultStreamGame({
+          client: this.container.client,
+          gameName: result.gameName,
+          guildId,
+        });
 
         return editReply({
           content: `Default game for future regular game streams updated to **${result.gameName}**.`,

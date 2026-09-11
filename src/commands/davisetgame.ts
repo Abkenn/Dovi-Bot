@@ -6,8 +6,8 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
+import { setDefaultStreamGame } from '../modules/stream-info/stream-default-game.service';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
-import { setDefaultGameName } from '../modules/stream-info/stream-info.service';
 
 const METADATA = COMMAND_METADATA.DAVI_SET_GAME;
 
@@ -51,7 +51,11 @@ export class DaviSetGameCommand extends Command {
         const game = interaction.options.getString('game', true);
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 
-        await setDefaultGameName(targetGuildId, game);
+        await setDefaultStreamGame({
+          client: this.container.client,
+          gameName: game,
+          guildId: targetGuildId,
+        });
 
         return editReply({
           content: `Prod env default game updated to **${game}**.`,
