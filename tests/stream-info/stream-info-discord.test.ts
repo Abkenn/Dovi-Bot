@@ -360,7 +360,7 @@ describe('stream info discord output', () => {
     });
   });
 
-  it('does not add an unlabeled video title when the YouTube title is absent', () => {
+  it('uses a stable YouTube link label when the video title is absent', () => {
     const value = getEmbedFieldValue(
       buildStreamInfoEmbed({
         timezone: 'America/Sao_Paulo',
@@ -373,7 +373,9 @@ describe('stream info discord output', () => {
       'Current stream',
     );
 
-    expect(value).not.toContain('[](');
+    expect(value).toContain(
+      '[Watch on YouTube](https://youtube.test/watch?v=stream)',
+    );
   });
 
   it('marks live current streams with started relative text', () => {

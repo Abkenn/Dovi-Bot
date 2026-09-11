@@ -332,6 +332,44 @@ describe('stream announcement changes', () => {
     expect(fetch).toHaveBeenCalledWith('posted-link');
   });
 
+  it('keeps the original stored YouTube title during announcement refreshes', async () => {
+    const edit = vi.fn();
+    const fetch = vi.fn().mockResolvedValue({ edit });
+    queries.findStreamAnnouncementByDate.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'prod-guild',
+      linkMessageId: 'posted-link',
+      messageId: 'posted-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+    });
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue({
+      ...streamInfo,
+      next: {
+        ...occurrence,
+        streamUrl: undefined,
+        videoTitle: 'Renamed video title',
+      },
+    });
+
+    await refreshTrackedStreamAnnouncement({
+      client: makeClient({ messages: { fetch } }),
+      guildId: 'prod-guild',
+      streamDateKey: occurrence.dateKey,
+    });
+
+    expect(discord.buildStreamAnnouncementMessages).toHaveBeenCalledWith(
+      expect.objectContaining({
+        streamInfo: expect.objectContaining({
+          next: expect.objectContaining({
+            videoTitle: 'Stream title',
+          }),
+        }),
+      }),
+    );
+  });
+
   it('does nothing when the stream date has no tracked announcement', async () => {
     await expect(
       refreshTrackedStreamAnnouncement({

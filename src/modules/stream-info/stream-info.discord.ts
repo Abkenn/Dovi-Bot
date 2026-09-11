@@ -105,8 +105,9 @@ const buildOccurrenceValue = (
     lines.push(`Theme: ${occurrence.musicTheme.trim()}`);
   }
 
-  if (occurrence.videoTitle?.trim() && occurrence.streamUrl) {
-    lines.push(`[${occurrence.videoTitle.trim()}](${occurrence.streamUrl})`);
+  if (occurrence.streamUrl) {
+    const videoLabel = occurrence.videoTitle?.trim() || 'Watch on YouTube';
+    lines.push(`[${videoLabel}](${occurrence.streamUrl})`);
   }
 
   lines.push(

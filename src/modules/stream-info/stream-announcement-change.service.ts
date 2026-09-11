@@ -88,6 +88,30 @@ const getOccurrence = (
   return occurrence;
 };
 
+const preserveStoredVideoTitle = (
+  streamInfo: StreamInfoResult,
+  storedStreamInfo: StreamInfoResult,
+  streamDateKey: string,
+): StreamInfoResult => {
+  const storedOccurrence = getOccurrence(storedStreamInfo, streamDateKey);
+  const videoTitle = storedOccurrence.videoTitle;
+  if (!videoTitle?.trim()) {
+    return streamInfo;
+  }
+
+  const restoreVideoTitle = (occurrence: StreamOccurrence | null) =>
+    occurrence?.dateKey === streamDateKey
+      ? { ...occurrence, videoTitle }
+      : occurrence;
+
+  return {
+    ...streamInfo,
+    current: restoreVideoTitle(streamInfo.current),
+    previous: restoreVideoTitle(streamInfo.previous),
+    next: restoreVideoTitle(streamInfo.next),
+  };
+};
+
 const createRequest = async ({
   action,
   channelId,
@@ -334,8 +358,13 @@ export const refreshTrackedStreamAnnouncement = async ({
   const record = await findStreamAnnouncementByDate(guildId, streamDateKey);
   if (!record) return false;
 
-  const streamInfo = await getStreamInfoForAnnouncementPreview(
+  const refreshedStreamInfo = await getStreamInfoForAnnouncementPreview(
     guildId,
+    streamDateKey,
+  );
+  const streamInfo = preserveStoredVideoTitle(
+    refreshedStreamInfo,
+    deserializeStreamAnnouncementSnapshot(record.streamInfoJson),
     streamDateKey,
   );
   const occurrence = getOccurrence(streamInfo, streamDateKey);
