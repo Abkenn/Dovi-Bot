@@ -69,6 +69,7 @@ const getEdits = (
   if (input.musicTheme) edits.musicTheme = input.musicTheme;
   if (input.gameName) edits.gameName = input.gameName;
   if (input.title) edits.title = input.title;
+  if (input.videoTitle) edits.videoTitle = input.videoTitle;
   if (input.streamUrl) edits.streamUrl = input.streamUrl;
   return edits;
 };

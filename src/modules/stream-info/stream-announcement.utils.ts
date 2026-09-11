@@ -75,6 +75,7 @@ const applyEditsToOccurrence = (
     title,
     customTitle: edits.title ?? occurrence.customTitle,
     gameName: edits.gameName ?? occurrence.gameName,
+    videoTitle: edits.videoTitle ?? occurrence.videoTitle,
     streamUrl: edits.streamUrl ?? occurrence.streamUrl,
   };
 };

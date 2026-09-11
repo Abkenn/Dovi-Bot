@@ -102,6 +102,13 @@ export class DaviUpdateAnnouncementCommand extends Command {
           )
           .addStringOption((option) =>
             option
+              .setName('video_title')
+              .setDescription(
+                'Optional YouTube video title shown in the embed',
+              ),
+          )
+          .addStringOption((option) =>
+            option
               .setName('stream_url')
               .setDescription('Optional YouTube stream URL'),
           ),
@@ -132,6 +139,7 @@ export class DaviUpdateAnnouncementCommand extends Command {
         const musicTheme = interaction.options.getString('music_theme');
         const gameName = interaction.options.getString('game');
         const title = interaction.options.getString('title');
+        const videoTitle = interaction.options.getString('video_title');
         const streamUrl = interaction.options.getString('stream_url');
 
         if (announcementMessageId)
@@ -141,6 +149,7 @@ export class DaviUpdateAnnouncementCommand extends Command {
         if (musicTheme) input.musicTheme = musicTheme;
         if (gameName) input.gameName = gameName;
         if (title) input.title = title;
+        if (videoTitle) input.videoTitle = videoTitle;
         if (streamUrl) input.streamUrl = streamUrl;
 
         const result = await prepareStreamAnnouncementChange(input);

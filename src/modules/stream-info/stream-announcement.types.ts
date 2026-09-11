@@ -8,6 +8,7 @@ export type StreamAnnouncementEdits = {
   musicTheme?: string;
   gameName?: string;
   title?: string;
+  videoTitle?: string;
   streamUrl?: string;
 };
 

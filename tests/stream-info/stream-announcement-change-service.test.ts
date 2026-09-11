@@ -105,11 +105,15 @@ describe('stream announcement changes', () => {
       gameName: 'Onimusha',
       now: new Date('2030-01-01T00:00:00.000Z'),
       requestedByUserId: 'user-1',
+      videoTitle: 'Original video title',
     });
 
     expect(result).toMatchObject({ action: 'UPDATE', requestId: 'request-1' });
     expect(queries.createStreamAnnouncementChangeRequest).toHaveBeenCalledWith(
       expect.objectContaining({
+        streamInfoJson: expect.stringContaining(
+          '"videoTitle":"Original video title"',
+        ),
         targetGuildId: 'staging-guild',
         targetMessageId: 'staging-message',
       }),

@@ -103,7 +103,7 @@ describe('/davi-update-announcement', () => {
 
     command.registerApplicationCommands({ registerChatInputCommand } as never);
 
-    expect(builder.addStringOption).toHaveBeenCalledTimes(8);
+    expect(builder.addStringOption).toHaveBeenCalledTimes(9);
     expect(builder.setDefaultMemberPermissions).toHaveBeenCalledWith(32n);
   });
 
@@ -116,6 +116,8 @@ describe('/davi-update-announcement', () => {
       stream_url: 'https://youtube.test/watch?v=stream',
       title: 'Launch night',
       type: 'GAME',
+      video_title:
+        'Listening to YOUR Game Music Picks! DELUXE VIDEO GAME JUKEBOX + Onimusha Later',
     });
 
     await DaviUpdateAnnouncementCommand.prototype.chatInputRun.call(
@@ -132,6 +134,8 @@ describe('/davi-update-announcement', () => {
       streamKind: 'GAME',
       streamUrl: 'https://youtube.test/watch?v=stream',
       title: 'Launch night',
+      videoTitle:
+        'Listening to YOUR Game Music Picks! DELUXE VIDEO GAME JUKEBOX + Onimusha Later',
     });
     expect(dependencies.runCommand).toHaveBeenCalledWith(
       expect.objectContaining({
