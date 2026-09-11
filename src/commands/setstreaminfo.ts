@@ -7,6 +7,7 @@ import {
   EPHEMERAL_COMMAND_REPLY,
   runCommand,
 } from '../modules/command-runner/run-command';
+import { refreshTrackedStreamAnnouncement } from '../modules/stream-info/stream-announcement-change.service';
 import { getStreamInfoEmbed } from '../modules/stream-info/stream-info.discord';
 import { setStreamInfo } from '../modules/stream-info/stream-info.service';
 import { parseWeekday } from '../modules/stream-info/stream-info.utils';
@@ -70,6 +71,11 @@ export class SetStreamInfoCommand extends Command {
           .addStringOption((option) =>
             option.setName('game').setDescription('Optional game name'),
           )
+          .addBooleanOption((option) =>
+            option
+              .setName('combined')
+              .setDescription('Play the scheduled music first, then the game'),
+          )
           .addStringOption((option) =>
             option.setName('title').setDescription('Optional title override'),
           ),
@@ -88,7 +94,7 @@ export class SetStreamInfoCommand extends Command {
       deferReplyOptions: EPHEMERAL_COMMAND_REPLY,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId }) => {
-        await setStreamInfo({
+        const override = await setStreamInfo({
           guildId,
           targetWeekday: parseWeekday(interaction.options.getString('day')),
           streamKind: interaction.options.getString(
@@ -99,7 +105,13 @@ export class SetStreamInfoCommand extends Command {
           ) as MusicMode | null,
           musicTheme: interaction.options.getString('music_theme'),
           gameName: interaction.options.getString('game'),
+          combined: interaction.options.getBoolean('combined'),
           title: interaction.options.getString('title'),
+        });
+        await refreshTrackedStreamAnnouncement({
+          client: this.container.client,
+          guildId,
+          streamDateKey: override.streamDateKey,
         });
 
         return editReply({

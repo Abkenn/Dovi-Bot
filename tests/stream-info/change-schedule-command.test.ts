@@ -96,12 +96,13 @@ describe('change schedule commands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     dependencies.getStreamInfoEmbed.mockResolvedValue({ title: 'Stream Info' });
-    dependencies.runCommand.mockImplementation(async (options) =>
-      options.run({
+    dependencies.runCommand.mockImplementation(async (options) => {
+      options.beforeDefer();
+      return options.run({
         editReply: dependencies.editReply,
         preflight: 'interaction-guild',
-      }),
-    );
+      });
+    });
   });
 
   it('registers required day and type choices as admin commands', () => {
@@ -154,5 +155,45 @@ describe('change schedule commands', () => {
     expect(dependencies.editReply).toHaveBeenCalledWith(
       expect.objectContaining({ content: 'Prod env schedule updated.' }),
     );
+  });
+
+  it('supports both schedule types in both commands', async () => {
+    await ChangeScheduleCommand.prototype.chatInputRun.call(
+      { container: { client: { id: 'client' } }, name: 'changeschedule' },
+      makeInteraction('SATURDAY', StreamKind.MUSIC) as never,
+    );
+    await DaviChangeScheduleCommand.prototype.chatInputRun.call(
+      { container: { client: { id: 'client' } }, name: 'davichangeschedule' },
+      makeInteraction('FRIDAY', StreamKind.GAME) as never,
+    );
+
+    expect(dependencies.changeStreamSchedule).toHaveBeenNthCalledWith(1, {
+      guildId: 'interaction-guild',
+      targetWeekday: 'SATURDAY',
+      streamKind: StreamKind.MUSIC,
+    });
+    expect(dependencies.changeStreamSchedule).toHaveBeenNthCalledWith(2, {
+      guildId: 'production-guild',
+      targetWeekday: 'FRIDAY',
+      streamKind: StreamKind.GAME,
+    });
+  });
+
+  it('rejects unsupported weekdays in both commands', async () => {
+    await expect(
+      ChangeScheduleCommand.prototype.chatInputRun.call(
+        { container: { client: { id: 'client' } }, name: 'changeschedule' },
+        makeInteraction('SUNDAY', StreamKind.GAME) as never,
+      ),
+    ).rejects.toThrow('Choose Friday or Saturday.');
+    await expect(
+      DaviChangeScheduleCommand.prototype.chatInputRun.call(
+        {
+          container: { client: { id: 'client' } },
+          name: 'davichangeschedule',
+        },
+        makeInteraction('SUNDAY', StreamKind.GAME) as never,
+      ),
+    ).rejects.toThrow('Choose Friday or Saturday.');
   });
 });

@@ -15,6 +15,7 @@ const occurrenceSchema = z
     customTitle: z.string().nullable(),
     musicTheme: z.string().nullable(),
     gameName: z.string().nullable(),
+    isCombined: z.boolean().optional().default(false),
     streamUrl: optionalString,
     videoTitle: optionalString,
     streamIsLive: z.boolean().optional(),

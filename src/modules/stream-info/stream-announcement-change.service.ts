@@ -32,6 +32,7 @@ import type {
   EditTrackedStreamAnnouncementInput,
   PreparedStreamAnnouncementChange,
   PrepareStreamAnnouncementChangeInput,
+  RefreshTrackedStreamAnnouncementInput,
   StreamAnnouncementEdits,
 } from './stream-announcement.types';
 import {
@@ -39,7 +40,11 @@ import {
   findEditableStreamAnnouncementOccurrence,
 } from './stream-announcement.utils';
 import { buildStreamAnnouncementMessages } from './stream-info.discord';
-import { getStreamInfo, setStreamInfo } from './stream-info.service';
+import {
+  getStreamInfo,
+  getStreamInfoForAnnouncementPreview,
+  setStreamInfo,
+} from './stream-info.service';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 
 const UPDATE_LEAD_MS = 60 * 60 * 1000;
@@ -252,6 +257,7 @@ const applyIncomingUpdate = async (
     musicMode: occurrence.musicMode,
     musicTheme: occurrence.musicTheme,
     gameName: occurrence.gameName,
+    combined: occurrence.isCombined ?? false,
     title: occurrence.customTitle,
   });
   if (streamUrl) {
@@ -318,6 +324,33 @@ const editTrackedAnnouncement = async ({
     streamInfoJson: serializeStreamAnnouncementSnapshot(updatedStreamInfo),
     streamUrl,
   });
+};
+
+export const refreshTrackedStreamAnnouncement = async ({
+  client,
+  guildId,
+  streamDateKey,
+}: RefreshTrackedStreamAnnouncementInput) => {
+  const record = await findStreamAnnouncementByDate(guildId, streamDateKey);
+  if (!record) return false;
+
+  const streamInfo = await getStreamInfoForAnnouncementPreview(
+    guildId,
+    streamDateKey,
+  );
+  const occurrence = getOccurrence(streamInfo, streamDateKey);
+  await editTrackedAnnouncement({
+    channelId: record.channelId,
+    client,
+    guildId,
+    linkMessageId: record.linkMessageId,
+    messageId: record.messageId,
+    streamDateKey,
+    streamInfo,
+    streamUrl: occurrence.streamUrl ?? record.streamUrl,
+  });
+
+  return true;
 };
 
 export const applyStreamAnnouncementChange = async ({

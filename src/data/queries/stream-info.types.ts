@@ -28,6 +28,7 @@ export type TargetStreamOverrideInput = {
   titleOverride?: string | null;
   gameName?: string | null;
   createGameName?: string | null;
+  isCombined?: boolean | null;
 };
 
 export type EnsureGuildStreamConfigInput = {

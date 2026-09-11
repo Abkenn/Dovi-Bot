@@ -59,7 +59,7 @@ const shouldShowGame = (occurrence: StreamOccurrence): boolean => {
     occurrence.streamKind === StreamKind.MUSIC &&
     occurrence.musicMode === MusicMode.DICTATORSHIP;
 
-  return isGame || isDictatorshipMusic;
+  return isGame || isDictatorshipMusic || occurrence.isCombined === true;
 };
 
 const buildOccurrenceValue = (
@@ -84,7 +84,11 @@ const buildOccurrenceValue = (
     relativePrefix = startsInFuture ? 'starts ' : 'started ';
   }
 
-  const lines = [occurrence.title ?? 'Stream'];
+  const title = occurrence.title ?? 'Stream';
+  const displayTitle = occurrence.isCombined
+    ? `Combined Stream: ${title} + Game Stream`
+    : title;
+  const lines = [displayTitle];
 
   if (occurrence.customTitle?.trim()) {
     lines.push(`Title: ${occurrence.customTitle.trim()}`);
@@ -109,7 +113,8 @@ const buildOccurrenceValue = (
   );
 
   if (shouldShowGame(occurrence) && occurrence.gameName?.trim()) {
-    lines.push(`Game: ${occurrence.gameName}`);
+    const gameLabel = occurrence.isCombined ? 'Game later' : 'Game';
+    lines.push(`${gameLabel}: ${occurrence.gameName}`);
   }
 
   return lines.join('\n');

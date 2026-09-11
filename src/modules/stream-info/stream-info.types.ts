@@ -15,6 +15,7 @@ export type StreamOccurrence = {
   customTitle: string | null;
   musicTheme: string | null;
   gameName: string | null;
+  isCombined?: boolean;
   streamUrl?: string | undefined;
   videoTitle?: string | undefined;
   streamIsLive?: boolean | undefined;
@@ -59,6 +60,7 @@ export type SetStreamInfoInput = {
   musicTheme?: string | null;
   title?: string | null;
   gameName?: string | null;
+  combined?: boolean | null;
 };
 
 export type SkipStreamInput = {

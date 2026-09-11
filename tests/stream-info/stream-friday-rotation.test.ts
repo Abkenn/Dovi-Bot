@@ -46,6 +46,7 @@ const makeOverride = (
   musicTheme: null,
   titleOverride: null,
   gameName: null,
+  isCombined: null,
   createdAt: new Date('2026-08-01T00:00:00.000Z'),
   updatedAt: new Date('2026-08-01T00:00:00.000Z'),
   ...fields,
@@ -66,7 +67,7 @@ describe('Friday stream rotation', () => {
     expect(getDefaultStreamKindForDay('SATURDAY')).toBe(StreamKind.GAME);
   });
 
-  it('alternates Patreon tiers on ordinary Fridays from the September baseline', () => {
+  it('uses Gods on the first Friday and Masters on every middle Friday', () => {
     expect(resolve('2026-09-04')).toMatchObject({
       streamKind: StreamKind.MUSIC,
       musicMode: MusicMode.PATREON_CAPITALISM,
@@ -77,7 +78,23 @@ describe('Friday stream rotation', () => {
       musicTheme: 'Patreon Masters Tier',
     });
     expect(resolve('2026-09-18')).toMatchObject({
-      musicTheme: 'Patreon Gods & Oracles Tier',
+      musicTheme: 'Patreon Masters Tier',
+    });
+    expect(resolve('2026-10-23')).toMatchObject({
+      musicTheme: 'Patreon Masters Tier',
+    });
+  });
+
+  it('leaves non-Friday and pre-baseline occurrences unchanged', () => {
+    const saturday = {
+      ...makeFriday('2026-09-05'),
+      weekday: 'SATURDAY' as const,
+    };
+
+    expect(applyFridayMusicRotation(saturday, new Map())).toBe(saturday);
+    expect(resolve('2026-08-21')).toMatchObject({
+      streamKind: StreamKind.GAME,
+      musicMode: null,
     });
   });
 
@@ -112,7 +129,7 @@ describe('Friday stream rotation', () => {
     ).toMatchObject({ musicMode: MusicMode.DEMOCRACY });
   });
 
-  it('moves a replaced Patreon tier to the next ordinary Friday', () => {
+  it('keeps Patreon tiers tied to their calendar position after replacements', () => {
     const gameFriday = makeOverride('2026-09-11', {
       streamKind: StreamKind.GAME,
     });
@@ -141,7 +158,27 @@ describe('Friday stream rotation', () => {
     ).toMatchObject({ musicMode: MusicMode.DEMOCRACY });
   });
 
-  it('does not consume a rotation entry when its Friday is skipped', () => {
+  it('keeps the monthly mode pending after a cancelled last Friday', () => {
+    const cancelledFriday = makeOverride('2026-09-25', {
+      status: ScheduleStatus.CANCELLED,
+    });
+
+    expect(resolve('2026-10-30', [cancelledFriday])).toMatchObject({
+      musicMode: MusicMode.DEMOCRACY,
+    });
+  });
+
+  it('consumes an unchanged last-Friday mode stored as an override', () => {
+    const unchangedFriday = makeOverride('2026-09-25', {
+      streamKind: StreamKind.MUSIC,
+    });
+
+    expect(resolve('2026-10-30', [unchangedFriday])).toMatchObject({
+      musicMode: MusicMode.CAPITALISM,
+    });
+  });
+
+  it('keeps Patreon tiers tied to their calendar position after skips', () => {
     const skippedFriday = makeOverride('2026-09-11', {
       status: ScheduleStatus.CANCELLED,
     });

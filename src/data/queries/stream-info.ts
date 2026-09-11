@@ -20,6 +20,7 @@ export const buildTargetStreamOverrideUpsertArgs = ({
   musicTheme,
   titleOverride,
   gameName,
+  isCombined,
   createGameName = gameName ?? null,
 }: TargetStreamOverrideInput) => ({
   where: {
@@ -36,6 +37,7 @@ export const buildTargetStreamOverrideUpsertArgs = ({
     ...(musicTheme !== undefined ? { musicTheme } : {}),
     ...(titleOverride !== undefined ? { titleOverride } : {}),
     ...(gameName !== undefined ? { gameName } : {}),
+    ...(isCombined !== undefined ? { isCombined } : {}),
   },
   create: {
     guildId,
@@ -48,6 +50,7 @@ export const buildTargetStreamOverrideUpsertArgs = ({
     musicTheme: musicTheme ?? null,
     titleOverride: titleOverride ?? null,
     gameName: createGameName,
+    isCombined: isCombined ?? null,
   },
 });
 

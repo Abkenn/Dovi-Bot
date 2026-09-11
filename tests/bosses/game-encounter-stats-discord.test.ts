@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildShowAllGameStatsEmbed,
   buildShowAllGameStatsPageMessage,
+  buildShowGameStatsEmbed,
   parseAllGameStatsPageAction,
 } from '../../src/modules/boss-encounter-stats/game/game-encounter-stats.discord';
 import { getEmbedFieldValue } from '../utils/discord-output';
@@ -61,5 +62,37 @@ describe('all-game boss stats output', () => {
       page: 2,
     });
     expect(parseAllGameStatsPageAction('other:user-1:2')).toBeNull();
+    expect(parseAllGameStatsPageAction('all-game-stats::2')).toBeNull();
+    expect(parseAllGameStatsPageAction('all-game-stats:user-1:0')).toBeNull();
+    expect(
+      parseAllGameStatsPageAction('all-game-stats:user-1:nope'),
+    ).toBeNull();
+  });
+
+  it('shows an empty state for a game without boss stats', () => {
+    const embed = buildShowGameStatsEmbed({
+      game: { id: 'game-1', name: 'No Stats Game' },
+      stats: [],
+      trackedBosses: [],
+    });
+
+    expect(getEmbedFieldValue(embed, 'Boss stats')).toBe(
+      'No boss stats found for this game yet.',
+    );
+  });
+
+  it('splits boss stats across embed fields at Discord limits', () => {
+    const longName = 'Very Long Boss Name '.repeat(35);
+    const embed = buildShowAllGameStatsEmbed({
+      bosses: Array.from({ length: 3 }, (_, index) => ({
+        name: `${longName}${index}`,
+        gameName: 'Long Game',
+        deaths: 10 - index,
+      })),
+    });
+
+    expect(embed.toJSON().fields?.map((field) => field.name)).toContain(
+      'Boss stats continued',
+    );
   });
 });

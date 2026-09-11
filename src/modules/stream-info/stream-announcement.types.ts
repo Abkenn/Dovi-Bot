@@ -57,6 +57,12 @@ export type EditTrackedStreamAnnouncementInput = {
   streamUrl: string;
 };
 
+export type RefreshTrackedStreamAnnouncementInput = {
+  client: Client;
+  guildId: string;
+  streamDateKey: string;
+};
+
 export type BuildStreamAnnouncementChangePreviewInput = {
   action: StreamAnnouncementChangeAction;
   requestId: string;

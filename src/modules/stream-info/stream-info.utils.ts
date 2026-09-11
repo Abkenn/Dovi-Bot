@@ -224,6 +224,7 @@ export const buildDefaultOccurrence = (
     customTitle: rule.titleOverride ?? config.defaultTitleOverride ?? null,
     musicTheme: null,
     gameName,
+    isCombined: false,
     isOverride: false,
   };
 };
@@ -251,6 +252,7 @@ export const applyOverrideToOccurrence = (
     .toJSDate();
 
   const streamKind = override.streamKind ?? occurrence.streamKind;
+  const isCombined = override.isCombined ?? occurrence.isCombined ?? false;
   const musicMode =
     streamKind === StreamKind.MUSIC
       ? (override.musicMode ?? occurrence.musicMode)
@@ -261,7 +263,7 @@ export const applyOverrideToOccurrence = (
 
   if (override.gameName !== null && override.gameName !== undefined) {
     gameName = override.gameName;
-  } else if (streamKind === StreamKind.GAME) {
+  } else if (streamKind === StreamKind.GAME || isCombined) {
     if (occurrence.streamKind === StreamKind.GAME) {
       gameName = occurrence.gameName ?? config.defaultGameName ?? null;
     } else {
@@ -281,6 +283,7 @@ export const applyOverrideToOccurrence = (
     customTitle: override.titleOverride ?? null,
     musicTheme: override.musicTheme ?? null,
     gameName,
+    isCombined,
     isOverride: true,
   };
 };

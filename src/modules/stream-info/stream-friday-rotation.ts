@@ -10,23 +10,12 @@ import { resolveTitle } from './stream-info.utils';
 
 export const FRIDAY_ROTATION_START_DATE_KEY = '2026-08-28';
 
-const KNOWN_CONSUMED_DATE_KEYS = new Set(['2026-08-28', '2026-09-04']);
+const KNOWN_CONSUMED_DATE_KEYS = new Set(['2026-08-28']);
 
 type FridayRotationEntry = {
   musicMode: MusicMode;
   musicTheme: string | null;
 };
-
-const PATREON_ROTATION = [
-  {
-    musicMode: MusicMode.PATREON_CAPITALISM,
-    musicTheme: 'Patreon Gods & Oracles Tier',
-  },
-  {
-    musicMode: MusicMode.PATREON_CAPITALISM,
-    musicTheme: 'Patreon Masters Tier',
-  },
-] as const satisfies readonly FridayRotationEntry[];
 
 const MONTHLY_ROTATION = [
   { musicMode: MusicMode.CAPITALISM, musicTheme: null },
@@ -35,6 +24,12 @@ const MONTHLY_ROTATION = [
 
 const isLastFridayOfMonth = (date: DateTime): boolean =>
   date.plus({ days: 7 }).month !== date.month;
+
+const getPatreonEntry = (date: DateTime): FridayRotationEntry => ({
+  musicMode: MusicMode.PATREON_CAPITALISM,
+  musicTheme:
+    date.day <= 7 ? 'Patreon Gods & Oracles Tier' : 'Patreon Masters Tier',
+});
 
 const consumesRotationEntry = (
   override: StreamScheduleOverride | undefined,
@@ -60,18 +55,20 @@ const getRotationEntry = (
     zone: 'America/Sao_Paulo',
   });
   if (target.toMillis() < start.toMillis()) return null;
+  if (!isLastFridayOfMonth(target)) return getPatreonEntry(target);
 
-  let patreonIndex = 0;
   let monthlyIndex = 0;
   let date = start;
 
   while (date.toMillis() <= target.toMillis()) {
     const dateKey = date.toFormat('yyyy-LL-dd');
     const monthly = isLastFridayOfMonth(date);
-    const rotation = monthly ? MONTHLY_ROTATION : PATREON_ROTATION;
-    const index = monthly ? monthlyIndex : patreonIndex;
-    const expected = rotation[index % rotation.length];
+    const expected = MONTHLY_ROTATION[monthlyIndex % MONTHLY_ROTATION.length];
     if (!expected) throw new Error('Friday stream rotation is empty.');
+    if (!monthly) {
+      date = date.plus({ days: 7 });
+      continue;
+    }
     if (dateKey === streamDateKey) return expected;
 
     const isKnownConsumedDate = KNOWN_CONSUMED_DATE_KEYS.has(dateKey);
@@ -79,8 +76,7 @@ const getRotationEntry = (
       isKnownConsumedDate ||
       consumesRotationEntry(overrides.get(dateKey), expected)
     ) {
-      if (monthly) monthlyIndex += 1;
-      else patreonIndex += 1;
+      monthlyIndex += 1;
     }
     date = date.plus({ days: 7 });
   }

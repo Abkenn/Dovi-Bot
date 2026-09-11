@@ -77,6 +77,7 @@ const makeOverride = (
   musicTheme: null,
   titleOverride: null,
   gameName: null,
+  isCombined: null,
   createdAt: now,
   updatedAt: now,
   ...overrides,
@@ -241,6 +242,28 @@ describe('stream info utils', () => {
       musicMode: null,
       title: 'Game Stream',
       gameName: 'Fallback Game',
+    });
+  });
+
+  it('uses the default game when a music occurrence becomes combined', () => {
+    const occurrence = buildDefaultOccurrence(
+      makeConfig(),
+      makeDefaultRule({
+        streamKind: StreamKind.MUSIC,
+        musicMode: MusicMode.PATREON_CAPITALISM,
+      }),
+      friday,
+    );
+    const updated = applyOverrideToOccurrence(
+      makeConfig({ defaultGameName: 'Game Later' }),
+      occurrence,
+      makeOverride({ isCombined: true }),
+    );
+
+    expect(updated).toMatchObject({
+      streamKind: StreamKind.MUSIC,
+      gameName: 'Game Later',
+      isCombined: true,
     });
   });
 

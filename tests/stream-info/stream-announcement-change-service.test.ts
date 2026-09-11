@@ -18,6 +18,7 @@ const queries = vi.hoisted(() => ({
 }));
 const streamInfoService = vi.hoisted(() => ({
   getStreamInfo: vi.fn(),
+  getStreamInfoForAnnouncementPreview: vi.fn(),
   setStreamInfo: vi.fn(),
 }));
 const discord = vi.hoisted(() => ({
@@ -38,6 +39,7 @@ import {
   applyStreamAnnouncementChange,
   declineStreamAnnouncementChange,
   prepareStreamAnnouncementChange,
+  refreshTrackedStreamAnnouncement,
 } from '../../src/modules/stream-info/stream-announcement-change.service';
 
 const occurrence = {
@@ -78,6 +80,9 @@ describe('stream announcement changes', () => {
     queries.findStreamAnnouncementByDate.mockResolvedValue(null);
     queries.findStreamAnnouncementPlan.mockResolvedValue(null);
     streamInfoService.getStreamInfo.mockResolvedValue(streamInfo);
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue(
+      streamInfo,
+    );
     discord.buildStreamAnnouncementMessages.mockReturnValue({
       info: { content: 'stream info' },
       link: { content: 'youtube link' },
@@ -284,6 +289,90 @@ describe('stream announcement changes', () => {
     );
     expect(queries.updateStreamAnnouncementSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ messageId: 'posted-message' }),
+    );
+  });
+
+  it('refreshes an existing announcement from its current stream occurrence', async () => {
+    const edit = vi.fn();
+    const fetch = vi.fn().mockResolvedValue({ edit });
+    const combinedStreamInfo: StreamInfoResult = {
+      ...streamInfo,
+      next: {
+        ...occurrence,
+        streamKind: 'MUSIC',
+        isCombined: true,
+      },
+    };
+    queries.findStreamAnnouncementByDate.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'prod-guild',
+      linkMessageId: 'posted-link',
+      messageId: 'posted-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+    });
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue(
+      combinedStreamInfo,
+    );
+
+    const refreshed = await refreshTrackedStreamAnnouncement({
+      client: makeClient({ messages: { fetch } }),
+      guildId: 'prod-guild',
+      streamDateKey: occurrence.dateKey,
+    });
+
+    expect(refreshed).toBe(true);
+    expect(discord.buildStreamAnnouncementMessages).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occurrence: expect.objectContaining({ isCombined: true }),
+      }),
+    );
+    expect(fetch).toHaveBeenCalledWith('posted-message');
+    expect(fetch).toHaveBeenCalledWith('posted-link');
+  });
+
+  it('does nothing when the stream date has no tracked announcement', async () => {
+    await expect(
+      refreshTrackedStreamAnnouncement({
+        client: makeClient(null),
+        guildId: 'prod-guild',
+        streamDateKey: occurrence.dateKey,
+      }),
+    ).resolves.toBe(false);
+
+    expect(
+      streamInfoService.getStreamInfoForAnnouncementPreview,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('restores a missing link message while refreshing an announcement', async () => {
+    const edit = vi.fn();
+    const fetch = vi.fn().mockResolvedValue({ edit });
+    const send = vi.fn().mockResolvedValue({ id: 'replacement-link' });
+    queries.findStreamAnnouncementByDate.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'prod-guild',
+      linkMessageId: null,
+      messageId: 'posted-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+    });
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue({
+      ...streamInfo,
+      next: { ...occurrence, streamUrl: undefined },
+    });
+
+    await refreshTrackedStreamAnnouncement({
+      client: makeClient({ messages: { fetch }, send }),
+      guildId: 'prod-guild',
+      streamDateKey: occurrence.dateKey,
+    });
+
+    expect(send).toHaveBeenCalledWith({ content: 'youtube link' });
+    expect(queries.updateStreamAnnouncementSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ linkMessageId: 'replacement-link' }),
     );
   });
 

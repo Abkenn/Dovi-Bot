@@ -353,14 +353,20 @@ test('covers stream-info queries and transactions', async () => {
       startAtUtc: now,
       status: ScheduleStatus.SCHEDULED,
       gameName: 'Builder Game',
+      isCombined: true,
     }),
   ).toMatchObject({
-    update: { status: ScheduleStatus.SCHEDULED, gameName: 'Builder Game' },
+    update: {
+      status: ScheduleStatus.SCHEDULED,
+      gameName: 'Builder Game',
+      isCombined: true,
+    },
     create: {
       streamKind: null,
       musicMode: null,
       titleOverride: null,
       gameName: 'Builder Game',
+      isCombined: true,
     },
   });
   expect(
@@ -436,6 +442,7 @@ test('covers stream-info queries and transactions', async () => {
     musicMode: MusicMode.DEMOCRACY,
     musicTheme: 'Peace songs',
     titleOverride: 'Override Stream',
+    isCombined: true,
   });
   await expect(
     queries.findStreamScheduleOverridesInDateRange({
@@ -443,7 +450,7 @@ test('covers stream-info queries and transactions', async () => {
       start: '2026-06-01',
       end: '2026-06-30',
     }),
-  ).resolves.toMatchObject([{ musicTheme: 'Peace songs' }]);
+  ).resolves.toMatchObject([{ isCombined: true, musicTheme: 'Peace songs' }]);
 
   await queries.upsertStreamTitleResetOverride({
     guildId,

@@ -399,6 +399,30 @@ describe('stream info discord output', () => {
     expect(value).not.toContain('Game: Hidden Game');
   });
 
+  it('shows combined music-first streams with the later game', () => {
+    const value = getEmbedFieldValue(
+      buildStreamInfoEmbed({
+        timezone: 'America/Sao_Paulo',
+        current: makeOccurrence({
+          streamKind: StreamKind.MUSIC,
+          musicMode: MusicMode.PATREON_CAPITALISM,
+          title: 'Patreon Capitalism Stream',
+          musicTheme: 'Patreon Masters Tier',
+          gameName: 'Onimusha: Way of the Sword',
+          isCombined: true,
+        }),
+        previous: null,
+        next: null,
+      }),
+      'Current stream',
+    );
+
+    expect(value).toContain(
+      'Combined Stream: Patreon Capitalism Stream + Game Stream',
+    );
+    expect(value).toContain('Game later: Onimusha: Way of the Sword');
+  });
+
   it('shows a custom title as secondary context without hiding music mode', () => {
     const value = getEmbedFieldValue(
       buildStreamInfoEmbed({

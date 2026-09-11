@@ -88,7 +88,9 @@ const buildOverrideOnlyOccurrence = (
   const title = resolveTitle(streamKind, musicMode, null);
   const gameName =
     override.gameName ??
-    (streamKind === StreamKind.GAME ? config.defaultGameName : null);
+    (streamKind === StreamKind.GAME || override.isCombined
+      ? config.defaultGameName
+      : null);
   const weekday =
     override.resolvedFromWeekday ??
     LUXON_WEEKDAY_TO_WEEKDAY[
@@ -111,6 +113,7 @@ const buildOverrideOnlyOccurrence = (
     customTitle: override.titleOverride,
     musicTheme: override.musicTheme,
     gameName,
+    isCombined: override.isCombined ?? false,
     isOverride: true,
   };
 };
@@ -577,6 +580,7 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
     musicTheme?: string | null;
     titleOverride?: string | null;
     gameName?: string | null;
+    isCombined?: boolean | null;
   } = {
     resolvedFromWeekday: targetOccurrence.weekday,
   };
@@ -595,11 +599,20 @@ export const setStreamInfo = async (input: SetStreamInfoInput) => {
   updateData.musicTheme =
     inferredStreamKind === StreamKind.MUSIC ? (input.musicTheme ?? null) : null;
 
+  if (input.combined === true && inferredStreamKind !== StreamKind.MUSIC) {
+    throw new Error('Combined streams must start as music streams.');
+  }
+  if (input.combined !== null && input.combined !== undefined) {
+    updateData.isCombined = input.combined;
+  } else if (hasExplicitStreamKind && inferredStreamKind !== StreamKind.MUSIC) {
+    updateData.isCombined = false;
+  }
+
   if (shouldPersistGameName) {
     updateData.gameName = null;
   } else if (hasExplicitGameName) {
     updateData.gameName = explicitGameName;
-  } else if (switchingToGameWithoutExplicitGame) {
+  } else if (switchingToGameWithoutExplicitGame || input.combined === true) {
     updateData.gameName = null;
   }
 
