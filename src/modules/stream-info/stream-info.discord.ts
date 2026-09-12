@@ -15,7 +15,11 @@ import {
   getCommandCategoryAccentColor,
 } from '../../config/discord-command-categories';
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
-import type { BuildStreamAnnouncementChangePreviewInput } from './stream-announcement.types';
+import type {
+  BuildAppliedStreamAnnouncementChangeInput,
+  BuildStreamAnnouncementChangePreviewInput,
+  BuildStreamAnnouncementUndoPreviewInput,
+} from './stream-announcement.types';
 import { getStreamInfo } from './stream-info.service';
 import type {
   BuildStreamAnnouncementMessageInput,
@@ -47,10 +51,21 @@ export const STREAM_ANNOUNCEMENT_CHANGE_APPROVE_CUSTOM_ID_PREFIX =
   'stream-announcement-change-approve';
 export const STREAM_ANNOUNCEMENT_CHANGE_DECLINE_CUSTOM_ID_PREFIX =
   'stream-announcement-change-decline';
+export const STREAM_ANNOUNCEMENT_CHANGE_UNDO_CUSTOM_ID_PREFIX =
+  'stream-announcement-change-undo';
+export const STREAM_ANNOUNCEMENT_CHANGE_UNDO_APPROVE_CUSTOM_ID_PREFIX =
+  'stream-announcement-change-undo-approve';
+export const STREAM_ANNOUNCEMENT_CHANGE_UNDO_DECLINE_CUSTOM_ID_PREFIX =
+  'stream-announcement-change-undo-decline';
 const STREAM_ANNOUNCEMENT_ACTION_LABELS = {
   UPDATE: 'Update',
   PUSH: 'Push',
   DELETE: 'Delete',
+} as const;
+const STREAM_ANNOUNCEMENT_APPLIED_ACTION_LABELS = {
+  UPDATE: 'Update',
+  PUSH: 'Manual push',
+  DELETE: 'Deletion',
 } as const;
 const discordTs = (date: Date, style: 'F' | 'R'): string => {
   const unix = Math.floor(date.getTime() / 1000);
@@ -280,6 +295,71 @@ export const buildStreamAnnouncementChangePreview = ({
           `${STREAM_ANNOUNCEMENT_CHANGE_DECLINE_CUSTOM_ID_PREFIX}:${requestId}`,
         )
         .setLabel('Decline')
+        .setStyle(ButtonStyle.Secondary),
+    ),
+  ],
+  allowedMentions: { parse: [] },
+});
+
+export const buildAppliedStreamAnnouncementChange = ({
+  action,
+  requestId,
+  streamInfo,
+  streamUrl,
+}: BuildAppliedStreamAnnouncementChangeInput) => {
+  const components =
+    action === 'UPDATE'
+      ? [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                `${STREAM_ANNOUNCEMENT_CHANGE_UNDO_CUSTOM_ID_PREFIX}:${requestId}`,
+              )
+              .setLabel('Undo')
+              .setStyle(ButtonStyle.Secondary),
+          ),
+        ]
+      : [];
+  const appliedContent = `${STREAM_ANNOUNCEMENT_APPLIED_ACTION_LABELS[action]} approved and applied.`;
+  if (!streamInfo) {
+    return { content: appliedContent, components };
+  }
+
+  return {
+    content: [streamUrl || null, appliedContent]
+      .filter((line) => line !== null)
+      .join('\n'),
+    embeds: [buildStreamInfoEmbed(streamInfo)],
+    components,
+    allowedMentions: { parse: [] },
+  };
+};
+
+export const buildStreamAnnouncementUndoPreview = ({
+  requestId,
+  streamInfo,
+  streamUrl,
+}: BuildStreamAnnouncementUndoPreviewInput) => ({
+  content: [
+    streamUrl || null,
+    'Undo this update? Newer changes to the same fields will be preserved.',
+  ]
+    .filter((line) => line !== null)
+    .join('\n'),
+  embeds: [buildStreamInfoEmbed(streamInfo)],
+  components: [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId(
+          `${STREAM_ANNOUNCEMENT_CHANGE_UNDO_APPROVE_CUSTOM_ID_PREFIX}:${requestId}`,
+        )
+        .setLabel('Approve Undo')
+        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId(
+          `${STREAM_ANNOUNCEMENT_CHANGE_UNDO_DECLINE_CUSTOM_ID_PREFIX}:${requestId}`,
+        )
+        .setLabel('Keep Current')
         .setStyle(ButtonStyle.Secondary),
     ),
   ],

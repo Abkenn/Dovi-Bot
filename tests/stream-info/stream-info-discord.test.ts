@@ -7,12 +7,14 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 }));
 
 import {
+  buildAppliedStreamAnnouncementChange,
   buildExpiredStreamReminderMessage,
   buildStreamAnnouncementChangePreview,
   buildStreamAnnouncementMessages,
   buildStreamAnnouncementReminderButton,
   buildStreamAnnouncementReminderMessage,
   buildStreamAnnouncementReviewMessage,
+  buildStreamAnnouncementUndoPreview,
   buildStreamInfoEmbed,
   buildStreamReminderButton,
 } from '../../src/modules/stream-info/stream-info.discord';
@@ -216,6 +218,80 @@ describe('stream info discord output', () => {
         {
           custom_id: 'stream-announcement-change-decline:request-1',
           label: 'Decline',
+        },
+      ],
+    });
+  });
+
+  it('replaces approved update controls with one undo button', () => {
+    const message = buildAppliedStreamAnnouncementChange({
+      action: 'UPDATE',
+      requestId: 'request-1',
+    });
+
+    expect(message.components[0]?.toJSON()).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-announcement-change-undo:request-1',
+          label: 'Undo',
+        },
+      ],
+    });
+  });
+
+  it('does not offer undo for push or delete actions', () => {
+    expect(
+      buildAppliedStreamAnnouncementChange({
+        action: 'PUSH',
+        requestId: 'request-1',
+      }).components,
+    ).toEqual([]);
+    expect(
+      buildAppliedStreamAnnouncementChange({
+        action: 'DELETE',
+        requestId: 'request-2',
+      }).components,
+    ).toEqual([]);
+  });
+
+  it('rebuilds the current announcement view after keeping an undo', () => {
+    const message = buildAppliedStreamAnnouncementChange({
+      action: 'UPDATE',
+      requestId: 'request-1',
+      streamInfo: {
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: makeOccurrence({ gameName: 'Current game' }),
+      },
+      streamUrl: 'https://youtube.test/watch?v=current',
+    });
+
+    expect(message.content).toContain('https://youtube.test/watch?v=current');
+    expect('embeds' in message ? message.embeds : []).toHaveLength(1);
+  });
+
+  it('builds a confirmation preview before undoing an update', () => {
+    const message = buildStreamAnnouncementUndoPreview({
+      requestId: 'request-1',
+      streamInfo: {
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: makeOccurrence({ gameName: 'Previous game' }),
+      },
+      streamUrl: 'https://youtube.test/watch?v=stream',
+    });
+
+    expect(message.components[0]?.toJSON()).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-announcement-change-undo-approve:request-1',
+          label: 'Approve Undo',
+        },
+        {
+          custom_id: 'stream-announcement-change-undo-decline:request-1',
+          label: 'Keep Current',
         },
       ],
     });

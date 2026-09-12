@@ -213,18 +213,20 @@ model StreamAnnouncementPlan {
 }
 
 model StreamAnnouncementChangeRequest {
-  id                String                         @id @default(cuid())
-  requestedByUserId String
-  action            StreamAnnouncementChangeAction
-  status            StreamAnnouncementChangeStatus @default(PENDING)
-  targetGuildId     String
-  targetChannelId   String
-  targetMessageId   String?
-  streamDateKey     String
-  streamUrl         String
-  streamInfoJson    String
-  createdAt         DateTime                       @default(now())
-  completedAt       DateTime?
+  id                     String                         @id @default(cuid())
+  requestedByUserId      String
+  action                 StreamAnnouncementChangeAction
+  status                 StreamAnnouncementChangeStatus @default(PENDING)
+  targetGuildId          String
+  targetChannelId        String
+  targetMessageId        String?
+  streamDateKey          String
+  streamUrl              String
+  streamInfoJson         String
+  previousStreamUrl      String?
+  previousStreamInfoJson String?
+  createdAt              DateTime                       @default(now())
+  completedAt            DateTime?
 
   @@index([requestedByUserId, status])
   @@index([createdAt])
@@ -264,6 +266,7 @@ enum StreamAnnouncementChangeStatus {
   PENDING
   APPLIED
   DECLINED
+  UNDONE
 }
 
 enum BossEncounterSource {

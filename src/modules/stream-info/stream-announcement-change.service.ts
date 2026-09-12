@@ -120,6 +120,8 @@ const createRequest = async ({
   messageId,
   streamDateKey,
   requestedByUserId,
+  previousStreamInfo,
+  previousStreamUrl,
   streamInfo,
   streamUrl,
 }: CreateStreamAnnouncementChangeRequestInput): Promise<PreparedStreamAnnouncementChange> => {
@@ -132,6 +134,10 @@ const createRequest = async ({
     streamDateKey,
     streamUrl,
     streamInfoJson: serializeStreamAnnouncementSnapshot(streamInfo),
+    previousStreamInfoJson: previousStreamInfo
+      ? serializeStreamAnnouncementSnapshot(previousStreamInfo)
+      : null,
+    previousStreamUrl,
   });
 
   return {
@@ -171,6 +177,8 @@ const prepareExistingMessageChange = async (
     streamDateKey: record.streamDateKey,
     streamInfo,
     streamUrl: occurrence.streamUrl ?? record.streamUrl,
+    previousStreamInfo: stored,
+    previousStreamUrl: record.streamUrl,
   });
 };
 
@@ -262,6 +270,11 @@ export const prepareStreamAnnouncementChange = async (
     streamDateKey: occurrence.dateKey,
     streamInfo: updatedStreamInfo,
     streamUrl: streamUrl ?? '',
+    previousStreamInfo: input.action === 'UPDATE' ? streamInfo : null,
+    previousStreamUrl:
+      input.action === 'UPDATE'
+        ? (occurrence.streamUrl ?? plan?.streamUrlOverride ?? null)
+        : null,
   });
 };
 
@@ -293,7 +306,7 @@ const applyIncomingUpdate = async (
   }
 };
 
-const editTrackedAnnouncement = async ({
+export const editTrackedAnnouncement = async ({
   channelId,
   client,
   guildId,

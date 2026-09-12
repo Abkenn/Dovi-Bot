@@ -8,17 +8,20 @@ import {
   declineStreamAnnouncementChange,
 } from '../modules/stream-info/stream-announcement-change.service';
 import {
+  applyStreamAnnouncementUndo,
+  prepareStreamAnnouncementUndo,
+} from '../modules/stream-info/stream-announcement-undo.service';
+import {
+  buildAppliedStreamAnnouncementChange,
+  buildStreamAnnouncementUndoPreview,
   STREAM_ANNOUNCEMENT_AUTO_APPROVE_CUSTOM_ID_PREFIX,
   STREAM_ANNOUNCEMENT_AUTO_DECLINE_CUSTOM_ID_PREFIX,
   STREAM_ANNOUNCEMENT_CHANGE_APPROVE_CUSTOM_ID_PREFIX,
   STREAM_ANNOUNCEMENT_CHANGE_DECLINE_CUSTOM_ID_PREFIX,
+  STREAM_ANNOUNCEMENT_CHANGE_UNDO_APPROVE_CUSTOM_ID_PREFIX,
+  STREAM_ANNOUNCEMENT_CHANGE_UNDO_CUSTOM_ID_PREFIX,
+  STREAM_ANNOUNCEMENT_CHANGE_UNDO_DECLINE_CUSTOM_ID_PREFIX,
 } from '../modules/stream-info/stream-info.discord';
-
-const APPLIED_ACTION_LABELS = {
-  UPDATE: 'Update',
-  PUSH: 'Manual push',
-  DELETE: 'Deletion',
-} as const;
 
 const getSuffix = (customId: string, prefix: string) =>
   customId.startsWith(`${prefix}:`) ? customId.slice(prefix.length + 1) : null;
@@ -68,6 +71,65 @@ export class StreamAnnouncementButtonsListener extends Listener {
       });
     }
 
+    const undoApproveRequestId = getSuffix(
+      interaction.customId,
+      STREAM_ANNOUNCEMENT_CHANGE_UNDO_APPROVE_CUSTOM_ID_PREFIX,
+    );
+    const undoDeclineRequestId = getSuffix(
+      interaction.customId,
+      STREAM_ANNOUNCEMENT_CHANGE_UNDO_DECLINE_CUSTOM_ID_PREFIX,
+    );
+    const undoRequestId = getSuffix(
+      interaction.customId,
+      STREAM_ANNOUNCEMENT_CHANGE_UNDO_CUSTOM_ID_PREFIX,
+    );
+    const resolvedUndoRequestId =
+      undoApproveRequestId ?? undoDeclineRequestId ?? undoRequestId;
+    if (resolvedUndoRequestId) {
+      await interaction.deferUpdate();
+      try {
+        if (undoApproveRequestId) {
+          await applyStreamAnnouncementUndo({
+            client: interaction.client,
+            requestId: undoApproveRequestId,
+            userId: interaction.user.id,
+          });
+          return interaction.editReply({
+            content: 'Announcement update undone.',
+            components: [],
+          });
+        }
+        if (undoDeclineRequestId) {
+          const undo = await prepareStreamAnnouncementUndo({
+            requestId: undoDeclineRequestId,
+            userId: interaction.user.id,
+          });
+          return interaction.editReply(
+            buildAppliedStreamAnnouncementChange({
+              action: 'UPDATE',
+              requestId: undoDeclineRequestId,
+              streamInfo: undo.currentStreamInfo,
+              streamUrl: undo.currentStreamUrl,
+            }),
+          );
+        }
+
+        const undo = await prepareStreamAnnouncementUndo({
+          requestId: resolvedUndoRequestId,
+          userId: interaction.user.id,
+        });
+        return interaction.editReply(buildStreamAnnouncementUndoPreview(undo));
+      } catch (error) {
+        return interaction.editReply({
+          content:
+            error instanceof Error
+              ? error.message
+              : 'The announcement undo failed.',
+          components: [],
+        });
+      }
+    }
+
     const approveRequestId = getSuffix(
       interaction.customId,
       STREAM_ANNOUNCEMENT_CHANGE_APPROVE_CUSTOM_ID_PREFIX,
@@ -89,10 +151,9 @@ export class StreamAnnouncementButtonsListener extends Listener {
           requestId,
           userId: interaction.user.id,
         });
-        return interaction.editReply({
-          content: `${APPLIED_ACTION_LABELS[action]} approved and applied.`,
-          components: [],
-        });
+        return interaction.editReply(
+          buildAppliedStreamAnnouncementChange({ action, requestId }),
+        );
       }
 
       await declineStreamAnnouncementChange(requestId, interaction.user.id);

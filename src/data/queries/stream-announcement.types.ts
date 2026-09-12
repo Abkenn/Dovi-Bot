@@ -38,4 +38,6 @@ export type CreateStreamAnnouncementChangeRequestInput = {
   streamDateKey: string;
   streamUrl: string;
   streamInfoJson: string;
+  previousStreamInfoJson: string | null;
+  previousStreamUrl: string | null;
 };

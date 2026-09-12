@@ -4,15 +4,18 @@ import { StreamKind } from '../../src/generated/prisma/client';
 import type { StreamInfoResult } from '../../src/modules/stream-info/stream-info.types';
 
 const queries = vi.hoisted(() => ({
+  clearStreamAnnouncementUrlOverride: vi.fn(),
   completeStreamAnnouncementChangeRequest: vi.fn(),
   createStreamAnnouncement: vi.fn(),
   createStreamAnnouncementChangeRequest: vi.fn(),
   deleteStreamAnnouncementByMessageId: vi.fn(),
   findPendingStreamAnnouncementChangeRequest: vi.fn(),
+  findUndoableStreamAnnouncementChangeRequest: vi.fn(),
   findStreamAnnouncementByDate: vi.fn(),
   findStreamAnnouncementByMessageId: vi.fn(),
   findStreamAnnouncementPlan: vi.fn(),
   setStreamAnnouncementDecision: vi.fn(),
+  undoStreamAnnouncementChangeRequest: vi.fn(),
   updateStreamAnnouncementSnapshot: vi.fn(),
   upsertStreamAnnouncementUrlOverride: vi.fn(),
 }));
@@ -41,6 +44,10 @@ import {
   prepareStreamAnnouncementChange,
   refreshTrackedStreamAnnouncement,
 } from '../../src/modules/stream-info/stream-announcement-change.service';
+import {
+  applyStreamAnnouncementUndo,
+  prepareStreamAnnouncementUndo,
+} from '../../src/modules/stream-info/stream-announcement-undo.service';
 
 const occurrence = {
   dateKey: '2026-09-11',
@@ -111,6 +118,8 @@ describe('stream announcement changes', () => {
     expect(result).toMatchObject({ action: 'UPDATE', requestId: 'request-1' });
     expect(queries.createStreamAnnouncementChangeRequest).toHaveBeenCalledWith(
       expect.objectContaining({
+        previousStreamInfoJson: expect.stringContaining('"gameName":"Unknown"'),
+        previousStreamUrl: occurrence.streamUrl,
         streamInfoJson: expect.stringContaining(
           '"videoTitle":"Original video title"',
         ),
@@ -118,6 +127,193 @@ describe('stream announcement changes', () => {
         targetMessageId: 'staging-message',
       }),
     );
+    expect(streamInfoService.setStreamInfo).not.toHaveBeenCalled();
+  });
+
+  it('previews a conflict-safe undo that preserves a newer field edit', async () => {
+    const appliedStreamInfo = {
+      ...streamInfo,
+      next: { ...occurrence, gameName: 'Ace Combat 7', customTitle: 'Applied' },
+    };
+    const currentStreamInfo = {
+      ...appliedStreamInfo,
+      next: { ...appliedStreamInfo.next, customTitle: 'Newer title' },
+    };
+    queries.findUndoableStreamAnnouncementChangeRequest.mockResolvedValue({
+      id: 'request-1',
+      action: 'UPDATE',
+      targetGuildId: 'prod-guild',
+      targetMessageId: 'prod-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify(appliedStreamInfo),
+      streamUrl: occurrence.streamUrl,
+      previousStreamInfoJson: snapshot,
+      previousStreamUrl: occurrence.streamUrl,
+    });
+    queries.findStreamAnnouncementByMessageId.mockResolvedValue({
+      guildId: 'prod-guild',
+      messageId: 'prod-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify(currentStreamInfo),
+      streamUrl: occurrence.streamUrl,
+    });
+
+    const result = await prepareStreamAnnouncementUndo({
+      requestId: 'request-1',
+      userId: 'user-1',
+    });
+
+    expect(result.streamInfo.next).toMatchObject({
+      gameName: 'Unknown',
+      customTitle: 'Newer title',
+    });
+  });
+
+  it('rejects an undo that is missing, already undone, or owned by someone else', async () => {
+    queries.findUndoableStreamAnnouncementChangeRequest.mockResolvedValue(null);
+
+    await expect(
+      prepareStreamAnnouncementUndo({
+        requestId: 'missing',
+        userId: 'user-1',
+      }),
+    ).rejects.toThrow('no longer available to undo');
+  });
+
+  it('rejects undo when its explicit announcement is no longer tracked', async () => {
+    queries.findUndoableStreamAnnouncementChangeRequest.mockResolvedValue({
+      id: 'request-1',
+      action: 'UPDATE',
+      targetGuildId: 'prod-guild',
+      targetMessageId: 'deleted-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+      previousStreamInfoJson: snapshot,
+      previousStreamUrl: occurrence.streamUrl,
+    });
+    queries.findStreamAnnouncementByMessageId.mockResolvedValue(null);
+
+    await expect(
+      prepareStreamAnnouncementUndo({
+        requestId: 'request-1',
+        userId: 'user-1',
+      }),
+    ).rejects.toThrow('no longer tracked');
+  });
+
+  it('applies conflict-safe undo to the tracked announcement once', async () => {
+    const appliedStreamInfo = {
+      ...streamInfo,
+      next: { ...occurrence, gameName: 'Ace Combat 7' },
+    };
+    const edit = vi.fn();
+    const fetch = vi.fn().mockResolvedValue({ edit });
+    const request = {
+      id: 'request-1',
+      action: 'UPDATE',
+      targetChannelId: 'prod-channel',
+      targetGuildId: 'prod-guild',
+      targetMessageId: 'prod-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify(appliedStreamInfo),
+      streamUrl: occurrence.streamUrl,
+      previousStreamInfoJson: snapshot,
+      previousStreamUrl: occurrence.streamUrl,
+    };
+    queries.findUndoableStreamAnnouncementChangeRequest.mockResolvedValue(
+      request,
+    );
+    queries.findStreamAnnouncementByMessageId.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'prod-guild',
+      linkMessageId: 'prod-link',
+      messageId: 'prod-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify(appliedStreamInfo),
+      streamUrl: occurrence.streamUrl,
+    });
+
+    await applyStreamAnnouncementUndo({
+      client: makeClient({ messages: { fetch } }),
+      requestId: 'request-1',
+      userId: 'user-1',
+    });
+
+    expect(discord.buildStreamAnnouncementMessages).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occurrence: expect.objectContaining({ gameName: 'Unknown' }),
+      }),
+    );
+    expect(queries.undoStreamAnnouncementChangeRequest).toHaveBeenCalledWith(
+      'request-1',
+    );
+  });
+
+  it('undoes an incoming update in configuration and clears its new URL', async () => {
+    const previousStreamInfo = {
+      ...streamInfo,
+      next: { ...occurrence, streamUrl: undefined },
+    };
+    const appliedStreamInfo = {
+      ...streamInfo,
+      next: { ...occurrence, gameName: 'Ace Combat 7' },
+    };
+    queries.findUndoableStreamAnnouncementChangeRequest.mockResolvedValue({
+      id: 'request-1',
+      action: 'UPDATE',
+      targetChannelId: 'prod-channel',
+      targetGuildId: 'prod-guild',
+      targetMessageId: null,
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify(appliedStreamInfo),
+      streamUrl: occurrence.streamUrl,
+      previousStreamInfoJson: JSON.stringify(previousStreamInfo),
+      previousStreamUrl: null,
+    });
+    streamInfoService.getStreamInfoForAnnouncementPreview.mockResolvedValue(
+      appliedStreamInfo,
+    );
+
+    await applyStreamAnnouncementUndo({
+      client: makeClient(null),
+      requestId: 'request-1',
+      userId: 'user-1',
+    });
+
+    expect(streamInfoService.setStreamInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ gameName: 'Unknown' }),
+    );
+    expect(queries.clearStreamAnnouncementUrlOverride).toHaveBeenCalledWith({
+      guildId: 'prod-guild',
+      streamDateKey: occurrence.dateKey,
+    });
+  });
+
+  it('does not apply an old configuration undo to a different future stream', async () => {
+    queries.findUndoableStreamAnnouncementChangeRequest.mockResolvedValue({
+      id: 'request-1',
+      action: 'UPDATE',
+      targetGuildId: 'prod-guild',
+      targetMessageId: null,
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: snapshot,
+      streamUrl: occurrence.streamUrl,
+      previousStreamInfoJson: snapshot,
+      previousStreamUrl: occurrence.streamUrl,
+    });
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      ...streamInfo,
+      next: { ...occurrence, dateKey: '2026-09-18' },
+    });
+
+    await expect(
+      applyStreamAnnouncementUndo({
+        client: makeClient(null),
+        requestId: 'request-1',
+        userId: 'user-1',
+      }),
+    ).rejects.toThrow('stream has passed');
     expect(streamInfoService.setStreamInfo).not.toHaveBeenCalled();
   });
 

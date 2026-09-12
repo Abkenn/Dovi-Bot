@@ -6,7 +6,13 @@ const queries = vi.hoisted(() => ({
 }));
 const changes = vi.hoisted(() => ({
   applyStreamAnnouncementChange: vi.fn(),
+  applyStreamAnnouncementUndo: vi.fn(),
   declineStreamAnnouncementChange: vi.fn(),
+  prepareStreamAnnouncementUndo: vi.fn(),
+}));
+const discord = vi.hoisted(() => ({
+  buildAppliedStreamAnnouncementChange: vi.fn(),
+  buildStreamAnnouncementUndoPreview: vi.fn(),
 }));
 
 vi.mock('@data/queries/stream-announcement', () => queries);
@@ -16,9 +22,20 @@ vi.mock('../../src/config/discord-access', () => ({
 }));
 vi.mock(
   '../../src/modules/stream-info/stream-announcement-change.service',
-  () => changes,
+  () => ({
+    applyStreamAnnouncementChange: changes.applyStreamAnnouncementChange,
+    declineStreamAnnouncementChange: changes.declineStreamAnnouncementChange,
+  }),
+);
+vi.mock(
+  '../../src/modules/stream-info/stream-announcement-undo.service',
+  () => ({
+    applyStreamAnnouncementUndo: changes.applyStreamAnnouncementUndo,
+    prepareStreamAnnouncementUndo: changes.prepareStreamAnnouncementUndo,
+  }),
 );
 vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
+  ...discord,
   STREAM_ANNOUNCEMENT_AUTO_APPROVE_CUSTOM_ID_PREFIX:
     'stream-announcement-auto-approve',
   STREAM_ANNOUNCEMENT_AUTO_DECLINE_CUSTOM_ID_PREFIX:
@@ -27,6 +44,12 @@ vi.mock('../../src/modules/stream-info/stream-info.discord', () => ({
     'stream-announcement-change-approve',
   STREAM_ANNOUNCEMENT_CHANGE_DECLINE_CUSTOM_ID_PREFIX:
     'stream-announcement-change-decline',
+  STREAM_ANNOUNCEMENT_CHANGE_UNDO_APPROVE_CUSTOM_ID_PREFIX:
+    'stream-announcement-change-undo-approve',
+  STREAM_ANNOUNCEMENT_CHANGE_UNDO_CUSTOM_ID_PREFIX:
+    'stream-announcement-change-undo',
+  STREAM_ANNOUNCEMENT_CHANGE_UNDO_DECLINE_CUSTOM_ID_PREFIX:
+    'stream-announcement-change-undo-decline',
 }));
 
 import { StreamAnnouncementButtonsListener } from '../../src/listeners/stream-announcement-buttons';
@@ -34,6 +57,135 @@ import { StreamAnnouncementButtonsListener } from '../../src/listeners/stream-an
 describe('stream announcement controls', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    discord.buildAppliedStreamAnnouncementChange.mockImplementation(
+      ({ action }: { action: string }) => ({
+        content:
+          action === 'PUSH'
+            ? 'Manual push approved and applied.'
+            : 'Update approved and applied.',
+        components: action === 'UPDATE' ? ['undo'] : [],
+      }),
+    );
+    discord.buildStreamAnnouncementUndoPreview.mockReturnValue({
+      content: 'Undo this update?',
+      components: ['approve-undo', 'keep-current'],
+    });
+  });
+
+  it('replaces approved update controls with one undo button', async () => {
+    changes.applyStreamAnnouncementChange.mockResolvedValue('UPDATE');
+    const editReply = vi.fn();
+    const interaction = {
+      client: {},
+      customId: 'stream-announcement-change-approve:request-1',
+      deferUpdate: vi.fn(),
+      editReply,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamAnnouncementButtonsListener.prototype.run.call(
+      {} as StreamAnnouncementButtonsListener,
+      interaction,
+    );
+
+    expect(discord.buildAppliedStreamAnnouncementChange).toHaveBeenCalledWith({
+      action: 'UPDATE',
+      requestId: 'request-1',
+    });
+    expect(editReply).toHaveBeenCalledWith({
+      content: 'Update approved and applied.',
+      components: ['undo'],
+    });
+  });
+
+  it('previews undo without changing the announcement', async () => {
+    const undo = {
+      requestId: 'request-1',
+      streamInfo: { next: { title: 'Previous' } },
+      streamUrl: 'https://youtube.test/previous',
+      targetGuildId: 'prod-guild',
+    };
+    changes.prepareStreamAnnouncementUndo.mockResolvedValue(undo);
+    const editReply = vi.fn();
+    const interaction = {
+      client: {},
+      customId: 'stream-announcement-change-undo:request-1',
+      deferUpdate: vi.fn(),
+      editReply,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamAnnouncementButtonsListener.prototype.run.call(
+      {} as StreamAnnouncementButtonsListener,
+      interaction,
+    );
+
+    expect(changes.prepareStreamAnnouncementUndo).toHaveBeenCalledWith({
+      requestId: 'request-1',
+      userId: 'user-1',
+    });
+    expect(discord.buildStreamAnnouncementUndoPreview).toHaveBeenCalledWith(
+      undo,
+    );
+    expect(changes.applyStreamAnnouncementUndo).not.toHaveBeenCalled();
+  });
+
+  it('applies confirmed undo and removes all controls', async () => {
+    const editReply = vi.fn();
+    const interaction = {
+      client: {},
+      customId: 'stream-announcement-change-undo-approve:request-1',
+      deferUpdate: vi.fn(),
+      editReply,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamAnnouncementButtonsListener.prototype.run.call(
+      {} as StreamAnnouncementButtonsListener,
+      interaction,
+    );
+
+    expect(changes.applyStreamAnnouncementUndo).toHaveBeenCalledWith({
+      client: interaction.client,
+      requestId: 'request-1',
+      userId: 'user-1',
+    });
+    expect(editReply).toHaveBeenCalledWith({
+      content: 'Announcement update undone.',
+      components: [],
+    });
+  });
+
+  it('keeps the current version and restores the undo button', async () => {
+    const currentStreamInfo = { next: { title: 'Current version' } };
+    changes.prepareStreamAnnouncementUndo.mockResolvedValue({
+      currentStreamInfo,
+      currentStreamUrl: 'https://youtube.test/current',
+    });
+    const editReply = vi.fn();
+    const interaction = {
+      customId: 'stream-announcement-change-undo-decline:request-1',
+      deferUpdate: vi.fn(),
+      editReply,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamAnnouncementButtonsListener.prototype.run.call(
+      {} as StreamAnnouncementButtonsListener,
+      interaction,
+    );
+
+    expect(discord.buildAppliedStreamAnnouncementChange).toHaveBeenCalledWith({
+      action: 'UPDATE',
+      requestId: 'request-1',
+      streamInfo: currentStreamInfo,
+      streamUrl: 'https://youtube.test/current',
+    });
+    expect(changes.applyStreamAnnouncementUndo).not.toHaveBeenCalled();
   });
 
   it('registers as an interaction listener and ignores non-buttons', async () => {

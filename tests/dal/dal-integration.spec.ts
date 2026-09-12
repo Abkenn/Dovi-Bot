@@ -644,11 +644,23 @@ test('stores announcement snapshots, review decisions, and approval requests', a
     streamDateKey: '2026-09-11',
     streamUrl: 'https://youtube.test/watch?v=override',
     streamInfoJson: '{"timezone":"UTC"}',
+    previousStreamUrl: 'https://youtube.test/watch?v=original',
+    previousStreamInfoJson: '{"timezone":"UTC","previous":true}',
   });
   await expect(
     queries.findPendingStreamAnnouncementChangeRequest(request.id, 'user-1'),
   ).resolves.toMatchObject({ status: 'PENDING' });
   await queries.completeStreamAnnouncementChangeRequest(request.id, 'APPLIED');
+  await expect(
+    queries.findUndoableStreamAnnouncementChangeRequest(request.id, 'user-1'),
+  ).resolves.toMatchObject({
+    previousStreamUrl: 'https://youtube.test/watch?v=original',
+    status: 'APPLIED',
+  });
+  await queries.undoStreamAnnouncementChangeRequest(request.id);
+  await expect(
+    queries.findUndoableStreamAnnouncementChangeRequest(request.id, 'user-1'),
+  ).resolves.toBeNull();
   await expect(
     queries.findPendingStreamAnnouncementChangeRequest(request.id, 'user-1'),
   ).resolves.toBeNull();

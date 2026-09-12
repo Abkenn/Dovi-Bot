@@ -63,6 +63,14 @@ export const upsertStreamAnnouncementUrlOverride = (
     create: { ...key, streamUrlOverride: streamUrl },
   });
 
+export const clearStreamAnnouncementUrlOverride = (
+  key: StreamAnnouncementPlanKey,
+) =>
+  prisma.streamAnnouncementPlan.updateMany({
+    where: key,
+    data: { streamUrlOverride: null },
+  });
+
 export const markStreamAnnouncementReviewSent = (
   input: MarkStreamAnnouncementReviewSentInput,
 ) =>
@@ -115,6 +123,14 @@ export const findPendingStreamAnnouncementChangeRequest = (
     where: { id, requestedByUserId, status: 'PENDING' },
   });
 
+export const findUndoableStreamAnnouncementChangeRequest = (
+  id: string,
+  requestedByUserId: string,
+) =>
+  prisma.streamAnnouncementChangeRequest.findUnique({
+    where: { id, requestedByUserId, action: 'UPDATE', status: 'APPLIED' },
+  });
+
 export const completeStreamAnnouncementChangeRequest = (
   id: string,
   status: 'APPLIED' | 'DECLINED',
@@ -122,4 +138,10 @@ export const completeStreamAnnouncementChangeRequest = (
   prisma.streamAnnouncementChangeRequest.updateMany({
     where: { id, status: 'PENDING' },
     data: { status, completedAt: new Date() },
+  });
+
+export const undoStreamAnnouncementChangeRequest = (id: string) =>
+  prisma.streamAnnouncementChangeRequest.updateMany({
+    where: { id, action: 'UPDATE', status: 'APPLIED' },
+    data: { status: 'UNDONE' },
   });

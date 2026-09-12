@@ -36,6 +36,24 @@ export type ApplyStreamAnnouncementChangeInput = {
   userId: string;
 };
 
+export type StreamAnnouncementUndoInput = {
+  requestId: string;
+  userId: string;
+};
+
+export type ApplyStreamAnnouncementUndoInput = StreamAnnouncementUndoInput & {
+  client: Client;
+};
+
+export type PreparedStreamAnnouncementUndo = {
+  currentStreamInfo: StreamInfoResult;
+  currentStreamUrl: string;
+  requestId: string;
+  streamInfo: StreamInfoResult;
+  streamUrl: string;
+  targetGuildId: string;
+};
+
 export type CreateStreamAnnouncementChangeRequestInput = {
   action: StreamAnnouncementChangeAction;
   channelId: string;
@@ -45,6 +63,8 @@ export type CreateStreamAnnouncementChangeRequestInput = {
   streamDateKey: string;
   streamInfo: StreamInfoResult;
   streamUrl: string;
+  previousStreamInfo: StreamInfoResult | null;
+  previousStreamUrl: string | null;
 };
 
 export type EditTrackedStreamAnnouncementInput = {
@@ -71,3 +91,15 @@ export type BuildStreamAnnouncementChangePreviewInput = {
   streamInfo: StreamInfoResult;
   streamUrl: string;
 };
+
+export type BuildAppliedStreamAnnouncementChangeInput = {
+  action: StreamAnnouncementChangeAction;
+  requestId: string;
+  streamInfo?: StreamInfoResult;
+  streamUrl?: string;
+};
+
+export type BuildStreamAnnouncementUndoPreviewInput = Pick<
+  PreparedStreamAnnouncementUndo,
+  'requestId' | 'streamInfo' | 'streamUrl'
+>;
