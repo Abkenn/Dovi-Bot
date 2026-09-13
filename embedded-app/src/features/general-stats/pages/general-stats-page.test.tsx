@@ -1,8 +1,49 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
+}));
+vi.mock('recharts', () => ({
+  CartesianGrid: () => <div>Grid</div>,
+  LabelList: () => <div>Dot numbers</div>,
+  ReferenceLine: () => <div>Median</div>,
+  ResponsiveContainer: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  Scatter: ({
+    children,
+    data,
+    onClick,
+  }: {
+    children: ReactNode;
+    data: unknown[];
+    onClick: (entry: unknown) => void;
+  }) => (
+    <div>
+      {children}
+      <button type="button" onClick={() => onClick(data[0])}>
+        First chart dot
+      </button>
+      <button type="button" onClick={() => onClick({ payload: data[0] })}>
+        Wrapped chart dot
+      </button>
+      <button type="button" onClick={() => onClick({ payload: {} })}>
+        Invalid chart dot
+      </button>
+      <button type="button" onClick={() => onClick(null)}>
+        Empty chart dot
+      </button>
+    </div>
+  ),
+  ScatterChart: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  XAxis: () => <div>Deaths axis</div>,
+  YAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
+    <div>Time axis {tickFormatter(60)}</div>
+  ),
 }));
 
 import { GeneralStatsPage } from './general-stats-page';
@@ -26,7 +67,11 @@ const makeComparison = (
       attempts,
       winningAttemptSeconds: winningSeconds,
     },
-    longestWinningAttempt: null,
+    longestWinningAttempt: {
+      name: `${name} long boss`,
+      attempts,
+      winningAttemptSeconds: winningSeconds,
+    },
     toughestOverall: null,
   },
 });
@@ -39,7 +84,7 @@ describe('GeneralStatsPage', () => {
         difficultyScore: null,
       },
       {
-        ...makeComparison('lies-of-p', 'Lies of P', 4.4, 220),
+        ...makeComparison('lies-of-p', 'Lies of P', 4, 240),
         difficultyScore: null,
       },
     ];
@@ -67,6 +112,11 @@ describe('GeneralStatsPage', () => {
     });
     fireEvent.click(liesOfP);
     expect(screen.getByText('Lies of P boss')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'First chart dot' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Wrapped chart dot' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Invalid chart dot' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Empty chart dot' }));
   });
 
   it('shows comparison highlights and a ranked game comparison', () => {
@@ -130,6 +180,22 @@ describe('GeneralStatsPage', () => {
                 },
               },
             },
+            {
+              ...makeComparison('missing-time', 'Missing Time', 2, 60),
+              bossHighlights: {
+                mostAttempts: {
+                  name: 'Known Boss',
+                  attempts: 2,
+                  winningAttemptSeconds: null,
+                },
+                longestWinningAttempt: {
+                  name: 'Untimed Boss',
+                  attempts: 2,
+                  winningAttemptSeconds: null,
+                },
+                toughestOverall: null,
+              },
+            },
           ],
         }}
       />,
@@ -142,7 +208,9 @@ describe('GeneralStatsPage', () => {
     ).toBeGreaterThan(0);
     expect(screen.getByText('Toughest overall')).toBeInTheDocument();
     expect(
-      screen.getByRole('list', { name: 'Game difficulty comparison' }),
+      screen.getByRole('img', {
+        name: 'Boss deaths and winning-attempt time comparison chart',
+      }),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Dark Souls III').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Elden Ring').length).toBeGreaterThan(0);
@@ -152,12 +220,12 @@ describe('GeneralStatsPage', () => {
     ).toHaveClass('general-stats-pip-only', 'activity-compact:flex');
     expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
-    expect(screen.getByText('Game difficulty ranking')).toBeInTheDocument();
-    const ranking = screen.getByRole('list', {
-      name: 'Game difficulty comparison',
+    expect(screen.getByText('Boss extremes')).toBeInTheDocument();
+    const legend = screen.getByRole('list', {
+      name: 'Boss extremes chart legend',
     });
-    expect(within(ranking).getAllByText('Attempts')).toHaveLength(2);
-    expect(within(ranking).getAllByText('Winning time')).toHaveLength(2);
+    expect(within(legend).getByText('16 deaths · 3m 0s')).toBeInTheDocument();
+    expect(within(legend).getByText('21 deaths · 4m 0s')).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -200,12 +268,14 @@ describe('GeneralStatsPage', () => {
     );
 
     expect(
-      screen.getByText('Winning-attempt timing is not available yet.'),
+      screen.getByText(
+        'Boss death and winning-attempt timing data is not available yet.',
+      ),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Not enough data')).toHaveLength(6);
   });
 
-  it('renders one timed game without a regression line', () => {
+  it('renders one game with zero deaths and a zero-second winning attempt', () => {
     render(
       <GeneralStatsPage
         games={[]}
@@ -245,7 +315,6 @@ describe('GeneralStatsPage', () => {
       />,
     );
 
-    expect(screen.queryByText('Trend')).not.toBeInTheDocument();
-    expect(screen.getAllByText('0m 0s').length).toBeGreaterThan(0);
+    expect(screen.getByText('0 deaths · 0m 0s')).toBeInTheDocument();
   });
 });
