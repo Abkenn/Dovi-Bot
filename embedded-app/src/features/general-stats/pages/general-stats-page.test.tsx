@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -7,7 +7,6 @@ vi.mock('@/features/game-stats/components/game-switcher', () => ({
 }));
 vi.mock('recharts', () => ({
   CartesianGrid: () => <div>Grid</div>,
-  LabelList: () => <div>Dot numbers</div>,
   ReferenceLine: () => <div>Median</div>,
   ResponsiveContainer: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
@@ -23,16 +22,32 @@ vi.mock('recharts', () => ({
   }) => (
     <div>
       {children}
-      <button type="button" onClick={() => onClick(data[0])}>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick(data[0])}
+      >
         First chart dot
       </button>
-      <button type="button" onClick={() => onClick({ payload: data[0] })}>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick({ payload: data[0] })}
+      >
         Wrapped chart dot
       </button>
-      <button type="button" onClick={() => onClick({ payload: {} })}>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick({ payload: {} })}
+      >
         Invalid chart dot
       </button>
-      <button type="button" onClick={() => onClick(null)}>
+      <button
+        type="button"
+        className="recharts-scatter-symbol"
+        onClick={() => onClick(null)}
+      >
         Empty chart dot
       </button>
     </div>
@@ -40,9 +55,32 @@ vi.mock('recharts', () => ({
   ScatterChart: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
+  Tooltip: ({
+    content,
+  }: {
+    content: (props: {
+      active: boolean;
+      payload: { payload: unknown }[];
+    }) => ReactNode;
+  }) =>
+    content({
+      active: true,
+      payload: [
+        {
+          payload: {
+            ...makeComparison('hovered', 'Hovered Game', 5, 300),
+            longestBossFightSeconds: 300,
+            toughestBossDeaths: 4,
+          },
+        },
+      ],
+    }),
   XAxis: () => <div>Deaths axis</div>,
   YAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
     <div>Time axis {tickFormatter(60)}</div>
+  ),
+  ZAxis: ({ range }: { range: [number, number] }) => (
+    <div>Dot area {range[0]}</div>
   ),
 }));
 
@@ -77,7 +115,7 @@ const makeComparison = (
 });
 
 describe('GeneralStatsPage', () => {
-  it('shows every game in a stable ranked row without grouped labels', () => {
+  it('shows large chart dots with hover details that lock on click', () => {
     const tiedGames = [
       {
         ...makeComparison('bloodborne', 'Bloodborne', 4, 240),
@@ -104,22 +142,32 @@ describe('GeneralStatsPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Explore 2 nearby games' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-
-    const liesOfP = screen.getByRole('button', {
-      name: 'View details for Lies of P',
-    });
-    fireEvent.click(liesOfP);
-    expect(screen.getByText('Lies of P boss')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('list', { name: 'Boss extremes chart legend' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Dot area 280')).toBeInTheDocument();
+    expect(screen.getByText('Hovered Game')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'First chart dot' }));
+    expect(screen.getByText('Bloodborne boss')).toBeInTheDocument();
+    expect(screen.queryByText('Hovered Game')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Bloodborne boss'));
+    expect(screen.getByText('Bloodborne boss')).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('img', {
+        name: 'Boss deaths and winning-attempt time comparison chart',
+      }),
+    );
+    expect(screen.queryByText('Bloodborne boss')).not.toBeInTheDocument();
+    expect(screen.getByText('Hovered Game')).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Wrapped chart dot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Invalid chart dot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Empty chart dot' }));
   });
 
-  it('shows comparison highlights and a ranked game comparison', () => {
+  it('shows comparison highlights and a boss extremes chart', () => {
     render(
       <GeneralStatsPage
         games={[]}
@@ -221,18 +269,8 @@ describe('GeneralStatsPage', () => {
     expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
     expect(screen.getByText('Boss extremes')).toBeInTheDocument();
-    const legend = screen.getByRole('list', {
-      name: 'Boss extremes chart legend',
-    });
-    expect(within(legend).getByText('16 deaths · 3m 0s')).toBeInTheDocument();
-    expect(within(legend).getByText('21 deaths · 4m 0s')).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'View details for Dark Souls III',
-      }),
-    );
-    expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'First chart dot' }));
+    expect(screen.getAllByText('Malenia').length).toBeGreaterThan(0);
   });
 
   it('shows honest empty states when timing and highlights are unavailable', () => {
@@ -315,6 +353,6 @@ describe('GeneralStatsPage', () => {
       />,
     );
 
-    expect(screen.getByText('0 deaths · 0m 0s')).toBeInTheDocument();
+    expect(screen.getByText('Dot area 280')).toBeInTheDocument();
   });
 });
