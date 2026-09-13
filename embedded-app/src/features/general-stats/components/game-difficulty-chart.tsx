@@ -31,6 +31,11 @@ type BossExtremesPoint = GameComparison & {
 
 type HoveredAverage = 'deaths' | 'time' | null;
 
+type AverageTooltipPosition = {
+  x: number;
+  y: number;
+};
+
 const bossExtremesChartConfig = {
   extremes: {
     label: 'Boss extremes',
@@ -65,6 +70,8 @@ const getClickedPoint = (entry: unknown) => {
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
   const [selectedGame, setSelectedGame] = useState<GameComparison | null>(null);
   const [hoveredAverage, setHoveredAverage] = useState<HoveredAverage>(null);
+  const [averageTooltipPosition, setAverageTooltipPosition] =
+    useState<AverageTooltipPosition>({ x: 12, y: 12 });
   const points = useMemo(
     () =>
       games
@@ -143,17 +150,43 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
 
     setSelectedGame(null);
   };
+  const positionAverageTooltip = (event: MouseEvent<HTMLElement>) => {
+    if (!hoveredAverage) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(
+      8,
+      Math.min(event.clientX - bounds.left + 12, bounds.width - 230),
+    );
+    const y = Math.max(
+      8,
+      Math.min(event.clientY - bounds.top + 12, bounds.height - 44),
+    );
+    setAverageTooltipPosition({ x, y });
+  };
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="relative p-3 sm:p-6" onClick={closeLockedTooltip}>
+      <CardContent
+        className="relative p-3 sm:p-6"
+        onClick={closeLockedTooltip}
+        onMouseMove={positionAverageTooltip}
+      >
         {selectedGame ? (
           <div className="locked-chart-popup absolute top-24 right-6 z-30">
             <GameDifficultyTooltip game={selectedGame} />
           </div>
         ) : null}
         {selectedGame === null && hoveredAverage ? (
-          <div className="pointer-events-none absolute top-24 left-24 z-20 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur">
+          <div
+            className="pointer-events-none absolute z-20 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur"
+            style={{
+              left: averageTooltipPosition.x,
+              top: averageTooltipPosition.y,
+            }}
+          >
             {hoveredAverage === 'deaths'
               ? `Average deaths: ${averageDeaths.toFixed(1)}`
               : `Average longest win: ${formatStatsDuration(averageFightSeconds)}`}
@@ -167,9 +200,8 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
           </p>
         </div>
 
-        <div className="mb-1 flex justify-between px-14 text-[0.65rem] font-semibold tracking-wide text-muted-foreground uppercase">
-          <span>Long fights</span>
-          <span className="text-primary">Long + deadly</span>
+        <div className="mb-1 px-14 text-[0.65rem] font-semibold tracking-wide text-muted-foreground uppercase">
+          <span>Fight duration</span>
         </div>
         <ChartContainer
           role="img"
@@ -186,9 +218,9 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               allowDecimals={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               label={{
-                value: 'Deaths on deadliest boss',
+                value: 'Deaths',
                 position: 'insideBottom',
-                offset: -20,
+                offset: -18,
                 fill: 'var(--muted-foreground)',
                 fontSize: 12,
               }}

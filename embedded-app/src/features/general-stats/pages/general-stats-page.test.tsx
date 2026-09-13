@@ -99,7 +99,11 @@ vi.mock('recharts', () => ({
         },
       ],
     }),
-  XAxis: () => <div>Deaths axis</div>,
+  XAxis: ({ label }: { label: { offset: number; value: string } }) => (
+    <div>
+      X axis {label.value} {label.offset}
+    </div>
+  ),
   YAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
     <div>Time axis {tickFormatter(60)}</div>
   ),
@@ -177,8 +181,32 @@ describe('GeneralStatsPage', () => {
     const deathsGuide = screen.getByRole('button', {
       name: 'Average deaths guide',
     });
+    const chart = screen.getByRole('img', {
+      name: 'Boss deaths and winning-attempt time comparison chart',
+    });
+    const chartCardContent = chart.closest('[data-slot="card-content"]');
+
+    if (!(chartCardContent instanceof HTMLElement)) {
+      throw new Error('Expected chart card content');
+    }
+
+    chartCardContent.getBoundingClientRect = () => ({
+      bottom: 600,
+      height: 600,
+      left: 0,
+      right: 1_000,
+      top: 0,
+      width: 1_000,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
     fireEvent.mouseEnter(deathsGuide);
-    expect(screen.getByText('Average deaths: 3.0')).toBeInTheDocument();
+    fireEvent.mouseMove(chartCardContent, { clientX: 200, clientY: 200 });
+    expect(screen.getByText('Average deaths: 3.0')).toHaveStyle({
+      left: '212px',
+      top: '212px',
+    });
     fireEvent.mouseEnter(
       screen.getByRole('button', { name: 'First chart dot' }),
     );
@@ -312,6 +340,9 @@ describe('GeneralStatsPage', () => {
     expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
     expect(screen.getByText('Boss extremes')).toBeInTheDocument();
+    expect(screen.getByText('Fight duration')).toBeInTheDocument();
+    expect(screen.getByText('X axis Deaths -18')).toBeInTheDocument();
+    expect(screen.queryByText('Long + deadly')).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Lock details for Dark Souls III' }),
     ).toBeInTheDocument();
