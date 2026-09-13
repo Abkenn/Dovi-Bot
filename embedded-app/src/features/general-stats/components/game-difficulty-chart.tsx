@@ -1,110 +1,34 @@
-import type { MouseEvent } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  CartesianGrid,
-  LabelList,
-  ReferenceLine,
-  Scatter,
-  ScatterChart,
-  XAxis,
-  YAxis,
-  ZAxis,
-} from 'recharts';
+import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-} from '@/components/ui/chart';
-import { cn } from '@/lib/utils';
 import type { GameComparison } from '@/live-stats.types';
-import {
-  describeGeneralStatsTrend,
-  formatStatsDuration,
-  type GameChartCluster,
-  getGameChartClusters,
-  getGeneralStatsTrend,
-  isGameComparison,
-} from '../lib/general-stats-chart.utils';
-import { ClusterFocusLens } from './cluster-focus-lens';
-import { GameChartTooltip } from './game-chart-tooltip';
+import { formatStatsDuration } from '../lib/general-stats-chart.utils';
 import { GameDifficultyTooltip } from './game-difficulty-tooltip';
-import { GameDotLabel } from './game-dot-label';
-import { TrendExplanation } from './trend-explanation';
-
-const difficultyChartConfig = {
-  difficulty: {
-    label: 'Game difficulty',
-    color: 'var(--primary)',
-  },
-} satisfies ChartConfig;
 
 type GameDifficultyChartProps = {
   games: GameComparison[];
 };
 
-type LockedChartPopup =
-  | { kind: 'game'; game: GameComparison }
-  | { kind: 'trend' }
-  | null;
-
-type TrendPopupPosition = {
-  x: number;
-  y: number;
-};
-
-type ActiveCluster = {
-  cluster: GameChartCluster<GameComparison>;
-  isPinned: boolean;
-};
-
-const isPopupInteractionTarget = (target: EventTarget) =>
-  target instanceof Element &&
-  target.closest(
-    '.recharts-scatter-symbol, .difficulty-label, .difficulty-trend, .locked-chart-popup',
-  ) !== null;
-
-const getClickedGame = (entry: unknown) => {
-  if (isGameComparison(entry)) {
-    return entry;
-  }
-
-  if (entry && typeof entry === 'object' && 'payload' in entry) {
-    return isGameComparison(entry.payload) ? entry.payload : null;
-  }
-
-  return null;
-};
+const getBarWidth = (value: number, maximum: number) =>
+  `${Math.max(4, (value / maximum) * 100)}%`;
 
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
-  const [isTrendHovered, setIsTrendHovered] = useState(false);
-  const [lockedPopup, setLockedPopup] = useState<LockedChartPopup>(null);
-  const [hoveredLabelGame, setHoveredLabelGame] =
-    useState<GameComparison | null>(null);
-  const [activeCluster, setActiveCluster] = useState<ActiveCluster | null>(
-    null,
-  );
-  const clusterCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [trendPopupPosition, setTrendPopupPosition] =
-    useState<TrendPopupPosition>({ x: 12, y: 12 });
+  const [selectedGame, setSelectedGame] = useState<GameComparison | null>(null);
   const timedGames = useMemo(
     () =>
-      games.filter(
-        (
-          game,
-        ): game is GameComparison & {
-          averageWinningAttemptSeconds: number;
-        } => game.averageWinningAttemptSeconds !== null,
-      ),
+      [...games]
+        .filter(
+          (
+            game,
+          ): game is GameComparison & {
+            averageWinningAttemptSeconds: number;
+          } => game.averageWinningAttemptSeconds !== null,
+        )
+        .sort(
+          (left, right) =>
+            (right.difficultyScore ?? 0) - (left.difficultyScore ?? 0) ||
+            left.name.localeCompare(right.name),
+        ),
     [games],
-  );
-  useEffect(
-    () => () => {
-      if (clusterCloseTimer.current) {
-        clearTimeout(clusterCloseTimer.current);
-      }
-    },
-    [],
   );
 
   if (timedGames.length === 0) {
@@ -117,244 +41,87 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
     );
   }
 
-  const maximumX = Math.max(
+  const maximumAttempts = Math.max(
     1,
-    Math.ceil(
-      Math.max(...timedGames.map((game) => game.averageAttemptsPerBoss)) * 1.1,
-    ),
+    ...timedGames.map((game) => game.averageAttemptsPerBoss),
   );
-  const maximumY = Math.max(
-    60,
-    Math.ceil(
-      (Math.max(
-        ...timedGames.map((game) => game.averageWinningAttemptSeconds),
-      ) *
-        1.1) /
-        60,
-    ) * 60,
+  const maximumWinningTime = Math.max(
+    1,
+    ...timedGames.map((game) => game.averageWinningAttemptSeconds),
   );
-  const clusters = getGameChartClusters(timedGames, maximumX, maximumY);
-  const activeClusterIsOnRight = activeCluster
-    ? activeCluster.cluster.games.reduce(
-        (total, game) => total + game.averageAttemptsPerBoss,
-        0,
-      ) /
-        activeCluster.cluster.games.length >
-      maximumX / 2
-    : false;
-  const trend = getGeneralStatsTrend(timedGames);
-  const trendStartY = trend
-    ? Math.min(maximumY, Math.max(0, trend.intercept))
-    : 0;
-  const trendEndY = trend
-    ? Math.min(maximumY, Math.max(0, trend.intercept + trend.slope * maximumX))
-    : 0;
-  const showTrendExplanation =
-    lockedPopup?.kind === 'trend' || (lockedPopup === null && isTrendHovered);
-  const closeLockedPopup = (event: MouseEvent<HTMLElement>) => {
-    if (!isPopupInteractionTarget(event.target)) {
-      setLockedPopup(null);
-      setActiveCluster(null);
-    }
-  };
-  const cancelClusterClose = () => {
-    if (clusterCloseTimer.current) {
-      clearTimeout(clusterCloseTimer.current);
-      clusterCloseTimer.current = null;
-    }
-  };
-  const openCluster = (
-    cluster: GameChartCluster<GameComparison>,
-    isPinned: boolean,
-  ) => {
-    cancelClusterClose();
-    setHoveredLabelGame(null);
-    setLockedPopup(null);
-    setActiveCluster({ cluster, isPinned });
-  };
-  const scheduleClusterClose = () => {
-    cancelClusterClose();
-    clusterCloseTimer.current = setTimeout(() => {
-      setActiveCluster((current) => (current?.isPinned ? current : null));
-    }, 220);
-  };
-  const selectClusterGame = (game: GameComparison) => {
-    cancelClusterClose();
-    setActiveCluster(null);
-    setLockedPopup({ kind: 'game', game });
-  };
-  const lockGamePopup = (entry: unknown) => {
-    const game = getClickedGame(entry);
-
-    if (game) {
-      setLockedPopup({ kind: 'game', game });
-    }
-  };
-  const positionTrendPopup = (event: MouseEvent<HTMLElement>) => {
-    if (!isTrendHovered) {
-      return;
-    }
-
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = Math.max(
-      8,
-      Math.min(event.clientX - bounds.left + 12, bounds.width - 296),
-    );
-    const y = Math.max(
-      8,
-      Math.min(event.clientY - bounds.top + 12, bounds.height - 88),
-    );
-    setTrendPopupPosition({ x, y });
-  };
 
   return (
     <Card className="overflow-hidden">
-      <CardContent
-        className="relative p-3 sm:p-6"
-        onClick={closeLockedPopup}
-        onMouseMove={positionTrendPopup}
-      >
-        {trend && showTrendExplanation ? (
-          <div className="locked-chart-popup">
-            <TrendExplanation
-              description={describeGeneralStatsTrend(trend.slope)}
-              x={trendPopupPosition.x}
-              y={trendPopupPosition.y}
-            />
-          </div>
-        ) : null}
-        {lockedPopup?.kind === 'game' ? (
-          <div className="locked-chart-popup absolute top-3 right-3 z-30">
-            <GameDifficultyTooltip game={lockedPopup.game} />
-          </div>
-        ) : null}
-        {lockedPopup === null && hoveredLabelGame ? (
-          <div className="locked-chart-popup pointer-events-none absolute top-24 right-6 z-30">
-            <GameDifficultyTooltip game={hoveredLabelGame} />
-          </div>
-        ) : null}
-        <div className="mb-4">
-          <h2 className="text-lg font-bold">Game difficulty map</h2>
+      <CardContent className="p-3 sm:p-6">
+        <div className="mb-5">
+          <h2 className="text-lg font-bold">Game difficulty ranking</h2>
           <p className="text-sm text-muted-foreground">
-            Farther right means more attempts. Higher means a longer winning
-            attempt. Dot size blends both. Hover or focus a game for its three
-            toughest bosses.
+            Games are ranked by combined difficulty. Each row compares average
+            attempts and winning-attempt time on the same fixed scales.
           </p>
         </div>
-        <ChartContainer
-          role="img"
-          aria-label="Game difficulty comparison chart"
-          config={difficultyChartConfig}
-          className="h-[430px] w-full"
-        >
-          <ScatterChart margin={{ top: 36, right: 28, bottom: 30, left: 16 }}>
-            <CartesianGrid stroke="var(--border)" strokeOpacity={0.55} />
-            <XAxis
-              type="number"
-              dataKey="averageAttemptsPerBoss"
-              name="Average attempts"
-              domain={[0, maximumX]}
-              allowDecimals={false}
-              tickFormatter={(value: number) => Math.round(value).toString()}
-              tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-              label={{
-                value: 'Average attempts per defeated boss',
-                position: 'insideBottom',
-                offset: -20,
-                fill: 'var(--muted-foreground)',
-                fontSize: 12,
-              }}
-            />
-            <YAxis
-              type="number"
-              dataKey="averageWinningAttemptSeconds"
-              name="Average winning attempt"
-              domain={[0, maximumY]}
-              tickFormatter={formatStatsDuration}
-              tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-              width={62}
-            />
-            <ZAxis type="number" dataKey="difficultyScore" range={[140, 500]} />
-            {trend ? (
-              <>
-                <ReferenceLine
-                  segment={[
-                    { x: 0, y: trendStartY },
-                    { x: maximumX, y: trendEndY },
-                  ]}
-                  stroke="var(--primary)"
-                  strokeOpacity={0.6}
-                  strokeWidth={2}
-                  strokeDasharray="7 7"
-                  pointerEvents="none"
-                />
-                <ReferenceLine
-                  segment={[
-                    { x: 0, y: trendStartY },
-                    { x: maximumX, y: trendEndY },
-                  ]}
-                  stroke="transparent"
-                  strokeWidth={18}
-                  onMouseEnter={() => setIsTrendHovered(true)}
-                  onMouseLeave={() => setIsTrendHovered(false)}
-                  onClick={() => setLockedPopup({ kind: 'trend' })}
-                  className="difficulty-trend cursor-help"
-                />
-              </>
-            ) : null}
-            {lockedPopup === null && activeCluster === null ? (
-              <ChartTooltip
-                content={GameChartTooltip}
-                cursor={{ stroke: 'var(--primary)', strokeDasharray: '4 4' }}
-                allowEscapeViewBox={{ x: false, y: false }}
-                isAnimationActive={false}
-                wrapperStyle={{ pointerEvents: 'none', zIndex: 30 }}
-              />
-            ) : null}
-            <Scatter
-              data={timedGames}
-              fill="var(--primary)"
-              stroke="var(--background)"
-              strokeWidth={3}
-              isAnimationActive={false}
-              onClick={lockGamePopup}
-            >
-              <LabelList
-                dataKey="name"
-                content={
-                  <GameDotLabel
-                    games={timedGames}
-                    clusters={clusters}
-                    onClusterEnter={(cluster) => openCluster(cluster, false)}
-                    onClusterLeave={scheduleClusterClose}
-                    onClusterSelect={(cluster) => openCluster(cluster, true)}
-                    onGameEnter={setHoveredLabelGame}
-                    onGameLeave={() => setHoveredLabelGame(null)}
-                    onGameSelect={(game) =>
-                      setLockedPopup({ kind: 'game', game })
-                    }
-                  />
-                }
-              />
-            </Scatter>
-          </ScatterChart>
-        </ChartContainer>
-        {activeCluster ? (
-          <div
-            className={cn(
-              'locked-chart-popup absolute top-24 z-40',
-              activeClusterIsOnRight ? 'left-6' : 'right-6',
-            )}
-          >
-            <ClusterFocusLens
-              key={activeCluster.cluster.id}
-              games={activeCluster.cluster.games}
-              onMouseEnter={cancelClusterClose}
-              onMouseLeave={scheduleClusterClose}
-              onGameSelect={selectClusterGame}
-            />
-          </div>
-        ) : null}
+
+        <ol aria-label="Game difficulty comparison" className="space-y-2">
+          {timedGames.map((game, index) => (
+            <li key={game.id}>
+              <button
+                type="button"
+                aria-label={`View details for ${game.name}`}
+                aria-expanded={selectedGame?.id === game.id}
+                onClick={() => setSelectedGame(game)}
+                className="grid w-full grid-cols-[2rem_minmax(0,1fr)] gap-3 rounded-xl border border-border/70 bg-background/30 p-3 text-left transition-colors hover:border-primary/45 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:grid-cols-[2rem_minmax(8rem,0.8fr)_minmax(12rem,1.4fr)_minmax(8rem,1fr)] sm:items-center"
+              >
+                <span className="row-span-2 text-center text-sm font-bold text-muted-foreground sm:row-span-1">
+                  {index + 1}
+                </span>
+                <span className="truncate font-semibold">{game.name}</span>
+                <span className="space-y-1">
+                  <span className="flex justify-between gap-3 text-xs">
+                    <span className="text-muted-foreground">Attempts</span>
+                    <span className="font-semibold tabular-nums">
+                      {game.averageAttemptsPerBoss.toFixed(1)} avg
+                    </span>
+                  </span>
+                  <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
+                    <span
+                      className="block h-full rounded-full bg-primary"
+                      style={{
+                        width: getBarWidth(
+                          game.averageAttemptsPerBoss,
+                          maximumAttempts,
+                        ),
+                      }}
+                    />
+                  </span>
+                </span>
+                <span className="space-y-1">
+                  <span className="flex justify-between gap-3 text-xs">
+                    <span className="text-muted-foreground">Winning time</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatStatsDuration(game.averageWinningAttemptSeconds)}
+                    </span>
+                  </span>
+                  <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
+                    <span
+                      className="block h-full rounded-full bg-primary/65"
+                      style={{
+                        width: getBarWidth(
+                          game.averageWinningAttemptSeconds,
+                          maximumWinningTime,
+                        ),
+                      }}
+                    />
+                  </span>
+                </span>
+              </button>
+              {selectedGame?.id === game.id ? (
+                <div className="mt-2 ml-11 sm:max-w-sm">
+                  <GameDifficultyTooltip game={game} />
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ol>
       </CardContent>
     </Card>
   );

@@ -1,154 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { cloneElement, type ReactElement, type ReactNode } from 'react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
-}));
-vi.mock('recharts', () => ({
-  CartesianGrid: () => <div>Grid</div>,
-  LabelList: ({
-    content,
-  }: {
-    content: ReactElement<{
-      index?: number;
-      value?: string;
-      x?: number;
-      y?: number;
-    }>;
-  }) => (
-    <>
-      {cloneElement(content, {
-        index: 0,
-        value: 'First chart game',
-        x: 100,
-        y: 100,
-      })}
-      {cloneElement(content, {
-        index: 1,
-        value: 'Second chart game',
-        x: 120,
-        y: 110,
-      })}
-    </>
-  ),
-  ReferenceLine: ({
-    className,
-    onMouseEnter,
-    onMouseLeave,
-    onClick,
-  }: {
-    className?: string;
-    onMouseEnter?: () => void;
-    onMouseLeave?: () => void;
-    onClick?: () => void;
-  }) =>
-    onClick ? (
-      <button
-        type="button"
-        className={className}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={onClick}
-      >
-        Trend
-      </button>
-    ) : (
-      <div>Trend line</div>
-    ),
-  Scatter: ({
-    children,
-    data,
-    onClick,
-  }: {
-    children: ReactNode;
-    data: unknown[];
-    onClick: (entry: unknown) => void;
-  }) => (
-    <>
-      <button
-        type="button"
-        className="recharts-scatter-symbol"
-        onClick={() => onClick(data[0])}
-      >
-        Game dots
-        {children}
-      </button>
-      <button
-        type="button"
-        className="recharts-scatter-symbol"
-        onClick={() => onClick({ payload: data[0] })}
-      >
-        Wrapped game dot
-      </button>
-      <button
-        type="button"
-        className="recharts-scatter-symbol"
-        onClick={() => onClick({ payload: {} })}
-      >
-        Invalid game dot
-      </button>
-      <button
-        type="button"
-        className="recharts-scatter-symbol"
-        onClick={() => onClick(null)}
-      >
-        Empty game dot
-      </button>
-    </>
-  ),
-  ScatterChart: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
-  XAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
-    <div>X axis {tickFormatter(3.9999999998)}</div>
-  ),
-  YAxis: ({ tickFormatter }: { tickFormatter: (value: number) => string }) => (
-    <div>{tickFormatter(60)}</div>
-  ),
-  ZAxis: () => <div>Z axis</div>,
-}));
-vi.mock('@/components/ui/chart', () => ({
-  ChartContainer: ({
-    children,
-    ...props
-  }: {
-    children: ReactNode;
-    'aria-label': string;
-  }) => <div {...props}>{children}</div>,
-  ChartTooltip: ({
-    content,
-  }: {
-    content: (props: {
-      active: boolean;
-      payload: { payload: unknown }[];
-    }) => ReactNode;
-  }) => (
-    <>
-      {content({ active: false, payload: [] })}
-      {content({ active: true, payload: [{ payload: {} }] })}
-      {content({
-        active: true,
-        payload: [
-          {
-            payload: {
-              id: 'tooltip-game',
-              name: 'Tooltip Game',
-              bossHighlights: {
-                mostAttempts: {
-                  name: 'Tooltip Boss',
-                  attempts: 4,
-                  winningAttemptSeconds: 90,
-                },
-                longestWinningAttempt: null,
-                toughestOverall: null,
-              },
-            },
-          },
-        ],
-      })}
-    </>
-  ),
 }));
 
 import { GeneralStatsPage } from './general-stats-page';
@@ -178,10 +32,16 @@ const makeComparison = (
 });
 
 describe('GeneralStatsPage', () => {
-  it('opens a nearby-game lens that can be entered and selected', () => {
-    const clusteredGames = [
-      makeComparison('bloodborne', 'Bloodborne', 4, 240),
-      makeComparison('lies-of-p', 'Lies of P', 4.4, 220),
+  it('shows every game in a stable ranked row without grouped labels', () => {
+    const tiedGames = [
+      {
+        ...makeComparison('bloodborne', 'Bloodborne', 4, 240),
+        difficultyScore: null,
+      },
+      {
+        ...makeComparison('lies-of-p', 'Lies of P', 4.4, 220),
+        difficultyScore: null,
+      },
     ];
 
     render(
@@ -191,35 +51,25 @@ describe('GeneralStatsPage', () => {
           hardestByDeathsGameId: 'bloodborne',
           longestWinningAttemptGameId: 'bloodborne',
           toughestOverallGameId: 'bloodborne',
-          games: clusteredGames,
+          games: tiedGames,
         }}
       />,
     );
 
-    const clusterTarget = screen.getByRole('button', {
-      name: 'Explore 2 nearby games',
+    expect(
+      screen.queryByRole('button', { name: 'Explore 2 nearby games' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+
+    const liesOfP = screen.getByRole('button', {
+      name: 'View details for Lies of P',
     });
-    fireEvent.mouseEnter(clusterTarget);
-
-    const lens = screen.getByRole('dialog', { name: '2 nearby games' });
-    fireEvent.mouseLeave(clusterTarget);
-    fireEvent.mouseEnter(lens);
-    fireEvent.mouseLeave(lens);
-    fireEvent.mouseEnter(lens);
-
-    const liesOfP = screen.getByRole('button', { name: /Lies of P/ });
-    fireEvent.mouseEnter(liesOfP);
     fireEvent.click(liesOfP);
     expect(screen.getByText('Lies of P boss')).toBeInTheDocument();
-
-    fireEvent.mouseEnter(clusterTarget);
-    fireEvent.click(clusterTarget);
-    expect(
-      screen.getByRole('dialog', { name: '2 nearby games' }),
-    ).toBeInTheDocument();
   });
 
-  it('shows comparison highlights and a labelled game chart', () => {
+  it('shows comparison highlights and a ranked game comparison', () => {
     render(
       <GeneralStatsPage
         games={[]}
@@ -292,7 +142,7 @@ describe('GeneralStatsPage', () => {
     ).toBeGreaterThan(0);
     expect(screen.getByText('Toughest overall')).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: 'Game difficulty comparison chart' }),
+      screen.getByRole('list', { name: 'Game difficulty comparison' }),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Dark Souls III').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Elden Ring').length).toBeGreaterThan(0);
@@ -302,53 +152,18 @@ describe('GeneralStatsPage', () => {
     ).toHaveClass('general-stats-pip-only', 'activity-compact:flex');
     expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
-    const chart = screen.getByRole('img', {
-      name: 'Game difficulty comparison chart',
+    expect(screen.getByText('Game difficulty ranking')).toBeInTheDocument();
+    const ranking = screen.getByRole('list', {
+      name: 'Game difficulty comparison',
     });
-    const chartCardContent = chart.closest('[data-slot="card-content"]');
+    expect(within(ranking).getAllByText('Attempts')).toHaveLength(2);
+    expect(within(ranking).getAllByText('Winning time')).toHaveLength(2);
 
-    if (!(chartCardContent instanceof HTMLElement)) {
-      throw new Error('Expected chart card content');
-    }
-
-    chartCardContent.getBoundingClientRect = () => ({
-      bottom: 600,
-      height: 600,
-      left: 0,
-      right: 1_000,
-      top: 0,
-      width: 1_000,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    });
-    fireEvent.mouseMove(chartCardContent, { clientX: 100, clientY: 100 });
-    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Trend' }));
-    fireEvent.mouseMove(chartCardContent, { clientX: 200, clientY: 200 });
-    expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
-    expect(screen.getByText('Difficulty trend').parentElement).toHaveStyle({
-      left: '212px',
-      top: '212px',
-    });
-    expect(screen.getByText('X axis 4')).toBeInTheDocument();
-    fireEvent.mouseLeave(screen.getByRole('button', { name: 'Trend' }));
-    expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Game dots/ }));
-    expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Invalid game dot' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Empty game dot' }));
-    expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Trend' }));
-    expect(screen.getByText('Difficulty trend')).toBeInTheDocument();
-    expect(screen.queryByText('Darkeater Midir')).not.toBeInTheDocument();
-
-    fireEvent.click(chart);
-    expect(screen.queryByText('Difficulty trend')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Wrapped game dot' }));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'View details for Dark Souls III',
+      }),
+    );
     expect(screen.getByText('Darkeater Midir')).toBeInTheDocument();
   });
 
@@ -431,6 +246,6 @@ describe('GeneralStatsPage', () => {
     );
 
     expect(screen.queryByText('Trend')).not.toBeInTheDocument();
-    expect(screen.getByText('1m 0s')).toBeInTheDocument();
+    expect(screen.getAllByText('0m 0s').length).toBeGreaterThan(0);
   });
 });
