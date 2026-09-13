@@ -7,7 +7,28 @@ vi.mock('@/features/game-stats/components/game-switcher', () => ({
 }));
 vi.mock('recharts', () => ({
   CartesianGrid: () => <div>Grid</div>,
-  ReferenceLine: () => <div>Median</div>,
+  ReferenceLine: ({
+    onMouseEnter,
+    onMouseLeave,
+    x,
+    y,
+  }: {
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
+    x?: number;
+    y?: number;
+  }) =>
+    onMouseEnter ? (
+      <button
+        type="button"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {x === undefined ? 'Average time guide' : 'Average deaths guide'}
+      </button>
+    ) : (
+      <div>{y === undefined ? 'Deaths average' : 'Time average'}</div>
+    ),
   ResponsiveContainer: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
@@ -15,16 +36,19 @@ vi.mock('recharts', () => ({
     children,
     data,
     onClick,
+    onMouseEnter,
   }: {
     children: ReactNode;
     data: unknown[];
     onClick: (entry: unknown) => void;
+    onMouseEnter: () => void;
   }) => (
     <div>
       {children}
       <button
         type="button"
         className="recharts-scatter-symbol"
+        onMouseEnter={onMouseEnter}
         onClick={() => onClick(data[0])}
       >
         First chart dot
@@ -142,11 +166,30 @@ describe('GeneralStatsPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Explore 2 nearby games' }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('list', { name: 'Boss extremes chart legend' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText('Dot area 280')).toBeInTheDocument();
+    const gameData = screen.getByRole('list', {
+      name: 'Boss extremes game data',
+    });
+    expect(gameData).toHaveTextContent('Bloodborne');
+    expect(gameData).toHaveTextContent('3 deaths · 4m 0s');
+    expect(screen.getByText('Dot area 343')).toBeInTheDocument();
     expect(screen.getByText('Hovered Game')).toBeInTheDocument();
+
+    const deathsGuide = screen.getByRole('button', {
+      name: 'Average deaths guide',
+    });
+    fireEvent.mouseEnter(deathsGuide);
+    expect(screen.getByText('Average deaths: 3.0')).toBeInTheDocument();
+    fireEvent.mouseEnter(
+      screen.getByRole('button', { name: 'First chart dot' }),
+    );
+    expect(screen.queryByText('Average deaths: 3.0')).not.toBeInTheDocument();
+
+    const timeGuide = screen.getByRole('button', {
+      name: 'Average time guide',
+    });
+    fireEvent.mouseEnter(timeGuide);
+    expect(screen.getByText('Average longest win: 4m 0s')).toBeInTheDocument();
+    fireEvent.mouseLeave(timeGuide);
 
     fireEvent.click(screen.getByRole('button', { name: 'First chart dot' }));
     expect(screen.getByText('Bloodborne boss')).toBeInTheDocument();
@@ -269,6 +312,9 @@ describe('GeneralStatsPage', () => {
     expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
     expect(screen.getByText('Boss extremes')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Lock details for Dark Souls III' }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'First chart dot' }));
     expect(screen.getAllByText('Malenia').length).toBeGreaterThan(0);
   });
@@ -353,6 +399,6 @@ describe('GeneralStatsPage', () => {
       />,
     );
 
-    expect(screen.getByText('Dot area 280')).toBeInTheDocument();
+    expect(screen.getByText('Dot area 343')).toBeInTheDocument();
   });
 });
