@@ -43,10 +43,12 @@ import {
   isStreamAnnouncementEligible,
   isStreamAnnouncementReviewDue,
 } from './stream-announcement.utils';
+import { automaticallyCombinePlannedStream } from './stream-combined.service';
 import {
   buildStreamAnnouncementMessages,
   buildStreamAnnouncementReviewMessage,
   buildStreamInfoEmbed,
+  buildStreamReminderButton,
   STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX,
 } from './stream-info.discord';
 import {
@@ -55,6 +57,7 @@ import {
 } from './stream-info.service';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
 import { deliverStreamReminders } from './stream-reminder.service';
+import { getStreamReminderOccurrence } from './stream-reminder.utils';
 
 const UNKNOWN_MESSAGE_CODE = 10008;
 const MISSING_ACCESS_CODE = 50001;
@@ -143,8 +146,13 @@ const findRecentStreamInfoMessage = async ({
 const buildStreamInfoMessageEdit = async (guildId: string) => {
   const streamInfo = await getStreamInfo(guildId);
   const embed = buildStreamInfoEmbed(streamInfo);
+  const reminderButton = buildStreamReminderButton(
+    getStreamReminderOccurrence(streamInfo),
+  );
   const statsButton = buildEmbeddedAppStatsButton(guildId);
-  const buttonRows = [statsButton].filter((button) => button !== null);
+  const buttonRows = [reminderButton, statsButton].filter(
+    (button) => button !== null,
+  );
   const actionRows =
     buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
   const componentMessage = buildComponentEmbedMessageFromEmbeds([embed]);
@@ -157,10 +165,11 @@ const buildStreamInfoMessageEdit = async (guildId: string) => {
 };
 
 export const announcePlannedStreamInfo = async (client: Client) => {
-  const streamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
-  const scheduledOccurrence = [streamInfo.current, streamInfo.next].find(
-    (candidate) => isStreamAnnouncementEligible(candidate),
-  );
+  const initialStreamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
+  const scheduledOccurrence = [
+    initialStreamInfo.current,
+    initialStreamInfo.next,
+  ].find((candidate) => isStreamAnnouncementEligible(candidate));
 
   if (!scheduledOccurrence) {
     return;
@@ -174,7 +183,21 @@ export const announcePlannedStreamInfo = async (client: Client) => {
   if (!streamUrl || plan?.automaticDecision === 'DECLINED') {
     return;
   }
-  const occurrence = { ...scheduledOccurrence, streamUrl };
+  const occurrence = await automaticallyCombinePlannedStream(
+    BOT_GUILDS.PROD_ENV,
+    { ...scheduledOccurrence, streamUrl },
+  );
+  const streamInfo = {
+    ...initialStreamInfo,
+    current:
+      initialStreamInfo.current?.dateKey === occurrence.dateKey
+        ? occurrence
+        : initialStreamInfo.current,
+    next:
+      initialStreamInfo.next?.dateKey === occurrence.dateKey
+        ? occurrence
+        : initialStreamInfo.next,
+  };
   const announcementStreamInfo = applyStreamAnnouncementEdits(
     streamInfo,
     occurrence.dateKey,

@@ -45,6 +45,14 @@ const streamReminderService = vi.hoisted(() => ({
   deliverStreamReminders: vi.fn(),
 }));
 
+const streamReminderUtils = vi.hoisted(() => ({
+  getStreamReminderOccurrence: vi.fn(),
+}));
+
+const streamCombinedService = vi.hoisted(() => ({
+  automaticallyCombinePlannedStream: vi.fn(),
+}));
+
 vi.mock('@data/queries/stream-info-message', () => ({
   deleteExpiredStreamInfoMessages:
     streamInfoMessageQueries.deleteExpiredStreamInfoMessages,
@@ -92,6 +100,20 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
 
 vi.mock('../../src/modules/stream-info/stream-reminder.service', () => ({
   deliverStreamReminders: streamReminderService.deliverStreamReminders,
+}));
+vi.mock(
+  '../../src/modules/stream-info/stream-reminder.utils',
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import('../../src/modules/stream-info/stream-reminder.utils')
+    >()),
+    getStreamReminderOccurrence:
+      streamReminderUtils.getStreamReminderOccurrence,
+  }),
+);
+vi.mock('../../src/modules/stream-info/stream-combined.service', () => ({
+  automaticallyCombinePlannedStream:
+    streamCombinedService.automaticallyCombinePlannedStream,
 }));
 
 import {
@@ -162,6 +184,10 @@ describe('stream info message updater', () => {
     );
     embeddedAppDiscord.buildEmbeddedAppStatsButton.mockReturnValue(null);
     streamReminderService.deliverStreamReminders.mockResolvedValue(undefined);
+    streamReminderUtils.getStreamReminderOccurrence.mockReturnValue(null);
+    streamCombinedService.automaticallyCombinePlannedStream.mockImplementation(
+      async (_guildId, occurrence) => occurrence,
+    );
     streamInfoMessageQueries.deleteExpiredStreamInfoMessages.mockResolvedValue(
       undefined,
     );
@@ -235,6 +261,63 @@ describe('stream info message updater', () => {
 
     expect(send).not.toHaveBeenCalled();
     expect(existingMessage.edit).not.toHaveBeenCalled();
+  });
+
+  it('applies automatic combined detection before building the announcement', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T17:40:00.000Z'));
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'announcement-link-1' })
+      .mockResolvedValueOnce({ id: 'announcement-info-1' });
+    const plannedOccurrence = {
+      dateKey: '2026-09-18',
+      startAt: new Date('2026-09-18T18:10:00.000Z'),
+      streamUrl: 'https://youtube.test/watch?v=planned',
+      videoTitle: 'Listening to your music + AC7 Later',
+    };
+    const combinedOccurrence = {
+      ...plannedOccurrence,
+      gameName: 'Ace Combat 7',
+      isCombined: true,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      next: plannedOccurrence,
+    });
+    streamCombinedService.automaticallyCombinePlannedStream.mockResolvedValue(
+      combinedOccurrence,
+    );
+
+    await announcePlannedStreamInfo(makeClient({ channel: { send } }));
+
+    expect(
+      streamCombinedService.automaticallyCombinePlannedStream,
+    ).toHaveBeenCalledWith(
+      'production-guild',
+      expect.objectContaining({
+        streamUrl: 'https://youtube.test/watch?v=planned',
+        videoTitle: 'Listening to your music + AC7 Later',
+      }),
+    );
+    expect(
+      streamInfoDiscord.buildStreamAnnouncementMessages,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occurrence: combinedOccurrence,
+        streamInfo: expect.objectContaining({
+          next: expect.objectContaining({
+            gameName: 'Ace Combat 7',
+            isCombined: true,
+          }),
+        }),
+      }),
+    );
+    expect(
+      streamCombinedService.automaticallyCombinePlannedStream.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(send.mock.invocationCallOrder[0] ?? 0);
   });
 
   it('does not announce a scheduled stream before a URL is available', async () => {
@@ -573,30 +656,39 @@ describe('stream info message updater', () => {
     expect(streamReminderService.deliverStreamReminders).not.toHaveBeenCalled();
   });
 
-  it('keeps reminder controls out of general stream info messages', async () => {
+  it('restores temporary reminder controls when refreshing general stream info messages', async () => {
     const message = makeMessage();
     const channel = {
       messages: {
         fetch: vi.fn().mockResolvedValue(message),
       },
     };
-    const liveOccurrence = {
+    const reminderOccurrence = {
       dateKey: '2026-07-03',
       streamUrl: 'https://youtube.test/watch?v=stream',
-      videoTitle: 'Davi is live',
-      streamIsLive: true,
+      videoTitle: 'Upcoming stream',
+      streamIsLive: false,
     };
     streamInfoService.getStreamInfo.mockResolvedValue({
       timezone: 'America/Sao_Paulo',
-      current: liveOccurrence,
+      current: reminderOccurrence,
       next: null,
     });
     streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
       new EmbedBuilder()
         .setTitle('Stream Info')
-        .addFields({ name: 'Current stream', value: 'Live now' }),
+        .addFields({ name: 'Current stream', value: 'Starting soon' }),
     );
-    streamInfoDiscord.buildStreamReminderButton.mockReturnValue(null);
+    const reminderButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('stream-reminder:2026-07-03')
+        .setLabel('Remind Me')
+        .setStyle(ButtonStyle.Primary),
+    );
+    streamReminderUtils.getStreamReminderOccurrence.mockReturnValue(
+      reminderOccurrence,
+    );
+    streamInfoDiscord.buildStreamReminderButton.mockReturnValue(reminderButton);
 
     await refreshStreamInfoMessage({
       client: makeClient({ channel }),
@@ -607,10 +699,22 @@ describe('stream info message updater', () => {
       },
     });
 
-    expect(streamInfoDiscord.buildStreamReminderButton).not.toHaveBeenCalled();
+    expect(streamInfoDiscord.buildStreamReminderButton).toHaveBeenCalledWith(
+      reminderOccurrence,
+    );
     expect(message.edit).toHaveBeenCalledWith(
       expect.objectContaining({
-        components: [expect.objectContaining({ type: 17 })],
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                data: expect.objectContaining({
+                  custom_id: 'stream-reminder:2026-07-03',
+                }),
+              }),
+            ]),
+          }),
+        ]),
       }),
     );
   });

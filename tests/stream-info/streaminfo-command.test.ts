@@ -8,6 +8,7 @@ const dependencies = vi.hoisted(() => ({
   buildStreamReminderButton: vi.fn(),
   editReply: vi.fn(),
   getStreamInfo: vi.fn(),
+  getStreamReminderOccurrence: vi.fn(),
   mergeButtonActionRows: vi.fn(),
   registerLastStreamInfoMessage: vi.fn(),
   runCommand: vi.fn(),
@@ -62,7 +63,7 @@ vi.mock(
   }),
 );
 vi.mock('../../src/modules/stream-info/stream-reminder.utils', () => ({
-  getStreamReminderOccurrence: vi.fn().mockReturnValue(null),
+  getStreamReminderOccurrence: dependencies.getStreamReminderOccurrence,
 }));
 
 import { StreamInfoCommand } from '../../src/commands/streaminfo';
@@ -81,6 +82,7 @@ describe('/streaminfo response privacy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     dependencies.getStreamInfo.mockResolvedValue({ current: null, next: null });
+    dependencies.getStreamReminderOccurrence.mockReturnValue(null);
     dependencies.buildStreamInfoEmbed.mockReturnValue({ title: 'Stream Info' });
     dependencies.buildStreamReminderButton.mockReturnValue(null);
     dependencies.buildEmbeddedAppStatsButton.mockReturnValue({
@@ -173,9 +175,13 @@ describe('/streaminfo response privacy', () => {
     });
   });
 
-  it('keeps only the stats button in thread responses', async () => {
+  it('includes the temporary reminder and Stats buttons in thread responses', async () => {
     const interaction = makeInteraction(false, true);
+    const reminderOccurrence = { dateKey: '2026-09-18' };
     const reminderButton = { type: 'reminder-button' };
+    dependencies.getStreamReminderOccurrence.mockReturnValue(
+      reminderOccurrence,
+    );
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
 
     await StreamInfoCommand.prototype.chatInputRun.call(
@@ -186,16 +192,27 @@ describe('/streaminfo response privacy', () => {
     expect(dependencies.buildEmbeddedAppStatsButton).toHaveBeenCalledWith(
       'production-guild',
     );
+    expect(dependencies.buildStreamReminderButton).toHaveBeenCalledWith(
+      reminderOccurrence,
+    );
+    expect(dependencies.mergeButtonActionRows).toHaveBeenCalledWith([
+      reminderButton,
+      { type: 'stats-button' },
+    ]);
     expect(dependencies.editReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        components: [{ type: 'stats-button' }],
+        components: [{ type: 'merged-row' }],
       }),
     );
   });
 
-  it('does not add the old reminder button in production', async () => {
+  it('includes the temporary reminder button in normal production channels', async () => {
+    const reminderOccurrence = { dateKey: '2026-09-18' };
     const reminderButton = { type: 'reminder-button' };
     const statsButton = { type: 'stats-button' };
+    dependencies.getStreamReminderOccurrence.mockReturnValue(
+      reminderOccurrence,
+    );
     dependencies.buildStreamReminderButton.mockReturnValue(reminderButton);
     dependencies.buildEmbeddedAppStatsButton.mockReturnValue(statsButton);
     await StreamInfoCommand.prototype.chatInputRun.call(
@@ -203,9 +220,12 @@ describe('/streaminfo response privacy', () => {
       makeInteraction(false) as never,
     );
 
-    expect(dependencies.mergeButtonActionRows).not.toHaveBeenCalled();
+    expect(dependencies.mergeButtonActionRows).toHaveBeenCalledWith([
+      reminderButton,
+      statsButton,
+    ]);
     expect(dependencies.editReply).toHaveBeenCalledWith(
-      expect.objectContaining({ components: [{ type: 'stats-button' }] }),
+      expect.objectContaining({ components: [{ type: 'merged-row' }] }),
     );
   });
 });
