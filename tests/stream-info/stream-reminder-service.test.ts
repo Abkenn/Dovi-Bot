@@ -273,8 +273,76 @@ describe('stream reminders', () => {
         components: expect.any(Array),
       }),
     );
-    expect(queries.markStreamReminderNotified).toHaveBeenCalledWith(
-      'reminder-1',
+    expect(queries.markStreamReminderNotified).toHaveBeenCalledWith({
+      reminderId: 'reminder-1',
+      streamUrl: occurrence.streamUrl,
+    });
+  });
+
+  it('delivers live reminders for both videos in a combined stream', async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    const fetch = vi.fn().mockResolvedValue({ send });
+    const secondStreamUrl = 'https://youtube.test/watch?v=game-stream';
+    queries.findPendingStreamReminders.mockResolvedValue([
+      { id: 'reminder-1', userId: 'user-1' },
+    ]);
+
+    await deliverStreamReminders({
+      client: { users: { fetch } } as unknown as Client,
+      guildId: 'guild-1',
+      occurrence: { ...occurrence, streamIsLive: true },
+    });
+    await deliverStreamReminders({
+      client: { users: { fetch } } as unknown as Client,
+      guildId: 'guild-1',
+      occurrence: {
+        ...occurrence,
+        streamIsLive: true,
+        streamUrl: secondStreamUrl,
+        videoTitle: 'Davi is playing Ace Combat',
+      },
+    });
+
+    expect(queries.findPendingStreamReminders).toHaveBeenNthCalledWith(
+      1,
+      'guild-1',
+      occurrence.dateKey,
+      occurrence.streamUrl,
+    );
+    expect(queries.findPendingStreamReminders).toHaveBeenNthCalledWith(
+      2,
+      'guild-1',
+      occurrence.dateKey,
+      secondStreamUrl,
+    );
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(queries.markStreamReminderNotified).toHaveBeenNthCalledWith(1, {
+      reminderId: 'reminder-1',
+      streamUrl: occurrence.streamUrl,
+    });
+    expect(queries.markStreamReminderNotified).toHaveBeenNthCalledWith(2, {
+      reminderId: 'reminder-1',
+      streamUrl: secondStreamUrl,
+    });
+  });
+
+  it('does not send the second live reminder after the user turns off live alerts', async () => {
+    queries.findPendingStreamReminders.mockResolvedValue([]);
+
+    await deliverStreamReminders({
+      client: { users: { fetch: vi.fn() } } as unknown as Client,
+      guildId: 'guild-1',
+      occurrence: {
+        ...occurrence,
+        streamIsLive: true,
+        streamUrl: 'https://youtube.test/watch?v=game-stream',
+      },
+    });
+
+    expect(queries.findPendingStreamReminders).toHaveBeenCalledWith(
+      'guild-1',
+      occurrence.dateKey,
+      'https://youtube.test/watch?v=game-stream',
     );
   });
 });

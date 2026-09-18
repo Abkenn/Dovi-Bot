@@ -198,12 +198,15 @@ export const resolveYouTubeStreamStatuses = ({
       matchingStatuses.map((status) => [status.url, toStreamVideo(status)]),
     ).values(),
   ];
+  const firstVideo = videos[0];
+  const firstStreamStartAt =
+    firstVideo?.actualStartAt ?? firstVideo?.scheduledStartAt ?? null;
+  const current = firstStreamStartAt
+    ? { ...resolution.current, startAt: firstStreamStartAt, videos }
+    : { ...resolution.current, videos };
 
   return {
     ...resolution,
-    current: {
-      ...resolution.current,
-      videos,
-    },
+    current,
   };
 };

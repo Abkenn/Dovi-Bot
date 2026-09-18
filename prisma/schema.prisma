@@ -162,6 +162,7 @@ model StreamReminder {
   announcementNotifiedAt DateTime?
   liveReminderDisabledAt DateTime?
   notifiedAt       DateTime?
+  notifiedStreamUrls String[] @default([])
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

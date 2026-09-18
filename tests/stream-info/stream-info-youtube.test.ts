@@ -111,6 +111,38 @@ describe('stream info YouTube lifecycle', () => {
         url: 'https://www.youtube.com/watch?v=video-2',
       }),
     ]);
+    expect(resolution.current?.startAt.toISOString()).toBe(
+      '2026-06-12T18:10:00.000Z',
+    );
+  });
+
+  it('keeps the first stream timestamp when the second stream is live', () => {
+    const music = makeStatus({
+      title: 'Music picks + ACE COMBAT Later',
+      actualStartAt: new Date('2026-06-12T18:10:00.000Z'),
+      actualEndAt: new Date('2026-06-12T19:00:00.000Z'),
+      isLive: false,
+      isUpcoming: false,
+    });
+    const game = makeStatus({
+      title: 'ACE COMBAT 7',
+      url: 'https://www.youtube.com/watch?v=video-2',
+      actualStartAt: new Date('2026-06-12T19:10:00.000Z'),
+      isLive: true,
+      isUpcoming: false,
+    });
+
+    const resolution = resolveYouTubeStreamStatuses({
+      occurrences: [makeOccurrence()],
+      primaryStatus: game,
+      statuses: [music, game],
+      now: DateTime.fromISO('2026-06-12T19:20:00.000Z'),
+      timezone: 'America/Sao_Paulo',
+    });
+
+    expect(resolution.current?.startAt.toISOString()).toBe(
+      '2026-06-12T18:10:00.000Z',
+    );
   });
 
   it('keeps the ended stream link during the 10 minute grace window', () => {

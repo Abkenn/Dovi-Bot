@@ -588,6 +588,53 @@ test('stores and removes a permanent stream reminder preference', async () => {
   await expect(queries.hasPermanentStreamReminder(input)).resolves.toBe(false);
 });
 
+test('tracks live reminder delivery separately for each combined-stream video', async () => {
+  const queries = await import('../../src/data/queries/stream-reminder');
+  const input = {
+    guildId,
+    userId: 'combined-stream-reminder-user',
+    streamDateKey: '2026-09-18',
+    streamUrl: 'https://youtube.test/watch?v=music-stream',
+    videoTitle: 'Music stream',
+    scheduledStartAt: new Date('2026-09-18T18:10:00.000Z'),
+  };
+  const gameStreamUrl = 'https://youtube.test/watch?v=game-stream';
+
+  const reminder = await queries.upsertStreamReminder(input);
+  await queries.markStreamReminderNotified({
+    reminderId: reminder.id,
+    streamUrl: input.streamUrl,
+  });
+
+  await expect(
+    queries.findPendingStreamReminders(
+      guildId,
+      input.streamDateKey,
+      input.streamUrl,
+    ),
+  ).resolves.toHaveLength(0);
+  await expect(
+    queries.findPendingStreamReminders(
+      guildId,
+      input.streamDateKey,
+      gameStreamUrl,
+    ),
+  ).resolves.toMatchObject([{ id: reminder.id }]);
+
+  await queries.setStreamLiveReminderEnabled({
+    enabled: false,
+    reminderId: reminder.id,
+    userId: input.userId,
+  });
+  await expect(
+    queries.findPendingStreamReminders(
+      guildId,
+      input.streamDateKey,
+      gameStreamUrl,
+    ),
+  ).resolves.toHaveLength(0);
+});
+
 test('stores announcement snapshots, review decisions, and approval requests', async () => {
   const queries = await import('../../src/data/queries/stream-announcement');
   await queries.createStreamAnnouncement({

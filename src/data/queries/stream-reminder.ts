@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import type {
   PermanentStreamReminderInput,
   SetStreamLiveReminderEnabledInput,
+  StreamReminderNotifiedInput,
   UpdateStreamReminderAnnouncementInput,
   UpsertStreamReminderInput,
 } from './stream-reminder.types';
@@ -112,7 +113,6 @@ export const setStreamLiveReminderEnabled = (
     where: {
       id: input.reminderId,
       userId: input.userId,
-      notifiedAt: null,
     },
     data: { liveReminderDisabledAt: input.enabled ? null : new Date() },
     select: {
@@ -139,19 +139,29 @@ export const findStreamReminderForUser = (id: string, userId: string) =>
 export const findPendingStreamReminders = (
   guildId: string,
   streamDateKey: string,
+  streamUrl: string,
 ) =>
   prisma.streamReminder.findMany({
     where: {
       guildId,
       streamDateKey,
       liveReminderDisabledAt: null,
-      notifiedAt: null,
+      NOT: { notifiedStreamUrls: { has: streamUrl } },
     },
     orderBy: { createdAt: 'asc' },
   });
 
-export const markStreamReminderNotified = (id: string) =>
+export const markStreamReminderNotified = ({
+  reminderId,
+  streamUrl,
+}: StreamReminderNotifiedInput) =>
   prisma.streamReminder.updateMany({
-    where: { id, notifiedAt: null },
-    data: { notifiedAt: new Date() },
+    where: {
+      id: reminderId,
+      NOT: { notifiedStreamUrls: { has: streamUrl } },
+    },
+    data: {
+      notifiedAt: new Date(),
+      notifiedStreamUrls: { push: streamUrl },
+    },
   });

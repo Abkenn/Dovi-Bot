@@ -99,6 +99,28 @@ const getOccurrenceVideoLinks = (
   ];
 };
 
+const getOccurrenceVideoLinkLines = (
+  occurrence: StreamOccurrence,
+): string[] => {
+  const videos = getOccurrenceVideoLinks(occurrence);
+  if (!occurrence.isCombined) {
+    return videos.map((video) => `[${video.title}](${video.url})`);
+  }
+  if (videos.length === 1) {
+    const [video] = videos;
+    if (!video) {
+      return [];
+    }
+
+    return [`**Music + Game Stream:** [${video.title}](${video.url})`];
+  }
+
+  return videos.map((video, index) => {
+    const label = index === 0 ? 'Music Stream' : 'Game Stream';
+    return `**${label}:** [${video.title}](${video.url})`;
+  });
+};
+
 const buildOccurrenceValue = (
   label: 'Current' | 'Next',
   occurrence: StreamOccurrence | null,
@@ -138,8 +160,8 @@ const buildOccurrenceValue = (
     lines.push(`Theme: ${occurrence.musicTheme.trim()}`);
   }
 
-  for (const video of getOccurrenceVideoLinks(occurrence)) {
-    lines.push(`[${video.title}](${video.url})`);
+  for (const videoLinkLine of getOccurrenceVideoLinkLines(occurrence)) {
+    lines.push(videoLinkLine);
   }
 
   lines.push(
@@ -197,7 +219,7 @@ export const buildStreamAnnouncementReminderButton = (
   occurrence: StreamOccurrence | null,
   customIdPrefix = STREAM_REMINDER_CUSTOM_ID_PREFIX,
 ): ActionRowBuilder<ButtonBuilder> | null => {
-  if (!occurrence || occurrence.streamIsLive === true) {
+  if (!occurrence) {
     return null;
   }
 

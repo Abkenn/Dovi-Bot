@@ -146,6 +146,21 @@ describe('stream info discord output', () => {
     });
   });
 
+  it('keeps the upload announcement reminder button after the stream is live', () => {
+    expect(
+      buildStreamAnnouncementReminderButton(
+        makeOccurrence({ streamIsLive: true }),
+      )?.toJSON(),
+    ).toMatchObject({
+      components: [
+        {
+          custom_id: 'stream-reminder:2026-06-12',
+          label: 'Remind Me',
+        },
+      ],
+    });
+  });
+
   it('separates the stream-info embed from the native YouTube preview message', () => {
     const occurrence = makeOccurrence({
       streamUrl: 'https://youtube.test/watch?v=stream',
@@ -176,6 +191,8 @@ describe('stream info discord output', () => {
 
   it('keeps a second combined-stream URL inside the embed only', () => {
     const occurrence = makeOccurrence({
+      isCombined: true,
+      streamKind: StreamKind.MUSIC,
       streamUrl: 'https://youtube.test/music',
       videoTitle: 'Music picks + ACE COMBAT Later',
       videos: [
@@ -215,6 +232,33 @@ describe('stream info discord output', () => {
     }
     expect(getEmbedFieldValue(infoEmbed, 'Current stream')).toContain(
       '[ACE COMBAT 7](https://youtube.test/game)',
+    );
+    expect(getEmbedFieldValue(infoEmbed, 'Current stream')).toContain(
+      '**Music Stream:** [Music picks + ACE COMBAT Later](https://youtube.test/music)',
+    );
+    expect(getEmbedFieldValue(infoEmbed, 'Current stream')).toContain(
+      '**Game Stream:** [ACE COMBAT 7](https://youtube.test/game)',
+    );
+  });
+
+  it('labels a one-link combined stream as music plus game', () => {
+    const value = getEmbedFieldValue(
+      buildStreamInfoEmbed({
+        timezone: 'America/Sao_Paulo',
+        current: makeOccurrence({
+          isCombined: true,
+          streamKind: StreamKind.MUSIC,
+          streamUrl: 'https://youtube.test/music',
+          videoTitle: 'Music picks + ACE COMBAT Later',
+        }),
+        previous: null,
+        next: null,
+      }),
+      'Current stream',
+    );
+
+    expect(value).toContain(
+      '**Music + Game Stream:** [Music picks + ACE COMBAT Later](https://youtube.test/music)',
     );
   });
 

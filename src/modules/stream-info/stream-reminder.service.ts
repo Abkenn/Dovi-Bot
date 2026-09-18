@@ -179,13 +179,17 @@ export const deliverStreamReminders = async ({
   const reminders = await findPendingStreamReminders(
     guildId,
     occurrence.dateKey,
+    streamUrl,
   );
 
   for (const reminder of reminders) {
     try {
       const user = await client.users.fetch(reminder.userId);
       await user.send(buildStreamLiveReminderMessage(videoTitle, streamUrl));
-      await markStreamReminderNotified(reminder.id);
+      await markStreamReminderNotified({
+        reminderId: reminder.id,
+        streamUrl,
+      });
     } catch (error) {
       console.error(`Failed to deliver stream reminder ${reminder.id}`, error);
     }
