@@ -3,6 +3,12 @@ import { MusicMode, StreamKind, Weekday } from '../../generated/prisma/client';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 
 const optionalString = z.string().optional();
+const streamVideoSchema = z.object({
+  title: z.string(),
+  url: z.string(),
+  actualStartAt: z.string().nullable(),
+  scheduledStartAt: z.string().nullable(),
+});
 const occurrenceSchema = z
   .object({
     dateKey: z.string(),
@@ -18,6 +24,7 @@ const occurrenceSchema = z
     isCombined: z.boolean().optional().default(false),
     streamUrl: optionalString,
     videoTitle: optionalString,
+    videos: z.array(streamVideoSchema).optional(),
     streamIsLive: z.boolean().optional(),
     isOverride: z.boolean(),
   })
@@ -26,6 +33,15 @@ const occurrenceSchema = z
       ...occurrence,
       startAt: new Date(occurrence.startAt),
       endAt: new Date(occurrence.endAt),
+      videos: occurrence.videos?.map((video) => ({
+        ...video,
+        actualStartAt: video.actualStartAt
+          ? new Date(video.actualStartAt)
+          : null,
+        scheduledStartAt: video.scheduledStartAt
+          ? new Date(video.scheduledStartAt)
+          : null,
+      })),
     }),
   );
 

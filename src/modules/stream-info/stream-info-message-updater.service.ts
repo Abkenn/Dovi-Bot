@@ -37,12 +37,17 @@ import {
   STAGING_STREAM_ANNOUNCEMENT_VIDEO_URL,
   STREAM_ANNOUNCEMENT_REVIEW_USER_ID,
 } from './stream-announcement.config';
-import { serializeStreamAnnouncementSnapshot } from './stream-announcement.snapshot';
+import {
+  deserializeStreamAnnouncementSnapshot,
+  serializeStreamAnnouncementSnapshot,
+} from './stream-announcement.snapshot';
 import {
   applyStreamAnnouncementEdits,
   isStreamAnnouncementEligible,
   isStreamAnnouncementReviewDue,
 } from './stream-announcement.utils';
+import { editTrackedAnnouncement } from './stream-announcement-change.service';
+import { resolveAdditionalStreamVideoAction } from './stream-announcement-video';
 import { automaticallyCombinePlannedStream } from './stream-combined.service';
 import {
   buildStreamAnnouncementMessages,
@@ -55,6 +60,11 @@ import {
   getStreamInfo,
   getStreamInfoForAnnouncementPreview,
 } from './stream-info.service';
+import type {
+  StreamInfoResult,
+  StreamOccurrence,
+  StreamVideo,
+} from './stream-info.types';
 import type { StreamInfoMessagePointer } from './stream-info-message-updater.types';
 import { deliverStreamReminders } from './stream-reminder.service';
 import { getStreamReminderOccurrence } from './stream-reminder.utils';
@@ -164,6 +174,85 @@ const buildStreamInfoMessageEdit = async (guildId: string) => {
   };
 };
 
+const getOccurrenceVideos = (occurrence: StreamOccurrence): StreamVideo[] => {
+  if (occurrence.videos?.length) {
+    return occurrence.videos;
+  }
+  if (!occurrence.streamUrl) {
+    return [];
+  }
+
+  return [
+    {
+      title: occurrence.videoTitle?.trim() || 'Watch on YouTube',
+      url: occurrence.streamUrl,
+      actualStartAt: occurrence.streamIsLive ? occurrence.startAt : null,
+      scheduledStartAt: occurrence.startAt,
+    },
+  ];
+};
+
+const getOccurrenceByDate = (
+  streamInfo: StreamInfoResult,
+  streamDateKey: string,
+): StreamOccurrence | null =>
+  [streamInfo.current, streamInfo.previous, streamInfo.next].find(
+    (candidate) => candidate?.dateKey === streamDateKey,
+  ) ?? null;
+
+const replaceOccurrence = (
+  streamInfo: StreamInfoResult,
+  replacement: StreamOccurrence,
+): StreamInfoResult => {
+  const replace = (occurrence: StreamOccurrence | null) =>
+    occurrence?.dateKey === replacement.dateKey ? replacement : occurrence;
+
+  return {
+    ...streamInfo,
+    current: replace(streamInfo.current),
+    previous: replace(streamInfo.previous),
+    next: replace(streamInfo.next),
+  };
+};
+
+const postAutomaticStreamAnnouncement = async ({
+  client,
+  occurrence,
+  streamInfo,
+}: {
+  client: Client;
+  occurrence: StreamOccurrence;
+  streamInfo: StreamInfoResult;
+}) => {
+  const streamUrl = occurrence.streamUrl;
+  if (!streamUrl) {
+    return;
+  }
+  const channel = await client.channels.fetch(
+    PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+  );
+  if (!canSendMessages(channel)) {
+    return;
+  }
+
+  const announcement = buildStreamAnnouncementMessages({
+    occurrence,
+    roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
+    streamInfo,
+  });
+  const linkMessage = await channel.send(announcement.link);
+  const message = await channel.send(announcement.info);
+  await createStreamAnnouncement({
+    guildId: BOT_GUILDS.PROD_ENV,
+    channelId: PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
+    messageId: message.id,
+    linkMessageId: linkMessage.id,
+    streamDateKey: occurrence.dateKey,
+    streamInfoJson: serializeStreamAnnouncementSnapshot(streamInfo),
+    streamUrl,
+  });
+};
+
 export const announcePlannedStreamInfo = async (client: Client) => {
   const initialStreamInfo = await getStreamInfo(BOT_GUILDS.PROD_ENV);
   const scheduledOccurrence = [
@@ -215,31 +304,60 @@ export const announcePlannedStreamInfo = async (client: Client) => {
     occurrence.dateKey,
   );
   if (existing) {
+    const storedStreamInfo = deserializeStreamAnnouncementSnapshot(
+      existing.streamInfoJson,
+    );
+    const storedOccurrence = getOccurrenceByDate(
+      storedStreamInfo,
+      occurrence.dateKey,
+    );
+    const videoAction = resolveAdditionalStreamVideoAction({
+      currentVideos: getOccurrenceVideos(occurrence),
+      storedStreamUrl: existing.streamUrl,
+      storedVideos: storedOccurrence
+        ? getOccurrenceVideos(storedOccurrence)
+        : [],
+    });
+    if (videoAction.type === 'UPDATE_EXISTING') {
+      await editTrackedAnnouncement({
+        channelId: existing.channelId,
+        client,
+        guildId: BOT_GUILDS.PROD_ENV,
+        linkMessageId: existing.linkMessageId,
+        messageId: existing.messageId,
+        streamDateKey: occurrence.dateKey,
+        streamInfo: announcementStreamInfo,
+        streamUrl: existing.streamUrl,
+      });
+    }
+    if (videoAction.type === 'ANNOUNCE_REPLACEMENT') {
+      const replacementStartAt =
+        videoAction.video.actualStartAt ??
+        videoAction.video.scheduledStartAt ??
+        occurrence.startAt;
+      const replacementOccurrence = {
+        ...occurrence,
+        startAt: replacementStartAt,
+        streamUrl: videoAction.video.url,
+        videoTitle: videoAction.video.title,
+        videos: [videoAction.video],
+      };
+      await postAutomaticStreamAnnouncement({
+        client,
+        occurrence: replacementOccurrence,
+        streamInfo: replaceOccurrence(
+          announcementStreamInfo,
+          replacementOccurrence,
+        ),
+      });
+    }
     return;
   }
 
-  const channel = await client.channels.fetch(
-    PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
-  );
-  if (!canSendMessages(channel)) {
-    return;
-  }
-
-  const announcement = buildStreamAnnouncementMessages({
+  await postAutomaticStreamAnnouncement({
+    client,
     occurrence,
-    roleId: PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
     streamInfo: announcementStreamInfo,
-  });
-  const linkMessage = await channel.send(announcement.link);
-  const message = await channel.send(announcement.info);
-  await createStreamAnnouncement({
-    guildId: BOT_GUILDS.PROD_ENV,
-    channelId: PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
-    messageId: message.id,
-    linkMessageId: linkMessage.id,
-    streamDateKey: occurrence.dateKey,
-    streamInfoJson: serializeStreamAnnouncementSnapshot(announcementStreamInfo),
-    streamUrl,
   });
 };
 

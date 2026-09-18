@@ -7,7 +7,7 @@ import type {
   YouTubeStreamStatus,
 } from './stream-info.types';
 import {
-  resolveYouTubeStreamStatus,
+  resolveYouTubeStreamStatuses,
   YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
   YOUTUBE_RECENT_END_GRACE_MS,
 } from './stream-info.youtube-lifecycle';
@@ -59,7 +59,7 @@ let channelCache: YouTubeChannel[] | undefined;
 let streamCache:
   | {
       expiresAt: number;
-      status: YouTubeStreamStatus | null;
+      statuses: YouTubeStreamStatus[];
     }
   | undefined;
 
@@ -201,62 +201,66 @@ const getStreamStatuses = async (
   );
 };
 
-const getFreshYouTubeStreamStatus =
-  async (): Promise<YouTubeStreamStatus | null> => {
-    const channels = await getYouTubeChannels();
-    const recentVideoIds = await Promise.all(channels.map(getRecentVideoIds));
-    const statuses = await getStreamStatuses([
-      ...new Set(recentVideoIds.flat()),
-    ]);
-    const liveStatuses = statuses
-      .filter((status) => status.isLive)
-      .sort(
-        (a, b) =>
-          (b.actualStartAt?.getTime() ?? 0) - (a.actualStartAt?.getTime() ?? 0),
-      );
+const getFreshYouTubeStreamStatuses = async (): Promise<
+  YouTubeStreamStatus[]
+> => {
+  const channels = await getYouTubeChannels();
+  const recentVideoIds = await Promise.all(channels.map(getRecentVideoIds));
+  return getStreamStatuses([...new Set(recentVideoIds.flat())]);
+};
 
-    if (liveStatuses[0]) {
-      return liveStatuses[0];
-    }
+const selectYouTubeStreamStatus = (
+  statuses: readonly YouTubeStreamStatus[],
+  now: DateTime,
+): YouTubeStreamStatus | null => {
+  const liveStatuses = statuses
+    .filter((status) => status.isLive)
+    .sort(
+      (a, b) =>
+        (b.actualStartAt?.getTime() ?? 0) - (a.actualStartAt?.getTime() ?? 0),
+    );
 
-    const now = DateTime.utc();
-    const upcomingStatuses = statuses
-      .filter(
-        (status) =>
-          status.isUpcoming &&
-          status.scheduledStartAt &&
-          DateTime.fromJSDate(status.scheduledStartAt).plus({
-            milliseconds: YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
-          }) >= now,
-      )
-      .sort((a, b) => {
-        const aDistance = a.scheduledStartAt
-          ? Math.abs(
-              DateTime.fromJSDate(a.scheduledStartAt).diff(now).milliseconds,
-            )
-          : Number.POSITIVE_INFINITY;
-        const bDistance = b.scheduledStartAt
-          ? Math.abs(
-              DateTime.fromJSDate(b.scheduledStartAt).diff(now).milliseconds,
-            )
-          : Number.POSITIVE_INFINITY;
+  if (liveStatuses[0]) {
+    return liveStatuses[0];
+  }
 
-        return aDistance - bDistance;
-      });
+  const upcomingStatuses = statuses
+    .filter(
+      (status) =>
+        status.isUpcoming &&
+        status.scheduledStartAt &&
+        DateTime.fromJSDate(status.scheduledStartAt).plus({
+          milliseconds: YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
+        }) >= now,
+    )
+    .sort((a, b) => {
+      const aDistance = a.scheduledStartAt
+        ? Math.abs(
+            DateTime.fromJSDate(a.scheduledStartAt).diff(now).milliseconds,
+          )
+        : Number.POSITIVE_INFINITY;
+      const bDistance = b.scheduledStartAt
+        ? Math.abs(
+            DateTime.fromJSDate(b.scheduledStartAt).diff(now).milliseconds,
+          )
+        : Number.POSITIVE_INFINITY;
 
-    if (upcomingStatuses[0]) {
-      return upcomingStatuses[0];
-    }
+      return aDistance - bDistance;
+    });
 
-    const endedStatuses = statuses
-      .filter((status) => status.actualEndAt)
-      .sort(
-        (a, b) =>
-          (b.actualEndAt?.getTime() ?? 0) - (a.actualEndAt?.getTime() ?? 0),
-      );
+  if (upcomingStatuses[0]) {
+    return upcomingStatuses[0];
+  }
 
-    return endedStatuses[0] ?? null;
-  };
+  const endedStatuses = statuses
+    .filter((status) => status.actualEndAt)
+    .sort(
+      (a, b) =>
+        (b.actualEndAt?.getTime() ?? 0) - (a.actualEndAt?.getTime() ?? 0),
+    );
+
+  return endedStatuses[0] ?? null;
+};
 
 const shouldPollYouTube = (): boolean => {
   if (!env.YOUTUBE_API_KEY || getYouTubeChannelHandles().length === 0) {
@@ -266,49 +270,52 @@ const shouldPollYouTube = (): boolean => {
   return true;
 };
 
-const getYouTubeStreamStatus = async (
+const getYouTubeStreamStatuses = async (
   now: DateTime,
-): Promise<YouTubeStreamStatus | null> => {
+): Promise<YouTubeStreamStatus[]> => {
   const nowMs = now.toMillis();
-  const cachedStatus = streamCache?.status;
-  const cachedStatusIsActive =
-    cachedStatus?.isLive ||
-    (cachedStatus?.isUpcoming &&
-      cachedStatus.scheduledStartAt &&
-      DateTime.fromJSDate(cachedStatus.scheduledStartAt).plus({
-        milliseconds: YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
-      }) >= now) ||
-    (cachedStatus?.actualEndAt &&
-      DateTime.fromJSDate(cachedStatus.actualEndAt).plus({
-        milliseconds: YOUTUBE_RECENT_END_GRACE_MS,
-      }) >= now);
+  const cachedStatuses = streamCache?.statuses ?? [];
+  const cachedStatusIsActive = cachedStatuses.some(
+    (status) =>
+      status.isLive ||
+      (status.isUpcoming &&
+        status.scheduledStartAt &&
+        DateTime.fromJSDate(status.scheduledStartAt).plus({
+          milliseconds: YOUTUBE_POLL_AFTER_SCHEDULE_START_MS,
+        }) >= now) ||
+      (status.actualEndAt &&
+        DateTime.fromJSDate(status.actualEndAt).plus({
+          milliseconds: YOUTUBE_RECENT_END_GRACE_MS,
+        }) >= now),
+  );
   const isWatchWindow = isStreamAnnouncementWatchWindow(now);
 
   if (
     streamCache &&
     streamCache.expiresAt > nowMs &&
-    (streamCache.status !== null || !isWatchWindow)
+    (streamCache.statuses.length > 0 || !isWatchWindow)
   ) {
-    return streamCache.status;
+    return streamCache.statuses;
   }
 
   if (!shouldPollYouTube() && !cachedStatusIsActive) {
-    return null;
+    return [];
   }
 
   try {
-    const status = await getFreshYouTubeStreamStatus();
-    const cacheMs = status || !isWatchWindow ? YOUTUBE_POLL_INTERVAL_MS : 0;
+    const statuses = await getFreshYouTubeStreamStatuses();
+    const cacheMs =
+      statuses.length > 0 || !isWatchWindow ? YOUTUBE_POLL_INTERVAL_MS : 0;
     streamCache = {
       expiresAt: nowMs + cacheMs,
-      status,
+      statuses,
     };
 
-    return status;
+    return statuses;
   } catch (error) {
     console.error('Failed to fetch YouTube stream status', error);
 
-    return cachedStatusIsActive ? cachedStatus : null;
+    return cachedStatusIsActive ? cachedStatuses : [];
   }
 };
 
@@ -321,18 +328,20 @@ export const getYouTubeStreamResolution = async ({
   now: DateTime;
   timezone: string;
 }): Promise<YouTubeStreamResolution> => {
-  const status = await getYouTubeStreamStatus(now);
+  const statuses = await getYouTubeStreamStatuses(now);
+  const primaryStatus = selectYouTubeStreamStatus(statuses, now);
 
-  if (!status) {
+  if (!primaryStatus) {
     return {
       current: null,
       suppressedScheduledDateKey: null,
     };
   }
 
-  return resolveYouTubeStreamStatus({
+  return resolveYouTubeStreamStatuses({
     occurrences,
-    status,
+    primaryStatus,
+    statuses,
     now,
     timezone,
   });

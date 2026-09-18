@@ -25,6 +25,10 @@ const streamAnnouncementQueries = vi.hoisted(() => ({
   markStreamAnnouncementReviewSent: vi.fn(),
 }));
 
+const streamAnnouncementChangeService = vi.hoisted(() => ({
+  editTrackedAnnouncement: vi.fn(),
+}));
+
 const streamInfoDiscord = vi.hoisted(() => ({
   buildStreamAnnouncementMessages: vi.fn(),
   buildStreamAnnouncementReviewMessage: vi.fn(),
@@ -70,6 +74,10 @@ vi.mock('@data/queries/stream-info-message', () => ({
     streamInfoMessageQueries.upsertLastStreamInfoMessage,
 }));
 vi.mock('@data/queries/stream-announcement', () => streamAnnouncementQueries);
+vi.mock(
+  '../../src/modules/stream-info/stream-announcement-change.service',
+  () => streamAnnouncementChangeService,
+);
 
 vi.mock('../../src/config/discord-access', () => ({
   BOT_GUILDS: {
@@ -179,6 +187,9 @@ describe('stream info message updater', () => {
     streamAnnouncementQueries.findStreamAnnouncementByDate.mockResolvedValue(
       null,
     );
+    streamAnnouncementChangeService.editTrackedAnnouncement.mockResolvedValue(
+      undefined,
+    );
     streamAnnouncementQueries.findStreamAnnouncementPlan.mockResolvedValue(
       null,
     );
@@ -254,13 +265,181 @@ describe('stream info message updater', () => {
       guildId: 'production-guild',
       channelId: '1137241032568868865',
       messageId: 'announcement-1',
+      linkMessageId: 'announcement-link-1',
       streamDateKey: '2026-08-01',
+      streamInfoJson: JSON.stringify({
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: {
+          dateKey: '2026-08-01',
+          weekday: 'SATURDAY',
+          startAt: '2026-08-01T18:10:00.000Z',
+          endAt: '2026-08-01T22:10:00.000Z',
+          streamKind: 'GAME',
+          musicMode: null,
+          title: 'Game Stream',
+          customTitle: null,
+          musicTheme: null,
+          gameName: 'Test Game',
+          streamUrl: 'https://youtube.test/watch?v=planned',
+          videoTitle: 'Planned stream',
+          isOverride: false,
+        },
+      }),
+      streamUrl: 'https://youtube.test/watch?v=planned',
     });
 
     await announcePlannedStreamInfo(client);
 
     expect(send).not.toHaveBeenCalled();
     expect(existingMessage.edit).not.toHaveBeenCalled();
+  });
+
+  it('adds a later game video to the existing embed without another announcement ping', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T18:20:00.000Z'));
+    const musicVideo = {
+      title: 'Music picks + ACE COMBAT Later',
+      url: 'https://youtube.test/music',
+      actualStartAt: new Date('2026-09-18T18:10:00.000Z'),
+      scheduledStartAt: new Date('2026-09-18T18:10:00.000Z'),
+    };
+    const gameVideo = {
+      title: 'ACE COMBAT 7',
+      url: 'https://youtube.test/game',
+      actualStartAt: null,
+      scheduledStartAt: new Date('2026-09-18T19:10:00.000Z'),
+    };
+    const occurrence = {
+      dateKey: '2026-09-18',
+      weekday: 'FRIDAY',
+      startAt: musicVideo.actualStartAt,
+      endAt: new Date('2026-09-18T22:30:00.000Z'),
+      streamKind: 'MUSIC',
+      musicMode: 'PATREON_CAPITALISM',
+      title: 'Patreon Capitalism Stream',
+      customTitle: null,
+      musicTheme: null,
+      gameName: 'Ace Combat 7: Skies Unknown',
+      isCombined: true,
+      streamUrl: musicVideo.url,
+      videoTitle: musicVideo.title,
+      videos: [musicVideo, gameVideo],
+      streamIsLive: true,
+      isOverride: true,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: occurrence,
+      previous: null,
+      next: null,
+    });
+    streamAnnouncementQueries.findStreamAnnouncementByDate.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'production-guild',
+      linkMessageId: 'music-link-message',
+      messageId: 'music-info-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify({
+        timezone: 'America/Sao_Paulo',
+        current: { ...occurrence, videos: [musicVideo] },
+        previous: null,
+        next: null,
+      }),
+      streamUrl: musicVideo.url,
+    });
+    const send = vi.fn();
+
+    await announcePlannedStreamInfo(makeClient({ channel: { send } }));
+
+    expect(
+      streamAnnouncementChangeService.editTrackedAnnouncement,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: 'music-info-message',
+        streamUrl: musicVideo.url,
+        streamInfo: expect.objectContaining({
+          current: expect.objectContaining({ videos: [musicVideo, gameVideo] }),
+        }),
+      }),
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('posts a replacement announcement when a second video starts within 25 minutes', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T18:20:00.000Z'));
+    const musicVideo = {
+      title: 'Music picks + ACE COMBAT Later',
+      url: 'https://youtube.test/music',
+      actualStartAt: new Date('2026-09-18T18:10:00.000Z'),
+      scheduledStartAt: new Date('2026-09-18T18:10:00.000Z'),
+    };
+    const replacementVideo = {
+      title: 'Music picks continued',
+      url: 'https://youtube.test/replacement',
+      actualStartAt: new Date('2026-09-18T18:30:00.000Z'),
+      scheduledStartAt: new Date('2026-09-18T18:30:00.000Z'),
+    };
+    const occurrence = {
+      dateKey: '2026-09-18',
+      weekday: 'FRIDAY',
+      startAt: musicVideo.actualStartAt,
+      endAt: new Date('2026-09-18T22:30:00.000Z'),
+      streamKind: 'MUSIC',
+      musicMode: 'PATREON_CAPITALISM',
+      title: 'Patreon Capitalism Stream',
+      customTitle: null,
+      musicTheme: null,
+      gameName: 'Ace Combat 7: Skies Unknown',
+      isCombined: true,
+      streamUrl: musicVideo.url,
+      videoTitle: musicVideo.title,
+      videos: [musicVideo, replacementVideo],
+      streamIsLive: true,
+      isOverride: true,
+    };
+    streamInfoService.getStreamInfo.mockResolvedValue({
+      timezone: 'America/Sao_Paulo',
+      current: occurrence,
+      previous: null,
+      next: null,
+    });
+    streamAnnouncementQueries.findStreamAnnouncementByDate.mockResolvedValue({
+      channelId: 'prod-channel',
+      guildId: 'production-guild',
+      linkMessageId: 'music-link-message',
+      messageId: 'music-info-message',
+      streamDateKey: occurrence.dateKey,
+      streamInfoJson: JSON.stringify({
+        timezone: 'America/Sao_Paulo',
+        current: { ...occurrence, videos: [musicVideo] },
+        previous: null,
+        next: null,
+      }),
+      streamUrl: musicVideo.url,
+    });
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'replacement-link-message' })
+      .mockResolvedValueOnce({ id: 'replacement-info-message' });
+
+    await announcePlannedStreamInfo(makeClient({ channel: { send } }));
+
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(
+      streamAnnouncementQueries.createStreamAnnouncement,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linkMessageId: 'replacement-link-message',
+        messageId: 'replacement-info-message',
+        streamUrl: replacementVideo.url,
+      }),
+    );
+    expect(
+      streamAnnouncementChangeService.editTrackedAnnouncement,
+    ).not.toHaveBeenCalled();
   });
 
   it('applies automatic combined detection before building the announcement', async () => {

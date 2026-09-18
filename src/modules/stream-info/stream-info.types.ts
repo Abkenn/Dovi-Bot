@@ -18,8 +18,16 @@ export type StreamOccurrence = {
   isCombined?: boolean;
   streamUrl?: string | undefined;
   videoTitle?: string | undefined;
+  videos?: StreamVideo[] | undefined;
   streamIsLive?: boolean | undefined;
   isOverride: boolean;
+};
+
+export type StreamVideo = {
+  title: string;
+  url: string;
+  actualStartAt: Date | null;
+  scheduledStartAt: Date | null;
 };
 
 export type StreamInfoResult = {

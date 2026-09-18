@@ -75,6 +75,38 @@ describe('stream info discord output', () => {
     );
   });
 
+  it('shows both combined-stream video links in the embed', () => {
+    const embed = buildStreamInfoEmbed({
+      timezone: 'America/Sao_Paulo',
+      current: makeOccurrence({
+        streamUrl: 'https://youtube.test/music',
+        videoTitle: 'Music picks + ACE COMBAT Later',
+        videos: [
+          {
+            title: 'Music picks + ACE COMBAT Later',
+            url: 'https://youtube.test/music',
+            actualStartAt: new Date('2026-06-12T18:10:00.000Z'),
+            scheduledStartAt: new Date('2026-06-12T18:10:00.000Z'),
+          },
+          {
+            title: 'ACE COMBAT 7',
+            url: 'https://youtube.test/game',
+            actualStartAt: null,
+            scheduledStartAt: new Date('2026-06-12T19:10:00.000Z'),
+          },
+        ],
+      }),
+      previous: null,
+      next: null,
+    });
+
+    const currentValue = getEmbedFieldValue(embed, 'Current stream');
+    expect(currentValue).toContain(
+      '[Music picks + ACE COMBAT Later](https://youtube.test/music)',
+    );
+    expect(currentValue).toContain('[ACE COMBAT 7](https://youtube.test/game)');
+  });
+
   it('offers a reminder button while an announced stream starts within two hours', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-12T16:10:00.000Z'));
@@ -140,6 +172,50 @@ describe('stream info discord output', () => {
     expect(messages.info.embeds).toHaveLength(1);
     expect(messages.info.components).toHaveLength(1);
     expect(messages.info).not.toHaveProperty('content');
+  });
+
+  it('keeps a second combined-stream URL inside the embed only', () => {
+    const occurrence = makeOccurrence({
+      streamUrl: 'https://youtube.test/music',
+      videoTitle: 'Music picks + ACE COMBAT Later',
+      videos: [
+        {
+          title: 'Music picks + ACE COMBAT Later',
+          url: 'https://youtube.test/music',
+          actualStartAt: new Date('2026-06-12T18:10:00.000Z'),
+          scheduledStartAt: new Date('2026-06-12T18:10:00.000Z'),
+        },
+        {
+          title: 'ACE COMBAT 7',
+          url: 'https://youtube.test/game',
+          actualStartAt: null,
+          scheduledStartAt: new Date('2026-06-12T19:10:00.000Z'),
+        },
+      ],
+    });
+    const messages = buildStreamAnnouncementMessages({
+      occurrence,
+      roleId: 'video-role',
+      streamInfo: {
+        timezone: 'America/Sao_Paulo',
+        current: occurrence,
+        previous: null,
+        next: null,
+      },
+    });
+
+    expect(messages.link.content).toBe(
+      '<@&video-role>\nhttps://youtube.test/music',
+    );
+    expect(messages.link.content).not.toContain('https://youtube.test/game');
+    const infoEmbed = messages.info.embeds[0];
+    expect(infoEmbed).toBeDefined();
+    if (!infoEmbed) {
+      throw new Error('Expected the stream announcement embed.');
+    }
+    expect(getEmbedFieldValue(infoEmbed, 'Current stream')).toContain(
+      '[ACE COMBAT 7](https://youtube.test/game)',
+    );
   });
 
   it('supports a direct user ping for staging YouTube previews', () => {

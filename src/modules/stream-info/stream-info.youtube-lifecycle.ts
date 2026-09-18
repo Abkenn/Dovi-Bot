@@ -21,6 +21,16 @@ const getStatusTime = (status: YouTubeStreamStatus): DateTime | null => {
   return statusTime ? DateTime.fromJSDate(statusTime) : null;
 };
 
+const toStreamVideo = (status: YouTubeStreamStatus) => ({
+  title: status.title,
+  url: status.url,
+  actualStartAt: status.actualStartAt,
+  scheduledStartAt: status.scheduledStartAt,
+});
+
+const getStatusTimeMs = (status: YouTubeStreamStatus): number =>
+  getStatusTime(status)?.toMillis() ?? Number.POSITIVE_INFINITY;
+
 const findMatchingOccurrence = (
   occurrences: readonly StreamOccurrence[],
   status: YouTubeStreamStatus,
@@ -85,6 +95,7 @@ const applyYouTubeStreamStatus = (
     title: isMatchedOccurrence ? occurrence.title : status.title,
     streamUrl: status.url,
     videoTitle: status.title,
+    videos: [toStreamVideo(status)],
     streamIsLive: status.isLive,
   };
 };
@@ -149,5 +160,50 @@ export const resolveYouTubeStreamStatus = ({
   return {
     current,
     suppressedScheduledDateKey: null,
+  };
+};
+
+export const resolveYouTubeStreamStatuses = ({
+  occurrences,
+  primaryStatus,
+  statuses,
+  now,
+  timezone,
+}: {
+  occurrences: readonly StreamOccurrence[];
+  primaryStatus: YouTubeStreamStatus;
+  statuses: readonly YouTubeStreamStatus[];
+  now: DateTime;
+  timezone: string;
+}): YouTubeStreamResolution => {
+  const resolution = resolveYouTubeStreamStatus({
+    occurrences,
+    status: primaryStatus,
+    now,
+    timezone,
+  });
+  if (!resolution.current) {
+    return resolution;
+  }
+
+  const dateKey = resolution.current.dateKey;
+  const matchingStatuses = statuses
+    .filter((status) => {
+      const matchedOccurrence = findMatchingOccurrence(occurrences, status);
+      return matchedOccurrence?.dateKey === dateKey || status === primaryStatus;
+    })
+    .sort((left, right) => getStatusTimeMs(left) - getStatusTimeMs(right));
+  const videos = [
+    ...new Map(
+      matchingStatuses.map((status) => [status.url, toStreamVideo(status)]),
+    ).values(),
+  ];
+
+  return {
+    ...resolution,
+    current: {
+      ...resolution.current,
+      videos,
+    },
   };
 };

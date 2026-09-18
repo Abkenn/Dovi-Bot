@@ -5,7 +5,10 @@ import type {
   StreamOccurrence,
   YouTubeStreamStatus,
 } from '../../src/modules/stream-info/stream-info.types';
-import { resolveYouTubeStreamStatus } from '../../src/modules/stream-info/stream-info.youtube-lifecycle';
+import {
+  resolveYouTubeStreamStatus,
+  resolveYouTubeStreamStatuses,
+} from '../../src/modules/stream-info/stream-info.youtube-lifecycle';
 
 const makeOccurrence = (
   overrides: Partial<StreamOccurrence> = {},
@@ -75,6 +78,39 @@ describe('stream info YouTube lifecycle', () => {
     );
     expect(resolution.current?.videoTitle).toBe('Live Stream');
     expect(resolution.current?.streamIsLive).toBe(true);
+  });
+
+  it('keeps two same-stream YouTube videos in chronological order', () => {
+    const music = makeStatus({
+      title: 'Music picks + ACE COMBAT Later',
+      actualStartAt: new Date('2026-06-12T18:10:00.000Z'),
+      isLive: true,
+      isUpcoming: false,
+    });
+    const game = makeStatus({
+      title: 'ACE COMBAT 7',
+      url: 'https://www.youtube.com/watch?v=video-2',
+      scheduledStartAt: new Date('2026-06-12T19:10:00.000Z'),
+    });
+
+    const resolution = resolveYouTubeStreamStatuses({
+      occurrences: [makeOccurrence()],
+      primaryStatus: music,
+      statuses: [game, music],
+      now: DateTime.fromISO('2026-06-12T18:20:00.000Z'),
+      timezone: 'America/Sao_Paulo',
+    });
+
+    expect(resolution.current?.videos).toEqual([
+      expect.objectContaining({
+        title: 'Music picks + ACE COMBAT Later',
+        url: 'https://www.youtube.com/watch?v=video-1',
+      }),
+      expect.objectContaining({
+        title: 'ACE COMBAT 7',
+        url: 'https://www.youtube.com/watch?v=video-2',
+      }),
+    ]);
   });
 
   it('keeps the ended stream link during the 10 minute grace window', () => {

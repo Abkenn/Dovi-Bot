@@ -81,6 +81,24 @@ const shouldShowGame = (occurrence: StreamOccurrence): boolean => {
   return isGame || isDictatorshipMusic || occurrence.isCombined === true;
 };
 
+const getOccurrenceVideoLinks = (
+  occurrence: StreamOccurrence,
+): { title: string; url: string }[] => {
+  if (occurrence.videos?.length) {
+    return occurrence.videos;
+  }
+  if (!occurrence.streamUrl) {
+    return [];
+  }
+
+  return [
+    {
+      title: occurrence.videoTitle?.trim() || 'Watch on YouTube',
+      url: occurrence.streamUrl,
+    },
+  ];
+};
+
 const buildOccurrenceValue = (
   label: 'Current' | 'Next',
   occurrence: StreamOccurrence | null,
@@ -120,9 +138,8 @@ const buildOccurrenceValue = (
     lines.push(`Theme: ${occurrence.musicTheme.trim()}`);
   }
 
-  if (occurrence.streamUrl) {
-    const videoLabel = occurrence.videoTitle?.trim() || 'Watch on YouTube';
-    lines.push(`[${videoLabel}](${occurrence.streamUrl})`);
+  for (const video of getOccurrenceVideoLinks(occurrence)) {
+    lines.push(`[${video.title}](${video.url})`);
   }
 
   lines.push(
