@@ -40,7 +40,7 @@ describe('currency conversion service', () => {
     expect(normalizeCurrencyCode('xts')).toBe('XTS');
   });
 
-  it('defaults every omitted target currency to USD', async () => {
+  it('defaults an omitted target currency to USD', async () => {
     dependencies.getCurrencyRate.mockResolvedValue({
       date: '2026-09-24',
       rate: 1.18,
@@ -58,17 +58,40 @@ describe('currency conversion service', () => {
     );
   });
 
-  it('returns same-currency conversions locally without calling the API', async () => {
+  it('defaults an omitted USD target to EUR', async () => {
+    dependencies.getCurrencyRate.mockResolvedValue({
+      date: '2026-09-24',
+      rate: 0.85,
+    });
+
     await expect(convertCurrency({ amount: 50, from: 'usd' })).resolves.toEqual(
       {
         amount: 50,
-        convertedAmount: 50,
-        date: null,
+        convertedAmount: 42.5,
+        date: '2026-09-24',
         from: 'USD',
-        rate: 1,
-        to: 'USD',
+        rate: 0.85,
+        to: 'EUR',
       },
     );
+    expect(dependencies.getCurrencyRate).toHaveBeenCalledWith({
+      base: 'USD',
+      quote: 'EUR',
+      signal: undefined,
+    });
+  });
+
+  it('returns explicit same-currency conversions locally', async () => {
+    await expect(
+      convertCurrency({ amount: 50, from: 'usd', to: 'USD' }),
+    ).resolves.toEqual({
+      amount: 50,
+      convertedAmount: 50,
+      date: null,
+      from: 'USD',
+      rate: 1,
+      to: 'USD',
+    });
     expect(dependencies.getCurrencyRate).not.toHaveBeenCalled();
   });
 

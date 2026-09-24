@@ -93,7 +93,7 @@ export const getCurrencyAutocomplete = (
 export const convertCurrency = async ({
   amount,
   from,
-  to = 'USD',
+  to,
   signal,
 }: ConvertCurrencyInput): Promise<CurrencyConversion> => {
   if (!Number.isFinite(amount)) {
@@ -101,14 +101,16 @@ export const convertCurrency = async ({
   }
 
   const normalizedFrom = normalizeCurrencyCode(from);
-  const normalizedTo = normalizeCurrencyCode(to);
+  const defaultTarget = normalizedFrom === 'USD' ? 'EUR' : 'USD';
+  const target = to ?? defaultTarget;
+  const normalizedTo = normalizeCurrencyCode(target);
   if (!normalizedFrom || !normalizedTo) {
     const unsupportedCurrencies: string[] = [];
     if (!normalizedFrom) {
       unsupportedCurrencies.push(from);
     }
     if (!normalizedTo) {
-      unsupportedCurrencies.push(to);
+      unsupportedCurrencies.push(target);
     }
 
     throw new UnsupportedCurrencyError(unsupportedCurrencies);

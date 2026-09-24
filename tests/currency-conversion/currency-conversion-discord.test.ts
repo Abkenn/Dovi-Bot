@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildCurrencyConversionMessage } from '../../src/modules/currency-conversion/currency-conversion.discord';
 
 describe('currency conversion Discord output', () => {
-  it('shows the converted amount, rate, and reference date', () => {
+  it('shows only the converted amount', () => {
     expect(
       buildCurrencyConversionMessage({
         amount: 50,
@@ -12,7 +12,7 @@ describe('currency conversion Discord output', () => {
         rate: 1.18,
         to: 'CAD',
       }),
-    ).toBe('50 GBP = 59 CAD\nRate: 1 GBP = 1.18 CAD (2026-09-24)');
+    ).toBe('50 GBP = 59 CAD');
   });
 
   it('keeps same-currency output concise', () => {
