@@ -46,6 +46,14 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.HELP,
   },
+  CONVERT: {
+    name: 'convert',
+    description: 'Converts an amount between currencies.',
+    guildIds: COMMAND_GUILDS.CONVERT,
+    access: COMMAND_ACCESSES.DEFAULT,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.MISC,
+  },
   PING_ME: {
     name: 'ping-me',
     description: 'DMs you when one of your keywords is mentioned.',
