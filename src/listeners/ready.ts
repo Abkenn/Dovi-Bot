@@ -9,6 +9,7 @@ import { startDaviBossStatsSyncScheduler } from '../modules/boss-encounter-stats
 import { startBossTrialLifecycleScheduler } from '../modules/boss-trials/poll/boss-trial.scheduler';
 import { startPollTournamentScheduler } from '../modules/poll-tournaments/poll-tournament.scheduler';
 import { startStreamInfoMessageUpdater } from '../modules/stream-info/stream-info-message-updater.scheduler';
+import { startYouTubeUploadScheduler } from '../modules/youtube-uploads/youtube-upload.scheduler';
 
 export class ReadyListener extends Listener {
   public constructor(
@@ -41,6 +42,7 @@ export class ReadyListener extends Listener {
     startBossTrialLifecycleScheduler(this.container.client);
     startPollTournamentScheduler(this.container.client);
     startStreamInfoMessageUpdater(this.container.client);
+    startYouTubeUploadScheduler(this.container.client);
     startUptimeStatusMonitor(this.container.client);
     startHealthCheckMonitor(this.container.client);
     void notifyDeploymentReady(this.container.client).catch((error) => {
