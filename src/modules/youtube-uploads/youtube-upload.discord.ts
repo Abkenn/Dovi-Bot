@@ -1,10 +1,8 @@
-import type { MessageCreateOptions } from 'discord.js';
+import { buildAnnouncementLinkMessage } from '../discord/announcement-link-message';
 import type { BuildYouTubeUploadAnnouncementInput } from './youtube-upload.types';
 
 export const buildYouTubeUploadAnnouncement = ({
   roleId,
   url,
-}: BuildYouTubeUploadAnnouncementInput): MessageCreateOptions => ({
-  content: `<@&${roleId}>\n${url}`,
-  allowedMentions: { roles: [roleId] },
-});
+}: BuildYouTubeUploadAnnouncementInput) =>
+  buildAnnouncementLinkMessage({ url, roleId });

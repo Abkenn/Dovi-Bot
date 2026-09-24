@@ -15,6 +15,7 @@ import {
   getCommandCategoryAccentColor,
 } from '../../config/discord-command-categories';
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
+import { buildAnnouncementLinkMessage } from '../discord/announcement-link-message';
 import type {
   BuildAppliedStreamAnnouncementChangeInput,
   BuildStreamAnnouncementChangePreviewInput,
@@ -232,21 +233,6 @@ export const buildStreamAnnouncementReminderButton = (
   );
 };
 
-const getStreamAnnouncementMention = (roleId?: string, userId?: string) => {
-  if (roleId) return `<@&${roleId}>`;
-  if (userId) return `<@${userId}>`;
-  return null;
-};
-
-const getStreamAnnouncementAllowedMentions = (
-  roleId?: string,
-  userId?: string,
-) => {
-  if (roleId) return { roles: [roleId] };
-  if (userId) return { users: [userId] };
-  return { parse: [] };
-};
-
 export const buildStreamAnnouncementMessages = ({
   occurrence,
   roleId,
@@ -262,21 +248,17 @@ export const buildStreamAnnouncementMessages = ({
     occurrence,
     reminderCustomIdPrefix,
   );
-  const mention = getStreamAnnouncementMention(roleId, userId);
-  const allowedMentions = getStreamAnnouncementAllowedMentions(roleId, userId);
-
   return {
     info: {
       embeds: [buildStreamInfoEmbed(streamInfo)],
       components: reminderButton ? [reminderButton] : [],
       allowedMentions: { parse: [] },
     },
-    link: {
-      content: [mention, occurrence.streamUrl]
-        .filter((line) => line !== null)
-        .join('\n'),
-      allowedMentions,
-    },
+    link: buildAnnouncementLinkMessage({
+      url: occurrence.streamUrl,
+      roleId,
+      userId,
+    }),
   };
 };
 
