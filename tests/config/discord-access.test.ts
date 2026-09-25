@@ -27,7 +27,7 @@ describe('Discord command guild access', () => {
 
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.CONVERT).toEqual(['staging', 'prod']);
-    expect(COMMAND_GUILDS.HLTB).toEqual(['staging']);
+    expect(COMMAND_GUILDS.HLTB).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.POLL_HOST).toEqual(['staging']);
     expect(COMMAND_GUILDS.DAVI_SAY).toEqual(['staging']);
@@ -54,6 +54,7 @@ describe('Discord command guild access', () => {
       'help',
       'botstatus',
       'convert',
+      'hltb',
       'streaminfo',
       'stream-remind-me',
       'showbossstats',
