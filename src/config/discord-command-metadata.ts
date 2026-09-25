@@ -54,6 +54,14 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.MISC,
   },
+  HLTB: {
+    name: 'hltb',
+    description: 'Shows estimated completion times for a game.',
+    guildIds: COMMAND_GUILDS.HLTB,
+    access: COMMAND_ACCESSES.DEFAULT,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.MISC,
+  },
   PING_ME: {
     name: 'ping-me',
     description: 'DMs you when one of your keywords is mentioned.',
