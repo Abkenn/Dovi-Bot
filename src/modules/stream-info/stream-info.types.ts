@@ -35,6 +35,7 @@ export type StreamInfoResult = {
   current: StreamOccurrence | null;
   previous: StreamOccurrence | null;
   next: StreamOccurrence | null;
+  following?: StreamOccurrence | null | undefined;
 };
 
 export type BuildStreamAnnouncementMessageInput = {

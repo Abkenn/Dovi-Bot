@@ -626,6 +626,44 @@ describe('stream info discord output', () => {
     expect(value).not.toContain('Game: Hidden Game');
   });
 
+  it('shows an additional Saturday stream after the next Friday stream', () => {
+    const following = makeOccurrence({
+      dateKey: '2026-06-13',
+      weekday: 'SATURDAY',
+      startAt: new Date('2026-06-13T18:10:00.000Z'),
+      endAt: new Date('2026-06-13T22:10:00.000Z'),
+      title: 'Game Stream',
+      gameName: 'Saturday Game',
+    });
+    const embed = buildStreamInfoEmbed({
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: makeOccurrence({
+        streamKind: StreamKind.MUSIC,
+        title: 'Democracy Stream',
+      }),
+      following,
+    });
+
+    expect(getEmbedFieldValue(embed, 'Following stream')).toContain(
+      'Saturday Game',
+    );
+  });
+
+  it('shows only one upcoming stream when a current stream is present', () => {
+    const embed = buildStreamInfoEmbed({
+      timezone: 'America/Sao_Paulo',
+      current: makeOccurrence(),
+      previous: null,
+      next: makeOccurrence({ dateKey: '2026-06-13', weekday: 'SATURDAY' }),
+      following: makeOccurrence({ dateKey: '2026-06-19' }),
+    });
+
+    expect(getEmbedFieldValue(embed, 'Next stream')).not.toBeNull();
+    expect(getEmbedFieldValue(embed, 'Following stream')).toBeNull();
+  });
+
   it('shows combined music-first streams with the later game', () => {
     const value = getEmbedFieldValue(
       buildStreamInfoEmbed({

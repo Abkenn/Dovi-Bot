@@ -88,6 +88,22 @@ export const findNextOccurrence = (
     (occurrence) => DateTime.fromJSDate(occurrence.startAt) > now,
   ) ?? null;
 
+export const findFollowingOccurrence = (
+  occurrences: readonly StreamOccurrence[],
+  current: StreamOccurrence | null,
+  next: StreamOccurrence | null,
+): StreamOccurrence | null => {
+  if (current || !next) {
+    return null;
+  }
+
+  const following = occurrences.find(
+    (occurrence) => occurrence.startAt.getTime() > next.startAt.getTime(),
+  );
+
+  return following ?? null;
+};
+
 export const findPreviousOccurrence = (
   occurrences: readonly StreamOccurrence[],
   now: DateTime,

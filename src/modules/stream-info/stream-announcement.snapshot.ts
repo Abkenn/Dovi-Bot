@@ -50,6 +50,7 @@ const streamInfoSchema = z.object({
   current: occurrenceSchema.nullable(),
   previous: occurrenceSchema.nullable(),
   next: occurrenceSchema.nullable(),
+  following: occurrenceSchema.nullable().optional(),
 });
 
 export const serializeStreamAnnouncementSnapshot = (

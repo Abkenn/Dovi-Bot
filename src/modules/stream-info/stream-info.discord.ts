@@ -123,11 +123,11 @@ const getOccurrenceVideoLinkLines = (
 };
 
 const buildOccurrenceValue = (
-  label: 'Current' | 'Next',
+  label: 'Current' | 'Next' | 'Following',
   occurrence: StreamOccurrence | null,
 ): string => {
   if (!occurrence) {
-    return label === 'Next' ? 'No upcoming stream found.' : '-';
+    return label === 'Current' ? '-' : 'No upcoming stream found.';
   }
 
   const now = Date.now();
@@ -196,6 +196,13 @@ export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
     name: 'Next stream',
     value: buildOccurrenceValue('Next', data.next),
   });
+
+  if (!data.current && data.following) {
+    embed.addFields({
+      name: 'Following stream',
+      value: buildOccurrenceValue('Following', data.following),
+    });
+  }
 
   return embed;
 };

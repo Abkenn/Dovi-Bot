@@ -36,6 +36,7 @@ import {
   buildDefaultOccurrence,
   extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
+  findFollowingOccurrence,
   findNextOccurrence,
   findOccurrenceForWeekday,
   findPreviousOccurrence,
@@ -512,12 +513,14 @@ const getStreamInfoForOccurrence = async (
       : occurrences,
     now,
   );
+  const following = findFollowingOccurrence(occurrences, current, next);
 
   return {
     timezone: config.canonicalTimezone,
     current,
     previous,
     next,
+    following,
   };
 };
 

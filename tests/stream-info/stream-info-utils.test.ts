@@ -13,6 +13,7 @@ import {
   buildDefaultOccurrence,
   extendOccurrenceCurrentWindow,
   findCurrentOccurrence,
+  findFollowingOccurrence,
   findNextOccurrence,
   findOccurrenceForWeekday,
   findPreviousOccurrence,
@@ -327,5 +328,88 @@ describe('stream info utils', () => {
     expect(findOccurrenceForWeekday(first, second, 'FRIDAY')).toBe(first);
     expect(findOccurrenceForWeekday(first, second, 'SATURDAY')).toBe(second);
     expect(findOccurrenceForWeekday(first, second, 'SUNDAY')).toBeNull();
+  });
+
+  it('finds the stream immediately following the next occurrence', () => {
+    const fridayOccurrence = buildDefaultOccurrence(
+      makeConfig(),
+      makeDefaultRule(),
+      DateTime.fromISO('2026-06-12T00:00:00', {
+        zone: 'America/Sao_Paulo',
+      }),
+    );
+    const saturdayOccurrence = {
+      ...fridayOccurrence,
+      dateKey: '2026-06-13',
+      weekday: 'SATURDAY' as const,
+      startAt: new Date('2026-06-13T18:10:00.000Z'),
+      endAt: new Date('2026-06-13T22:10:00.000Z'),
+    };
+
+    expect(
+      findFollowingOccurrence(
+        [fridayOccurrence, saturdayOccurrence],
+        null,
+        fridayOccurrence,
+      ),
+    ).toBe(saturdayOccurrence);
+  });
+
+  it('returns the next scheduled stream without jumping over occurrences', () => {
+    const fridayOccurrence = buildDefaultOccurrence(
+      makeConfig(),
+      makeDefaultRule(),
+      DateTime.fromISO('2026-06-12T00:00:00', {
+        zone: 'America/Sao_Paulo',
+      }),
+    );
+    const laterFriday = {
+      ...fridayOccurrence,
+      dateKey: '2026-06-19',
+      startAt: new Date('2026-06-19T18:10:00.000Z'),
+      endAt: new Date('2026-06-19T22:10:00.000Z'),
+    };
+    const laterSaturday = {
+      ...fridayOccurrence,
+      dateKey: '2026-06-20',
+      weekday: 'SATURDAY' as const,
+      startAt: new Date('2026-06-20T18:10:00.000Z'),
+      endAt: new Date('2026-06-20T22:10:00.000Z'),
+    };
+
+    expect(
+      findFollowingOccurrence(
+        [fridayOccurrence, laterFriday, laterSaturday],
+        null,
+        fridayOccurrence,
+      ),
+    ).toBe(laterFriday);
+  });
+
+  it('does not add a following stream while a current stream is shown', () => {
+    const current = buildDefaultOccurrence(
+      makeConfig(),
+      makeDefaultRule(),
+      DateTime.fromISO('2026-06-12T00:00:00', {
+        zone: 'America/Sao_Paulo',
+      }),
+    );
+    const next = {
+      ...current,
+      dateKey: '2026-06-13',
+      weekday: 'SATURDAY' as const,
+      startAt: new Date('2026-06-13T18:10:00.000Z'),
+      endAt: new Date('2026-06-13T22:10:00.000Z'),
+    };
+    const following = {
+      ...current,
+      dateKey: '2026-06-19',
+      startAt: new Date('2026-06-19T18:10:00.000Z'),
+      endAt: new Date('2026-06-19T22:10:00.000Z'),
+    };
+
+    expect(
+      findFollowingOccurrence([current, next, following], current, next),
+    ).toBeNull();
   });
 });
