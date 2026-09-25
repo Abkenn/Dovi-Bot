@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { HltbGame, SearchHltbGamesInput } from './hltb.types';
+import type {
+  HltbGame,
+  HltbSearchGame,
+  SearchHltbGamesInput,
+} from './hltb.types';
 
 const HLTB_BASE_URL = 'https://howlongtobeat.com';
 const HLTB_SEARCH_PATH = '/api/search/site';
@@ -15,17 +19,37 @@ const hltbSearchSchema = z.object({
     z.object({
       game_id: z.number().int(),
       game_name: z.string().min(1),
-      comp_main: z.number(),
-      comp_plus: z.number(),
-      comp_all: z.number(),
-      comp_100: z.number(),
     }),
   ),
 });
 
+const hltbGamePageSchema = z.object({
+  props: z.object({
+    pageProps: z.object({
+      game: z.object({
+        data: z.object({
+          game: z
+            .array(
+              z.object({
+                game_id: z.number().int(),
+                game_name: z.string().min(1),
+                comp_main_l: z.number(),
+                comp_main_med: z.number(),
+                comp_plus_med: z.number(),
+                comp_100_med: z.number(),
+                comp_100_h: z.number(),
+              }),
+            )
+            .min(1),
+        }),
+      }),
+    }),
+  }),
+});
+
 type HltbAuth = z.infer<typeof hltbAuthSchema>;
 type HltbAuthCache = HltbAuth & { expiresAt: number };
-type HltbSearchCache = { games: HltbGame[]; expiresAt: number };
+type HltbSearchCache = { games: HltbSearchGame[]; expiresAt: number };
 
 let authCache: HltbAuthCache | null = null;
 const searchCache = new Map<string, HltbSearchCache>();
@@ -139,18 +163,62 @@ const secondsToHours = (seconds: number): number | null =>
 
 const mapSearchGame = (
   game: z.infer<typeof hltbSearchSchema>['data'][number],
-): HltbGame => ({
+): HltbSearchGame => ({
   id: game.game_id,
   title: game.game_name,
-  mainStoryHours: secondsToHours(game.comp_main),
-  mainExtraHours: secondsToHours(game.comp_plus),
-  completionistHours: secondsToHours(game.comp_100),
 });
+
+export const getHltbGame = async (
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<HltbGame> => {
+  const requestInit = buildRequestInit('GET', signal);
+  const headers: Record<string, string> = { Accept: 'text/html' };
+  setCommonHeaders(headers);
+  requestInit.headers = headers;
+
+  const response = await fetch(`${HLTB_BASE_URL}/game/${gameId}`, requestInit);
+  if (!response.ok) {
+    throw new Error(
+      `HLTB game lookup failed: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const html = await response.text();
+  const markerIndex = html.indexOf('__NEXT_DATA__');
+  const jsonStart = html.indexOf('>', markerIndex) + 1;
+  const jsonEnd = html.indexOf('</script>', jsonStart);
+  if (markerIndex < 0 || jsonStart === 0 || jsonEnd < 0) {
+    throw new Error('Invalid HLTB game response.');
+  }
+
+  const parsed = hltbGamePageSchema.safeParse(
+    JSON.parse(html.slice(jsonStart, jsonEnd)),
+  );
+  if (!parsed.success) {
+    throw new Error('Invalid HLTB game response.');
+  }
+
+  const game = parsed.data.props.pageProps.game.data.game[0];
+  if (!game) {
+    throw new Error('Invalid HLTB game response.');
+  }
+
+  return {
+    id: game.game_id,
+    title: game.game_name,
+    mainStoryHours: secondsToHours(game.comp_main_med),
+    mainExtraHours: secondsToHours(game.comp_plus_med),
+    completionistHours: secondsToHours(game.comp_100_med),
+    rushedMainStoryHours: secondsToHours(game.comp_main_l),
+    leisureCompletionistHours: secondsToHours(game.comp_100_h),
+  };
+};
 
 export const searchHltbGames = async ({
   query,
   signal,
-}: SearchHltbGamesInput): Promise<HltbGame[]> => {
+}: SearchHltbGamesInput): Promise<HltbSearchGame[]> => {
   const cacheKey = query
     .trim()
     .toLowerCase()

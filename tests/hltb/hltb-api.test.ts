@@ -24,7 +24,7 @@ describe('HLTB API', () => {
     vi.unstubAllGlobals();
   });
 
-  it('initializes HLTB search auth and maps completion times', async () => {
+  it('initializes HLTB search auth and maps game results', async () => {
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(
@@ -39,10 +39,6 @@ describe('HLTB API', () => {
               {
                 game_id: 42,
                 game_name: 'Moonlit Archive',
-                comp_main: 36_000,
-                comp_plus: 72_000,
-                comp_all: 108_000,
-                comp_100: 144_000,
               },
             ],
           },
@@ -58,10 +54,7 @@ describe('HLTB API', () => {
       }),
     ).resolves.toEqual([
       {
-        completionistHours: 40,
         id: 42,
-        mainExtraHours: 20,
-        mainStoryHours: 10,
         title: 'Moonlit Archive',
       },
     ]);
@@ -79,6 +72,54 @@ describe('HLTB API', () => {
         searchTerms: ['moonlit'],
       }),
     );
+  });
+
+  it('reads median and range times from the game page', async () => {
+    const pageData = {
+      props: {
+        pageProps: {
+          game: {
+            data: {
+              game: [
+                {
+                  game_id: 42,
+                  game_name: 'Moonlit Archive',
+                  comp_main_l: 28_800,
+                  comp_main_med: 43_200,
+                  comp_plus_med: 68_400,
+                  comp_100_med: 126_000,
+                  comp_100_h: 194_400,
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: vi
+          .fn()
+          .mockResolvedValue(
+            `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(pageData)}</script>`,
+          ),
+      }),
+    );
+    const { getHltbGame } = await import('../../src/modules/hltb/hltb.api');
+
+    await expect(getHltbGame(42)).resolves.toEqual({
+      completionistHours: 35,
+      id: 42,
+      leisureCompletionistHours: 54,
+      mainExtraHours: 19,
+      mainStoryHours: 12,
+      rushedMainStoryHours: 8,
+      title: 'Moonlit Archive',
+    });
   });
 
   it('caches repeated searches', async () => {

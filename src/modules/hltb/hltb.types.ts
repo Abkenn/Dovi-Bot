@@ -1,9 +1,14 @@
-export type HltbGame = {
+export type HltbSearchGame = {
   id: number;
   title: string;
+};
+
+export type HltbGame = HltbSearchGame & {
   mainStoryHours: number | null;
   mainExtraHours: number | null;
   completionistHours: number | null;
+  rushedMainStoryHours: number | null;
+  leisureCompletionistHours: number | null;
 };
 
 export type HltbAutocompleteChoice = {

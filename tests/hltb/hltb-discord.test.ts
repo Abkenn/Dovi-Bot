@@ -2,29 +2,33 @@ import { describe, expect, it } from 'vitest';
 import { buildHltbMessage } from '../../src/modules/hltb/hltb.discord';
 
 describe('HLTB Discord output', () => {
-  it('uses main plus extras as the headline and keeps other times compact', () => {
+  it('shows the overall range and each median time on its own line', () => {
     expect(
       buildHltbMessage({
-        completionistHours: 32,
+        completionistHours: 35,
         id: 10,
-        mainExtraHours: 18,
-        mainStoryHours: 11,
+        leisureCompletionistHours: 54,
+        mainExtraHours: 19,
+        mainStoryHours: 12,
+        rushedMainStoryHours: 8,
         title: 'Moonlit Archive',
       }),
     ).toBe(
-      'Moonlit Archive - Main + Extras: 18 hours (Main Story: 11 hours, Completionist: 32 hours)',
+      'Moonlit Archive (~8-54 hours)\nMain: 12 hours\nMain+Extra: 19 hours\nCompletionist: 35 hours',
     );
   });
 
-  it('omits unavailable categories', () => {
+  it('keeps the unavailable response on one line', () => {
     expect(
       buildHltbMessage({
         completionistHours: null,
         id: 10,
+        leisureCompletionistHours: null,
         mainExtraHours: null,
-        mainStoryHours: 7.5,
+        mainStoryHours: null,
+        rushedMainStoryHours: null,
         title: 'Quiet Horizon',
       }),
-    ).toBe('Quiet Horizon - Main Story: 7.5 hours');
+    ).toBe('Quiet Horizon - No completion times available.');
   });
 });

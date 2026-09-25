@@ -1,4 +1,4 @@
-import { searchHltbGames } from './hltb.api';
+import { getHltbGame, searchHltbGames } from './hltb.api';
 import type { HltbAutocompleteChoice, HltbGame } from './hltb.types';
 
 const normalizeTitle = (title: string): string =>
@@ -11,11 +11,11 @@ export const findHltbGame = async (
   const games = await searchHltbGames({ query, signal });
   const normalizedQuery = normalizeTitle(query);
 
-  return (
+  const match =
     games.find((game) => normalizeTitle(game.title) === normalizedQuery) ??
-    games[0] ??
-    null
-  );
+    games[0];
+
+  return match ? getHltbGame(match.id, signal) : null;
 };
 
 export const getHltbAutocomplete = async (
