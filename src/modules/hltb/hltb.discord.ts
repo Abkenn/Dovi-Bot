@@ -6,6 +6,22 @@ const formatHourNumber = (hours: number): string =>
 const formatHours = (hours: number): string =>
   `${formatHourNumber(hours)} hours`;
 
+type HltbRange = Pick<
+  HltbGame,
+  'rushedMainStoryHours' | 'leisureCompletionistHours'
+>;
+
+export const buildHltbRange = ({
+  leisureCompletionistHours,
+  rushedMainStoryHours,
+}: HltbRange): string | null => {
+  if (rushedMainStoryHours === null || leisureCompletionistHours === null) {
+    return null;
+  }
+
+  return `~${formatHourNumber(rushedMainStoryHours)}-${formatHourNumber(leisureCompletionistHours)} hours`;
+};
+
 export const buildHltbMessage = ({
   completionistHours,
   leisureCompletionistHours,
@@ -29,12 +45,13 @@ export const buildHltbMessage = ({
     return `${title} - No completion times available.`;
   }
 
-  const hasRange =
-    rushedMainStoryHours !== null && leisureCompletionistHours !== null;
-  if (!hasRange) {
+  const range = buildHltbRange({
+    leisureCompletionistHours,
+    rushedMainStoryHours,
+  });
+  if (!range) {
     return [title, ...times].join('\n');
   }
 
-  const range = `~${formatHourNumber(rushedMainStoryHours)}-${formatHourNumber(leisureCompletionistHours)} hours`;
   return [`${title} (${range})`, ...times].join('\n');
 };

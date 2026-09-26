@@ -62,6 +62,14 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.MISC,
   },
+  STEAM: {
+    name: 'steam',
+    description: 'Shows ratings and completion time for a game.',
+    guildIds: COMMAND_GUILDS.STEAM,
+    access: COMMAND_ACCESSES.DEFAULT,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.MISC,
+  },
   PING_ME: {
     name: 'ping-me',
     description: 'DMs you when one of your keywords is mentioned.',

@@ -23,6 +23,7 @@ export const COMMAND_GUILDS = {
   BOT_STATUS: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   CONVERT: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   HLTB: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
+  STEAM: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   PING_ME: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
 
   POLL_HOST: [BOT_GUILDS.STAGING_ENV],

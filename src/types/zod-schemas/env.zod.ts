@@ -24,6 +24,7 @@ export const envSchema = z.object({
   DAVI_BOSS_STATS_SPREADSHEET_URL: optionalUrl,
   DAVI_DISCORD_USER_ID: optionalNonEmptyString,
   YOUTUBE_API_KEY: optionalNonEmptyString,
+  OPENCRITIC_RAPIDAPI_KEY: optionalNonEmptyString,
   YOUTUBE_CHANNEL_HANDLES: optionalNonEmptyString,
   ENABLE_COMMUNITY_TOPIC_TRACKING: z
     .enum(['true', 'false'])
