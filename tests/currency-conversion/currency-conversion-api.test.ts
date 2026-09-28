@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getRequest } from '../shared/http';
 
 describe('currency conversion API', () => {
   beforeEach(() => {
@@ -27,7 +28,7 @@ describe('currency conversion API', () => {
     await getCurrencyRate({ base: 'CHF', quote: 'JPY' });
 
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(String(fetch.mock.calls[0]?.[0])).toBe(
+    expect(getRequest(fetch.mock.calls[0]?.[0]).url).toBe(
       'https://api.frankfurter.dev/v2/rate/CHF/JPY',
     );
   });

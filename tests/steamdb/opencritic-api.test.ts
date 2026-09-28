@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getRequest } from '../shared/http';
 
 const dependencies = vi.hoisted(() => ({
   env: { OPENCRITIC_RAPIDAPI_KEY: 'test-key' as string | undefined },
@@ -38,10 +39,10 @@ describe('OpenCritic API', () => {
     await expect(
       getOpenCriticScore('Moonlit Archive', new AbortController().signal),
     ).resolves.toBe(87.6);
-    expect(String(fetch.mock.calls[0]?.[0])).toContain(
+    expect(getRequest(fetch.mock.calls[0]?.[0]).url).toContain(
       '/game/search?criteria=Moonlit+Archive',
     );
-    expect(String(fetch.mock.calls[1]?.[0])).toContain('/game/7');
+    expect(getRequest(fetch.mock.calls[1]?.[0]).url).toContain('/game/7');
   });
 
   it('skips the provider when no key is configured', async () => {

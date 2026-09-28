@@ -1,11 +1,11 @@
 import { z } from 'zod';
+import { frankfurterApi } from '../../lib/api';
 import { UnsupportedCurrencyError } from './currency-conversion.errors';
 import type {
   CurrencyRate,
   GetCurrencyRateInput,
 } from './currency-conversion.types';
 
-const FRANKFURTER_API_BASE_URL = 'https://api.frankfurter.dev/v2';
 const CURRENCY_RATE_CACHE_TTL_MS = 60 * 60 * 1_000;
 
 const currencyRateResponseSchema = z.object({
@@ -32,14 +32,9 @@ export const getCurrencyRate = async ({
     return { date: cached.date, rate: cached.rate };
   }
 
-  const requestInit: RequestInit = {};
-  if (signal) {
-    requestInit.signal = signal;
-  }
-  const response = await fetch(
-    `${FRANKFURTER_API_BASE_URL}/rate/${base}/${quote}`,
-    requestInit,
-  );
+  const response = await frankfurterApi.get<
+    z.infer<typeof currencyRateResponseSchema>
+  >(`rate/${base}/${quote}`, { signal: signal ?? null });
   if (response.status === 422) {
     throw new UnsupportedCurrencyError([base, quote]);
   }

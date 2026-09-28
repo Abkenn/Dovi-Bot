@@ -1,26 +1,28 @@
 import type { SapphireClient } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
+import type {
+  RESTPostAPIChannelMessageJSONBody,
+  RESTPostAPIChannelMessageResult,
+  RESTPostAPICurrentUserCreateDMChannelJSONBody,
+} from 'discord.js';
+import { z } from 'zod';
+import { discordApi, githubApi } from '../lib/api';
 
-type GitHubDeployment = {
-  sha?: string;
-};
-
-type GitHubCommit = {
-  commit?: {
-    message?: string;
-  };
-};
-
-type GitHubCompareResponse = {
-  commits?: GitHubCommit[];
-};
-
-type DiscordDmChannelResponse = {
-  id?: string;
-};
+const githubDeploymentsSchema = z.array(
+  z.object({ sha: z.string().optional() }),
+);
+const githubCompareSchema = z.object({
+  commits: z
+    .array(
+      z.object({
+        commit: z.object({ message: z.string().optional() }).optional(),
+      }),
+    )
+    .optional(),
+});
+const discordDmChannelSchema = z.object({ id: z.string().optional() });
 
 const DISCORD_MESSAGE_LIMIT = 2000;
-const DISCORD_API_BASE_URL = 'https://discord.com/api/v10';
 
 let hasSentDeploymentFailed = false;
 let commitTitlesPromise: Promise<string[]> | null = null;
@@ -53,8 +55,11 @@ const parseGitHubRepository = (repository: string) => {
   return { owner, repo };
 };
 
-const fetchGitHubJson = async <T>(url: string): Promise<T | null> => {
-  const response = await fetch(url, { headers: getGitHubHeaders() });
+const fetchGitHubJson = async <T>(
+  url: string,
+  schema: z.ZodType<T>,
+): Promise<T | null> => {
+  const response = await githubApi.get<T>(url, { headers: getGitHubHeaders() });
 
   if (!response.ok) {
     console.warn(
@@ -63,7 +68,7 @@ const fetchGitHubJson = async <T>(url: string): Promise<T | null> => {
     return null;
   }
 
-  return (await response.json()) as T;
+  return schema.parse(await response.json());
 };
 
 const getCommitTitle = (message: string) =>
@@ -88,9 +93,10 @@ const fetchDeploymentCommitTitles = async () => {
     return getFallbackCommitTitles();
   }
 
-  const repoUrl = `https://api.github.com/repos/${repository.owner}/${repository.repo}`;
-  const deployments = await fetchGitHubJson<GitHubDeployment[]>(
+  const repoUrl = `repos/${repository.owner}/${repository.repo}`;
+  const deployments = await fetchGitHubJson(
     `${repoUrl}/deployments?per_page=20`,
+    githubDeploymentsSchema,
   );
 
   const previousDeployment = deployments?.find(
@@ -101,8 +107,9 @@ const fetchDeploymentCommitTitles = async () => {
     return getFallbackCommitTitles();
   }
 
-  const compare = await fetchGitHubJson<GitHubCompareResponse>(
+  const compare = await fetchGitHubJson(
     `${repoUrl}/compare/${previousDeployment.sha}...${env.KOYEB_GIT_SHA}`,
+    githubCompareSchema,
   );
   const titles = compare?.commits
     ?.map((commit) => commit.commit?.message)
@@ -184,17 +191,18 @@ const sendDeploymentDmWithToken = async (content: string) => {
     return;
   }
 
-  const channelResponse = await fetch(
-    `${DISCORD_API_BASE_URL}/users/@me/channels`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bot ${env.DISCORD_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ recipient_id: env.DEPLOYMENT_NOTIFY_USER_ID }),
+  const channelBody: RESTPostAPICurrentUserCreateDMChannelJSONBody = {
+    recipient_id: env.DEPLOYMENT_NOTIFY_USER_ID,
+  };
+  const channelResponse = await discordApi.post<
+    z.infer<typeof discordDmChannelSchema>
+  >('users/@me/channels', {
+    headers: {
+      Authorization: `Bot ${env.DISCORD_TOKEN}`,
+      'Content-Type': 'application/json',
     },
-  );
+    json: channelBody,
+  });
 
   if (!channelResponse.ok) {
     throw new Error(
@@ -202,23 +210,24 @@ const sendDeploymentDmWithToken = async (content: string) => {
     );
   }
 
-  const channel = (await channelResponse.json()) as DiscordDmChannelResponse;
+  const channel = discordDmChannelSchema.parse(await channelResponse.json());
 
   if (!channel.id) {
     throw new Error('Discord did not return a deployment DM channel id.');
   }
 
-  const messageResponse = await fetch(
-    `${DISCORD_API_BASE_URL}/channels/${channel.id}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bot ${env.DISCORD_TOKEN}`,
-        'Content-Type': 'application/json',
+  const messageBody: RESTPostAPIChannelMessageJSONBody = { content };
+  const messageResponse =
+    await discordApi.post<RESTPostAPIChannelMessageResult>(
+      `channels/${channel.id}/messages`,
+      {
+        headers: {
+          Authorization: `Bot ${env.DISCORD_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        json: messageBody,
       },
-      body: JSON.stringify({ content }),
-    },
-  );
+    );
 
   if (!messageResponse.ok) {
     throw new Error(

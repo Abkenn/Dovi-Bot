@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import type { SteamGame, SteamSearchGame } from './steam.types';
+import { steamApi } from '../../lib/api';
+import type {
+  SteamDetailsParams,
+  SteamGame,
+  SteamReviewsParams,
+  SteamSearchGame,
+  SteamSearchParams,
+} from './steam.types';
 
 const steamSearchSchema = z.object({
   items: z
@@ -29,33 +36,40 @@ const steamReviewsSchema = z.object({
   }),
 });
 
-const fetchSteamJson = async (
-  url: URL,
+const fetchSteamJson = async <T>(
+  path: string,
+  schema: z.ZodType<T>,
+  searchParams: SteamSearchParams | SteamDetailsParams | SteamReviewsParams,
   signal?: AbortSignal,
-): Promise<unknown> => {
-  const requestInit: RequestInit = {};
-  if (signal) {
-    requestInit.signal = signal;
-  }
-  const response = await fetch(url, requestInit);
+): Promise<T> => {
+  const response = await steamApi.get<T>(path, {
+    searchParams,
+    signal: signal ?? null,
+  });
   if (!response.ok) {
     throw new Error(
       `Steam lookup failed: ${response.status} ${response.statusText}`,
     );
   }
 
-  return response.json();
+  return schema.parse(await response.json());
 };
 
 export const searchSteamGames = async (
   query: string,
   signal?: AbortSignal,
 ): Promise<SteamSearchGame[]> => {
-  const url = new URL('https://store.steampowered.com/api/storesearch/');
-  url.searchParams.set('term', query.trim());
-  url.searchParams.set('l', 'english');
-  url.searchParams.set('cc', 'US');
-  const result = steamSearchSchema.parse(await fetchSteamJson(url, signal));
+  const searchParams: SteamSearchParams = {
+    term: query.trim(),
+    l: 'english',
+    cc: 'US',
+  };
+  const result = await fetchSteamJson(
+    'api/storesearch/',
+    steamSearchSchema,
+    searchParams,
+    signal,
+  );
 
   return result.items
     .filter((item) => item.type === 'app')
@@ -66,11 +80,17 @@ export const getSteamGame = async (
   appId: number,
   signal?: AbortSignal,
 ): Promise<SteamGame | null> => {
-  const url = new URL('https://store.steampowered.com/api/appdetails');
-  url.searchParams.set('appids', String(appId));
-  url.searchParams.set('l', 'english');
-  url.searchParams.set('cc', 'US');
-  const result = steamAppDetailsSchema.parse(await fetchSteamJson(url, signal));
+  const searchParams: SteamDetailsParams = {
+    appids: appId,
+    l: 'english',
+    cc: 'US',
+  };
+  const result = await fetchSteamJson(
+    'api/appdetails',
+    steamAppDetailsSchema,
+    searchParams,
+    signal,
+  );
   const app = Object.values(result).find(
     (entry) => entry.success && entry.data?.steam_appid === appId,
   );
@@ -86,14 +106,20 @@ export const getSteamEnglishReviewPercent = async (
   appId: number,
   signal?: AbortSignal,
 ): Promise<number | null> => {
-  const url = new URL(`https://store.steampowered.com/appreviews/${appId}`);
-  url.searchParams.set('json', '1');
-  url.searchParams.set('filter', 'all');
-  url.searchParams.set('language', 'english');
-  url.searchParams.set('purchase_type', 'all');
-  url.searchParams.set('num_per_page', '0');
-  url.searchParams.set('playtime_filter_min', '1');
-  const result = steamReviewsSchema.parse(await fetchSteamJson(url, signal));
+  const searchParams: SteamReviewsParams = {
+    json: 1,
+    filter: 'all',
+    language: 'english',
+    purchase_type: 'all',
+    num_per_page: 0,
+    playtime_filter_min: 1,
+  };
+  const result = await fetchSteamJson(
+    `appreviews/${appId}`,
+    steamReviewsSchema,
+    searchParams,
+    signal,
+  );
 
   if (result.query_summary.total_reviews === 0) {
     return null;

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getRequest } from '../shared/http';
 
 const makeResponse = ({
   body,
@@ -25,6 +26,7 @@ describe('HLTB API', () => {
   });
 
   it('initializes HLTB search auth and maps game results', async () => {
+    let searchBody: unknown;
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(
@@ -32,8 +34,9 @@ describe('HLTB API', () => {
           body: { token: 'token' },
         }),
       )
-      .mockResolvedValueOnce(
-        makeResponse({
+      .mockImplementationOnce(async (request: Request) => {
+        searchBody = await request.json();
+        return makeResponse({
           body: {
             data: [
               {
@@ -42,8 +45,8 @@ describe('HLTB API', () => {
               },
             ],
           },
-        }),
-      );
+        });
+      });
     vi.stubGlobal('fetch', fetch);
     const { searchHltbGames } = await import('../../src/modules/hltb/hltb.api');
 
@@ -59,15 +62,15 @@ describe('HLTB API', () => {
       },
     ]);
 
-    expect(String(fetch.mock.calls[0]?.[0])).toContain(
+    expect(getRequest(fetch.mock.calls[0]?.[0]).url).toContain(
       '/api/search/site/init?t=',
     );
-    expect(fetch.mock.calls[1]?.[0]).toBe(
+    expect(getRequest(fetch.mock.calls[1]?.[0]).url).toBe(
       'https://howlongtobeat.com/api/search/site',
     );
-    const searchOptions = fetch.mock.calls[1]?.[1];
-    expect(searchOptions.headers['x-auth-token']).toBe('token');
-    expect(JSON.parse(searchOptions.body)).toEqual(
+    const searchRequest = getRequest(fetch.mock.calls[1]?.[0]);
+    expect(searchRequest.headers.get('x-auth-token')).toBe('token');
+    expect(searchBody).toEqual(
       expect.objectContaining({
         searchTerms: ['moonlit'],
       }),

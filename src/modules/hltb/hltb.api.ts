@@ -1,11 +1,13 @@
+import type { Options } from 'ky';
 import { z } from 'zod';
+import { hltbApi } from '../../lib/api';
 import type {
   HltbGame,
+  HltbSearchBody,
   HltbSearchGame,
   SearchHltbGamesInput,
 } from './hltb.types';
 
-const HLTB_BASE_URL = 'https://howlongtobeat.com';
 const HLTB_SEARCH_PATH = '/api/search/site';
 const HLTB_AUTH_CACHE_MS = 10 * 60 * 1_000;
 const HLTB_SEARCH_CACHE_MS = 30 * 60 * 1_000;
@@ -57,21 +59,13 @@ const searchCache = new Map<string, HltbSearchCache>();
 const buildRequestInit = (
   method: 'GET' | 'POST',
   signal: AbortSignal | undefined,
-): RequestInit => {
-  const requestInit: RequestInit = { method };
+): Options => {
+  const requestInit: Options = { method };
   if (signal) {
     requestInit.signal = signal;
   }
 
   return requestInit;
-};
-
-const setCommonHeaders = (headers: Record<string, string>) => {
-  headers['User-Agent'] =
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36';
-  headers['Accept-Language'] = 'en-US,en;q=0.9';
-  headers.Referer = `${HLTB_BASE_URL}/`;
-  headers.Origin = HLTB_BASE_URL;
 };
 
 const getSearchAuth = async (
@@ -84,13 +78,12 @@ const getSearchAuth = async (
 
   const requestInit = buildRequestInit('GET', signal);
   const headers: Record<string, string> = { Accept: '*/*' };
-  setCommonHeaders(headers);
   requestInit.headers = headers;
 
-  const response = await fetch(
-    `${HLTB_BASE_URL}${HLTB_SEARCH_PATH}/init?t=${Date.now()}`,
-    requestInit,
-  );
+  const response = await hltbApi.get<HltbAuth>(`${HLTB_SEARCH_PATH}/init`, {
+    ...requestInit,
+    searchParams: { t: Date.now() },
+  });
   if (!response.ok) {
     throw new Error(
       `HLTB search authorization failed: ${response.status} ${response.statusText}`,
@@ -109,36 +102,35 @@ const getSearchAuth = async (
   return parsed.data;
 };
 
-const buildSearchBody = (query: string) =>
-  JSON.stringify({
-    searchType: 'games',
-    searchTerms: query.trim().split(' ').filter(Boolean),
-    searchPage: 1,
-    size: 20,
-    searchOptions: {
-      games: {
-        userId: 0,
-        platform: '',
-        sortCategory: 'popular',
-        rangeCategory: 'main',
-        rangeTime: { min: null, max: null },
-        gameplay: {
-          perspective: '',
-          flow: '',
-          genre: '',
-          difficulty: '',
-        },
-        rangeYear: { min: '', max: '' },
-        modifier: '',
+const buildSearchBody = (query: string): HltbSearchBody => ({
+  searchType: 'games',
+  searchTerms: query.trim().split(' ').filter(Boolean),
+  searchPage: 1,
+  size: 20,
+  searchOptions: {
+    games: {
+      userId: 0,
+      platform: '',
+      sortCategory: 'popular',
+      rangeCategory: 'main',
+      rangeTime: { min: null, max: null },
+      gameplay: {
+        perspective: '',
+        flow: '',
+        genre: '',
+        difficulty: '',
       },
-      users: { sortCategory: 'postcount' },
-      lists: { sortCategory: 'follows' },
-      filter: '',
-      sort: 0,
-      randomizer: 0,
+      rangeYear: { min: '', max: '' },
+      modifier: '',
     },
-    useCache: true,
-  });
+    users: { sortCategory: 'postcount' },
+    lists: { sortCategory: 'follows' },
+    filter: '',
+    sort: 0,
+    randomizer: 0,
+  },
+  useCache: true,
+});
 
 const postSearch = async (
   query: string,
@@ -151,11 +143,13 @@ const postSearch = async (
     'Content-Type': 'application/json',
     'x-auth-token': auth.token,
   };
-  setCommonHeaders(headers);
   requestInit.headers = headers;
-  requestInit.body = buildSearchBody(query);
+  requestInit.json = buildSearchBody(query);
 
-  return fetch(`${HLTB_BASE_URL}${HLTB_SEARCH_PATH}`, requestInit);
+  return hltbApi.post<z.infer<typeof hltbSearchSchema>>(
+    HLTB_SEARCH_PATH,
+    requestInit,
+  );
 };
 
 const secondsToHours = (seconds: number): number | null =>
@@ -174,10 +168,9 @@ export const getHltbGame = async (
 ): Promise<HltbGame> => {
   const requestInit = buildRequestInit('GET', signal);
   const headers: Record<string, string> = { Accept: 'text/html' };
-  setCommonHeaders(headers);
   requestInit.headers = headers;
 
-  const response = await fetch(`${HLTB_BASE_URL}/game/${gameId}`, requestInit);
+  const response = await hltbApi.get<string>(`/game/${gameId}`, requestInit);
   if (!response.ok) {
     throw new Error(
       `HLTB game lookup failed: ${response.status} ${response.statusText}`,

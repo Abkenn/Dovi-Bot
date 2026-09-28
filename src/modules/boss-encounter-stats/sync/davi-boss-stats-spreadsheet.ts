@@ -1,3 +1,4 @@
+import { googleSheetsApi } from '../../../lib/api';
 import type { DaviBossStatsSpreadsheetRow } from './davi-boss-stats-sync.types';
 
 const DATA_START_ROW_NUMBER = 3;
@@ -14,17 +15,13 @@ const getSpreadsheetCsvUrl = (spreadsheetUrl: string) => {
   }
 
   const gid = url.searchParams.get('gid');
-  const csvUrl = new URL(
-    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export`,
-  );
-
-  csvUrl.searchParams.set('format', 'csv');
+  const searchParams = new URLSearchParams({ format: 'csv' });
 
   if (gid) {
-    csvUrl.searchParams.set('gid', gid);
+    searchParams.set('gid', gid);
   }
 
-  return csvUrl;
+  return `${spreadsheetId}/export?${searchParams}`;
 };
 
 const parseCsv = (csv: string): string[][] => {
@@ -112,7 +109,9 @@ export const fetchDaviBossStatsSpreadsheetRows = async ({
   signal?: AbortSignal;
 }) => {
   const csvUrl = getSpreadsheetCsvUrl(spreadsheetUrl);
-  const response = await fetch(csvUrl, signal ? { signal } : undefined);
+  const response = await googleSheetsApi.get<string>(csvUrl, {
+    signal: signal ?? null,
+  });
 
   if (!response.ok) {
     throw new Error(

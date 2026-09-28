@@ -1,28 +1,14 @@
 import type { SapphireClient } from '@sapphire/framework';
 import { env } from '@zod-schemas/env.zod';
+import type { z } from 'zod';
+import { createDoviApi, createUptimeRobotApi } from '../lib/api';
+import {
+  healthCheckResponseSchema,
+  uptimeRobotStatusSchema,
+} from '../types/zod-schemas/status-response.zod';
 
-type UptimeRobotStatusResponse = {
-  status?: string;
-  monitor?: {
-    name?: string;
-    statusClass?: string;
-  };
-  statistics?: {
-    counts?: {
-      down?: number;
-      paused?: number;
-    };
-  };
-};
-
-type HealthCheckResponse = {
-  status?: string;
-  database?: string;
-  discord?: {
-    status?: string;
-    lastError?: string | null;
-  };
-};
+type UptimeRobotStatusResponse = z.infer<typeof uptimeRobotStatusSchema>;
+type HealthCheckResponse = z.infer<typeof healthCheckResponseSchema>;
 
 type UptimeStatusState = 'operational' | 'not_operational';
 type HealthCheckState = 'ok' | 'not_ok';
@@ -41,35 +27,15 @@ let hasSentUptimeAlert = false;
 let hasSentHealthCheckAlert = false;
 let consecutiveUptimeFailures = 0;
 
-const getUptimeRobotApiUrl = (statusPageUrl: string) => {
-  const url = new URL(statusPageUrl);
-
-  if (url.pathname.startsWith('/api/getMonitor/')) {
-    return url;
-  }
-
-  const [statusPageKey, monitorId] = url.pathname.split('/').filter(Boolean);
-
-  if (!statusPageKey || !monitorId) {
-    throw new Error(
-      'UPTIME_STATUS_MONITOR_URL must be an UptimeRobot monitor status page URL.',
-    );
-  }
-
-  return new URL(`/api/getMonitor/${statusPageKey}?m=${monitorId}`, url.origin);
-};
-
 const fetchUptimeStatus = async (signal: AbortSignal) => {
   if (!env.UPTIME_STATUS_MONITOR_URL) {
     return null;
   }
 
-  const response = await fetch(
-    getUptimeRobotApiUrl(env.UPTIME_STATUS_MONITOR_URL),
-    {
-      signal,
-    },
-  );
+  const uptimeRobotApi = createUptimeRobotApi(env.UPTIME_STATUS_MONITOR_URL);
+  const response = await uptimeRobotApi.get<UptimeRobotStatusResponse>('', {
+    signal,
+  });
 
   if (!response.ok) {
     throw new Error(
@@ -77,7 +43,7 @@ const fetchUptimeStatus = async (signal: AbortSignal) => {
     );
   }
 
-  return (await response.json()) as UptimeRobotStatusResponse;
+  return uptimeRobotStatusSchema.parse(await response.json());
 };
 
 const isOperational = (status: UptimeRobotStatusResponse) => {
@@ -121,7 +87,8 @@ const fetchHealthCheck = async (signal: AbortSignal) => {
     return null;
   }
 
-  const response = await fetch(env.HEALTH_CHECK_MONITOR_URL, { signal });
+  const doviApi = createDoviApi(env.HEALTH_CHECK_MONITOR_URL);
+  const response = await doviApi.get<HealthCheckResponse>('', { signal });
 
   if (!response.ok) {
     throw new Error(
@@ -129,7 +96,7 @@ const fetchHealthCheck = async (signal: AbortSignal) => {
     );
   }
 
-  return (await response.json()) as HealthCheckResponse;
+  return healthCheckResponseSchema.parse(await response.json());
 };
 
 const isHealthCheckOk = (healthCheck: HealthCheckResponse) =>

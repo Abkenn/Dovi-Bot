@@ -1,43 +1,14 @@
 import { env } from '@zod-schemas/env.zod';
-
-type UptimeRobotStatusResponse = {
-  status?: string;
-  monitor?: {
-    statusClass?: string;
-  };
-  statistics?: {
-    counts?: {
-      down?: number;
-      paused?: number;
-    };
-  };
-};
-
-type HealthCheckResponse = {
-  database?: string;
-};
+import type { z } from 'zod';
+import { createDoviApi, createUptimeRobotApi } from '../../lib/api';
+import {
+  healthCheckResponseSchema,
+  uptimeRobotStatusSchema,
+} from '../../types/zod-schemas/status-response.zod';
 
 export type BotStatus = {
   isOperational: boolean;
   database?: 'healthy' | 'sleepy' | 'unknown';
-};
-
-const getUptimeRobotApiUrl = (statusPageUrl: string) => {
-  const url = new URL(statusPageUrl);
-
-  if (url.pathname.startsWith('/api/getMonitor/')) {
-    return url;
-  }
-
-  const [statusPageKey, monitorId] = url.pathname.split('/').filter(Boolean);
-
-  if (!statusPageKey || !monitorId) {
-    throw new Error(
-      'UPTIME_STATUS_MONITOR_URL must be an UptimeRobot monitor status page URL.',
-    );
-  }
-
-  return new URL(`/api/getMonitor/${statusPageKey}?m=${monitorId}`, url.origin);
 };
 
 const fetchDatabaseStatus = async (signal?: AbortSignal) => {
@@ -45,16 +16,18 @@ const fetchDatabaseStatus = async (signal?: AbortSignal) => {
     return 'unknown' as const;
   }
 
-  const response = await fetch(
-    env.HEALTH_CHECK_MONITOR_URL,
-    signal ? { signal } : undefined,
-  ).catch(() => null);
+  const doviApi = createDoviApi(env.HEALTH_CHECK_MONITOR_URL);
+  const response = await doviApi
+    .get<z.infer<typeof healthCheckResponseSchema>>('', {
+      signal: signal ?? null,
+    })
+    .catch(() => null);
 
   if (!response?.ok) {
     return 'unknown' as const;
   }
 
-  const healthCheck = (await response.json()) as HealthCheckResponse;
+  const healthCheck = healthCheckResponseSchema.parse(await response.json());
 
   return healthCheck.database === 'ok' ? 'healthy' : 'sleepy';
 };
@@ -70,10 +43,10 @@ export const fetchBotStatus = async ({
     throw new Error('UPTIME_STATUS_MONITOR_URL is not configured.');
   }
 
-  const response = await fetch(
-    getUptimeRobotApiUrl(env.UPTIME_STATUS_MONITOR_URL),
-    signal ? { signal } : undefined,
-  );
+  const uptimeRobotApi = createUptimeRobotApi(env.UPTIME_STATUS_MONITOR_URL);
+  const response = await uptimeRobotApi.get<
+    z.infer<typeof uptimeRobotStatusSchema>
+  >('', { signal: signal ?? null });
 
   if (!response.ok) {
     throw new Error(
@@ -81,7 +54,7 @@ export const fetchBotStatus = async ({
     );
   }
 
-  const status = (await response.json()) as UptimeRobotStatusResponse;
+  const status = uptimeRobotStatusSchema.parse(await response.json());
   const downCount = status.statistics?.counts?.down ?? 0;
   const pausedCount = status.statistics?.counts?.paused ?? 0;
   const botStatus: BotStatus = {

@@ -1,7 +1,7 @@
 import { env } from '@zod-schemas/env.zod';
 import { z } from 'zod';
+import { openCriticApi } from '../../lib/api';
 
-const OPENCRITIC_HOST = 'opencritic-api.p.rapidapi.com';
 const OPENCRITIC_CACHE_MS = 60 * 60 * 1_000;
 
 const openCriticSearchSchema = z.array(
@@ -21,28 +21,27 @@ const scoreCache = new Map<string, CachedScore>();
 const normalizeTitle = (title: string): string =>
   title.trim().toLowerCase().split(' ').filter(Boolean).join(' ');
 
-const fetchOpenCriticJson = async (
-  url: URL,
+const fetchOpenCriticJson = async <T>(
+  path: string,
+  schema: z.ZodType<T>,
   apiKey: string,
   signal?: AbortSignal,
-): Promise<unknown> => {
-  const requestInit: RequestInit = {
+  searchParams: { criteria?: string } = {},
+): Promise<T> => {
+  const response = await openCriticApi.get<T>(path, {
+    searchParams,
+    signal: signal ?? null,
     headers: {
-      'x-rapidapi-host': OPENCRITIC_HOST,
       'x-rapidapi-key': apiKey,
     },
-  };
-  if (signal) {
-    requestInit.signal = signal;
-  }
-  const response = await fetch(url, requestInit);
+  });
   if (!response.ok) {
     throw new Error(
       `OpenCritic lookup failed: ${response.status} ${response.statusText}`,
     );
   }
 
-  return response.json();
+  return schema.parse(await response.json());
 };
 
 export const getOpenCriticScore = async (
@@ -60,10 +59,12 @@ export const getOpenCriticScore = async (
     return cached.score;
   }
 
-  const searchUrl = new URL(`https://${OPENCRITIC_HOST}/game/search`);
-  searchUrl.searchParams.set('criteria', title);
-  const searchResults = openCriticSearchSchema.parse(
-    await fetchOpenCriticJson(searchUrl, apiKey, signal),
+  const searchResults = await fetchOpenCriticJson(
+    'game/search',
+    openCriticSearchSchema,
+    apiKey,
+    signal,
+    { criteria: title },
   );
   const match =
     searchResults.find(
@@ -72,9 +73,11 @@ export const getOpenCriticScore = async (
 
   let score: number | null = null;
   if (match) {
-    const gameUrl = new URL(`https://${OPENCRITIC_HOST}/game/${match.id}`);
-    const game = openCriticGameSchema.parse(
-      await fetchOpenCriticJson(gameUrl, apiKey, signal),
+    const game = await fetchOpenCriticJson(
+      `game/${match.id}`,
+      openCriticGameSchema,
+      apiKey,
+      signal,
     );
     const providerScore = game.topCriticScore;
     score = providerScore !== null && providerScore >= 0 ? providerScore : null;

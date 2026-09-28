@@ -1,5 +1,10 @@
 import { env } from '@zod-schemas/env.zod';
 import { DateTime } from 'luxon';
+import {
+  getYouTubePlaylistItems,
+  getYouTubeVideos,
+  getYouTubeChannels as requestYouTubeChannels,
+} from '../youtube/youtube.api';
 import { isStreamAnnouncementWatchWindow } from './stream-announcement-watch';
 import type {
   StreamOccurrence,
@@ -17,41 +22,6 @@ type YouTubeChannel = {
   uploadsPlaylistId: string;
 };
 
-type YouTubeChannelResponse = {
-  items?: {
-    id?: string;
-    contentDetails?: {
-      relatedPlaylists?: {
-        uploads?: string;
-      };
-    };
-  }[];
-};
-
-type YouTubePlaylistItemsResponse = {
-  items?: {
-    contentDetails?: {
-      videoId?: string;
-    };
-  }[];
-};
-
-type YouTubeVideosResponse = {
-  items?: {
-    id?: string;
-    snippet?: {
-      title?: string;
-      liveBroadcastContent?: string;
-    };
-    liveStreamingDetails?: {
-      scheduledStartTime?: string;
-      actualStartTime?: string;
-      actualEndTime?: string;
-    };
-  }[];
-};
-
-const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
 const YOUTUBE_POLL_INTERVAL_MS = 5 * 60 * 1000;
 const YOUTUBE_MAX_UPLOADS_PER_CHANNEL = 5;
 
@@ -78,33 +48,6 @@ const toDate = (value: string | undefined): Date | null => {
   return date.isValid ? date.toUTC().toJSDate() : null;
 };
 
-const getJson = async <T>(
-  path: string,
-  params: Record<string, string>,
-): Promise<T> => {
-  if (!env.YOUTUBE_API_KEY) {
-    throw new Error('YOUTUBE_API_KEY is not configured.');
-  }
-
-  const url = new URL(`${YOUTUBE_API_BASE_URL}/${path}`);
-  for (const [key, value] of Object.entries({
-    ...params,
-    key: env.YOUTUBE_API_KEY,
-  })) {
-    url.searchParams.set(key, value);
-  }
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(
-      `YouTube API request failed: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return response.json() as Promise<T>;
-};
-
 const getYouTubeChannels = async (): Promise<YouTubeChannel[]> => {
   if (channelCache) {
     return channelCache;
@@ -112,7 +55,7 @@ const getYouTubeChannels = async (): Promise<YouTubeChannel[]> => {
 
   const channels = await Promise.all(
     getYouTubeChannelHandles().map(async (handle) => {
-      const response = await getJson<YouTubeChannelResponse>('channels', {
+      const response = await requestYouTubeChannels({
         part: 'contentDetails',
         forHandle: handle,
       });
@@ -136,14 +79,11 @@ const getYouTubeChannels = async (): Promise<YouTubeChannel[]> => {
 const getRecentVideoIds = async (
   channel: YouTubeChannel,
 ): Promise<string[]> => {
-  const response = await getJson<YouTubePlaylistItemsResponse>(
-    'playlistItems',
-    {
-      part: 'contentDetails',
-      playlistId: channel.uploadsPlaylistId,
-      maxResults: String(YOUTUBE_MAX_UPLOADS_PER_CHANNEL),
-    },
-  );
+  const response = await getYouTubePlaylistItems({
+    part: 'contentDetails',
+    playlistId: channel.uploadsPlaylistId,
+    maxResults: YOUTUBE_MAX_UPLOADS_PER_CHANNEL,
+  });
 
   return (
     response.items
@@ -159,7 +99,7 @@ const getStreamStatuses = async (
     return [];
   }
 
-  const response = await getJson<YouTubeVideosResponse>('videos', {
+  const response = await getYouTubeVideos({
     part: 'snippet,liveStreamingDetails',
     id: videoIds.join(','),
   });

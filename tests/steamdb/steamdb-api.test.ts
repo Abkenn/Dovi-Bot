@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getRequest } from '../shared/http';
 
 const makeResponse = (body: unknown) => ({
   json: vi.fn().mockResolvedValue(body),
@@ -30,7 +31,7 @@ describe('Steam API', () => {
     await expect(
       searchSteamGames('moonlit', new AbortController().signal),
     ).resolves.toEqual([{ id: 42, title: 'Moonlit Archive' }]);
-    expect(String(fetch.mock.calls[0]?.[0])).toContain(
+    expect(getRequest(fetch.mock.calls[0]?.[0]).url).toContain(
       '/api/storesearch/?term=moonlit',
     );
   });
@@ -88,7 +89,7 @@ describe('Steam API', () => {
     );
 
     await expect(getSteamEnglishReviewPercent(42)).resolves.toBe(91);
-    const url = new URL(String(fetch.mock.calls[0]?.[0]));
+    const url = new URL(getRequest(fetch.mock.calls[0]?.[0]).url);
     expect(url.searchParams.get('language')).toBe('english');
     expect(url.searchParams.get('playtime_filter_min')).toBe('1');
   });

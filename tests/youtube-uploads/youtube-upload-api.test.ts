@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getRequest } from '../shared/http';
 
 const env = vi.hoisted(
   (): {
@@ -81,7 +82,9 @@ describe('YouTube upload API', () => {
       },
     ]);
     expect(
-      new URL(fetch.mock.calls[0]?.[0]).searchParams.get('forHandle'),
+      new URL(getRequest(fetch.mock.calls[0]?.[0]).url).searchParams.get(
+        'forHandle',
+      ),
     ).toBe('@DaviVasc');
   });
 
