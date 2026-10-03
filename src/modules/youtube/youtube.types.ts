@@ -7,6 +7,7 @@ export type YouTubePlaylistParams = {
   part: 'contentDetails';
   playlistId: string;
   maxResults: number;
+  pageToken?: string;
 };
 
 export type YouTubeVideoParams = {

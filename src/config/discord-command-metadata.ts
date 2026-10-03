@@ -62,6 +62,15 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.PUBLIC,
     helpCategory: COMMAND_CATEGORIES.MISC,
   },
+  MUSIC_SEARCH: {
+    name: 'music-search',
+    description:
+      'Finds music heard on stream, play counts, and the last stream date.',
+    guildIds: COMMAND_GUILDS.MUSIC_SEARCH,
+    access: COMMAND_ACCESSES.DEFAULT,
+    helpAudience: HELP_AUDIENCES.PUBLIC,
+    helpCategory: COMMAND_CATEGORIES.STREAM_INFO,
+  },
   STEAM: {
     name: 'steam',
     description: 'Shows ratings and completion time for a game.',

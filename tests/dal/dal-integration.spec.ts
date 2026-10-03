@@ -41,6 +41,12 @@ const now = new Date('2026-06-12T18:00:00.000Z');
 const guildId = 'dal-guild';
 
 const coveredDalExports = {
+  '../../src/data/queries/music-catalog': [
+    'findMusicCatalog',
+    'findMusicStreamVideo',
+    'saveMusicStreamVideo',
+  ],
+  '../../src/data/transactions/music-catalog': ['replaceMusicCatalog'],
   '../../src/data/boss-catalog.utils': [
     'hasDurableBossData',
     'hasDurableGameData',
@@ -143,8 +149,10 @@ const coveredDalExports = {
     'findStreamAnnouncementByDate',
     'findStreamAnnouncementByMessageId',
     'findStreamAnnouncementPlan',
+    'findUndoableStreamAnnouncementChangeRequest',
     'markStreamAnnouncementReviewSent',
     'setStreamAnnouncementDecision',
+    'undoStreamAnnouncementChangeRequest',
     'updateStreamAnnouncementSnapshot',
     'upsertStreamAnnouncementUrlOverride',
   ],
@@ -262,6 +270,96 @@ test.beforeEach(async () => {
 test.afterAll(async () => {
   const { prisma } = await import('../../src/lib/prisma');
   await prisma.$disconnect();
+});
+
+test('music catalog replacements are atomic, ordered, idempotent and preserve source data', async () => {
+  const { replaceMusicCatalog } = await import(
+    '../../src/data/transactions/music-catalog'
+  );
+  const { findMusicCatalog, findMusicStreamVideo, saveMusicStreamVideo } =
+    await import('../../src/data/queries/music-catalog');
+  const { prisma } = await import('../../src/lib/prisma');
+  const input = {
+    messageId: 100n,
+    attachmentId: 101n,
+    uploaderId: 'collector',
+    filename: '32.0.txt',
+    rawText: 'original source',
+    plays: [
+      {
+        streamLabel: 'Stream P4',
+        streamDate: '2026-09-11',
+        offsetSeconds: 1365,
+        title: 'Been Good to Know Ya - Cyberpunk 2077',
+        originalTitle: 'Been Good to Know Ya - Cyberpunk 2077',
+        musicMode: 'PATREON_CAPITALISM' as const,
+      },
+    ],
+  };
+  expect(await findMusicCatalog()).toBeNull();
+  expect(await replaceMusicCatalog(input)).toBe(true);
+  expect((await findMusicCatalog())?.plays).toEqual(input.plays);
+  expect(await replaceMusicCatalog(input)).toBe(false);
+  expect(
+    await replaceMusicCatalog({ ...input, messageId: 99n, rawText: 'old' }),
+  ).toBe(false);
+  expect(await replaceMusicCatalog({ ...input, attachmentId: 102n })).toBe(
+    true,
+  );
+  await expect(
+    replaceMusicCatalog({
+      ...input,
+      messageId: 200n,
+      plays: [...input.plays, ...input.plays],
+    }),
+  ).rejects.toThrow();
+  expect((await findMusicCatalog())?.plays).toEqual(input.plays);
+  expect(
+    await prisma.musicCatalog.findUnique({ where: { id: 'primary' } }),
+  ).toMatchObject({
+    messageId: 100n,
+    attachmentId: 102n,
+    rawText: 'original source',
+  });
+  await Promise.all([
+    replaceMusicCatalog({ ...input, messageId: 300n, rawText: 'newest' }),
+    replaceMusicCatalog({ ...input, messageId: 250n, rawText: 'slower older' }),
+  ]);
+  expect(
+    await prisma.musicCatalog.findUnique({ where: { id: 'primary' } }),
+  ).toMatchObject({ messageId: 300n, rawText: 'newest' });
+  expect(await findMusicStreamVideo('@primary', '2026-09-11')).toBeNull();
+  await saveMusicStreamVideo({
+    channelHandle: '@primary',
+    streamDate: '2026-09-11',
+    videoId: 'video1',
+    title: 'Stream title',
+  });
+  expect(await findMusicStreamVideo('@primary', '2026-09-11')).toEqual({
+    videoId: 'video1',
+    title: 'Stream title',
+  });
+  expect(await findMusicStreamVideo('@other', '2026-09-11')).toBeNull();
+  await saveMusicStreamVideo({
+    channelHandle: '@primary',
+    streamDate: '2026-09-11',
+    videoId: 'video2',
+    title: 'Corrected stream',
+  });
+  expect(await findMusicStreamVideo('@primary', '2026-09-11')).toEqual({
+    videoId: 'video2',
+    title: 'Corrected stream',
+  });
+  await saveMusicStreamVideo({
+    channelHandle: '@primary',
+    streamDate: '2026-09-11',
+    videoId: null,
+    title: null,
+  });
+  expect(await findMusicStreamVideo('@primary', '2026-09-11')).toEqual({
+    videoId: null,
+    title: null,
+  });
 });
 
 test('keeps every runtime DAL export represented in integration coverage', async () => {

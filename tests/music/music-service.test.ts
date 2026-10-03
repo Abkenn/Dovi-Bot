@@ -1,0 +1,175 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const dependencies = vi.hoisted(() => ({
+  save: vi.fn(),
+  read: vi.fn(),
+  fetch: vi.fn(),
+  handle: vi.fn(),
+  video: vi.fn(),
+  refresh: vi.fn(),
+}));
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: { PROD_ENV: 'prod', STAGING_ENV: 'staging' },
+}));
+vi.mock('../../src/data/transactions/music-catalog', () => ({
+  replaceMusicCatalog: dependencies.save,
+}));
+vi.mock('../../src/data/queries/music-catalog', () => ({
+  findMusicCatalog: dependencies.read,
+  findMusicStreamVideo: dependencies.video,
+}));
+vi.mock('../../src/modules/music/music-youtube', () => ({
+  getMusicChannelHandle: dependencies.handle,
+  refreshMusicStreamVideos: dependencies.refresh,
+}));
+
+import {
+  importMusicUpload,
+  searchMusicCatalog,
+} from '../../src/modules/music/music.service';
+
+const upload = {
+  authorId: '632504207441920011',
+  guildId: 'prod',
+  messageId: '123',
+  attachmentId: '456',
+  filename: 'List Music Stream Davi Vasc 32.0.txt',
+  size: 120,
+  url: 'https://cdn.discordapp.com/attachments/123/456/catalog.txt',
+};
+const text = 'Per Stream :\nStream 32 : 25/09/26\n1:00 Song - Game';
+
+describe('music uploads and search', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal('fetch', dependencies.fetch);
+    dependencies.fetch.mockResolvedValue(new Response(text));
+    dependencies.save.mockResolvedValue(true);
+    dependencies.handle.mockReturnValue('@primary');
+    dependencies.video.mockResolvedValue({
+      videoId: 'video',
+      title: 'Latest broadcast',
+    });
+    dependencies.refresh.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    { authorId: 'someone-else' },
+    { guildId: 'staging' },
+    { guildId: 'unrelated' },
+    { filename: 'notes.txt' },
+    { filename: '32.0.exe' },
+    { size: 2_000_001 },
+  ])('ignores ineligible attachments before download: %s', async (change) => {
+    expect(await importMusicUpload({ ...upload, ...change })).toBe('ignored');
+    expect(dependencies.fetch).not.toHaveBeenCalled();
+    expect(dependencies.save).not.toHaveBeenCalled();
+  });
+
+  it('validates before replacing a complete catalog with source attribution', async () => {
+    expect(await importMusicUpload(upload)).toBe('updated');
+    expect(dependencies.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: 123n,
+        attachmentId: 456n,
+        uploaderId: upload.authorId,
+        rawText: text,
+        plays: [expect.objectContaining({ title: 'Song - Game' })],
+      }),
+    );
+  });
+
+  it('accepts bare version filenames and same-version corrections', async () => {
+    expect(await importMusicUpload({ ...upload, filename: '32.0.txt' })).toBe(
+      'updated',
+    );
+    dependencies.fetch.mockResolvedValue(new Response(text));
+    dependencies.save.mockResolvedValue(false);
+    expect(await importMusicUpload(upload)).toBe('unchanged');
+  });
+
+  it.each([
+    'https://example.com/file.txt',
+    'http://cdn.discordapp.com/file.txt',
+  ])('rejects unexpected download locations', async (url) => {
+    await expect(importMusicUpload({ ...upload, url })).rejects.toThrow();
+    expect(dependencies.fetch).not.toHaveBeenCalled();
+  });
+
+  it('keeps previous data on malformed content or failed downloads', async () => {
+    dependencies.fetch.mockResolvedValue(new Response('not a catalog'));
+    await expect(importMusicUpload(upload)).rejects.toThrow();
+    dependencies.fetch.mockResolvedValue(new Response('', { status: 404 }));
+    await expect(importMusicUpload(upload)).rejects.toThrow();
+    expect(dependencies.save).not.toHaveBeenCalled();
+  });
+
+  it('bounds the actual response body even when attachment metadata is wrong', async () => {
+    dependencies.fetch.mockResolvedValue(new Response('x'.repeat(2_000_001)));
+    await expect(importMusicUpload(upload)).rejects.toThrow();
+    expect(dependencies.save).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes an empty catalog from an unsuccessful search', async () => {
+    dependencies.read.mockResolvedValue(null);
+    expect(await searchMusicCatalog('song')).toBeNull();
+    dependencies.read.mockResolvedValue({ plays: [] });
+    expect(await searchMusicCatalog('song')).toEqual([]);
+  });
+
+  it('resolves only the latest occurrence of the best match and retains counts without video configuration', async () => {
+    dependencies.read.mockResolvedValue({
+      plays: [
+        {
+          title: 'Song - Game',
+          originalTitle: 'Song - Game',
+          streamLabel: 'Stream 1',
+          streamDate: '2021-10-01',
+          offsetSeconds: 60,
+          musicMode: 'UNKNOWN',
+        },
+        {
+          title: 'Song - Game',
+          originalTitle: 'Song - Game',
+          streamLabel: 'Stream 2',
+          streamDate: '2022-01-01',
+          offsetSeconds: 1365,
+          musicMode: 'UNKNOWN',
+        },
+      ],
+    });
+    expect(await searchMusicCatalog('song')).toEqual([
+      expect.objectContaining({
+        count: 2,
+        lastDate: '2022-01-01',
+        lastOffsetSeconds: 1365,
+        video: { videoId: 'video', title: 'Latest broadcast' },
+      }),
+    ]);
+    expect(dependencies.video).toHaveBeenCalledExactlyOnceWith(
+      '@primary',
+      '2022-01-01',
+    );
+    dependencies.video.mockResolvedValue({ videoId: null, title: null });
+    expect(await searchMusicCatalog('song')).toEqual([
+      expect.objectContaining({ video: null }),
+    ]);
+    dependencies.handle.mockReturnValue(undefined);
+    expect(await searchMusicCatalog('song')).toEqual([
+      expect.objectContaining({ count: 2, video: null }),
+    ]);
+  });
+
+  it('preserves a successful import when YouTube is unavailable', async () => {
+    dependencies.refresh.mockRejectedValue(new Error('YouTube unavailable'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await importMusicUpload(upload)).toBe('updated');
+    expect(dependencies.save).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalled();
+  });
+});

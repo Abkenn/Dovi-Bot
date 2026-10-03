@@ -24,6 +24,7 @@ const channelSchema = z.object({
 });
 
 const playlistSchema = z.object({
+  nextPageToken: z.string().optional(),
   items: z
     .array(
       z.object({
@@ -65,6 +66,7 @@ const getYouTubeJson = async <T>(
   path: 'channels' | 'playlistItems' | 'videos',
   params: YouTubeChannelParams | YouTubePlaylistParams | YouTubeVideoParams,
   schema: z.ZodType<T>,
+  signal?: AbortSignal,
 ): Promise<T> => {
   if (!env.YOUTUBE_API_KEY) {
     throw new Error('YOUTUBE_API_KEY is not configured.');
@@ -72,6 +74,7 @@ const getYouTubeJson = async <T>(
 
   const response = await youtubeApi.get<T>(path, {
     searchParams: { ...params, key: env.YOUTUBE_API_KEY },
+    signal: signal ?? null,
   });
   if (!response.ok) {
     throw new Error(
@@ -81,11 +84,17 @@ const getYouTubeJson = async <T>(
   return schema.parse(await response.json());
 };
 
-export const getYouTubeChannels = (params: YouTubeChannelParams) =>
-  getYouTubeJson('channels', params, channelSchema);
+export const getYouTubeChannels = (
+  params: YouTubeChannelParams,
+  signal?: AbortSignal,
+) => getYouTubeJson('channels', params, channelSchema, signal);
 
-export const getYouTubePlaylistItems = (params: YouTubePlaylistParams) =>
-  getYouTubeJson('playlistItems', params, playlistSchema);
+export const getYouTubePlaylistItems = (
+  params: YouTubePlaylistParams,
+  signal?: AbortSignal,
+) => getYouTubeJson('playlistItems', params, playlistSchema, signal);
 
-export const getYouTubeVideos = (params: YouTubeVideoParams) =>
-  getYouTubeJson('videos', params, videosSchema);
+export const getYouTubeVideos = (
+  params: YouTubeVideoParams,
+  signal?: AbortSignal,
+) => getYouTubeJson('videos', params, videosSchema, signal);

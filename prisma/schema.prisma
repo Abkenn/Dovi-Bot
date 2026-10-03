@@ -34,6 +34,42 @@ datasource db {
   provider = "postgresql"
 }
 
+model MusicCatalog {
+  id           String      @id
+  messageId    BigInt
+  attachmentId BigInt
+  uploaderId   String
+  filename     String
+  rawText      String
+  updatedAt    DateTime    @updatedAt
+  plays        MusicPlay[]
+}
+
+model MusicPlay {
+  id            Int          @id @default(autoincrement())
+  catalogId     String
+  catalog       MusicCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  streamLabel   String
+  streamDate    String
+  offsetSeconds Int
+  title         String
+  originalTitle String
+  musicMode     MusicMode
+
+  @@unique([catalogId, streamLabel, offsetSeconds])
+  @@index([catalogId, streamDate])
+}
+
+model MusicStreamVideo {
+  channelHandle String
+  streamDate    String
+  videoId       String?
+  title         String?
+  updatedAt     DateTime @updatedAt
+
+  @@id([channelHandle, streamDate])
+}
+
 model ReactionEchoCounter {
   ruleId               String   @id
   count                Int      @default(0)
@@ -152,19 +188,19 @@ model StreamInfoMessage {
 }
 
 model StreamReminder {
-  id               String    @id @default(cuid())
-  guildId          String
-  userId           String
-  streamDateKey    String
-  streamUrl        String?
-  videoTitle       String?
-  scheduledStartAt DateTime
+  id                     String    @id @default(cuid())
+  guildId                String
+  userId                 String
+  streamDateKey          String
+  streamUrl              String?
+  videoTitle             String?
+  scheduledStartAt       DateTime
   announcementNotifiedAt DateTime?
   liveReminderDisabledAt DateTime?
-  notifiedAt       DateTime?
-  notifiedStreamUrls String[] @default([])
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  notifiedAt             DateTime?
+  notifiedStreamUrls     String[]  @default([])
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@unique([guildId, userId, streamDateKey])
   @@index([guildId, streamDateKey, announcementNotifiedAt])
@@ -199,15 +235,15 @@ model StreamAnnouncement {
 }
 
 model StreamAnnouncementPlan {
-  id                       String    @id @default(cuid())
+  id                       String                      @id @default(cuid())
   guildId                  String
   streamDateKey            String
   streamUrlOverride        String?
   reviewReminderMessageId  String?
   reviewReminderNotifiedAt DateTime?
   automaticDecision        StreamAnnouncementDecision?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
 
   @@unique([guildId, streamDateKey])
   @@index([guildId, reviewReminderNotifiedAt])
@@ -379,17 +415,17 @@ model RecentLog {
 }
 
 model DeletedLog {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   guildId          String
   channelId        String
   channelName      String?
-  messageId        String   @unique
+  messageId        String    @unique
   authorUserId     String?
   authorUsername   String?
   content          String?
   messageCreatedAt DateTime?
-  deletedAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([guildId, deletedAt])
   @@index([guildId, channelId, deletedAt])

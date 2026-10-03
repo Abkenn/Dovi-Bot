@@ -179,3 +179,5 @@ skills/*
 data/boss-discussion-backfill-*.json
 data/boss-discussion-backfill-*.jsonl
 embedded-app/ARCHITECTURE.md
+/scripts/music-catalog-import.ts
+/tests/music/fixtures/

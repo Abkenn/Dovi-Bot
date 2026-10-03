@@ -28,6 +28,7 @@ describe('Discord command guild access', () => {
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.CONVERT).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.HLTB).toEqual(['staging', 'prod']);
+    expect(COMMAND_GUILDS.MUSIC_SEARCH).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.STEAM).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.POLL_HOST).toEqual(['staging']);
@@ -56,6 +57,7 @@ describe('Discord command guild access', () => {
       'botstatus',
       'convert',
       'hltb',
+      'music-search',
       'steam',
       'streaminfo',
       'stream-remind-me',
@@ -73,6 +75,7 @@ describe('Discord command guild access', () => {
     expect(COMMAND_GUILDS.PING_ME).toEqual(['staging']);
     expect(COMMAND_GUILDS.CONVERT).toEqual(['staging']);
     expect(COMMAND_GUILDS.HLTB).toEqual(['staging']);
+    expect(COMMAND_GUILDS.MUSIC_SEARCH).toEqual(['staging']);
     expect(COMMAND_GUILDS.STEAM).toEqual(['staging']);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging']);
     expect(COMMAND_GUILDS.POLL_HOST).toEqual(['staging']);
