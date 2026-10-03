@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+
 import { buildMusicSearchReply } from '../../src/modules/music/music.discord';
 
 describe('music search response', () => {
-  it('shows latest timestamped link, count, and silent credits on three lines', () => {
+  it('shows the resolved title, latest timestamped link, count, and silent credit', () => {
     expect(
       buildMusicSearchReply([
         {
@@ -16,7 +17,7 @@ describe('music search response', () => {
       ]),
     ).toEqual({
       content:
-        'Latest stream: [Music stream · 2026-09-11 · 22:45](<https://www.youtube.com/watch?v=abcdefghijk&t=1365s>)\nHeard **3 times** in past streams.\n*Data collected by <@632504207441920011>.*',
+        '**Been Good to Know Ya**\nLatest stream: [Music stream · 2026-09-11 · 22:45](<https://www.youtube.com/watch?v=abcdefghijk&t=1365s>)\nHeard **3 times** in past streams.\n*Data collected by <@632504207441920011>.*',
       allowedMentions: { parse: [] },
     });
   });
@@ -33,7 +34,7 @@ describe('music search response', () => {
       },
     ]);
     expect(response.content).toBe(
-      'Latest stream: Stream 1 · 2021-10-01 · 1:00:01 (link unavailable)\nHeard **1 time** in past streams.\n*Data collected by <@632504207441920011>.*',
+      '**Song**\nLatest stream: Stream 1 · 2021-10-01 · 1:00:01 (link unavailable)\nHeard **1 time** in past streams.\n*Data collected by <@632504207441920011>.*',
     );
     expect(buildMusicSearchReply(null).content).toContain('not been imported');
     expect(buildMusicSearchReply([]).content).toContain('No matching');

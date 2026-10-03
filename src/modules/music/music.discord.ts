@@ -17,6 +17,9 @@ export const buildMusicSearchReply = (results: MusicSearchView[] | null) => {
     return {
       content: 'No matching tracks found. Try part of the song or game name.',
     };
+  const matchTitle = escapeMarkdown(
+    result.title.replaceAll('\n', ' ').replaceAll('\r', ' '),
+  ).slice(0, 400);
   const time = timestamp(result.lastOffsetSeconds);
   let latest = `${escapeMarkdown(result.lastStream).slice(0, 150)} · ${result.lastDate} · ${time} (link unavailable)`;
   if (result.video) {
@@ -27,7 +30,7 @@ export const buildMusicSearchReply = (results: MusicSearchView[] | null) => {
     latest = `[${title} · ${result.lastDate} · ${time}](<${url}>)`;
   }
   return {
-    content: `Latest stream: ${latest}\nHeard **${result.count} ${result.count === 1 ? 'time' : 'times'}** in past streams.\n*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`,
+    content: `**${matchTitle}**\nLatest stream: ${latest}\nHeard **${result.count} ${result.count === 1 ? 'time' : 'times'}** in past streams.\n*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`,
     allowedMentions: { parse: [] },
   };
 };

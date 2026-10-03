@@ -1,4 +1,5 @@
 import { env } from '@zod-schemas/env.zod';
+
 import { DateTime } from 'luxon';
 import { saveMusicStreamVideo } from '../../data/queries/music-catalog';
 import {
@@ -25,7 +26,10 @@ export const refreshMusicStreamVideos = async (dates: string[]) => {
     channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!playlistId) return;
   const requestedDates = new Set(dates);
-  const candidates = new Map<string, Map<string, string>>();
+  const candidates = new Map<
+    string,
+    Map<string, { title: string; startedAt: number }>
+  >();
   const params: YouTubePlaylistParams = {
     part: 'contentDetails',
     playlistId,
@@ -51,12 +55,16 @@ export const refreshMusicStreamVideos = async (dates: string[]) => {
           !video.liveStreamingDetails?.actualEndTime
         )
           continue;
-        const streamDate = DateTime.fromISO(startedAt)
-          .setZone('America/Sao_Paulo')
-          .toISODate();
+        const startTime = DateTime.fromISO(startedAt);
+        const streamDate = startTime.setZone('America/Sao_Paulo').toISODate();
         if (!streamDate || !requestedDates.has(streamDate)) continue;
-        const onDate = candidates.get(streamDate) ?? new Map<string, string>();
-        onDate.set(video.id, video.snippet.title);
+        const onDate =
+          candidates.get(streamDate) ??
+          new Map<string, { title: string; startedAt: number }>();
+        onDate.set(video.id, {
+          title: video.snippet.title,
+          startedAt: startTime.toMillis(),
+        });
         candidates.set(streamDate, onDate);
       }
     }
@@ -67,12 +75,16 @@ export const refreshMusicStreamVideos = async (dates: string[]) => {
   }
   for (const streamDate of requestedDates) {
     const videos = candidates.get(streamDate);
-    const candidate = videos?.size === 1 ? [...videos.entries()][0] : undefined;
+    const candidate = videos
+      ? [...videos.entries()].sort(
+          ([, first], [, second]) => first.startedAt - second.startedAt,
+        )[0]
+      : undefined;
     await saveMusicStreamVideo({
       channelHandle,
       streamDate,
       videoId: candidate?.[0] ?? null,
-      title: candidate?.[1] ?? null,
+      title: candidate?.[1].title ?? null,
     });
   }
 };

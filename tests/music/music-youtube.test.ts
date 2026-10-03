@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { refreshMusicStreamVideos } from '../../src/modules/music/music-youtube';
+
 const dependencies = vi.hoisted(() => ({
   channels: vi.fn(),
   playlist: vi.fn(),
@@ -19,8 +21,6 @@ vi.mock('../../src/modules/youtube/youtube.api', () => ({
 vi.mock('../../src/data/queries/music-catalog', () => ({
   saveMusicStreamVideo: dependencies.save,
 }));
-
-import { refreshMusicStreamVideos } from '../../src/modules/music/music-youtube';
 
 describe('music stream video matching', () => {
   beforeEach(() => {
@@ -89,26 +89,33 @@ describe('music stream video matching', () => {
     });
   });
 
-  it('does not guess when two streams share the same date', async () => {
-    const video = {
-      snippet: { title: 'Stream' },
-      liveStreamingDetails: {
-        actualStartTime: '2026-09-11T18:00:00Z',
-        actualEndTime: '2026-09-11T22:00:00Z',
-      },
-    };
+  it('links the first stream when multiple streams share the same date', async () => {
     dependencies.videos.mockResolvedValue({
       items: [
-        { ...video, id: 'one' },
-        { ...video, id: 'two' },
+        {
+          id: 'later',
+          snippet: { title: 'Later stream' },
+          liveStreamingDetails: {
+            actualStartTime: '2026-09-11T22:00:00Z',
+            actualEndTime: '2026-09-12T00:00:00Z',
+          },
+        },
+        {
+          id: 'first',
+          snippet: { title: 'First stream' },
+          liveStreamingDetails: {
+            actualStartTime: '2026-09-11T18:00:00Z',
+            actualEndTime: '2026-09-11T22:00:00Z',
+          },
+        },
       ],
     });
     await refreshMusicStreamVideos(['2026-09-11']);
     expect(dependencies.save).toHaveBeenCalledWith({
       channelHandle: '@primary',
       streamDate: '2026-09-11',
-      videoId: null,
-      title: null,
+      videoId: 'first',
+      title: 'First stream',
     });
   });
 
