@@ -29,6 +29,15 @@ export class MusicSearchCommand extends Command {
               .setRequired(true)
               .setMinLength(2)
               .setMaxLength(100),
+          )
+          .addStringOption((option) =>
+            option
+              .setName('game')
+              .setDescription('Search matching games and show every track')
+              .addChoices(
+                { name: 'Yes', value: 'yes' },
+                { name: 'No', value: 'no' },
+              ),
           ),
       { guildIds: [...METADATA.guildIds] },
     );
@@ -46,6 +55,7 @@ export class MusicSearchCommand extends Command {
           buildMusicSearchReply(
             await searchMusicCatalog(
               interaction.options.getString('query', true),
+              { game: interaction.options.getString('game') === 'yes' },
             ),
           ),
         ),

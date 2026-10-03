@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseMusicCatalog } from '../../src/modules/music/music-catalog.parser';
-import { searchMusicPlays } from '../../src/modules/music/music-search';
+import {
+  findMusicGamePlays,
+  searchMusicPlays,
+} from '../../src/modules/music/music-search';
 
 const history = `Per Stream :
 Stream 32 (D) : 25/09/02026
@@ -62,13 +65,60 @@ Stream P4 : 22:45 Been Good to Know Ya`);
     const plays = parseMusicCatalog(history);
     expect(plays).toHaveLength(3);
     expect(searchMusicPlays(plays, 'kokotto vilage')[0]).toMatchObject({
-      title: 'Kokoto Village - Generations - Monster Hunter',
+      title: 'Kokoto Village - Generations',
+      game: 'Monster Hunter',
       count: 2,
       lastStream: 'Stream 32 (D)',
       lastDate: '2026-09-25',
     });
     expect(searchMusicPlays(plays, 'zzzzzzz')).toEqual([]);
     expect(searchMusicPlays(plays, '  ')).toEqual([]);
+  });
+
+  it('assigns games only from matching per-game stream timestamps', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 10 : 01/01/26
+1:00 Song One - Artist
+2:00 Song Two - Artist
+Per Game :
+Dark Souls II :
+Stream 10 : 1:00 Song One - Artist
+Different Game :
+Stream 10 : 3:00 Missing track`);
+    expect(plays).toEqual([
+      expect.objectContaining({
+        title: 'Song One - Artist',
+        game: 'Dark Souls II',
+      }),
+      expect.objectContaining({ title: 'Song Two - Artist', game: null }),
+    ]);
+  });
+
+  it('finds every track from a game despite a Roman numeral query variant', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Majula - Artist
+2:00 Longing - Artist
+Stream 2 : 02/01/26
+1:00 Firelink - Artist
+Per Game :
+Dark Souls II :
+Stream 1 : 1:00 Majula - Artist
+Stream 1 : 2:00 Longing - Artist
+Dark Souls III :
+Stream 2 : 1:00 Firelink - Artist`);
+    expect(findMusicGamePlays(plays, 'dark souls 2')).toEqual([
+      expect.objectContaining({
+        title: 'Majula - Artist',
+        game: 'Dark Souls II',
+        offsetSeconds: 60,
+      }),
+      expect.objectContaining({
+        title: 'Longing - Artist',
+        game: 'Dark Souls II',
+        offsetSeconds: 120,
+      }),
+    ]);
   });
 
   it('supports leading and trailing timestamps, parentheses, accents and reversed title order', () => {

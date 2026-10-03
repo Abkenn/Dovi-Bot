@@ -1,4 +1,8 @@
-import type { MusicPlay, MusicSearchResult } from './music.types';
+import type {
+  MusicGameResult,
+  MusicPlay,
+  MusicSearchResult,
+} from './music.types';
 import { musicIdentity, musicWords } from './music-normalization';
 
 const similarity = (left: string, right: string) => {
@@ -24,6 +28,16 @@ const similarity = (left: string, right: string) => {
   );
 };
 
+const scoreMusicText = (text: string, terms: string[]) => {
+  const words = musicWords(text);
+  const scores = terms.map((term) =>
+    Math.max(0, ...words.map((word) => similarity(term, word))),
+  );
+  return scores.every((value) => value >= 0.7)
+    ? scores.reduce((sum, value) => sum + value, 0) / terms.length
+    : 0;
+};
+
 export const searchMusicPlays = (
   plays: MusicPlay[],
   query: string,
@@ -36,13 +50,10 @@ export const searchMusicPlays = (
   >();
   for (const play of plays) {
     const key = musicIdentity(play.title);
-    const words = musicWords(`${play.title} ${play.originalTitle}`);
-    const scores = terms.map((term) =>
-      Math.max(0, ...words.map((word) => similarity(term, word))),
+    const score = scoreMusicText(
+      `${play.title} ${play.originalTitle} ${play.game ?? ''}`,
+      terms,
     );
-    const score = scores.every((value) => value >= 0.7)
-      ? scores.reduce((sum, value) => sum + value, 0) / terms.length
-      : 0;
     const group = groups.get(key);
     if (!group) {
       groups.set(key, {
@@ -53,6 +64,7 @@ export const searchMusicPlays = (
           lastStream: play.streamLabel,
           lastDate: play.streamDate,
           lastOffsetSeconds: play.offsetSeconds,
+          game: play.game,
         },
       });
       continue;
@@ -67,6 +79,7 @@ export const searchMusicPlays = (
       group.result.lastDate = play.streamDate;
       group.result.title = play.title;
       group.result.lastOffsetSeconds = play.offsetSeconds;
+      group.result.game = play.game;
     }
   }
   return [...groups.values()]
@@ -79,4 +92,35 @@ export const searchMusicPlays = (
     )
     .slice(0, 5)
     .map((group) => group.result);
+};
+
+export const findMusicGamePlays = (
+  plays: MusicPlay[],
+  query: string,
+): MusicGameResult[] => {
+  const terms = musicWords(query.slice(0, 100));
+  if (!terms.length) return [];
+  const gameScores = new Map<string, number>();
+  for (const play of plays) {
+    if (!play.game || gameScores.has(play.game)) continue;
+    gameScores.set(play.game, scoreMusicText(play.game, terms));
+  }
+  const bestScore = Math.max(0, ...gameScores.values());
+  if (bestScore === 0) return [];
+  const matchingGames = new Set(
+    [...gameScores].flatMap(([game, score]) =>
+      score === bestScore ? [game] : [],
+    ),
+  );
+  return plays
+    .filter(
+      (play): play is MusicPlay & { game: string } =>
+        play.game !== null && matchingGames.has(play.game),
+    )
+    .sort(
+      (left, right) =>
+        left.streamDate.localeCompare(right.streamDate) ||
+        left.offsetSeconds - right.offsetSeconds ||
+        left.title.localeCompare(right.title),
+    );
 };

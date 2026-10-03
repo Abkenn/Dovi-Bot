@@ -8,7 +8,13 @@ export const replaceMusicCatalog = async (input: ReplaceMusicCatalogInput) =>
       const current = await transaction.musicCatalog.findUnique({
         where: { id: 'primary' },
       });
-      if (current) {
+      if (current && input.allowCurrentSource) {
+        if (
+          current.messageId !== input.messageId ||
+          current.attachmentId !== input.attachmentId
+        )
+          return false;
+      } else if (current) {
         if (current.messageId > input.messageId) return false;
         if (
           current.messageId === input.messageId &&
@@ -16,7 +22,7 @@ export const replaceMusicCatalog = async (input: ReplaceMusicCatalogInput) =>
         )
           return false;
       }
-      const { plays, ...data } = input;
+      const { plays, allowCurrentSource: _allowCurrentSource, ...data } = input;
       await transaction.musicCatalog.upsert({
         where: { id: 'primary' },
         create: { id: 'primary', ...data },

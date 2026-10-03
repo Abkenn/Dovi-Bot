@@ -54,6 +54,7 @@ model MusicPlay {
   offsetSeconds Int
   title         String
   originalTitle String
+  game          String?
   musicMode     MusicMode
 
   @@unique([catalogId, streamLabel, offsetSeconds])

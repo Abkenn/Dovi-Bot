@@ -120,13 +120,14 @@ export const parseMusicCatalog = (text: string): MusicPlay[] => {
       musicMode: stream.musicMode,
       ...entry,
       originalTitle: entry.title,
+      game: null,
     });
     streamEntries++;
   }
   if (plays.size === 0 || streamEntries === 0)
     throw new Error('Empty music history.');
 
-  // The secondary index supplies names only; it can never introduce another play.
+  // The secondary index enriches matching history entries only.
   let game = '';
   const enriched = new Set<string>();
   for (const line of indexStart < 0 ? [] : lines.slice(indexStart + 1)) {
@@ -145,7 +146,8 @@ export const parseMusicCatalog = (text: string): MusicPlay[] => {
       const key = `${streamId}:${entry.offsetSeconds}`;
       const play = plays.get(key);
       if (play && game && entry.title && !enriched.has(key)) {
-        play.title = `${entry.title} - ${game}`;
+        play.title = entry.title;
+        play.game = game;
         enriched.add(key);
       }
     } catch {

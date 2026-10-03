@@ -1,5 +1,18 @@
 const segmenter = new Intl.Segmenter('en', { granularity: 'word' });
 
+const ROMAN_NUMERALS: Record<string, string> = {
+  i: '1',
+  ii: '2',
+  iii: '3',
+  iv: '4',
+  v: '5',
+  vi: '6',
+  vii: '7',
+  viii: '8',
+  ix: '9',
+  x: '10',
+};
+
 export const musicWords = (text: string): string[] => {
   const characters = [...text.normalize('NFKD').toLowerCase()].filter(
     (character) => {
@@ -9,7 +22,7 @@ export const musicWords = (text: string): string[] => {
   );
   return [...segmenter.segment(characters.join(''))]
     .filter((segment) => segment.isWordLike)
-    .map((segment) => segment.segment);
+    .map((segment) => ROMAN_NUMERALS[segment.segment] ?? segment.segment);
 };
 
 export const musicIdentity = (text: string) =>

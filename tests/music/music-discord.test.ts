@@ -12,6 +12,7 @@ describe('music search response', () => {
           lastStream: 'Stream P4',
           lastDate: '2026-09-11',
           lastOffsetSeconds: 1365,
+          game: 'Cyberpunk 2077',
           video: { videoId: 'abcdefghijk', title: 'Music stream' },
         },
       ]),
@@ -30,6 +31,7 @@ describe('music search response', () => {
         lastStream: 'Stream 1',
         lastDate: '2021-10-01',
         lastOffsetSeconds: 3601,
+        game: null,
         video: null,
       },
     ]);
@@ -38,5 +40,37 @@ describe('music search response', () => {
     );
     expect(buildMusicSearchReply(null).content).toContain('not been imported');
     expect(buildMusicSearchReply([]).content).toContain('No matching');
+  });
+
+  it('lists every track in a game with compact timestamp links', () => {
+    expect(
+      buildMusicSearchReply(
+        [
+          {
+            title: 'Majula',
+            game: 'Dark Souls II',
+            streamDate: '2026-09-11',
+            offsetSeconds: 60,
+            video: {
+              videoId: 'first',
+              title:
+                'A very long Davi Vasc music stream title that needs shortening in this link',
+            },
+          },
+          {
+            title: 'Longing',
+            game: 'Dark Souls II',
+            streamDate: '2026-09-11',
+            offsetSeconds: 120,
+            video: { videoId: 'first', title: 'Music stream' },
+          },
+        ],
+        { game: true },
+      ),
+    ).toEqual({
+      content:
+        '**Dark Souls II**\nMajula · [A very long Davi Vasc music stream title that needs sh… · 1:00](<https://www.youtube.com/watch?v=first&t=60s>)\nLonging · [Music stream · 2:00](<https://www.youtube.com/watch?v=first&t=120s>)\n*Data collected by <@632504207441920011>.*',
+      allowedMentions: { parse: [] },
+    });
   });
 });

@@ -4,12 +4,14 @@ export type ReplaceMusicCatalogInput = {
   uploaderId: string;
   filename: string;
   rawText: string;
+  allowCurrentSource?: boolean;
   plays: {
     streamLabel: string;
     streamDate: string;
     offsetSeconds: number;
     title: string;
     originalTitle: string;
+    game: string | null;
     musicMode:
       | 'DEMOCRACY'
       | 'CAPITALISM'

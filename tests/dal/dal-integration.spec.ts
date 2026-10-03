@@ -141,6 +141,7 @@ const coveredDalExports = {
     'upsertTargetStreamOverride',
   ],
   '../../src/data/queries/stream-announcement': [
+    'clearStreamAnnouncementUrlOverride',
     'completeStreamAnnouncementChangeRequest',
     'createStreamAnnouncement',
     'createStreamAnnouncementChangeRequest',
@@ -292,6 +293,7 @@ test('music catalog replacements are atomic, ordered, idempotent and preserve so
         offsetSeconds: 1365,
         title: 'Been Good to Know Ya - Cyberpunk 2077',
         originalTitle: 'Been Good to Know Ya - Cyberpunk 2077',
+        game: null,
         musicMode: 'PATREON_CAPITALISM' as const,
       },
     ],
@@ -779,6 +781,16 @@ test('stores announcement snapshots, review decisions, and approval requests', a
     reviewReminderMessageId: 'review-message',
     streamUrlOverride: 'https://youtube.test/watch?v=override',
   });
+  await queries.clearStreamAnnouncementUrlOverride({
+    guildId,
+    streamDateKey: '2026-09-11',
+  });
+  await expect(
+    queries.findStreamAnnouncementPlan({
+      guildId,
+      streamDateKey: '2026-09-11',
+    }),
+  ).resolves.toMatchObject({ streamUrlOverride: null });
 
   const request = await queries.createStreamAnnouncementChangeRequest({
     requestedByUserId: 'user-1',

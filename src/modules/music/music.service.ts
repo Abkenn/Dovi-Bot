@@ -11,7 +11,7 @@ import {
 import type { MusicUpload } from './music.types';
 import { parseMusicCatalog } from './music-catalog.parser';
 import { isDigits } from './music-normalization';
-import { searchMusicPlays } from './music-search';
+import { findMusicGamePlays, searchMusicPlays } from './music-search';
 import {
   getMusicChannelHandle,
   refreshMusicStreamVideos,
@@ -95,18 +95,52 @@ export const importMusicUpload = async (upload: MusicUpload) => {
   return updated ? 'updated' : 'unchanged';
 };
 
-export const searchMusicCatalog = async (query: string) => {
-  const catalog = await findMusicCatalog();
-  if (!catalog) return null;
-  const best = searchMusicPlays(catalog.plays, query)[0];
-  if (!best) return [];
+type MusicSearchOptions = {
+  game: boolean;
+};
+
+const resolveMusicVideo = async (streamDate: string) => {
   const handle = getMusicChannelHandle();
   const cachedVideo = handle
-    ? await findMusicStreamVideo(handle, best.lastDate)
+    ? await findMusicStreamVideo(handle, streamDate)
     : null;
-  const video =
-    cachedVideo?.videoId && cachedVideo.title
-      ? { videoId: cachedVideo.videoId, title: cachedVideo.title }
-      : null;
+  return cachedVideo?.videoId && cachedVideo.title
+    ? { videoId: cachedVideo.videoId, title: cachedVideo.title }
+    : null;
+};
+
+export const searchMusicCatalog = async (
+  query: string,
+  options: MusicSearchOptions = { game: false },
+) => {
+  const catalog = await findMusicCatalog();
+  if (!catalog) return null;
+  if (options.game) {
+    const plays = findMusicGamePlays(catalog.plays, query);
+    return Promise.all(
+      plays.map(async (play) => ({
+        ...play,
+        video: await resolveMusicVideo(play.streamDate),
+      })),
+    );
+  }
+  const best = searchMusicPlays(catalog.plays, query)[0];
+  if (!best) return [];
+  const video = await resolveMusicVideo(best.lastDate);
   return [{ ...best, video }];
+};
+
+export const refreshStoredMusicCatalog = async () => {
+  const catalog = await findMusicCatalog();
+  if (!catalog) return false;
+  const plays = parseMusicCatalog(catalog.rawText);
+  return replaceMusicCatalog({
+    messageId: catalog.messageId,
+    attachmentId: catalog.attachmentId,
+    uploaderId: catalog.uploaderId,
+    filename: catalog.filename,
+    rawText: catalog.rawText,
+    plays,
+    allowCurrentSource: true,
+  });
 };

@@ -10,6 +10,7 @@ export type MusicPlay = {
   offsetSeconds: number;
   title: string;
   originalTitle: string;
+  game: string | null;
 };
 
 export type MusicSearchResult = {
@@ -18,9 +19,21 @@ export type MusicSearchResult = {
   lastStream: string;
   lastDate: string;
   lastOffsetSeconds: number;
+  game?: string | null;
+};
+
+export type MusicGameResult = Omit<
+  Pick<MusicPlay, 'title' | 'game' | 'streamDate' | 'offsetSeconds'>,
+  'game'
+> & {
+  game: string;
 };
 
 export type MusicSearchView = MusicSearchResult & {
+  video: { videoId: string; title: string } | null;
+};
+
+export type MusicGameSearchView = MusicGameResult & {
   video: { videoId: string; title: string } | null;
 };
 

@@ -5,7 +5,11 @@ export const findMusicCatalog = () =>
   prisma.musicCatalog.findUnique({
     where: { id: 'primary' },
     select: {
-      updatedAt: true,
+      messageId: true,
+      attachmentId: true,
+      uploaderId: true,
+      filename: true,
+      rawText: true,
       plays: {
         select: {
           streamLabel: true,
@@ -13,6 +17,7 @@ export const findMusicCatalog = () =>
           offsetSeconds: true,
           title: true,
           originalTitle: true,
+          game: true,
           musicMode: true,
         },
       },

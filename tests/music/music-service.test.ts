@@ -25,6 +25,7 @@ vi.mock('../../src/modules/music/music-youtube', () => ({
 
 import {
   importMusicUpload,
+  refreshStoredMusicCatalog,
   searchMusicCatalog,
 } from '../../src/modules/music/music.service';
 
@@ -171,5 +172,28 @@ describe('music uploads and search', () => {
     expect(await importMusicUpload(upload)).toBe('updated');
     expect(dependencies.save).toHaveBeenCalledTimes(1);
     expect(log).toHaveBeenCalled();
+  });
+
+  it('reparses only the exact stored source for a game metadata refresh', async () => {
+    dependencies.read.mockResolvedValue({
+      messageId: 123n,
+      attachmentId: 456n,
+      uploaderId: upload.authorId,
+      filename: upload.filename,
+      rawText: text,
+      plays: [],
+    });
+    dependencies.save.mockResolvedValue(true);
+    expect(await refreshStoredMusicCatalog()).toBe(true);
+    expect(dependencies.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: 123n,
+        attachmentId: 456n,
+        allowCurrentSource: true,
+        plays: [expect.objectContaining({ game: null })],
+      }),
+    );
+    dependencies.read.mockResolvedValue(null);
+    expect(await refreshStoredMusicCatalog()).toBe(false);
   });
 });

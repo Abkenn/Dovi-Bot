@@ -63,6 +63,13 @@ describe('music command and listener wiring', () => {
       name: 'music-search',
       options: [
         { name: 'query', required: true, min_length: 2, max_length: 100 },
+        {
+          name: 'game',
+          choices: [
+            { name: 'Yes', value: 'yes' },
+            { name: 'No', value: 'no' },
+          ],
+        },
       ],
     });
     expect(registerChatInputCommand).toHaveBeenCalledWith(
@@ -85,7 +92,7 @@ describe('music command and listener wiring', () => {
     );
     expect(dependencies.guard).toHaveBeenCalled();
     expect(interaction.options.getString).toHaveBeenCalledWith('query', true);
-    expect(dependencies.search).toHaveBeenCalledWith('song');
+    expect(dependencies.search).toHaveBeenCalledWith('song', { game: false });
     expect(dependencies.editReply).toHaveBeenCalledWith({
       content: 'No matching tracks found. Try part of the song or game name.',
     });
