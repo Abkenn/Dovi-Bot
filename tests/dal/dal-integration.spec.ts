@@ -273,6 +273,81 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
+test('new music snapshots apply old-stream corrections and new streams without retaining obsolete rows', async () => {
+  const { parseMusicCatalog } = await import(
+    '../../src/modules/music/music-catalog.parser'
+  );
+  const { replaceMusicCatalog } = await import(
+    '../../src/data/transactions/music-catalog'
+  );
+  const { findMusicCatalog } = await import(
+    '../../src/data/queries/music-catalog'
+  );
+  const original = `Per Stream :
+Stream 1 : 01/01/26
+1:00 Wrong Name - Old Game
+Per Game :
+Old Game :
+Stream 1 : 1:00 Wrong Name`;
+  const correction = `Per Stream :
+Stream 1 : 01/01/26
+1:30 Corrected Song - New Game
+Stream 2 : 02/01/26
+2:00 New Song - New Game
+Per Game :
+New Game :
+Stream 1 : 1:30 Corrected Song
+Stream 2 : 2:00 New Song`;
+  const source = {
+    messageId: 100n,
+    attachmentId: 101n,
+    uploaderId: '632504207441920011',
+    filename: '32.0.txt',
+  };
+  expect(
+    await replaceMusicCatalog({
+      ...source,
+      rawText: original,
+      plays: parseMusicCatalog(original),
+    }),
+  ).toBe(true);
+  expect(
+    await replaceMusicCatalog({
+      ...source,
+      messageId: 200n,
+      attachmentId: 201n,
+      rawText: correction,
+      plays: parseMusicCatalog(correction),
+    }),
+  ).toBe(true);
+  const catalog = await findMusicCatalog();
+  expect(catalog?.rawText).toBe(correction);
+  expect(catalog?.plays).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        title: 'Corrected Song',
+        game: 'New Game',
+        offsetSeconds: 90,
+      }),
+      expect.objectContaining({
+        title: 'New Song',
+        game: 'New Game',
+        offsetSeconds: 120,
+      }),
+    ]),
+  );
+  expect(catalog?.plays).toHaveLength(2);
+  expect(
+    await replaceMusicCatalog({
+      ...source,
+      rawText: original,
+      plays: parseMusicCatalog(original),
+      allowCurrentSource: true,
+    }),
+  ).toBe(false);
+  expect((await findMusicCatalog())?.plays).toHaveLength(2);
+});
+
 test('music catalog replacements are atomic, ordered, idempotent and preserve source data', async () => {
   const { replaceMusicCatalog } = await import(
     '../../src/data/transactions/music-catalog'

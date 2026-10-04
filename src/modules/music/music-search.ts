@@ -3,86 +3,32 @@ import type {
   MusicPlay,
   MusicSearchResult,
 } from './music.types';
+import { musicGameInitials, resolveMusicGames } from './music-games';
 import { isDigits, musicIdentity, musicWords } from './music-normalization';
-
-const similarity = (left: string, right: string) => {
-  if (left === right) return 1;
-  if (left.length < 4) return 0;
-  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-  for (let row = 1; row <= left.length; row++) {
-    const current = [row];
-    for (let column = 1; column <= right.length; column++) {
-      current.push(
-        Math.min(
-          (current[column - 1] ?? 0) + 1,
-          (previous[column] ?? 0) + 1,
-          (previous[column - 1] ?? 0) +
-            Number(left[row - 1] !== right[column - 1]),
-        ),
-      );
-    }
-    previous = current;
-  }
-  return (
-    1 - (previous[right.length] ?? 0) / Math.max(left.length, right.length)
-  );
-};
-
-const scoreMusicText = (text: string, terms: string[]) => {
-  const words = musicWords(text);
-  const scores = terms.map((term) =>
-    Math.max(0, ...words.map((word) => similarity(term, word))),
-  );
-  return scores.every((value) => value >= 0.7)
-    ? scores.reduce((sum, value) => sum + value, 0) / terms.length
-    : 0;
-};
-
-const gameInitialism = (game: string) =>
-  musicWords(game)
-    .map((word) => word[0] ?? '')
-    .join('');
-
-const gameSequelNumbers = (play: MusicPlay) => {
-  if (!play.game) return [];
-  const initialism = gameInitialism(play.game);
-  if (!initialism) return [];
-  return musicWords(`${play.title} ${play.originalTitle}`).flatMap((word) => {
-    if (!word.startsWith(initialism)) return [];
-    const number = word.slice(initialism.length);
-    return isDigits(number) ? [number] : [];
-  });
-};
-
-const resolvedGameTitle = (play: MusicPlay & { game: string }) => {
-  const numbers = [...new Set(gameSequelNumbers(play))];
-  const number = numbers[0];
-  return numbers.length === 1 && number ? `${play.game} ${number}` : play.game;
-};
-
-const gameAliasTerms = (play: MusicPlay) => {
-  if (!play.game) return [];
-  const gameWords = musicWords(play.game);
-  return gameSequelNumbers(play).flatMap((number) => [...gameWords, number]);
-};
-
-const musicSearchText = (play: MusicPlay) =>
-  `${play.title} ${play.originalTitle} ${play.game ?? ''} ${gameAliasTerms(play).join(' ')}`;
+import { scoreMusicText } from './music-text-match';
+import { musicTrackSearchText } from './music-tracks';
 
 const gameSearchTerms = (plays: MusicPlay[], query: string) => {
   const gamesByInitialism = new Map<string, Set<string>>();
   for (const play of plays) {
     if (!play.game) continue;
-    const initialism = gameInitialism(play.game);
+    const words = musicWords(play.game);
+    const last = words.at(-1) ?? '';
+    const family = isDigits(last) ? words.slice(0, -1) : words;
+    const initialism = musicGameInitials(family.join(' '));
     if (!initialism) continue;
     const games = gamesByInitialism.get(initialism) ?? new Set<string>();
-    games.add(play.game);
+    games.add(family.join(' '));
     gamesByInitialism.set(initialism, games);
   }
   return musicWords(query.slice(0, 100)).flatMap((term) => {
-    const games = gamesByInitialism.get(term);
+    const digitStart = [...term].findIndex((character) => isDigits(character));
+    const initials = digitStart < 0 ? term : term.slice(0, digitStart);
+    const number = digitStart < 0 ? '' : term.slice(digitStart);
+    const games = gamesByInitialism.get(initials);
     if (!games || games.size !== 1) return [term];
-    return musicWords([...games][0] ?? term);
+    const family = musicWords([...games][0] ?? term);
+    return isDigits(number) ? [...family, number] : family;
   });
 };
 
@@ -96,9 +42,9 @@ export const searchMusicPlays = (
     string,
     { result: MusicSearchResult; score: number }
   >();
-  for (const play of plays) {
-    const key = musicIdentity(play.title);
-    const score = scoreMusicText(musicSearchText(play), terms);
+  for (const play of resolveMusicGames(plays)) {
+    const key = `${musicIdentity(play.game ?? '')}:${musicIdentity(play.title)}`;
+    const score = scoreMusicText(musicTrackSearchText(play), terms);
     const group = groups.get(key);
     if (!group) {
       groups.set(key, {
@@ -143,15 +89,13 @@ export const findMusicGamePlays = (
   plays: MusicPlay[],
   query: string,
 ): MusicGameResult[] => {
-  const terms = gameSearchTerms(plays, query);
+  const reconciled = resolveMusicGames(plays);
+  const terms = gameSearchTerms(reconciled, query);
   if (!terms.length) return [];
-  const gamePlays = plays.filter(
+  const gamePlays = reconciled.filter(
     (play): play is MusicPlay & { game: string } => play.game !== null,
   );
-  const resolvedPlays = gamePlays.map((play) => ({
-    ...play,
-    game: resolvedGameTitle(play),
-  }));
+  const resolvedPlays = gamePlays;
   const series = new Set(
     resolvedPlays.flatMap((play) => {
       const words = musicWords(play.game);
@@ -161,7 +105,17 @@ export const findMusicGamePlays = (
   );
   const numberedPlays = resolvedPlays.map((play) => {
     const words = musicWords(play.game);
-    const unnumberedSeries = series.has(words.join(' '));
+    const originalWords = musicWords(play.originalTitle);
+    const originalEndsInGame = words.every(
+      (word, index) =>
+        originalWords[originalWords.length - words.length + index] === word,
+    );
+    const originalStartsInGame =
+      play.originalTitle.toLowerCase().startsWith(play.game.toLowerCase()) &&
+      play.originalTitle.slice(play.game.length).trimStart().startsWith('-');
+    const explicitlyUnnumbered = originalEndsInGame || originalStartsInGame;
+    const unnumberedSeries =
+      series.has(words.join(' ')) && explicitlyUnnumbered;
     return unnumberedSeries ? { ...play, game: `${play.game} 1` } : play;
   });
   const queryNumbers = terms.filter(isDigits);
@@ -169,7 +123,7 @@ export const findMusicGamePlays = (
     const gameNumbers = musicWords(play.game).filter(isDigits);
     if (!queryNumbers.every((number) => gameNumbers.includes(number)))
       return [];
-    const score = scoreMusicText(musicSearchText(play), terms);
+    const score = scoreMusicText(play.game, terms);
     return score > 0 ? [{ play, score }] : [];
   });
   const bestScore = Math.max(0, ...scoredPlays.map(({ score }) => score));

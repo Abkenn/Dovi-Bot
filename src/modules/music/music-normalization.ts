@@ -10,7 +10,6 @@ const ROMAN_NUMERALS: Record<string, string> = {
   vii: '7',
   viii: '8',
   ix: '9',
-  x: '10',
 };
 
 export const musicWords = (text: string): string[] => {

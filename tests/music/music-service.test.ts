@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MusicPlay } from '../../src/modules/music/music.types';
 
 const dependencies = vi.hoisted(() => ({
   save: vi.fn(),
@@ -57,6 +58,36 @@ describe('music uploads and search', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('keeps song and game searches separate after importing a collector upload', async () => {
+    dependencies.fetch.mockResolvedValue(
+      new Response(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Majula - Dark Souls II
+Per Game :
+Dark Souls :
+Stream 1 : 1:00 Majula - DS2`),
+    );
+    dependencies.save.mockImplementationOnce(
+      async (input: { plays: MusicPlay[] }) => {
+        dependencies.read.mockResolvedValue({ plays: input.plays });
+        return true;
+      },
+    );
+    expect(await importMusicUpload(upload)).toBe('updated');
+    expect(await searchMusicCatalog('dark souls')).toEqual([]);
+    expect(dependencies.video).not.toHaveBeenCalled();
+    expect(await searchMusicCatalog('majula')).toEqual([
+      expect.objectContaining({
+        title: 'Majula - DS2',
+        count: 1,
+        game: 'Dark Souls 2',
+      }),
+    ]);
+    expect(await searchMusicCatalog('dark souls 2', { game: true })).toEqual([
+      expect.objectContaining({ title: 'Majula - DS2', game: 'Dark Souls 2' }),
+    ]);
   });
 
   it.each([

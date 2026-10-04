@@ -20,6 +20,186 @@ Death's Door :
 Stream 32 : 7:46 Avarice`;
 
 describe('music catalog', () => {
+  it('preserves songs named after their game without accepting a game label as a replacement song', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Undertale - Undertale
+2:00 Hollow Knight - Title Theme
+Per Game :
+Undertale :
+Stream 1 : 1:00 Undertale
+Hollow Knight :
+Stream 1 : 2:00 Hollow Knight - HK1`);
+    expect(searchMusicPlays(plays, 'undertale')).toHaveLength(1);
+    expect(plays[1]?.title).toBe('Hollow Knight - Title Theme');
+    expect(searchMusicPlays(plays, 'hollow knight')).toEqual([]);
+    expect(searchMusicPlays(plays, 'title theme')).toHaveLength(1);
+  });
+  it('searches song names without matching game metadata or abbreviations', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Majula - Dark Souls II
+2:00 Sir Alonne - DS2
+Per Game :
+Dark Souls :
+Stream 1 : 1:00 Majula - DS2
+Stream 1 : 2:00 Sir Alonne - DS2`);
+    expect(searchMusicPlays(plays, 'dark souls')).toEqual([]);
+    expect(searchMusicPlays(plays, 'ds2')).toEqual([]);
+    expect(searchMusicPlays(plays, 'majulla')[0]?.title).toBe('Majula - DS2');
+    expect(searchMusicPlays(plays, 'sir alone')[0]?.title).toBe(
+      'Sir Alonne - DS2',
+    );
+    expect(findMusicGamePlays(plays, 'dark souls 2')).toHaveLength(2);
+  });
+
+  it('does not turn parenthesized soundtrack numbers into sequels', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Example Game - (143) Cat Theme
+Per Game :
+Example Game :
+Stream 1 : 1:00 Cat Theme`);
+    expect(plays[0]?.game).toBe('Example Game');
+    expect(findMusicGamePlays(plays, 'example game 143')).toEqual([]);
+  });
+
+  it('preserves letter X titles while accepting Roman ten with independent numeric evidence', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Xenoblade Chronicles X - Theme X
+2:00 Mega Man X - Central Highway
+3:00 Final Fantasy X - To Zanarkand
+Per Game :
+Xenoblade Chronicles :
+Stream 1 : 1:00 Theme X - XC X
+Mega Man :
+Stream 1 : 2:00 Central Highway - MMX1
+Final Fantasy :
+Stream 1 : 3:00 To Zanarkand - FF10`);
+    expect(plays.map((play) => play.game)).toEqual([
+      'Xenoblade Chronicles X',
+      'Mega Man X 1',
+      'Final Fantasy 10',
+    ]);
+    expect(findMusicGamePlays(plays, 'xenoblade chronicles 10')).toEqual([]);
+    expect(findMusicGamePlays(plays, 'mega man 10')).toEqual([]);
+    expect(findMusicGamePlays(plays, 'final fantasy 10')).toHaveLength(1);
+  });
+
+  it('does not combine identically named songs from different games', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 First Game - Main Theme
+2:00 Second Game - Main Theme
+Per Game :
+First Game :
+Stream 1 : 1:00 Main Theme
+Second Game :
+Stream 1 : 2:00 Main Theme`);
+    expect(
+      searchMusicPlays(plays, 'main theme').map((result) => ({
+        game: result.game,
+        count: result.count,
+      })),
+    ).toEqual([
+      { game: 'First Game', count: 1 },
+      { game: 'Second Game', count: 1 },
+    ]);
+  });
+
+  it('infers missing index entries from explicit game names already in the catalog', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Minecraft - Pigstep
+2:00 Minecraft - Creator
+Per Game :
+Minecraft :
+Stream 1 : 1:00 Pigstep`);
+    expect(plays[1]?.game).toBe('Minecraft');
+    expect(searchMusicPlays(plays, 'minecraft')).toEqual([]);
+    expect(searchMusicPlays(plays, 'creator')).toHaveLength(1);
+  });
+
+  it('does not overwrite a song with an unrelated index row at the same timestamp', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Monster Hunter Frontier G5 - Inagami Battle Theme
+Per Game :
+Epic Battle Fantasy :
+Stream 1 : 1:00 Blade & Switch - EBF5
+Monster Hunter :
+Stream 1 : 1:00 Inagami Battle Theme - MHF`);
+    expect(plays[0]).toMatchObject({
+      title: 'Inagami Battle Theme - MHF',
+      game: 'Monster Hunter',
+    });
+    expect(searchMusicPlays(plays, 'blade switch')).toEqual([]);
+    expect(searchMusicPlays(plays, 'inagami')[0]?.title).toBe(
+      'Inagami Battle Theme - MHF',
+    );
+  });
+
+  it('prioritizes explicit original game names over a conflicting index and rejects ambiguous initials', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Contact With You - ARMORED CORE VI
+2:00 Naval Blockade - Ace Combat 5
+3:00 Cries of Coral - Armored Core VI
+4:00 Armored Core Tribute - Ace Combat 5
+Per Game :
+Ace Combat :
+Stream 1 : 1:00 Contact With You - AC6
+Stream 1 : 2:00 Naval Blockade - AC5
+Stream 1 : 4:00 Armored Core Tribute - AC5
+Armored Core :
+Stream 1 : 3:00 Cries of Coral - AC6`);
+    expect(
+      findMusicGamePlays(plays, 'armored core').map((play) => play.title),
+    ).toEqual(['Contact With You - AC6', 'Cries of Coral - AC6']);
+    expect(
+      findMusicGamePlays(plays, 'ace combat').map((play) => play.title),
+    ).toEqual(['Naval Blockade - AC5', 'Armored Core Tribute - AC5']);
+    expect(
+      findMusicGamePlays(plays, 'armored core 6').every(
+        (play) => play.game === 'Armored Core 6',
+      ),
+    ).toBe(true);
+    expect(findMusicGamePlays(plays, 'ac6')).toEqual([]);
+    expect(plays[0]?.game).toBe('Armored Core 6');
+    expect(searchMusicPlays(plays, 'contact with you')[0]?.game).toBe(
+      'Armored Core 6',
+    );
+  });
+
+  it('keeps ambiguous numbered initials contextual and does not invent sequel numbers', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Track - AC6
+2:00 Second Track - AC6
+Per Game :
+Ace Combat :
+Stream 1 : 1:00 Track - AC6
+Armored Core :
+Stream 1 : 2:00 Second Track - AC6`);
+    expect(findMusicGamePlays(plays, 'ac6')).toEqual([]);
+    expect(findMusicGamePlays(plays, 'ace combat 6')).toEqual([]);
+    expect(findMusicGamePlays(plays, 'armored core 6')).toEqual([]);
+  });
+
+  it('does not call a named franchise entry game one merely because its index lacks a number', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Theme - Armored Core: Verdict Day
+2:00 Theme Two - Armored Core VI
+Per Game :
+Armored Core :
+Stream 1 : 1:00 Theme - Verdict Day
+Stream 1 : 2:00 Theme Two - AC6`);
+    expect(findMusicGamePlays(plays, 'armored core 1')).toEqual([]);
+    expect(findMusicGamePlays(plays, 'armored core')).toHaveLength(2);
+  });
+
   it('treats unnumbered franchise entries as game one while keeping sequels separate', () => {
     const plays = parseMusicCatalog(`Per Stream :
 Stream 1 : 01/01/26
