@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildMusicSearchReply } from '../../src/modules/music/music.discord';
 import { parseMusicCatalog } from '../../src/modules/music/music-catalog.parser';
 import {
   findMusicGamePlays,
@@ -131,8 +132,15 @@ Dark Souls :
 Stream 1 : 1:00 Majula - DS2
 Stream 1 : 2:00 Firelink - DS3`);
     expect(findMusicGamePlays(plays, 'dark souls II')).toEqual([
-      expect.objectContaining({ title: 'Majula - DS2', game: 'Dark Souls' }),
+      expect.objectContaining({ title: 'Majula - DS2', game: 'Dark Souls 2' }),
     ]);
+    const results = findMusicGamePlays(plays, 'dark souls 2');
+    expect(
+      buildMusicSearchReply(
+        results.map((result) => ({ ...result, video: null })),
+        { game: true },
+      ).content.split('\n')[0],
+    ).toBe('**Dark Souls 2**');
   });
 
   it('resolves unique game initials without guessing ambiguous ones', () => {

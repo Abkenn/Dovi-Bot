@@ -43,16 +43,27 @@ const gameInitialism = (game: string) =>
     .map((word) => word[0] ?? '')
     .join('');
 
-const gameAliasTerms = (play: MusicPlay) => {
+const gameSequelNumbers = (play: MusicPlay) => {
   if (!play.game) return [];
-  const gameWords = musicWords(play.game);
   const initialism = gameInitialism(play.game);
   if (!initialism) return [];
   return musicWords(`${play.title} ${play.originalTitle}`).flatMap((word) => {
     if (!word.startsWith(initialism)) return [];
-    const sequelNumber = word.slice(initialism.length);
-    return isDigits(sequelNumber) ? [...gameWords, sequelNumber] : [];
+    const number = word.slice(initialism.length);
+    return isDigits(number) ? [number] : [];
   });
+};
+
+const resolvedGameTitle = (play: MusicPlay & { game: string }) => {
+  const numbers = [...new Set(gameSequelNumbers(play))];
+  const number = numbers[0];
+  return numbers.length === 1 && number ? `${play.game} ${number}` : play.game;
+};
+
+const gameAliasTerms = (play: MusicPlay) => {
+  if (!play.game) return [];
+  const gameWords = musicWords(play.game);
+  return gameSequelNumbers(play).flatMap((number) => [...gameWords, number]);
 };
 
 const musicSearchText = (play: MusicPlay) =>
@@ -145,7 +156,7 @@ export const findMusicGamePlays = (
   if (bestScore === 0) return [];
   return scoredPlays
     .filter(({ score }) => score === bestScore)
-    .map(({ play }) => play)
+    .map(({ play }) => ({ ...play, game: resolvedGameTitle(play) }))
     .sort(
       (left, right) =>
         left.streamDate.localeCompare(right.streamDate) ||
