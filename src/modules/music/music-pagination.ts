@@ -79,15 +79,16 @@ export const handleMusicSearchPage = async (interaction: ButtonInteraction) => {
       flags: MessageFlags.Ephemeral,
     });
   }
-  if (
-    interaction.user.id !== session.requesterUserId ||
-    interaction.guildId !== session.guildId
-  ) {
+  if (interaction.guildId !== session.guildId) {
     return interaction.reply({
       content:
-        'Only the person who searched can change these pages. Run /music-search for your own list.',
+        'These music search buttons belong to another server. Run /music-search here for a new list.',
       flags: MessageFlags.Ephemeral,
     });
   }
-  return interaction.update(buildPage(session, id, page));
+  const reply = buildPage(session, id, page);
+  if (interaction.message.flags.has(MessageFlags.Ephemeral)) {
+    return interaction.update(reply);
+  }
+  return interaction.reply({ ...reply, flags: MessageFlags.Ephemeral });
 };

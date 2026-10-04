@@ -51,7 +51,6 @@ export type MusicUpload = {
 
 export type MusicPaginationInput = {
   pages: string[];
-  requesterUserId: string;
   guildId: string | null;
 };
 

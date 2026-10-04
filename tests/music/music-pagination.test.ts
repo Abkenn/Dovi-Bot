@@ -1,4 +1,4 @@
-import { MessageFlags } from 'discord.js';
+import { MessageFlags, MessageFlagsBitField } from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildMusicGamePages } from '../../src/modules/music/music.discord';
 import {
@@ -74,7 +74,6 @@ describe('music search pagination', () => {
     const pages = buildMusicGamePages(results);
     let reply = createMusicSearchPagination({
       pages,
-      requesterUserId: 'owner',
       guildId: 'staging',
     });
     expect(button(reply, 0).disabled).toBe(true);
@@ -83,10 +82,14 @@ describe('music search pagination', () => {
       customId: button(reply, 1).custom_id,
       user: { id: 'owner' },
       guildId: 'staging',
+      message: { flags: new MessageFlagsBitField() },
       update: vi.fn(async (next: typeof reply) => {
         reply = next;
       }),
-      reply: vi.fn(),
+      reply: vi.fn(async (next: typeof reply) => {
+        reply = next;
+        interaction.message.flags.add(MessageFlags.Ephemeral);
+      }),
     };
     for (let page = 1; page < pages.length; page++) {
       interaction.customId = button(reply, 1).custom_id;
@@ -99,12 +102,16 @@ describe('music search pagination', () => {
     await handleMusicSearchPage(interaction as never);
     expect(reply.content).toBe(pages[pages.length - 2]);
     expect(reply.allowedMentions).toEqual({ parse: [] });
+    expect(interaction.reply).toHaveBeenCalledTimes(1);
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({ flags: MessageFlags.Ephemeral }),
+    );
+    expect(interaction.update).toHaveBeenCalledTimes(pages.length - 1);
   });
 
   it('omits controls when all tracks fit on one page', () => {
     const reply = createMusicSearchPagination({
       pages: buildMusicGamePages(results.slice(0, 1)),
-      requesterUserId: 'owner',
       guildId: 'staging',
     });
     expect(reply.components).toEqual([]);
@@ -115,7 +122,6 @@ describe('music search pagination', () => {
     vi.useFakeTimers();
     const input = {
       pages: ['first', 'last'],
-      requesterUserId: 'owner',
       guildId: 'staging',
     };
     const first = createMusicSearchPagination(input);
@@ -125,6 +131,7 @@ describe('music search pagination', () => {
       customId: button(first, 1).custom_id,
       user: { id: 'owner' },
       guildId: 'staging',
+      message: { flags: new MessageFlagsBitField(MessageFlags.Ephemeral) },
       update: vi.fn(),
       reply: vi.fn(),
     };
@@ -140,26 +147,102 @@ describe('music search pagination', () => {
     );
   });
 
-  it('rejects other users and guilds without changing the public message', async () => {
+  it('lets any user open an independent private page without changing the public message', async () => {
     const reply = createMusicSearchPagination({
       pages: buildMusicGamePages(results),
-      requesterUserId: 'owner',
       guildId: 'staging',
     });
     const interaction = {
       customId: button(reply, 1).custom_id,
       user: { id: 'other' },
       guildId: 'staging',
+      message: { flags: new MessageFlagsBitField() },
       update: vi.fn(),
       reply: vi.fn(),
     };
     await handleMusicSearchPage(interaction as never);
     expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({ flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({
+        content: expect.stringContaining('Page 2 of'),
+        flags: MessageFlags.Ephemeral,
+      }),
     );
     interaction.user.id = 'owner';
+    await handleMusicSearchPage(interaction as never);
+    expect(interaction.reply).toHaveBeenCalledTimes(2);
+    expect(interaction.reply.mock.calls[0]).toEqual(
+      interaction.reply.mock.calls[1],
+    );
+    expect(interaction.update).not.toHaveBeenCalled();
+  });
+
+  it('keeps private navigation independent between users and does not send a new reply on each click', async () => {
+    const publicReply = createMusicSearchPagination({
+      pages: ['first', 'second', 'third'],
+      guildId: 'prod',
+    });
+    const alice = {
+      customId: button(publicReply, 1).custom_id,
+      user: { id: 'alice' },
+      guildId: 'prod',
+      message: { flags: new MessageFlagsBitField() },
+      update: vi.fn(),
+      reply: vi.fn(),
+    };
+    const bob = {
+      ...alice,
+      user: { id: 'bob' },
+      update: vi.fn(),
+      reply: vi.fn(),
+    };
+    await handleMusicSearchPage(alice as never);
+    await handleMusicSearchPage(bob as never);
+    const alicePage = alice.reply.mock.calls[0]?.[0];
+    const bobPage = bob.reply.mock.calls[0]?.[0];
+    const alicePrivate = {
+      ...alice,
+      customId: button(alicePage, 1).custom_id,
+      message: { flags: new MessageFlagsBitField(MessageFlags.Ephemeral) },
+    };
+    await handleMusicSearchPage(alicePrivate as never);
+    expect(alice.update).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'third' }),
+    );
+    expect(bobPage.content).toBe('second');
+    expect(bob.update).not.toHaveBeenCalled();
+    const bobPrivate = {
+      ...bob,
+      customId: button(bobPage, 0).custom_id,
+      message: { flags: new MessageFlagsBitField(MessageFlags.Ephemeral) },
+    };
+    await handleMusicSearchPage(bobPrivate as never);
+    expect(bob.update).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'first' }),
+    );
+    expect(alice.reply).toHaveBeenCalledTimes(1);
+    expect(bob.reply).toHaveBeenCalledTimes(1);
+    expect(publicReply.content).toBe('first');
+  });
+
+  it('rejects buttons used in a different guild', async () => {
+    const reply = createMusicSearchPagination({
+      pages: ['first', 'second'],
+      guildId: 'staging',
+    });
+    const interaction = {
+      customId: button(reply, 1).custom_id,
+      guildId: 'staging',
+      update: vi.fn(),
+      reply: vi.fn(),
+    };
     interaction.guildId = 'prod';
     await handleMusicSearchPage(interaction as never);
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('another server'),
+        flags: MessageFlags.Ephemeral,
+      }),
+    );
     expect(interaction.update).not.toHaveBeenCalled();
   });
 
@@ -167,7 +250,6 @@ describe('music search pagination', () => {
     vi.useFakeTimers();
     const reply = createMusicSearchPagination({
       pages: buildMusicGamePages(results),
-      requesterUserId: 'owner',
       guildId: 'staging',
     });
     const interaction = {

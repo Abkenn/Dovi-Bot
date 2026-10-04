@@ -1,4 +1,9 @@
-import { Collection, SlashCommandBuilder } from 'discord.js';
+import {
+  Collection,
+  MessageFlags,
+  MessageFlagsBitField,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
@@ -28,7 +33,7 @@ vi.mock('../../src/config/discord-command-metadata', () => ({
     MUSIC_SEARCH: {
       name: 'music-search',
       description: 'Find music',
-      guildIds: ['staging'],
+      guildIds: ['staging', 'prod'],
     },
   },
 }));
@@ -51,7 +56,7 @@ describe('music command and listener wiring', () => {
     dependencies.upload.mockResolvedValue('updated');
   });
 
-  it('registers a required bounded query on staging', () => {
+  it('registers a required bounded query on staging and prod', () => {
     const builder = new SlashCommandBuilder();
     const registerChatInputCommand = vi.fn(
       (configure: (builder: SlashCommandBuilder) => unknown) =>
@@ -77,14 +82,14 @@ describe('music command and listener wiring', () => {
     });
     expect(registerChatInputCommand).toHaveBeenCalledWith(
       expect.any(Function),
-      { guildIds: ['staging'] },
+      { guildIds: ['staging', 'prod'] },
     );
   });
 
   it('runs the guard and returns the search reply through the command runner', async () => {
     dependencies.runner.mockImplementation(async (options) => {
       await options.beforeDefer();
-      return options.run.staging({ editReply: dependencies.editReply });
+      return options.run({ editReply: dependencies.editReply });
     });
     const interaction = {
       options: { getString: vi.fn().mockReturnValue('song') },
@@ -103,7 +108,7 @@ describe('music command and listener wiring', () => {
 
   it('renders game search results through the game reply path', async () => {
     dependencies.runner.mockImplementation(async (options) =>
-      options.run.staging({ editReply: dependencies.editReply }),
+      options.run({ editReply: dependencies.editReply }),
     );
     dependencies.search.mockResolvedValue([
       {
@@ -138,7 +143,13 @@ describe('music command and listener wiring', () => {
     );
   });
 
-  it('wires staging pagination through the command and button listener while retaining the prod reply', async () => {
+  it.each([
+    'staging',
+    'prod',
+  ])('wires independent private pagination through the command and button listener on %s', async (guildId) => {
+    dependencies.runner.mockImplementation(async (options) =>
+      options.run({ editReply: dependencies.editReply }),
+    );
     dependencies.search.mockResolvedValue(
       Array.from({ length: 44 }, (_, index) => ({
         title: `Track ${index}`,
@@ -151,7 +162,7 @@ describe('music command and listener wiring', () => {
     );
     const interaction = {
       user: { id: 'owner' },
-      guildId: 'staging',
+      guildId,
       options: {
         getString: (name: string) => (name === 'query' ? 'touhou' : 'yes'),
       },
@@ -168,35 +179,27 @@ describe('music command and listener wiring', () => {
       isButton: () => true,
       customId,
       user: interaction.user,
-      guildId: 'staging',
+      guildId,
+      message: { flags: new MessageFlagsBitField() },
       update: vi.fn(),
       reply: vi.fn(),
     };
     await listener.run(click as never);
-    expect(click.update).toHaveBeenCalledWith(
+    expect(click.reply).toHaveBeenCalledWith(
       expect.objectContaining({
         content: expect.stringContaining('Page 2 of'),
+        flags: MessageFlags.Ephemeral,
       }),
     );
     await listener.run({ isButton: () => false } as never);
     await listener.run({ ...click, customId: 'unrelated' } as never);
-    expect(click.update).toHaveBeenCalledTimes(1);
-    click.update.mockRejectedValueOnce(new Error('Discord unavailable'));
+    expect(click.update).not.toHaveBeenCalled();
+    expect(click.reply).toHaveBeenCalledTimes(1);
+    click.reply.mockRejectedValueOnce(new Error('Discord unavailable'));
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     await listener.run(click as never);
     expect(log).toHaveBeenCalled();
     log.mockRestore();
-    dependencies.editReply.mockClear();
-    dependencies.runner.mockImplementation(async (options) =>
-      options.run.prod({ editReply: dependencies.editReply }),
-    );
-    await MusicSearchCommand.prototype.chatInputRun.call(
-      { name: 'music-search' },
-      interaction as never,
-    );
-    expect(
-      dependencies.editReply.mock.calls[0]?.[0].components,
-    ).toBeUndefined();
   });
 
   it('processes attachment-only messages, isolates failures and ignores bots and DMs', async () => {
