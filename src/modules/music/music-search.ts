@@ -148,7 +148,27 @@ export const findMusicGamePlays = (
   const gamePlays = plays.filter(
     (play): play is MusicPlay & { game: string } => play.game !== null,
   );
-  const scoredPlays = gamePlays.flatMap((play) => {
+  const resolvedPlays = gamePlays.map((play) => ({
+    ...play,
+    game: resolvedGameTitle(play),
+  }));
+  const series = new Set(
+    resolvedPlays.flatMap((play) => {
+      const words = musicWords(play.game);
+      const last = words.at(-1) ?? '';
+      return isDigits(last) ? [words.slice(0, -1).join(' ')] : [];
+    }),
+  );
+  const numberedPlays = resolvedPlays.map((play) => {
+    const words = musicWords(play.game);
+    const unnumberedSeries = series.has(words.join(' '));
+    return unnumberedSeries ? { ...play, game: `${play.game} 1` } : play;
+  });
+  const queryNumbers = terms.filter(isDigits);
+  const scoredPlays = numberedPlays.flatMap((play) => {
+    const gameNumbers = musicWords(play.game).filter(isDigits);
+    if (!queryNumbers.every((number) => gameNumbers.includes(number)))
+      return [];
     const score = scoreMusicText(musicSearchText(play), terms);
     return score > 0 ? [{ play, score }] : [];
   });
@@ -156,7 +176,7 @@ export const findMusicGamePlays = (
   if (bestScore === 0) return [];
   return scoredPlays
     .filter(({ score }) => score === bestScore)
-    .map(({ play }) => ({ ...play, game: resolvedGameTitle(play) }))
+    .map(({ play }) => play)
     .sort(
       (left, right) =>
         left.streamDate.localeCompare(right.streamDate) ||

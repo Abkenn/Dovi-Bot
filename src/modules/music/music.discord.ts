@@ -16,13 +16,28 @@ const compactTitle = (title: string) => {
   return plain.length > 54 ? `${plain.slice(0, 54)}…` : plain;
 };
 
-const buildGameLine = (result: MusicGameSearchView) => {
+const buildGameLine = (result: MusicGameSearchView, compact = false) => {
   const time = timestamp(result.offsetSeconds);
   const fallback = `${result.streamDate} · ${time} (link unavailable)`;
+  if (compact && result.video) {
+    const url = `https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.offsetSeconds}s`;
+    return `[${escapeMarkdown(result.title)}](<${url}>) (${time})`;
+  }
   const link = result.video
     ? `[${compactTitle(result.video.title)} · ${time}](<https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.offsetSeconds}s>)`
     : fallback;
   return `${escapeMarkdown(result.title)} · ${link}`;
+};
+
+const gameHeading = (results: MusicGameSearchView[]) => {
+  const games = [...new Set(results.map((result) => result.game))];
+  const first = games[0] ?? '';
+  if (games.length === 1) return first;
+  const words = first.split(' ');
+  const common = words.filter((word, index) =>
+    games.every((game) => game.split(' ')[index] === word),
+  );
+  return common.length ? `${common.join(' ')} Series` : 'Matching games';
 };
 
 export const buildMusicSearchReply = (
@@ -38,11 +53,32 @@ export const buildMusicSearchReply = (
     };
   if (options.game) {
     const gameResults = results as MusicGameSearchView[];
-    const game = gameResults[0]?.game;
+    const game = gameHeading(gameResults);
     if (!game) return { content: 'No matching game tracks found.' };
-    const lines = gameResults.map(buildGameLine);
-    const content = `**${escapeMarkdown(game)}**\n${lines.join('\n')}\n*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`;
-    return { content: content.slice(0, 2_000), allowedMentions: { parse: [] } };
+    const heading = `**${escapeMarkdown(game)}**`;
+    const credit = `*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`;
+    const fullLines = gameResults.map((result) => buildGameLine(result));
+    const fullContent = `${heading}\n${fullLines.join('\n')}\n${credit}`;
+    const compact = gameResults.length > 5 || fullContent.length > 1_000;
+    const lines = compact
+      ? gameResults.map((result) => buildGameLine(result, true))
+      : fullLines;
+    const visible: string[] = [];
+    for (const line of lines) {
+      const remaining = lines.length - visible.length - 1;
+      const note = remaining
+        ? `\n${remaining} more tracks. Search a specific game to narrow the results.`
+        : '';
+      const candidate = `${heading}\n${[...visible, line].join('\n')}${note}\n${credit}`;
+      if (candidate.length > 2_000) break;
+      visible.push(line);
+    }
+    const remaining = lines.length - visible.length;
+    const note = remaining
+      ? `\n${remaining} more tracks. Search a specific game to narrow the results.`
+      : '';
+    const content = `${heading}\n${visible.join('\n')}${note}\n${credit}`;
+    return { content, allowedMentions: { parse: [] } };
   }
   const trackResult = result as MusicSearchView;
   const matchTitle = escapeMarkdown(

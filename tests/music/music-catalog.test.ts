@@ -20,6 +20,36 @@ Death's Door :
 Stream 32 : 7:46 Avarice`;
 
 describe('music catalog', () => {
+  it('treats unnumbered franchise entries as game one while keeping sequels separate', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Original Theme - Ace Combat
+2:00 Sequel Theme - AC2
+Per Game :
+Ace Combat :
+Stream 1 : 1:00 Original Theme - Ace Combat
+Stream 1 : 2:00 Sequel Theme - AC2`);
+    expect(findMusicGamePlays(plays, 'ace combat 1')).toEqual([
+      expect.objectContaining({
+        title: 'Original Theme - Ace Combat',
+        game: 'Ace Combat 1',
+      }),
+    ]);
+    expect(findMusicGamePlays(plays, 'ace combat 2')).toEqual([
+      expect.objectContaining({
+        title: 'Sequel Theme - AC2',
+        game: 'Ace Combat 2',
+      }),
+    ]);
+    const results = findMusicGamePlays(plays, 'ace combat');
+    expect(
+      buildMusicSearchReply(
+        results.map((result) => ({ ...result, video: null })),
+        { game: true },
+      ).content.split('\n')[0],
+    ).toBe('**Ace Combat Series**');
+  });
+
   it('retains stream modes, varied year formats and the latest song timestamp', () => {
     const plays = parseMusicCatalog(`Per Stream :
 Stream 32 (D) : 25/09/02026
