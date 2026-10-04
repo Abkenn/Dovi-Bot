@@ -1,8 +1,33 @@
 import type {
   MusicGameResult,
+  MusicGameTrackResult,
   MusicPlay,
   MusicSearchResult,
 } from './music.types';
+import { musicTrackDisplayTitle } from './music-tracks';
+
+export const groupMusicGameTracks = (
+  plays: MusicGameResult[],
+): MusicGameTrackResult[] => {
+  const groups = new Map<string, MusicGameTrackResult>();
+  for (const play of plays) {
+    const title = musicTrackDisplayTitle(play.title, play.game);
+    const key = `${musicIdentity(play.game)}:${musicIdentity(title)}`;
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, { ...play, count: 1 });
+      continue;
+    }
+    const later = play.streamDate > existing.streamDate;
+    const laterTimestamp =
+      play.streamDate === existing.streamDate &&
+      play.offsetSeconds > existing.offsetSeconds;
+    const latest = later || laterTimestamp ? play : existing;
+    groups.set(key, { ...latest, count: existing.count + 1 });
+  }
+  return [...groups.values()];
+};
+
 import { musicGameInitials, resolveMusicGames } from './music-games';
 import { isDigits, musicIdentity, musicWords } from './music-normalization';
 import { scoreMusicText } from './music-text-match';

@@ -3,6 +3,7 @@ import { buildMusicSearchReply } from '../../src/modules/music/music.discord';
 import { parseMusicCatalog } from '../../src/modules/music/music-catalog.parser';
 import {
   findMusicGamePlays,
+  groupMusicGameTracks,
   searchMusicPlays,
 } from '../../src/modules/music/music-search';
 
@@ -234,7 +235,10 @@ Stream 1 : 2:00 Sequel Theme - AC2`);
     const results = findMusicGamePlays(plays, 'ace combat');
     expect(
       buildMusicSearchReply(
-        results.map((result) => ({ ...result, video: null })),
+        groupMusicGameTracks(results).map((result) => ({
+          ...result,
+          video: null,
+        })),
         { game: true },
       ).content.split('\n')[0],
     ).toBe('**Ace Combat Series**');
@@ -357,7 +361,10 @@ Stream 1 : 2:00 Firelink - DS3`);
     const results = findMusicGamePlays(plays, 'dark souls 2');
     expect(
       buildMusicSearchReply(
-        results.map((result) => ({ ...result, video: null })),
+        groupMusicGameTracks(results).map((result) => ({
+          ...result,
+          video: null,
+        })),
         { game: true },
       ).content.split('\n')[0],
     ).toBe('**Dark Souls 2**');

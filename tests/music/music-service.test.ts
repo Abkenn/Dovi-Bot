@@ -42,6 +42,51 @@ const upload = {
 const text = 'Per Stream :\nStream 32 : 25/09/26\n1:00 Song - Game';
 
 describe('music uploads and search', () => {
+  it('groups repeated game tracks with counts and links only their latest occurrence', async () => {
+    dependencies.read.mockResolvedValue({
+      plays: [
+        {
+          title: "World's End Valentine",
+          originalTitle: "OMORI - World's End Valentine",
+          game: 'OMORI',
+          streamLabel: 'Stream 1',
+          streamDate: '2026-01-01',
+          offsetSeconds: 60,
+          musicMode: 'UNKNOWN',
+        },
+        {
+          title: "World's End Valentine",
+          originalTitle: "OMORI - World's End Valentine",
+          game: 'OMORI',
+          streamLabel: 'Stream 2',
+          streamDate: '2026-02-01',
+          offsetSeconds: 120,
+          musicMode: 'UNKNOWN',
+        },
+        {
+          title: "WORLD'S END VALENTINE",
+          originalTitle: "OMORI - World's End Valentine",
+          game: 'OMORI',
+          streamLabel: 'Stream 2',
+          streamDate: '2026-02-01',
+          offsetSeconds: 180,
+          musicMode: 'UNKNOWN',
+        },
+      ],
+    });
+    expect(await searchMusicCatalog('omori', { game: true })).toEqual([
+      expect.objectContaining({
+        count: 3,
+        title: "WORLD'S END VALENTINE",
+        streamDate: '2026-02-01',
+        offsetSeconds: 180,
+      }),
+    ]);
+    expect(dependencies.video).toHaveBeenCalledExactlyOnceWith(
+      '@primary',
+      '2026-02-01',
+    );
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('fetch', dependencies.fetch);

@@ -17,9 +17,10 @@ const buildGameLine = (result: MusicGameSearchView) => {
   const title = escapeMarkdown(
     musicTrackDisplayTitle(result.title, result.game),
   );
-  if (!result.video) return `* ${title} (${time}; link unavailable)`;
+  const count = `heard ${result.count} ${result.count === 1 ? 'time' : 'times'}`;
+  if (!result.video) return `* ${title} (${time}; link unavailable) · ${count}`;
   const url = `https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.offsetSeconds}s`;
-  return `* [${title}](<${url}>) (${time})`;
+  return `* [${title}](<${url}>) (${time}) · ${count}`;
 };
 
 const gameHeading = (results: MusicGameSearchView[], query = '') => {

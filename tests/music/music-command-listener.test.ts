@@ -109,6 +109,7 @@ describe('music command and listener wiring', () => {
         title: 'Majula - DS2',
         game: 'Dark Souls 2',
         streamDate: '2026-09-11',
+        count: 1,
         offsetSeconds: 60,
         video: { videoId: 'first', title: 'Music stream' },
       },

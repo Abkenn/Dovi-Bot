@@ -11,7 +11,11 @@ import {
 import type { MusicUpload } from './music.types';
 import { parseMusicCatalog } from './music-catalog.parser';
 import { isDigits } from './music-normalization';
-import { findMusicGamePlays, searchMusicPlays } from './music-search';
+import {
+  findMusicGamePlays,
+  groupMusicGameTracks,
+  searchMusicPlays,
+} from './music-search';
 import {
   getMusicChannelHandle,
   refreshMusicStreamVideos,
@@ -116,7 +120,9 @@ export const searchMusicCatalog = async (
   const catalog = await findMusicCatalog();
   if (!catalog) return null;
   if (options.game) {
-    const plays = findMusicGamePlays(catalog.plays, query);
+    const plays = groupMusicGameTracks(
+      findMusicGamePlays(catalog.plays, query),
+    );
     return Promise.all(
       plays.map(async (play) => ({
         ...play,

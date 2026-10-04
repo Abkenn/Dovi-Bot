@@ -3,6 +3,24 @@ import { describe, expect, it } from 'vitest';
 import { buildMusicSearchReply } from '../../src/modules/music/music.discord';
 
 describe('music search response', () => {
+  it('shows the total play count beside the latest timestamp link', () => {
+    const reply = buildMusicSearchReply(
+      [
+        {
+          title: "World's End Valentine",
+          game: 'OMORI',
+          count: 5,
+          streamDate: '2026-09-11',
+          offsetSeconds: 1220,
+          video: { videoId: 'latest', title: 'Music stream' },
+        },
+      ],
+      { game: true },
+    );
+    expect(reply.content).toContain(
+      "* [World's End Valentine](<https://www.youtube.com/watch?v=latest&t=1220s>) (20:20) · heard 5 times",
+    );
+  });
   it('expands ambiguous initials using the resolved game and keeps numbered query headings specific', () => {
     const reply = buildMusicSearchReply(
       [
@@ -10,6 +28,7 @@ describe('music search response', () => {
           title: 'Cries of Coral - AC6',
           game: 'Armored Core 6',
           streamDate: '2026-09-11',
+          count: 1,
           offsetSeconds: 60,
           video: null,
         },
@@ -17,6 +36,7 @@ describe('music search response', () => {
           title: 'Naval Blockade - AC5',
           game: 'Ace Combat 5',
           streamDate: '2026-09-11',
+          count: 1,
           offsetSeconds: 120,
           video: null,
         },
@@ -36,6 +56,7 @@ describe('music search response', () => {
             title: 'Majula - DS2',
             game: 'Dark Souls 2',
             streamDate: '2026-09-11',
+            count: 1,
             offsetSeconds: 60,
             video: null,
           },
@@ -51,6 +72,7 @@ describe('music search response', () => {
           title: 'The Only Thing They Fear Is You - D1',
           game: 'Doom 1',
           streamDate: '2026-09-11',
+          count: 1,
           offsetSeconds: 60,
           video: { videoId: 'first', title: 'Video title' },
         },
@@ -70,6 +92,7 @@ describe('music search response', () => {
       title: `Naval Blockade ${index} - AC5${count === 5 ? ' extra long track name'.repeat(4) : ''}`,
       game: 'Ace Combat 5',
       streamDate: '2026-09-11',
+      count: 1,
       offsetSeconds: 3325,
       video: { videoId: 'abcdefghijk', title: 'Video title '.repeat(5) },
     }));
@@ -86,6 +109,7 @@ describe('music search response', () => {
       title: `Track ${index} - AC${index % 2 === 0 ? 5 : 7}`,
       game: `Ace Combat ${index % 2 === 0 ? 5 : 7}`,
       streamDate: '2026-09-11',
+      count: 1,
       offsetSeconds: index * 60,
       video: {
         videoId: 'abcdefghijk',
@@ -153,6 +177,7 @@ describe('music search response', () => {
             title: 'Majula',
             game: 'Dark Souls II',
             streamDate: '2026-09-11',
+            count: 1,
             offsetSeconds: 60,
             video: {
               videoId: 'first',
@@ -164,6 +189,7 @@ describe('music search response', () => {
             title: 'Longing',
             game: 'Dark Souls II',
             streamDate: '2026-09-11',
+            count: 1,
             offsetSeconds: 120,
             video: { videoId: 'first', title: 'Music stream' },
           },
@@ -172,7 +198,7 @@ describe('music search response', () => {
       ),
     ).toEqual({
       content:
-        '**Dark Souls II**\n* [Majula](<https://www.youtube.com/watch?v=first&t=60s>) (1:00)\n* [Longing](<https://www.youtube.com/watch?v=first&t=120s>) (2:00)\n*Data collected by <@632504207441920011>.*',
+        '**Dark Souls II**\n* [Majula](<https://www.youtube.com/watch?v=first&t=60s>) (1:00) · heard 1 time\n* [Longing](<https://www.youtube.com/watch?v=first&t=120s>) (2:00) · heard 1 time\n*Data collected by <@632504207441920011>.*',
       allowedMentions: { parse: [] },
     });
   });

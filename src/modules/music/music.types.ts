@@ -33,7 +33,9 @@ export type MusicSearchView = MusicSearchResult & {
   video: { videoId: string; title: string } | null;
 };
 
-export type MusicGameSearchView = MusicGameResult & {
+export type MusicGameTrackResult = MusicGameResult & { count: number };
+
+export type MusicGameSearchView = MusicGameTrackResult & {
   video: { videoId: string; title: string } | null;
 };
 
