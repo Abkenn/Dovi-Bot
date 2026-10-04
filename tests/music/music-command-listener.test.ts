@@ -65,9 +65,11 @@ describe('music command and listener wiring', () => {
         { name: 'query', required: true, min_length: 2, max_length: 100 },
         {
           name: 'game',
+          description:
+            'Yes: list tracks from a game. No or omitted: search a track name.',
           choices: [
-            { name: 'Yes', value: 'yes' },
-            { name: 'No', value: 'no' },
+            { name: 'Yes: search games and list tracks', value: 'yes' },
+            { name: 'No: search a track name (default)', value: 'no' },
           ],
         },
       ],
@@ -105,7 +107,7 @@ describe('music command and listener wiring', () => {
     dependencies.search.mockResolvedValue([
       {
         title: 'Majula - DS2',
-        game: 'Dark Souls',
+        game: 'Dark Souls 2',
         streamDate: '2026-09-11',
         offsetSeconds: 60,
         video: { videoId: 'first', title: 'Music stream' },
@@ -127,7 +129,7 @@ describe('music command and listener wiring', () => {
     });
     expect(dependencies.editReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining('Majula - DS2'),
+        content: expect.stringContaining('* [Majula - Dark Souls 2]'),
       }),
     );
   });

@@ -3,6 +3,66 @@ import { describe, expect, it } from 'vitest';
 import { buildMusicSearchReply } from '../../src/modules/music/music.discord';
 
 describe('music search response', () => {
+  it('expands ambiguous initials using the resolved game and keeps numbered query headings specific', () => {
+    const reply = buildMusicSearchReply(
+      [
+        {
+          title: 'Cries of Coral - AC6',
+          game: 'Armored Core 6',
+          streamDate: '2026-09-11',
+          offsetSeconds: 60,
+          video: null,
+        },
+        {
+          title: 'Naval Blockade - AC5',
+          game: 'Ace Combat 5',
+          streamDate: '2026-09-11',
+          offsetSeconds: 120,
+          video: null,
+        },
+      ],
+      { game: true },
+    );
+    expect(reply.content).toContain(
+      '* Cries of Coral - Armored Core 6 (1:00; link unavailable)',
+    );
+    expect(reply.content).toContain(
+      '* Naval Blockade - Ace Combat 5 (2:00; link unavailable)',
+    );
+    expect(
+      buildMusicSearchReply(
+        [
+          {
+            title: 'Majula - DS2',
+            game: 'Dark Souls 2',
+            streamDate: '2026-09-11',
+            offsetSeconds: 60,
+            video: null,
+          },
+        ],
+        { game: true, query: 'dark souls 2' },
+      ).content.split('\n')[0],
+    ).toBe('**Dark Souls 2**');
+  });
+  it('uses a series heading and full game names for a broad query even with one catalog game', () => {
+    const reply = buildMusicSearchReply(
+      [
+        {
+          title: 'The Only Thing They Fear Is You - D1',
+          game: 'Doom 1',
+          streamDate: '2026-09-11',
+          offsetSeconds: 60,
+          video: { videoId: 'first', title: 'Video title' },
+        },
+      ],
+      { game: true, query: 'doom' },
+    );
+    expect(reply.content.split('\n')[0]).toBe('**Doom Series**');
+    expect(reply.content).toContain(
+      '* [The Only Thing They Fear Is You - Doom](<https://www.youtube.com/watch?v=first&t=60s>) (1:00)',
+    );
+    expect(reply.content).not.toContain('Video title');
+  });
   it.each([
     6, 5,
   ])('uses track hyperlinks for crowded replies with %i tracks', (count) => {
@@ -15,7 +75,7 @@ describe('music search response', () => {
     }));
     const reply = buildMusicSearchReply(results, { game: true });
     expect(reply.content).toContain(
-      `[${results[0]?.title}](<https://www.youtube.com/watch?v=abcdefghijk&t=3325s>) (55:25)`,
+      `* [Naval Blockade 0 - Ace Combat 5${count === 5 ? ' extra long track name'.repeat(4) : ''}](<https://www.youtube.com/watch?v=abcdefghijk&t=3325s>) (55:25)`,
     );
     expect(reply.content).not.toContain('Video title');
     expect(reply.content).not.toContain('more tracks');
@@ -112,7 +172,7 @@ describe('music search response', () => {
       ),
     ).toEqual({
       content:
-        '**Dark Souls II**\nMajula · [A very long Davi Vasc music stream title that needs sh… · 1:00](<https://www.youtube.com/watch?v=first&t=60s>)\nLonging · [Music stream · 2:00](<https://www.youtube.com/watch?v=first&t=120s>)\n*Data collected by <@632504207441920011>.*',
+        '**Dark Souls II**\n* [Majula](<https://www.youtube.com/watch?v=first&t=60s>) (1:00)\n* [Longing](<https://www.youtube.com/watch?v=first&t=120s>) (2:00)\n*Data collected by <@632504207441920011>.*',
       allowedMentions: { parse: [] },
     });
   });

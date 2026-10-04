@@ -20,6 +20,16 @@ Death's Door :
 Stream 32 : 7:46 Avarice`;
 
 describe('music catalog', () => {
+  it('does not fuzzy-match short queries to unrelated songs', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Save Room - Resident Evil Remake
+Per Game :
+Resident Evil :
+Stream 1 : 1:00 Save Room - RE1 Remake`);
+    expect(searchMusicPlays(plays, 'doom')).toEqual([]);
+    expect(searchMusicPlays(plays, 'room')).toHaveLength(1);
+  });
   it('preserves songs named after their game without accepting a game label as a replacement song', () => {
     const plays = parseMusicCatalog(`Per Stream :
 Stream 1 : 01/01/26

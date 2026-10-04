@@ -1,6 +1,9 @@
 import { escapeMarkdown } from 'discord.js';
 import { MUSIC_CATALOG_UPLOADER_ID } from './music.config';
 import type { MusicGameSearchView, MusicSearchView } from './music.types';
+import { musicGameFamily } from './music-games';
+import { isDigits, musicIdentity, musicWords } from './music-normalization';
+import { musicTrackDisplayTitle } from './music-tracks';
 
 const timestamp = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -9,29 +12,28 @@ const timestamp = (seconds: number) => {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${tail}`;
 };
 
-const compactTitle = (title: string) => {
-  const plain = escapeMarkdown(
-    title.replaceAll('\n', ' ').replaceAll('\r', ' '),
-  );
-  return plain.length > 54 ? `${plain.slice(0, 54)}…` : plain;
-};
-
-const buildGameLine = (result: MusicGameSearchView, compact = false) => {
+const buildGameLine = (result: MusicGameSearchView) => {
   const time = timestamp(result.offsetSeconds);
-  const fallback = `${result.streamDate} · ${time} (link unavailable)`;
-  if (compact && result.video) {
-    const url = `https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.offsetSeconds}s`;
-    return `[${escapeMarkdown(result.title)}](<${url}>) (${time})`;
-  }
-  const link = result.video
-    ? `[${compactTitle(result.video.title)} · ${time}](<https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.offsetSeconds}s>)`
-    : fallback;
-  return `${escapeMarkdown(result.title)} · ${link}`;
+  const title = escapeMarkdown(
+    musicTrackDisplayTitle(result.title, result.game),
+  );
+  if (!result.video) return `* ${title} (${time}; link unavailable)`;
+  const url = `https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.offsetSeconds}s`;
+  return `* [${title}](<${url}>) (${time})`;
 };
 
-const gameHeading = (results: MusicGameSearchView[]) => {
+const gameHeading = (results: MusicGameSearchView[], query = '') => {
   const games = [...new Set(results.map((result) => result.game))];
   const first = games[0] ?? '';
+  const family = musicGameFamily(first);
+  const broadQuery = musicIdentity(query) === musicIdentity(family);
+  const numberedGame = musicWords(first).some(isDigits);
+  const sameFamily = games.every(
+    (game) =>
+      musicWords(game).slice(0, musicWords(family).length).join(' ') ===
+      musicWords(family).join(' '),
+  );
+  if (broadQuery && numberedGame && sameFamily) return `${family} Series`;
   if (games.length === 1) return first;
   const words = first.split(' ');
   const common = words.filter((word, index) =>
@@ -42,7 +44,7 @@ const gameHeading = (results: MusicGameSearchView[]) => {
 
 export const buildMusicSearchReply = (
   results: (MusicSearchView | MusicGameSearchView)[] | null,
-  options: { game: boolean } = { game: false },
+  options: { game: boolean; query?: string } = { game: false },
 ) => {
   if (!results)
     return { content: 'The music catalog has not been imported yet.' };
@@ -53,16 +55,11 @@ export const buildMusicSearchReply = (
     };
   if (options.game) {
     const gameResults = results as MusicGameSearchView[];
-    const game = gameHeading(gameResults);
+    const game = gameHeading(gameResults, options.query);
     if (!game) return { content: 'No matching game tracks found.' };
     const heading = `**${escapeMarkdown(game)}**`;
     const credit = `*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`;
-    const fullLines = gameResults.map((result) => buildGameLine(result));
-    const fullContent = `${heading}\n${fullLines.join('\n')}\n${credit}`;
-    const compact = gameResults.length > 5 || fullContent.length > 1_000;
-    const lines = compact
-      ? gameResults.map((result) => buildGameLine(result, true))
-      : fullLines;
+    const lines = gameResults.map(buildGameLine);
     const visible: string[] = [];
     for (const line of lines) {
       const remaining = lines.length - visible.length - 1;
@@ -82,7 +79,9 @@ export const buildMusicSearchReply = (
   }
   const trackResult = result as MusicSearchView;
   const matchTitle = escapeMarkdown(
-    trackResult.title.replaceAll('\n', ' ').replaceAll('\r', ' '),
+    musicTrackDisplayTitle(trackResult.title, trackResult.game)
+      .replaceAll('\n', ' ')
+      .replaceAll('\r', ' '),
   ).slice(0, 400);
   const time = timestamp(trackResult.lastOffsetSeconds);
   let latest = `${escapeMarkdown(trackResult.lastStream).slice(0, 150)} · ${trackResult.lastDate} · ${time} (link unavailable)`;

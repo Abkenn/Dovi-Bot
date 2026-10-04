@@ -4,7 +4,7 @@ const cell = (row: number[], column: number) => row[column] ?? 0;
 
 const similarity = (left: string, right: string) => {
   if (left === right) return 1;
-  if (left.length < 4) return 0;
+  if (left.length <= 4) return 0;
   let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
   for (let row = 1; row <= left.length; row++) {
     const current = [row];

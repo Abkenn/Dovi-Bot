@@ -39,6 +39,28 @@ const withoutGame = (text: string, game: string | null) => {
 export const musicTrackSearchText = (play: MusicPlay) =>
   withoutGame(play.title, play.game);
 
+export const musicTrackDisplayTitle = (
+  title: string,
+  game: string | null | undefined,
+) => {
+  if (!game) return title;
+  const family = musicGameFamily(game);
+  const initials = musicGameInitials(family);
+  const fullName = musicWords(game).at(-1) === '1' ? family : game;
+  return title
+    .split(' - ')
+    .map((part, index) => {
+      if (index === 0) return part;
+      const firstWord = part.split(' ')[0] ?? '';
+      const alias = musicWords(firstWord).join('');
+      if (!alias.startsWith(initials)) return part;
+      const suffix = alias.slice(initials.length);
+      if (suffix && !isDigits(suffix)) return part;
+      return `${fullName}${part.slice(firstWord.length)}`;
+    })
+    .join(' - ');
+};
+
 export const musicIndexMatchesTrack = (
   play: MusicPlay,
   title: string,

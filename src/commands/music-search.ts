@@ -25,7 +25,9 @@ export class MusicSearchCommand extends Command {
           .addStringOption((option) =>
             option
               .setName('query')
-              .setDescription('Song or game name, approximate spelling is fine')
+              .setDescription(
+                'Track name by default; enter a game name when game is Yes',
+              )
               .setRequired(true)
               .setMinLength(2)
               .setMaxLength(100),
@@ -33,10 +35,12 @@ export class MusicSearchCommand extends Command {
           .addStringOption((option) =>
             option
               .setName('game')
-              .setDescription('Search matching games and show every track')
+              .setDescription(
+                'Yes: list tracks from a game. No or omitted: search a track name.',
+              )
               .addChoices(
-                { name: 'Yes', value: 'yes' },
-                { name: 'No', value: 'no' },
+                { name: 'Yes: search games and list tracks', value: 'yes' },
+                { name: 'No: search a track name (default)', value: 'no' },
               ),
           ),
       { guildIds: [...METADATA.guildIds] },
@@ -52,11 +56,9 @@ export class MusicSearchCommand extends Command {
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply }) => {
         const game = interaction.options.getString('game') === 'yes';
-        const results = await searchMusicCatalog(
-          interaction.options.getString('query', true),
-          { game },
-        );
-        return editReply(buildMusicSearchReply(results, { game }));
+        const query = interaction.options.getString('query', true);
+        const results = await searchMusicCatalog(query, { game });
+        return editReply(buildMusicSearchReply(results, { game, query }));
       },
     });
   }
