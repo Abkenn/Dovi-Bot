@@ -121,6 +121,45 @@ Stream 2 : 1:00 Firelink - Artist`);
     ]);
   });
 
+  it('uses sequel aliases in track labels when the source groups a franchise together', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Majula - DS2
+2:00 Firelink - DS3
+Per Game :
+Dark Souls :
+Stream 1 : 1:00 Majula - DS2
+Stream 1 : 2:00 Firelink - DS3`);
+    expect(findMusicGamePlays(plays, 'dark souls II')).toEqual([
+      expect.objectContaining({ title: 'Majula - DS2', game: 'Dark Souls' }),
+    ]);
+  });
+
+  it('resolves unique game initials without guessing ambiguous ones', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 Limgrave - Artist
+2:00 Venice - Artist
+3:00 Brotherhood - Artist
+4:00 Rubicon - Artist
+Per Game :
+Elden Ring :
+Stream 1 : 1:00 Limgrave - Artist
+Assassin's Creed 2 :
+Stream 1 : 2:00 Venice - Artist
+Ace Combat 2 :
+Stream 1 : 3:00 Brotherhood - Artist
+Armored Core 2 :
+Stream 1 : 4:00 Rubicon - Artist`);
+    expect(findMusicGamePlays(plays, 'er')).toEqual([
+      expect.objectContaining({
+        title: 'Limgrave - Artist',
+        game: 'Elden Ring',
+      }),
+    ]);
+    expect(findMusicGamePlays(plays, 'ac2')).toEqual([]);
+  });
+
   it('supports leading and trailing timestamps, parentheses, accents and reversed title order', () => {
     const plays = parseMusicCatalog(`Per Stream :
 Stream 1 : 01/10/21

@@ -3,7 +3,7 @@ import type {
   MusicPlay,
   MusicSearchResult,
 } from './music.types';
-import { musicIdentity, musicWords } from './music-normalization';
+import { isDigits, musicIdentity, musicWords } from './music-normalization';
 
 const similarity = (left: string, right: string) => {
   if (left === right) return 1;
@@ -38,6 +38,43 @@ const scoreMusicText = (text: string, terms: string[]) => {
     : 0;
 };
 
+const gameInitialism = (game: string) =>
+  musicWords(game)
+    .map((word) => word[0] ?? '')
+    .join('');
+
+const gameAliasTerms = (play: MusicPlay) => {
+  if (!play.game) return [];
+  const gameWords = musicWords(play.game);
+  const initialism = gameInitialism(play.game);
+  if (!initialism) return [];
+  return musicWords(`${play.title} ${play.originalTitle}`).flatMap((word) => {
+    if (!word.startsWith(initialism)) return [];
+    const sequelNumber = word.slice(initialism.length);
+    return isDigits(sequelNumber) ? [...gameWords, sequelNumber] : [];
+  });
+};
+
+const musicSearchText = (play: MusicPlay) =>
+  `${play.title} ${play.originalTitle} ${play.game ?? ''} ${gameAliasTerms(play).join(' ')}`;
+
+const gameSearchTerms = (plays: MusicPlay[], query: string) => {
+  const gamesByInitialism = new Map<string, Set<string>>();
+  for (const play of plays) {
+    if (!play.game) continue;
+    const initialism = gameInitialism(play.game);
+    if (!initialism) continue;
+    const games = gamesByInitialism.get(initialism) ?? new Set<string>();
+    games.add(play.game);
+    gamesByInitialism.set(initialism, games);
+  }
+  return musicWords(query.slice(0, 100)).flatMap((term) => {
+    const games = gamesByInitialism.get(term);
+    if (!games || games.size !== 1) return [term];
+    return musicWords([...games][0] ?? term);
+  });
+};
+
 export const searchMusicPlays = (
   plays: MusicPlay[],
   query: string,
@@ -50,10 +87,7 @@ export const searchMusicPlays = (
   >();
   for (const play of plays) {
     const key = musicIdentity(play.title);
-    const score = scoreMusicText(
-      `${play.title} ${play.originalTitle} ${play.game ?? ''}`,
-      terms,
-    );
+    const score = scoreMusicText(musicSearchText(play), terms);
     const group = groups.get(key);
     if (!group) {
       groups.set(key, {
@@ -98,25 +132,20 @@ export const findMusicGamePlays = (
   plays: MusicPlay[],
   query: string,
 ): MusicGameResult[] => {
-  const terms = musicWords(query.slice(0, 100));
+  const terms = gameSearchTerms(plays, query);
   if (!terms.length) return [];
-  const gameScores = new Map<string, number>();
-  for (const play of plays) {
-    if (!play.game || gameScores.has(play.game)) continue;
-    gameScores.set(play.game, scoreMusicText(play.game, terms));
-  }
-  const bestScore = Math.max(0, ...gameScores.values());
-  if (bestScore === 0) return [];
-  const matchingGames = new Set(
-    [...gameScores].flatMap(([game, score]) =>
-      score === bestScore ? [game] : [],
-    ),
+  const gamePlays = plays.filter(
+    (play): play is MusicPlay & { game: string } => play.game !== null,
   );
-  return plays
-    .filter(
-      (play): play is MusicPlay & { game: string } =>
-        play.game !== null && matchingGames.has(play.game),
-    )
+  const scoredPlays = gamePlays.flatMap((play) => {
+    const score = scoreMusicText(musicSearchText(play), terms);
+    return score > 0 ? [{ play, score }] : [];
+  });
+  const bestScore = Math.max(0, ...scoredPlays.map(({ score }) => score));
+  if (bestScore === 0) return [];
+  return scoredPlays
+    .filter(({ score }) => score === bestScore)
+    .map(({ play }) => play)
     .sort(
       (left, right) =>
         left.streamDate.localeCompare(right.streamDate) ||
