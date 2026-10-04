@@ -12,10 +12,28 @@ const timestamp = (seconds: number) => {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${tail}`;
 };
 
+const trackLabel = (title: string, game: string | null | undefined) => {
+  const normalizedTitle = Array.from(
+    musicTrackDisplayTitle(title, game),
+    (character) => (character.trim() ? character : ' '),
+  )
+    .join('')
+    .trim();
+  const lowerTitle = normalizedTitle.toLowerCase();
+  const urlStarts = ['https://', 'http://', 'www.']
+    .map((urlStart) => lowerTitle.indexOf(urlStart))
+    .filter((index) => index >= 0);
+  const firstUrl = Math.min(...urlStarts, normalizedTitle.length);
+  let label = normalizedTitle.slice(0, firstUrl).trimEnd();
+  while ('-:([{<'.includes(label.at(-1) ?? '\0'))
+    label = label.slice(0, -1).trimEnd();
+  return label || 'Track title unavailable';
+};
+
 const buildGameLine = (result: MusicGameSearchView, titleLimit = Infinity) => {
   const time = timestamp(result.offsetSeconds);
   const title = escapeMarkdown(
-    musicTrackDisplayTitle(result.title, result.game).slice(0, titleLimit),
+    trackLabel(result.title, result.game).slice(0, titleLimit),
   );
   const count = `heard ${result.count} ${result.count === 1 ? 'time' : 'times'}`;
   if (!result.video) return `* ${title} (${time}; link unavailable) · ${count}`;
@@ -80,9 +98,7 @@ export const buildMusicSearchReply = (
   }
   const trackResult = result as MusicSearchView;
   const matchTitle = escapeMarkdown(
-    musicTrackDisplayTitle(trackResult.title, trackResult.game)
-      .replaceAll('\n', ' ')
-      .replaceAll('\r', ' '),
+    trackLabel(trackResult.title, trackResult.game),
   ).slice(0, 400);
   const time = timestamp(trackResult.lastOffsetSeconds);
   let latest = `${escapeMarkdown(trackResult.lastStream).slice(0, 150)} · ${trackResult.lastDate} · ${time} (link unavailable)`;

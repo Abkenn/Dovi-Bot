@@ -1,8 +1,84 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildMusicSearchReply } from '../../src/modules/music/music.discord';
+import {
+  buildMusicGamePages,
+  buildMusicSearchReply,
+} from '../../src/modules/music/music.discord';
 
 describe('music search response', () => {
+  it.each([
+    'https://youtu.be/ofeCOBSAWRQ',
+    '<https://youtu.be/ofeCOBSAWRQ>',
+    '(https://www.youtube.com/watch?v=ofeCOBSAWRQ)',
+  ])('removes catalog source URLs from track labels without losing the timestamped stream link: %s', (sourceUrl) => {
+    const result = {
+      title: `Oriental Sky of Scarlet Perception - TH10.5 SWR  ${sourceUrl}`,
+      game: 'Touhou Series',
+      count: 1,
+      streamDate: '2026-09-11',
+      offsetSeconds: 5756,
+      video: { videoId: '8DZ9PgcyZTs', title: 'Music stream' },
+    };
+    const expectedLine =
+      '* [Oriental Sky of Scarlet Perception - TH10.5 SWR](<https://www.youtube.com/watch?v=8DZ9PgcyZTs&t=5756s>) (1:35:56) · heard 1 time';
+    expect(buildMusicGamePages([result])[0]).toContain(expectedLine);
+    expect(buildMusicSearchReply([result], { game: true }).content).toContain(
+      expectedLine,
+    );
+    expect(
+      buildMusicSearchReply([
+        {
+          title: result.title,
+          game: result.game,
+          count: 1,
+          lastStream: 'Stream 1',
+          lastDate: result.streamDate,
+          lastOffsetSeconds: result.offsetSeconds,
+          video: result.video,
+        },
+      ]).content,
+    ).toContain('**Oriental Sky of Scarlet Perception - TH10.5 SWR**');
+    expect(result.title).toContain(sourceUrl);
+  });
+
+  it.each([
+    ['Song - https://youtu.be/source', 'Song'],
+    ['Song(https://youtu.be/source)', 'Song'],
+    ['Songhttps://youtu.be/source', 'Song'],
+    ['Song [www.example.com/source]', 'Song'],
+    ['https://youtu.be/source', 'Track title unavailable'],
+  ])('keeps a safe, readable title when a source URL is appended as %s', (title, label) => {
+    const result = {
+      title,
+      game: 'Touhou Series',
+      count: 2,
+      streamDate: '2026-09-11',
+      offsetSeconds: 5756,
+      video: { videoId: 'abcdefghijk', title: 'Music stream' },
+    };
+    const expectedLine = `* [${label}](<https://www.youtube.com/watch?v=abcdefghijk&t=5756s>) (1:35:56) · heard 2 times`;
+    expect(buildMusicGamePages([result])[0]).toContain(expectedLine);
+    expect(buildMusicSearchReply([result], { game: true }).content).toContain(
+      expectedLine,
+    );
+  });
+
+  it('keeps punctuation and multiline titles readable while removing multiple source URLs', () => {
+    const reply = buildMusicSearchReply([
+      {
+        title:
+          'Song (Reprise)\nhttps://youtu.be/first\tPart II https://example.org/source',
+        game: null,
+        count: 1,
+        lastStream: 'Stream 1',
+        lastDate: '2026-09-11',
+        lastOffsetSeconds: 60,
+        video: null,
+      },
+    ]);
+    expect(reply.content).toContain('**Song (Reprise)**');
+    expect(reply.content).not.toContain('https://');
+  });
   it('shows the total play count beside the latest timestamp link', () => {
     const reply = buildMusicSearchReply(
       [

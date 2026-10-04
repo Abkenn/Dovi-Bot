@@ -152,7 +152,7 @@ describe('music command and listener wiring', () => {
     );
     dependencies.search.mockResolvedValue(
       Array.from({ length: 44 }, (_, index) => ({
-        title: `Track ${index}`,
+        title: `Track ${index} https://youtu.be/ofeCOBSAWRQ`,
         game: 'Touhou Series',
         count: 1,
         streamDate: '2026-09-11',
@@ -173,6 +173,9 @@ describe('music command and listener wiring', () => {
     );
     const first = dependencies.editReply.mock.calls[0]?.[0];
     expect(first.content).toContain('Page 1 of');
+    expect(first.content).not.toContain('https://youtu.be/ofeCOBSAWRQ');
+    expect(first.flags).toBe(MessageFlags.SuppressEmbeds);
+    expect(first.embeds).toEqual([]);
     const customId = first.components[0].components[1].toJSON().custom_id;
     const listener = new MusicSearchButtonsListener({} as never, {});
     const click = {
@@ -188,8 +191,11 @@ describe('music command and listener wiring', () => {
     expect(click.reply).toHaveBeenCalledWith(
       expect.objectContaining({
         content: expect.stringContaining('Page 2 of'),
-        flags: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,
       }),
+    );
+    expect(click.reply.mock.calls[0]?.[0].content).not.toContain(
+      'https://youtu.be/ofeCOBSAWRQ',
     );
     await listener.run({ isButton: () => false } as never);
     await listener.run({ ...click, customId: 'unrelated' } as never);

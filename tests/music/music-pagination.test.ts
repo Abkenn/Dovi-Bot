@@ -78,6 +78,8 @@ describe('music search pagination', () => {
     });
     expect(button(reply, 0).disabled).toBe(true);
     expect(button(reply, 1).disabled).toBe(false);
+    expect(reply.flags).toBe(MessageFlags.SuppressEmbeds);
+    expect(reply.embeds).toEqual([]);
     const interaction = {
       customId: button(reply, 1).custom_id,
       user: { id: 'owner' },
@@ -104,9 +106,17 @@ describe('music search pagination', () => {
     expect(reply.allowedMentions).toEqual({ parse: [] });
     expect(interaction.reply).toHaveBeenCalledTimes(1);
     expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({ flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({
+        flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,
+      }),
     );
     expect(interaction.update).toHaveBeenCalledTimes(pages.length - 1);
+    expect(interaction.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        flags: MessageFlags.SuppressEmbeds,
+        embeds: [],
+      }),
+    );
   });
 
   it('omits controls when all tracks fit on one page', () => {
@@ -164,7 +174,7 @@ describe('music search pagination', () => {
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({
         content: expect.stringContaining('Page 2 of'),
-        flags: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,
       }),
     );
     interaction.user.id = 'owner';

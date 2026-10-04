@@ -4,6 +4,7 @@ import {
   ButtonBuilder,
   type ButtonInteraction,
   ButtonStyle,
+  type MessageEditOptions,
   MessageFlags,
 } from 'discord.js';
 import type {
@@ -36,9 +37,11 @@ const buildPage = (
   );
   return {
     content: session.pages[safePage] ?? '',
+    embeds: [],
+    flags: MessageFlags.SuppressEmbeds,
     allowedMentions: { parse: [] },
     components: session.pages.length > 1 ? [buttons] : [],
-  };
+  } satisfies MessageEditOptions;
 };
 
 export const createMusicSearchPagination = (input: MusicPaginationInput) => {
@@ -90,5 +93,8 @@ export const handleMusicSearchPage = async (interaction: ButtonInteraction) => {
   if (interaction.message.flags.has(MessageFlags.Ephemeral)) {
     return interaction.update(reply);
   }
-  return interaction.reply({ ...reply, flags: MessageFlags.Ephemeral });
+  return interaction.reply({
+    ...reply,
+    flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,
+  });
 };
