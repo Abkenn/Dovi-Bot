@@ -7,6 +7,7 @@ import {
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { CommandExecutionStatus } from '../generated/prisma/client';
 import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
+import { trackInteractionComponentReply } from '../modules/discord/component-lifecycle';
 import {
   buildHelpMessage,
   HELP_TOPIC_SELECT_CUSTOM_ID,
@@ -62,52 +63,69 @@ export class HelpTopicSelectListener extends Listener {
   }
 
   public override async run(interaction: Interaction) {
-    const startedAt = Date.now();
+    try {
+      const startedAt = Date.now();
 
-    if (!interaction.isStringSelectMenu()) {
-      return;
-    }
+      if (!interaction.isStringSelectMenu()) {
+        return;
+      }
 
-    if (interaction.customId !== HELP_TOPIC_SELECT_CUSTOM_ID) {
-      return;
-    }
+      if (interaction.customId !== HELP_TOPIC_SELECT_CUSTOM_ID) {
+        return;
+      }
 
-    const guildId = interaction.guildId;
-    const topic = interaction.values[0];
-    const source = interaction.message.flags.has(MessageFlags.Ephemeral)
-      ? 'ephemeral'
-      : 'public';
+      const guildId = interaction.guildId;
+      const topic = interaction.values[0];
+      const source = interaction.message.flags.has(MessageFlags.Ephemeral)
+        ? 'ephemeral'
+        : 'public';
 
-    if (
-      !guildId ||
-      !isAllowedGuildForCommand(guildId, COMMAND_METADATA.HELP.guildIds) ||
-      !topic ||
-      !isHelpTopicValue(topic)
-    ) {
-      await logHelpTopicSelectSafely({
-        interaction,
-        status: CommandExecutionStatus.DENIED,
-        topic: topic ?? null,
-        source,
-        durationMs: Date.now() - startedAt,
-        note: 'Help topic select is no longer available.',
+      if (
+        !guildId ||
+        !isAllowedGuildForCommand(guildId, COMMAND_METADATA.HELP.guildIds) ||
+        !topic ||
+        !isHelpTopicValue(topic)
+      ) {
+        await logHelpTopicSelectSafely({
+          interaction,
+          status: CommandExecutionStatus.DENIED,
+          topic: topic ?? null,
+          source,
+          durationMs: Date.now() - startedAt,
+          note: 'Help topic select is no longer available.',
+        });
+
+        return interaction.reply({
+          content: 'This help menu is no longer available.',
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+
+      const helpMessage = buildHelpMessage({
+        canManageGuild:
+          interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ?? false,
+        guildId,
+        topic,
       });
 
-      return interaction.reply({
-        content: 'This help menu is no longer available.',
-        flags: MessageFlags.Ephemeral,
+      if (interaction.message.flags.has(MessageFlags.Ephemeral)) {
+        const response = await interaction.update(helpMessage);
+
+        await logHelpTopicSelectSafely({
+          interaction,
+          status: CommandExecutionStatus.SUCCESS,
+          topic,
+          source,
+          durationMs: Date.now() - startedAt,
+        });
+
+        return response;
+      }
+
+      const response = await interaction.reply({
+        components: helpMessage.components ?? [],
+        flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
       });
-    }
-
-    const helpMessage = buildHelpMessage({
-      canManageGuild:
-        interaction.memberPermissions?.has(ADMIN_COMMAND_PERMISSION) ?? false,
-      guildId,
-      topic,
-    });
-
-    if (interaction.message.flags.has(MessageFlags.Ephemeral)) {
-      const response = await interaction.update(helpMessage);
 
       await logHelpTopicSelectSafely({
         interaction,
@@ -118,21 +136,8 @@ export class HelpTopicSelectListener extends Listener {
       });
 
       return response;
+    } finally {
+      await trackInteractionComponentReply(interaction);
     }
-
-    const response = await interaction.reply({
-      components: helpMessage.components ?? [],
-      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
-    });
-
-    await logHelpTopicSelectSafely({
-      interaction,
-      status: CommandExecutionStatus.SUCCESS,
-      topic,
-      source,
-      durationMs: Date.now() - startedAt,
-    });
-
-    return response;
   }
 }

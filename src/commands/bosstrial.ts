@@ -12,6 +12,7 @@ import {
   createBossTrial,
 } from '../modules/boss-trials/poll/boss-trial.service';
 import { runCommand } from '../modules/command-runner/run-command';
+import { trackComponentMessage } from '../modules/discord/component-lifecycle';
 
 const METADATA = COMMAND_METADATA.BOSS_TRIAL;
 
@@ -107,12 +108,17 @@ export class BossTrialCommand extends Command {
           });
         }
 
-        await interaction.followUp({
+        const controls = await interaction.followUp({
           content: 'Your boss trial judge controls.',
-          components: [buildBossTrialRequesterControls(trial.id)],
+          components: [buildBossTrialRequesterControls(trial)],
           flags: MessageFlags.Ephemeral,
         });
 
+        trackComponentMessage(
+          controls,
+          (options) => interaction.webhook.editMessage(controls.id, options),
+          () => interaction.webhook.fetchMessage(controls.id),
+        );
         return message;
       },
     });

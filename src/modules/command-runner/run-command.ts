@@ -24,6 +24,7 @@ import {
   CommandTimeoutError,
 } from '../command-logging/command-timeout';
 import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
+import { trackComponentMessage } from '../discord/component-lifecycle';
 import { buildCommandErrorReplyOptions } from './command-error-reply';
 
 const getUserFacingErrorMessage = (error: unknown): string => {
@@ -308,6 +309,15 @@ export const runCommand = async <T, TPreflight = void>({
           }),
         );
         hasSentCommandResponse = true;
+        if (response?.flags?.has(MessageFlags.Ephemeral)) {
+          trackComponentMessage(
+            response,
+            (reply) => interaction.editReply(reply),
+            () => interaction.fetchReply(),
+          );
+        } else {
+          trackComponentMessage(response);
+        }
 
         return response;
       },

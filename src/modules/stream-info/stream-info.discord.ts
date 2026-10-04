@@ -16,6 +16,7 @@ import {
 } from '../../config/discord-command-categories';
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import { buildAnnouncementLinkMessage } from '../discord/announcement-link-message';
+import { registerComponentLifetime } from '../discord/component-lifecycle';
 import type {
   BuildAppliedStreamAnnouncementChangeInput,
   BuildStreamAnnouncementChangePreviewInput,
@@ -214,6 +215,10 @@ export const buildStreamReminderButton = (
     return null;
   }
 
+  registerComponentLifetime(
+    `${STREAM_REMINDER_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`,
+    occurrence.startAt.getTime(),
+  );
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`${STREAM_REMINDER_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`)
@@ -231,6 +236,10 @@ export const buildStreamAnnouncementReminderButton = (
     return null;
   }
 
+  registerComponentLifetime(
+    `${customIdPrefix}:${occurrence.dateKey}`,
+    occurrence.startAt.getTime(),
+  );
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`${customIdPrefix}:${occurrence.dateKey}`)
@@ -273,27 +282,37 @@ export const buildStreamAnnouncementReviewMessage = (
   userId: string,
   streamInfo: StreamInfoResult,
   occurrence: StreamOccurrence,
-): MessageCreateOptions => ({
-  content: `<@${userId}> Stream announcement is probably happening in about 15 minutes. This is the current version. Please review it and use \`/davi-update-announcement\` if anything needs changing. No response keeps automatic posting enabled.`,
-  embeds: [buildStreamInfoEmbed(streamInfo)],
-  components: [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId(
-          `${STREAM_ANNOUNCEMENT_AUTO_APPROVE_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`,
-        )
-        .setLabel('Approve Automatic Announcement')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId(
-          `${STREAM_ANNOUNCEMENT_AUTO_DECLINE_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`,
-        )
-        .setLabel('Decline Automatic Announcement')
-        .setStyle(ButtonStyle.Danger),
-    ),
-  ],
-  allowedMentions: { users: [userId] },
-});
+): MessageCreateOptions => {
+  for (const prefix of [
+    STREAM_ANNOUNCEMENT_AUTO_APPROVE_CUSTOM_ID_PREFIX,
+    STREAM_ANNOUNCEMENT_AUTO_DECLINE_CUSTOM_ID_PREFIX,
+  ])
+    registerComponentLifetime(
+      `${prefix}:${occurrence.dateKey}`,
+      occurrence.startAt.getTime(),
+    );
+  return {
+    content: `<@${userId}> Stream announcement is probably happening in about 15 minutes. This is the current version. Please review it and use \`/davi-update-announcement\` if anything needs changing. No response keeps automatic posting enabled.`,
+    embeds: [buildStreamInfoEmbed(streamInfo)],
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(
+            `${STREAM_ANNOUNCEMENT_AUTO_APPROVE_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`,
+          )
+          .setLabel('Approve Automatic Announcement')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(
+            `${STREAM_ANNOUNCEMENT_AUTO_DECLINE_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`,
+          )
+          .setLabel('Decline Automatic Announcement')
+          .setStyle(ButtonStyle.Danger),
+      ),
+    ],
+    allowedMentions: { users: [userId] },
+  };
+};
 
 export const buildStreamAnnouncementChangePreview = ({
   action,

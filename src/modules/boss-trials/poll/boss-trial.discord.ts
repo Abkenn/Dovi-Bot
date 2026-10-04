@@ -19,6 +19,7 @@ import {
 import { DAY_MINUTES, HOUR_MINUTES } from '../../../lib/time.constants';
 import { addDaviBossStatsField } from '../../bosses/bosses.discord';
 import { buildComponentEmbedMessageFromEmbeds } from '../../discord/component-embed';
+import { registerComponentLifetime } from '../../discord/component-lifecycle';
 import {
   BOSS_TRIAL_CUSTOM_ID_PREFIX,
   BOSS_TRIAL_VERDICT_LABELS,
@@ -263,17 +264,27 @@ export const buildBossTrialVoteButtons = (trialId: string) =>
       .setStyle(ButtonStyle.Danger),
   );
 
-export const buildBossTrialRequesterControls = (trialId: string) =>
-  new ActionRowBuilder<ButtonBuilder>().addComponents(
+export const buildBossTrialRequesterControls = (
+  trial: Pick<BossTrialView, 'id' | 'endsAt'>,
+) => {
+  const row = new ActionRowBuilder<ButtonBuilder>();
+  const bumpCustomId = `${BOSS_TRIAL_CUSTOM_ID_PREFIX}:bump:${trial.id}`;
+  if (Date.now() < trial.endsAt.getTime()) {
+    registerComponentLifetime(bumpCustomId, trial.endsAt.getTime());
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(bumpCustomId)
+        .setLabel('Bump Poll')
+        .setStyle(ButtonStyle.Primary),
+    );
+  }
+  return row.addComponents(
     new ButtonBuilder()
-      .setCustomId(`${BOSS_TRIAL_CUSTOM_ID_PREFIX}:bump:${trialId}`)
-      .setLabel('Bump Poll')
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
-      .setCustomId(`${BOSS_TRIAL_CUSTOM_ID_PREFIX}:publish:${trialId}`)
+      .setCustomId(`${BOSS_TRIAL_CUSTOM_ID_PREFIX}:publish:${trial.id}`)
       .setLabel('Publish Results Again')
       .setStyle(ButtonStyle.Secondary),
   );
+};
 
 export const buildBossTrialBumpMessageContent = ({
   trial,

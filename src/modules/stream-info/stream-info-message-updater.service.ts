@@ -28,6 +28,7 @@ import {
   buildComponentEmbedMessageFromEmbeds,
   mergeButtonActionRows,
 } from '../discord/component-embed';
+import { trackComponentMessage } from '../discord/component-lifecycle';
 import { buildEmbeddedAppStatsButton } from '../embedded-app/embedded-app-stats.discord';
 import {
   PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
@@ -242,6 +243,7 @@ const postAutomaticStreamAnnouncement = async ({
   });
   const linkMessage = await channel.send(announcement.link);
   const message = await channel.send(announcement.info);
+  trackComponentMessage(message);
   await createStreamAnnouncement({
     guildId: BOT_GUILDS.PROD_ENV,
     channelId: PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
@@ -402,6 +404,7 @@ export const sendStreamAnnouncementReviewReminder = async (client: Client) => {
       occurrence,
     ),
   );
+  trackComponentMessage(message);
   await markStreamAnnouncementReviewSent({
     ...planKey,
     messageId: message.id,
@@ -439,6 +442,7 @@ export const postStagingStreamAnnouncement = async (client: Client) => {
   });
   const linkMessage = await channel.send(announcement.link);
   const message = await channel.send(announcement.info);
+  trackComponentMessage(message);
   await createStreamAnnouncement({
     guildId: BOT_GUILDS.STAGING_ENV,
     channelId: STAGING_STREAM_ANNOUNCEMENT_CHANNEL_ID,
@@ -457,7 +461,9 @@ const editStreamInfoMessage = async ({
   guildId: string;
   message: Message;
 }) => {
-  await message.edit(await buildStreamInfoMessageEdit(guildId));
+  trackComponentMessage(
+    await message.edit(await buildStreamInfoMessageEdit(guildId)),
+  );
 };
 
 export const registerLastStreamInfoMessage = async ({

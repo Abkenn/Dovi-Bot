@@ -14,6 +14,7 @@ import {
   recordBossTrialVote,
   shouldShowBossTrialVotes,
 } from '../modules/boss-trials/poll/boss-trial.service';
+import { trackInteractionComponentReply } from '../modules/discord/component-lifecycle';
 
 const getVoteConfirmationMessage = ({
   voteAction,
@@ -47,125 +48,131 @@ export class BossTrialButtonsListener extends Listener {
   }
 
   public override async run(interaction: Interaction) {
-    if (!interaction.isButton()) {
-      return;
-    }
-
-    const action = parseBossTrialButtonAction(interaction.customId);
-
-    if (!action) {
-      return;
-    }
-
     try {
-      if (action.type === 'vote') {
+      if (!interaction.isButton()) {
+        return;
+      }
+
+      const action = parseBossTrialButtonAction(interaction.customId);
+
+      if (!action) {
+        return;
+      }
+
+      try {
+        if (action.type === 'vote') {
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+          const voteResult = await recordBossTrialVote({
+            trialId: action.trialId,
+            userId: interaction.user.id,
+            verdict: action.verdict,
+          });
+
+          if (
+            voteResult.voteAction !== 'unchanged' &&
+            shouldShowBossTrialVotes(voteResult.trial)
+          ) {
+            await refreshBossTrialMessage(
+              this.container.client,
+              voteResult.trial,
+            );
+          }
+
+          return interaction.editReply({
+            content: getVoteConfirmationMessage({
+              voteAction: voteResult.voteAction,
+              verdictLabel: BOSS_TRIAL_VERDICT_LABELS[action.verdict],
+              previousVerdictLabel: voteResult.previousVerdict
+                ? BOSS_TRIAL_VERDICT_LABELS[voteResult.previousVerdict]
+                : null,
+            }),
+          });
+        }
+
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        const voteResult = await recordBossTrialVote({
-          trialId: action.trialId,
-          userId: interaction.user.id,
-          verdict: action.verdict,
-        });
+        const trial = await getBossTrialView(action.trialId);
 
-        if (
-          voteResult.voteAction !== 'unchanged' &&
-          shouldShowBossTrialVotes(voteResult.trial)
-        ) {
-          await refreshBossTrialMessage(
-            this.container.client,
-            voteResult.trial,
+        if (interaction.user.id !== trial.requesterUserId) {
+          return interaction.editReply({
+            content: 'Only the boss trial requester can use these controls.',
+          });
+        }
+
+        if (action.type === 'bump') {
+          if (!trial.messageId) {
+            return interaction.editReply({
+              content: 'I could not bump this poll yet. Try again in a bit.',
+            });
+          }
+
+          if (DateTime.utc() >= DateTime.fromJSDate(trial.endsAt)) {
+            return interaction.editReply({
+              content: 'This boss trial is already finished.',
+            });
+          }
+
+          await postBossTrialBumpMessage({
+            client: this.container.client,
+            trial,
+            isAutomatic: false,
+          });
+
+          return interaction.editReply({
+            content: 'Bumped the boss trial poll.',
+          });
+        }
+
+        if (DateTime.utc() < DateTime.fromJSDate(trial.endsAt)) {
+          return interaction.editReply({
+            content: 'Scheduled results have not been posted yet.',
+          });
+        }
+
+        let currentTrial = trial;
+
+        if (!currentTrial.finalResultsPostedAt) {
+          const claimedTrial = await claimBossTrialFinalResults(
+            currentTrial.id,
           );
+
+          if (!claimedTrial) {
+            return interaction.editReply({
+              content: 'Results were already published.',
+            });
+          }
+
+          currentTrial = claimedTrial;
         }
 
-        return interaction.editReply({
-          content: getVoteConfirmationMessage({
-            voteAction: voteResult.voteAction,
-            verdictLabel: BOSS_TRIAL_VERDICT_LABELS[action.verdict],
-            previousVerdictLabel: voteResult.previousVerdict
-              ? BOSS_TRIAL_VERDICT_LABELS[voteResult.previousVerdict]
-              : null,
-          }),
-        });
-      }
-
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-      const trial = await getBossTrialView(action.trialId);
-
-      if (interaction.user.id !== trial.requesterUserId) {
-        return interaction.editReply({
-          content: 'Only the boss trial requester can use these controls.',
-        });
-      }
-
-      if (action.type === 'bump') {
-        if (!trial.messageId) {
-          return interaction.editReply({
-            content: 'I could not bump this poll yet. Try again in a bit.',
-          });
-        }
-
-        if (DateTime.utc() >= DateTime.fromJSDate(trial.endsAt)) {
-          return interaction.editReply({
-            content: 'This boss trial is already finished.',
-          });
-        }
-
-        await postBossTrialBumpMessage({
+        await postBossTrialResultsMessage({
           client: this.container.client,
-          trial,
-          isAutomatic: false,
+          trial: currentTrial,
         });
+
+        await refreshBossTrialMessage(this.container.client, currentTrial);
 
         return interaction.editReply({
-          content: 'Bumped the boss trial poll.',
+          content: 'Published the latest boss trial results.',
         });
-      }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Something went wrong with this boss trial interaction.';
 
-      if (DateTime.utc() < DateTime.fromJSDate(trial.endsAt)) {
-        return interaction.editReply({
-          content: 'Scheduled results have not been posted yet.',
-        });
-      }
-
-      let currentTrial = trial;
-
-      if (!currentTrial.finalResultsPostedAt) {
-        const claimedTrial = await claimBossTrialFinalResults(currentTrial.id);
-
-        if (!claimedTrial) {
-          return interaction.editReply({
-            content: 'Results were already published.',
-          });
+        if (interaction.deferred || interaction.replied) {
+          return interaction.editReply({ content: message });
         }
 
-        currentTrial = claimedTrial;
+        return interaction.reply({
+          content: message,
+          flags: MessageFlags.Ephemeral,
+        });
       }
-
-      await postBossTrialResultsMessage({
-        client: this.container.client,
-        trial: currentTrial,
-      });
-
-      await refreshBossTrialMessage(this.container.client, currentTrial);
-
-      return interaction.editReply({
-        content: 'Published the latest boss trial results.',
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong with this boss trial interaction.';
-
-      if (interaction.deferred || interaction.replied) {
-        return interaction.editReply({ content: message });
-      }
-
-      return interaction.reply({
-        content: message,
-        flags: MessageFlags.Ephemeral,
-      });
+    } finally {
+      await trackInteractionComponentReply(interaction);
     }
   }
 }

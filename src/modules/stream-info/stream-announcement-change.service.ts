@@ -18,6 +18,7 @@ import type {
   MessageManager,
 } from 'discord.js';
 import { BOT_GUILDS } from '../../config/discord-access';
+import { trackComponentMessage } from '../discord/component-lifecycle';
 import {
   PROD_STREAM_ANNOUNCEMENT_CHANNEL_ID,
   PROD_STREAM_ANNOUNCEMENT_ROLE_ID,
@@ -343,7 +344,7 @@ export const editTrackedAnnouncement = async ({
     allowedMentions: { parse: [] },
   } satisfies MessageEditOptions;
   const message = await channel.messages.fetch(messageId);
-  await message.edit(infoPayload);
+  trackComponentMessage(await message.edit(infoPayload));
 
   let resolvedLinkMessageId = linkMessageId ?? null;
   if (resolvedLinkMessageId) {
@@ -449,6 +450,7 @@ export const applyStreamAnnouncementChange = async ({
       });
       const linkMessage = await channel.send(announcement.link);
       const message = await channel.send(announcement.info);
+      trackComponentMessage(message);
       await createStreamAnnouncement({
         guildId: request.targetGuildId,
         channelId: request.targetChannelId,

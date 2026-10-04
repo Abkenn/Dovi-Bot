@@ -7,6 +7,10 @@ import {
   type MessageEditOptions,
   MessageFlags,
 } from 'discord.js';
+import {
+  expireComponentLifetime,
+  registerComponentLifetime,
+} from '../discord/component-lifecycle';
 import type {
   MusicPaginationInput,
   MusicPaginationSession,
@@ -47,16 +51,23 @@ const buildPage = (
 export const createMusicSearchPagination = (input: MusicPaginationInput) => {
   const now = Date.now();
   for (const [id, session] of sessions) {
-    if (session.expiresAt <= now) sessions.delete(id);
+    if (session.expiresAt <= now) {
+      sessions.delete(id);
+      void expireComponentLifetime(`${prefix}:${id}`);
+    }
   }
   const id = randomUUID();
   const session = { ...input, expiresAt: now + sessionLifetime };
   if (input.pages.length > 1) {
     if (sessions.size >= maxSessions) {
       const oldest = sessions.keys().next().value;
-      if (oldest) sessions.delete(oldest);
+      if (oldest) {
+        sessions.delete(oldest);
+        void expireComponentLifetime(`${prefix}:${oldest}`);
+      }
     }
     sessions.set(id, session);
+    registerComponentLifetime(`${prefix}:${id}`, session.expiresAt);
   }
   return buildPage(session, id, 0);
 };
@@ -76,11 +87,8 @@ export const handleMusicSearchPage = async (interaction: ButtonInteraction) => {
   const session = sessions.get(id);
   if (!session || session.expiresAt <= Date.now()) {
     sessions.delete(id);
-    return interaction.reply({
-      content:
-        'These music search buttons have expired. Run /music-search again to browse all tracks.',
-      flags: MessageFlags.Ephemeral,
-    });
+    void expireComponentLifetime(`${prefix}:${id}`);
+    return interaction.update({ components: [] });
   }
   if (interaction.guildId !== session.guildId) {
     return interaction.reply({

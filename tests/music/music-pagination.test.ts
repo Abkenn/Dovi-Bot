@@ -146,7 +146,7 @@ describe('music search pagination', () => {
       reply: vi.fn(),
     };
     await handleMusicSearchPage(interaction as never);
-    expect(interaction.reply).toHaveBeenCalled();
+    expect(interaction.update).toHaveBeenCalledWith({ components: [] });
     vi.advanceTimersByTime(60 * 60 * 1000);
     const fresh = createMusicSearchPagination(input);
     const id = button(fresh, 1).custom_id.split(':')[1];
@@ -271,14 +271,11 @@ describe('music search pagination', () => {
     };
     vi.advanceTimersByTime(60 * 60 * 1000);
     await handleMusicSearchPage(interaction as never);
-    expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: expect.stringContaining('Run /music-search again'),
-      }),
-    );
+    expect(interaction.update).toHaveBeenCalledWith({ components: [] });
+    expect(interaction.reply).not.toHaveBeenCalled();
     interaction.customId = 'music-page:missing:1';
     await handleMusicSearchPage(interaction as never);
-    expect(interaction.reply).toHaveBeenCalledTimes(2);
+    expect(interaction.update).toHaveBeenCalledTimes(2);
     for (const id of [
       'other:1',
       'music-page:a:-1',
@@ -289,7 +286,7 @@ describe('music search pagination', () => {
       interaction.customId = id;
       await handleMusicSearchPage(interaction as never);
     }
-    expect(interaction.reply).toHaveBeenCalledTimes(2);
-    expect(interaction.update).not.toHaveBeenCalled();
+    expect(interaction.update).toHaveBeenCalledTimes(2);
+    expect(interaction.reply).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import type { EmbedBuilder } from 'discord.js';
+import { type EmbedBuilder, MessageFlagsBitField } from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MusicMode, StreamKind } from '../../src/generated/prisma/client';
 
@@ -6,6 +6,7 @@ vi.mock('../../src/modules/stream-info/stream-info.service', () => ({
   getStreamInfo: vi.fn(),
 }));
 
+import { trackComponentMessage } from '../../src/modules/discord/component-lifecycle';
 import {
   buildAppliedStreamAnnouncementChange,
   buildExpiredStreamReminderMessage,
@@ -46,6 +47,41 @@ const embedJson = (embed: EmbedBuilder) => embed.toJSON();
 describe('stream info discord output', () => {
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('removes announcement reminder and review controls when their stream starts', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-12T18:00:00.000Z'));
+    const occurrence = makeOccurrence();
+    const streamInfo = {
+      timezone: 'America/Sao_Paulo',
+      current: null,
+      previous: null,
+      next: occurrence,
+    };
+    const reminder = buildStreamAnnouncementReminderButton(occurrence);
+    const review = buildStreamAnnouncementReviewMessage(
+      'reviewer',
+      streamInfo,
+      occurrence,
+    );
+    const messages = [reminder ? [reminder] : [], review.components ?? []].map(
+      (components, index) => {
+        const result = {
+          id: `stream-expiry-${index}`,
+          flags: new MessageFlagsBitField(),
+          components,
+          edit: vi.fn(),
+          fetch: vi.fn(),
+        };
+        result.fetch.mockResolvedValue(result);
+        trackComponentMessage(result as never);
+        return result;
+      },
+    );
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    for (const result of messages)
+      expect(result.edit).toHaveBeenCalledWith({ components: [] });
   });
 
   it('keeps the stream label plain and the YouTube title clickable', () => {

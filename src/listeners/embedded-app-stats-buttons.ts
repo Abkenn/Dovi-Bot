@@ -3,6 +3,7 @@ import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { BOT_GUILDS } from '../config/discord-access';
 import { CommandExecutionStatus } from '../generated/prisma/client';
 import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
+import { trackInteractionComponentReply } from '../modules/discord/component-lifecycle';
 import {
   launchEmbeddedAppStats,
   replyWithEmbeddedAppStatsLink,
@@ -53,63 +54,67 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
   }
 
   public override async run(interaction: Interaction) {
-    const startedAt = Date.now();
-
-    if (!interaction.isButton()) {
-      return;
-    }
-
-    const target = parseEmbeddedAppStatsButton(interaction.customId);
-
-    if (!target) {
-      return;
-    }
-
-    const isEmbeddedAppGuild =
-      interaction.guildId === BOT_GUILDS.STAGING_ENV ||
-      interaction.guildId === BOT_GUILDS.PROD_ENV;
-
-    if (!isEmbeddedAppGuild) {
-      await logStatsAppEnterSafely({
-        interaction,
-        targetGame: target.gameName,
-        status: CommandExecutionStatus.DENIED,
-        durationMs: Date.now() - startedAt,
-        note: 'Live Stats is unavailable in this server.',
-      });
-
-      return interaction.reply({
-        content: 'Live Stats is unavailable in this server.',
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
     try {
-      const result = interaction.channel?.isThread()
-        ? await replyWithEmbeddedAppStatsLink(interaction, target.gameName)
-        : await launchEmbeddedAppStats(interaction, target.gameName);
+      const startedAt = Date.now();
 
-      await logStatsAppEnterSafely({
-        interaction,
-        targetGame: target.gameName,
-        status: result.launched
-          ? CommandExecutionStatus.SUCCESS
-          : CommandExecutionStatus.ERROR,
-        durationMs: Date.now() - startedAt,
-        note: result.note,
-      });
+      if (!interaction.isButton()) {
+        return;
+      }
 
-      return;
-    } catch (error) {
-      await logStatsAppEnterSafely({
-        interaction,
-        targetGame: target.gameName,
-        status: CommandExecutionStatus.ERROR,
-        durationMs: Date.now() - startedAt,
-        note:
-          error instanceof Error ? error.message : 'Activity launch failed.',
-      });
-      throw error;
+      const target = parseEmbeddedAppStatsButton(interaction.customId);
+
+      if (!target) {
+        return;
+      }
+
+      const isEmbeddedAppGuild =
+        interaction.guildId === BOT_GUILDS.STAGING_ENV ||
+        interaction.guildId === BOT_GUILDS.PROD_ENV;
+
+      if (!isEmbeddedAppGuild) {
+        await logStatsAppEnterSafely({
+          interaction,
+          targetGame: target.gameName,
+          status: CommandExecutionStatus.DENIED,
+          durationMs: Date.now() - startedAt,
+          note: 'Live Stats is unavailable in this server.',
+        });
+
+        return interaction.reply({
+          content: 'Live Stats is unavailable in this server.',
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+
+      try {
+        const result = interaction.channel?.isThread()
+          ? await replyWithEmbeddedAppStatsLink(interaction, target.gameName)
+          : await launchEmbeddedAppStats(interaction, target.gameName);
+
+        await logStatsAppEnterSafely({
+          interaction,
+          targetGame: target.gameName,
+          status: result.launched
+            ? CommandExecutionStatus.SUCCESS
+            : CommandExecutionStatus.ERROR,
+          durationMs: Date.now() - startedAt,
+          note: result.note,
+        });
+
+        return;
+      } catch (error) {
+        await logStatsAppEnterSafely({
+          interaction,
+          targetGame: target.gameName,
+          status: CommandExecutionStatus.ERROR,
+          durationMs: Date.now() - startedAt,
+          note:
+            error instanceof Error ? error.message : 'Activity launch failed.',
+        });
+        throw error;
+      }
+    } finally {
+      await trackInteractionComponentReply(interaction);
     }
   }
 }

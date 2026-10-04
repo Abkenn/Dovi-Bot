@@ -7,6 +7,7 @@ import {
   buildBotStatusMessage,
 } from '../modules/bot-status/bot-status.discord';
 import { fetchBotStatus } from '../modules/bot-status/bot-status.service';
+import { trackInteractionComponentReply } from '../modules/discord/component-lifecycle';
 
 export class BotStatusButtonsListener extends Listener {
   public constructor(
@@ -20,42 +21,46 @@ export class BotStatusButtonsListener extends Listener {
   }
 
   public override async run(interaction: Interaction) {
-    if (!interaction.isButton()) {
-      return;
-    }
-
-    if (interaction.customId !== BOT_STATUS_REFRESH_CUSTOM_ID) {
-      return;
-    }
-
-    const guildId = interaction.guildId;
-
-    if (
-      !guildId ||
-      !isAllowedGuildForCommand(guildId, COMMAND_METADATA.BOT_STATUS.guildIds)
-    ) {
-      return interaction.reply({
-        content: 'This status check is no longer available.',
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
     try {
-      const status = await fetchBotStatus({
-        includeDatabase: guildId === BOT_GUILDS.STAGING_ENV,
-      });
+      if (!interaction.isButton()) {
+        return;
+      }
 
-      return interaction.update(buildBotStatusMessage(status));
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong while checking bot status.';
+      if (interaction.customId !== BOT_STATUS_REFRESH_CUSTOM_ID) {
+        return;
+      }
 
-      return interaction.reply({
-        content: message,
-        flags: MessageFlags.Ephemeral,
-      });
+      const guildId = interaction.guildId;
+
+      if (
+        !guildId ||
+        !isAllowedGuildForCommand(guildId, COMMAND_METADATA.BOT_STATUS.guildIds)
+      ) {
+        return interaction.reply({
+          content: 'This status check is no longer available.',
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+
+      try {
+        const status = await fetchBotStatus({
+          includeDatabase: guildId === BOT_GUILDS.STAGING_ENV,
+        });
+
+        return interaction.update(buildBotStatusMessage(status));
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Something went wrong while checking bot status.';
+
+        return interaction.reply({
+          content: message,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } finally {
+      await trackInteractionComponentReply(interaction);
     }
   }
 }
