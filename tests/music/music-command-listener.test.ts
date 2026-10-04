@@ -98,6 +98,40 @@ describe('music command and listener wiring', () => {
     });
   });
 
+  it('renders game search results through the game reply path', async () => {
+    dependencies.runner.mockImplementation(async (options) =>
+      options.run({ editReply: dependencies.editReply }),
+    );
+    dependencies.search.mockResolvedValue([
+      {
+        title: 'Majula - DS2',
+        game: 'Dark Souls',
+        streamDate: '2026-09-11',
+        offsetSeconds: 60,
+        video: { videoId: 'first', title: 'Music stream' },
+      },
+    ]);
+    const interaction = {
+      options: {
+        getString: vi.fn((name: string) =>
+          name === 'query' ? 'dark souls 2' : 'yes',
+        ),
+      },
+    };
+    await MusicSearchCommand.prototype.chatInputRun.call(
+      { name: 'music-search' },
+      interaction as never,
+    );
+    expect(dependencies.search).toHaveBeenCalledWith('dark souls 2', {
+      game: true,
+    });
+    expect(dependencies.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Majula - DS2'),
+      }),
+    );
+  });
+
   it('processes attachment-only messages, isolates failures and ignores bots and DMs', async () => {
     const listener = new MusicCatalogMessagesListener({} as never, {});
     const attachment = {

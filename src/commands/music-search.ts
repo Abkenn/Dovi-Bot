@@ -50,15 +50,14 @@ export class MusicSearchCommand extends Command {
       interaction,
       commandName: this.name,
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
-      run: async ({ editReply }) =>
-        editReply(
-          buildMusicSearchReply(
-            await searchMusicCatalog(
-              interaction.options.getString('query', true),
-              { game: interaction.options.getString('game') === 'yes' },
-            ),
-          ),
-        ),
+      run: async ({ editReply }) => {
+        const game = interaction.options.getString('game') === 'yes';
+        const results = await searchMusicCatalog(
+          interaction.options.getString('query', true),
+          { game },
+        );
+        return editReply(buildMusicSearchReply(results, { game }));
+      },
     });
   }
 }
