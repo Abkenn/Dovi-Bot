@@ -48,3 +48,13 @@ export type MusicUpload = {
   url: string;
   size: number;
 };
+
+export type MusicPaginationInput = {
+  pages: string[];
+  requesterUserId: string;
+  guildId: string | null;
+};
+
+export type MusicPaginationSession = MusicPaginationInput & {
+  expiresAt: number;
+};

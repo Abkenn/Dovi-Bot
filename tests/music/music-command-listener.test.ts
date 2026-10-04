@@ -42,6 +42,7 @@ vi.mock('../../src/modules/music/music.service', () => ({
 
 import { MusicSearchCommand } from '../../src/commands/music-search';
 import { MusicCatalogMessagesListener } from '../../src/listeners/music-catalog-messages';
+import { MusicSearchButtonsListener } from '../../src/listeners/music-search-buttons';
 
 describe('music command and listener wiring', () => {
   beforeEach(() => {
@@ -83,7 +84,7 @@ describe('music command and listener wiring', () => {
   it('runs the guard and returns the search reply through the command runner', async () => {
     dependencies.runner.mockImplementation(async (options) => {
       await options.beforeDefer();
-      return options.run({ editReply: dependencies.editReply });
+      return options.run.staging({ editReply: dependencies.editReply });
     });
     const interaction = {
       options: { getString: vi.fn().mockReturnValue('song') },
@@ -102,7 +103,7 @@ describe('music command and listener wiring', () => {
 
   it('renders game search results through the game reply path', async () => {
     dependencies.runner.mockImplementation(async (options) =>
-      options.run({ editReply: dependencies.editReply }),
+      options.run.staging({ editReply: dependencies.editReply }),
     );
     dependencies.search.mockResolvedValue([
       {
@@ -115,6 +116,8 @@ describe('music command and listener wiring', () => {
       },
     ]);
     const interaction = {
+      user: { id: 'owner' },
+      guildId: 'staging',
       options: {
         getString: vi.fn((name: string) =>
           name === 'query' ? 'dark souls 2' : 'yes',
@@ -133,6 +136,67 @@ describe('music command and listener wiring', () => {
         content: expect.stringContaining('* [Majula - Dark Souls 2]'),
       }),
     );
+  });
+
+  it('wires staging pagination through the command and button listener while retaining the prod reply', async () => {
+    dependencies.search.mockResolvedValue(
+      Array.from({ length: 44 }, (_, index) => ({
+        title: `Track ${index}`,
+        game: 'Touhou Series',
+        count: 1,
+        streamDate: '2026-09-11',
+        offsetSeconds: index * 60,
+        video: null,
+      })),
+    );
+    const interaction = {
+      user: { id: 'owner' },
+      guildId: 'staging',
+      options: {
+        getString: (name: string) => (name === 'query' ? 'touhou' : 'yes'),
+      },
+    };
+    await MusicSearchCommand.prototype.chatInputRun.call(
+      { name: 'music-search' },
+      interaction as never,
+    );
+    const first = dependencies.editReply.mock.calls[0]?.[0];
+    expect(first.content).toContain('Page 1 of');
+    const customId = first.components[0].components[1].toJSON().custom_id;
+    const listener = new MusicSearchButtonsListener({} as never, {});
+    const click = {
+      isButton: () => true,
+      customId,
+      user: interaction.user,
+      guildId: 'staging',
+      update: vi.fn(),
+      reply: vi.fn(),
+    };
+    await listener.run(click as never);
+    expect(click.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Page 2 of'),
+      }),
+    );
+    await listener.run({ isButton: () => false } as never);
+    await listener.run({ ...click, customId: 'unrelated' } as never);
+    expect(click.update).toHaveBeenCalledTimes(1);
+    click.update.mockRejectedValueOnce(new Error('Discord unavailable'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await listener.run(click as never);
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
+    dependencies.editReply.mockClear();
+    dependencies.runner.mockImplementation(async (options) =>
+      options.run.prod({ editReply: dependencies.editReply }),
+    );
+    await MusicSearchCommand.prototype.chatInputRun.call(
+      { name: 'music-search' },
+      interaction as never,
+    );
+    expect(
+      dependencies.editReply.mock.calls[0]?.[0].components,
+    ).toBeUndefined();
   });
 
   it('processes attachment-only messages, isolates failures and ignores bots and DMs', async () => {

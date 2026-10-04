@@ -12,10 +12,10 @@ const timestamp = (seconds: number) => {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${tail}`;
 };
 
-const buildGameLine = (result: MusicGameSearchView) => {
+const buildGameLine = (result: MusicGameSearchView, titleLimit = Infinity) => {
   const time = timestamp(result.offsetSeconds);
   const title = escapeMarkdown(
-    musicTrackDisplayTitle(result.title, result.game),
+    musicTrackDisplayTitle(result.title, result.game).slice(0, titleLimit),
   );
   const count = `heard ${result.count} ${result.count === 1 ? 'time' : 'times'}`;
   if (!result.video) return `* ${title} (${time}; link unavailable) · ${count}`;
@@ -60,7 +60,7 @@ export const buildMusicSearchReply = (
     if (!game) return { content: 'No matching game tracks found.' };
     const heading = `**${escapeMarkdown(game)}**`;
     const credit = `*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`;
-    const lines = gameResults.map(buildGameLine);
+    const lines = gameResults.map((result) => buildGameLine(result));
     const visible: string[] = [];
     for (const line of lines) {
       const remaining = lines.length - visible.length - 1;
@@ -97,4 +97,32 @@ export const buildMusicSearchReply = (
     content: `**${matchTitle}**\nLatest stream: ${latest}\nHeard **${trackResult.count} ${trackResult.count === 1 ? 'time' : 'times'}** in past streams.\n*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`,
     allowedMentions: { parse: [] },
   };
+};
+
+export const buildMusicGamePages = (
+  results: MusicGameSearchView[],
+  query = '',
+) => {
+  if (!results.length) return [];
+  const heading = `**${escapeMarkdown(gameHeading(results, query).slice(0, 150))}**`;
+  const credit = `*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`;
+  const maxPage = String(results.length);
+  const overhead =
+    `${heading}\n\nPage ${maxPage} of ${maxPage} · ${results.length} tracks\n${credit}`
+      .length;
+  const groups: string[][] = [[]];
+  for (const result of results) {
+    const line = buildGameLine(result, 400);
+    const current = groups[groups.length - 1];
+    if (!current) throw new Error('Missing music page.');
+    if (overhead + [...current, line].join('\n').length > 2_000) {
+      groups.push([line]);
+    } else {
+      current.push(line);
+    }
+  }
+  return groups.map(
+    (lines, index) =>
+      `${heading}\n${lines.join('\n')}\nPage ${index + 1} of ${groups.length} · ${results.length} tracks\n${credit}`,
+  );
 };
