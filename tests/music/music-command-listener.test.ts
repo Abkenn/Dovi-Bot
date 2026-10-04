@@ -68,8 +68,8 @@ describe('music command and listener wiring', () => {
           description:
             'Yes: list tracks from a game. No or omitted: search a track name.',
           choices: [
-            { name: 'Yes: search games and list tracks', value: 'yes' },
-            { name: 'No: search a track name (default)', value: 'no' },
+            { name: 'Yes', value: 'yes' },
+            { name: 'No', value: 'no' },
           ],
         },
       ],
