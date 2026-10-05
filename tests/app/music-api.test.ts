@@ -13,11 +13,11 @@ vi.mock('../../src/modules/music/music-search.service', () => service);
 
 import { createMusicApi } from '../../src/app/music-api';
 
-const rpcClient = () => {
-  const api = new Hono().route('/api/music', createMusicApi());
+const rpcClient = (mountPath = '/api/music') => {
+  const api = new Hono().route(mountPath, createMusicApi());
   const client: RouterClient<typeof musicRouter> = createORPCClient(
     new RPCLink({
-      url: 'http://localhost/api/music/rpc',
+      url: `http://localhost${mountPath}/rpc`,
       fetch: async (request) => api.request(request),
     }),
   );
@@ -56,12 +56,15 @@ it('serves bounded RPC pages with totals and a terminal cursor', async () => {
   });
 });
 
-it('returns validated facts through RPC', async () => {
+it.each([
+  '',
+  '/api/music',
+])('returns validated facts through RPC mounted at %s', async (mountPath) => {
   service.getMusicFacts.mockResolvedValue({
     track: { title: 'Theme', count: 5 },
     series: null,
   });
-  expect(await rpcClient().facts()).toEqual({
+  expect(await rpcClient(mountPath).facts()).toEqual({
     facts: { track: { title: 'Theme', count: 5 }, series: null },
   });
 });

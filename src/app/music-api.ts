@@ -1,5 +1,6 @@
 import { RPCHandler } from '@orpc/server/fetch';
 import { Hono } from 'hono';
+import { routePath } from 'hono/route';
 import type {
   MusicFactsResponse,
   MusicSearchResponse,
@@ -27,7 +28,7 @@ export const createMusicApi = () => {
   });
   const rpc = new RPCHandler(musicRouter);
   api.all('/rpc/*', async (c) => {
-    const prefix = `/${c.req.routePath.slice(1, -2)}` as const;
+    const prefix = `/${routePath(c).slice(1, -2)}` as const;
     const result = await rpc.handle(c.req.raw, { prefix });
     if (result.matched) return result.response;
     return c.notFound();
