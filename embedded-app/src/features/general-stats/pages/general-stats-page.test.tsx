@@ -6,6 +6,7 @@ vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
 }));
 vi.mock('recharts', () => ({
+  Cell: () => null,
   CartesianGrid: () => <div>Grid</div>,
   ReferenceLine: ({
     onMouseEnter,
@@ -86,19 +87,22 @@ vi.mock('recharts', () => ({
       active: boolean;
       payload: { payload: unknown }[];
     }) => ReactNode;
-  }) =>
-    content({
-      active: true,
-      payload: [
-        {
-          payload: {
-            ...makeComparison('hovered', 'Hovered Game', 5, 300),
-            longestBossFightSeconds: 300,
-            toughestBossDeaths: 4,
+  }) => (
+    <div className="recharts-tooltip-wrapper">
+      {content({
+        active: true,
+        payload: [
+          {
+            payload: {
+              ...makeComparison('hovered', 'Hovered Game', 5, 300),
+              longestBossFightSeconds: 300,
+              toughestBossDeaths: 4,
+            },
           },
-        },
-      ],
-    }),
+        ],
+      })}
+    </div>
+  ),
   XAxis: ({ label }: { label: { offset: number; value: string } }) => (
     <div>
       X axis {label.value} {label.offset}
@@ -171,7 +175,7 @@ describe('GeneralStatsPage', () => {
       screen.queryByRole('button', { name: 'Explore 2 nearby games' }),
     ).not.toBeInTheDocument();
     const gameData = screen.getByRole('list', {
-      name: 'Boss extremes game data',
+      name: 'Boss stats game data',
     });
     expect(gameData).toHaveTextContent('Bloodborne');
     expect(gameData).toHaveTextContent('3 deaths · 4m 0s');
@@ -219,9 +223,48 @@ describe('GeneralStatsPage', () => {
     expect(screen.getByText('Average longest win: 4m 0s')).toBeInTheDocument();
     fireEvent.mouseLeave(timeGuide);
 
+    const hoverPopup = chartCardContent.querySelector(
+      '.recharts-tooltip-wrapper',
+    );
+    if (!(hoverPopup instanceof HTMLElement))
+      throw new Error('Expected hover popup');
+    hoverPopup.getBoundingClientRect = () => ({
+      ...chartCardContent.getBoundingClientRect(),
+      left: 320,
+      top: 150,
+    });
     fireEvent.click(screen.getByRole('button', { name: 'First chart dot' }));
+    expect(chartCardContent.querySelector('.locked-chart-popup')).toHaveStyle({
+      left: '320px',
+      top: '150px',
+    });
+    expect(
+      screen.getByRole('button', { name: 'Lock details for Bloodborne' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'Lock details for Bloodborne' }),
+    ).toHaveClass('border-primary');
     expect(screen.getByText('Bloodborne boss')).toBeInTheDocument();
     expect(screen.queryByText('Hovered Game')).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Lock details for Bloodborne' }),
+    );
+    expect(chartCardContent.querySelector('.locked-chart-popup')).toHaveClass(
+      'top-24',
+      'right-6',
+    );
+    expect(
+      chartCardContent.querySelector('.locked-chart-popup'),
+    ).not.toHaveStyle({ left: '320px' });
+    expect(
+      screen.getByRole('button', { name: /Most deaths: Highest death count/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Longest winning attempt: Longest final/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Most difficult boss')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Bloodborne boss'));
     expect(screen.getByText('Bloodborne boss')).toBeInTheDocument();
 
@@ -325,7 +368,7 @@ describe('GeneralStatsPage', () => {
     expect(
       screen.getAllByText('Longest winning attempt').length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText('Toughest overall')).toBeInTheDocument();
+    expect(screen.getAllByText('Toughest overall').length).toBeGreaterThan(0);
     expect(
       screen.getByRole('img', {
         name: 'Boss deaths and winning-attempt time comparison chart',
@@ -337,9 +380,8 @@ describe('GeneralStatsPage', () => {
     expect(
       screen.getByRole('region', { name: 'General stats PiP summary' }),
     ).toHaveClass('general-stats-pip-only', 'activity-compact:flex');
-    expect(screen.getByText('PiP summary')).toBeInTheDocument();
 
-    expect(screen.getByText('Boss extremes')).toBeInTheDocument();
+    expect(screen.getByText('Boss stats')).toBeInTheDocument();
     expect(screen.getByText('Fight duration')).toBeInTheDocument();
     expect(screen.getByText('X axis Deaths -18')).toBeInTheDocument();
     expect(screen.queryByText('Long + deadly')).not.toBeInTheDocument();

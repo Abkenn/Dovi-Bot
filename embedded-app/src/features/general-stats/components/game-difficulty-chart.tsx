@@ -1,7 +1,8 @@
 import type { MouseEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
+  Cell,
   ReferenceLine,
   Scatter,
   ScatterChart,
@@ -15,7 +16,9 @@ import {
   ChartContainer,
   ChartTooltip,
 } from '@/components/ui/chart';
+import { cn } from '@/lib/utils';
 import type { GameComparison } from '@/live-stats.types';
+import { compressBossStat, expandBossStat } from '../lib/boss-stats-scale';
 import { formatStatsDuration } from '../lib/general-stats-chart.utils';
 import { GameChartTooltip } from './game-chart-tooltip';
 import { GameDifficultyTooltip } from './game-difficulty-tooltip';
@@ -26,6 +29,8 @@ type GameDifficultyChartProps = {
 
 type BossExtremesPoint = GameComparison & {
   longestBossFightSeconds: number;
+  scaledDeaths: number;
+  scaledFightSeconds: number;
   toughestBossDeaths: number;
 };
 
@@ -38,7 +43,7 @@ type AverageTooltipPosition = {
 
 const bossExtremesChartConfig = {
   extremes: {
-    label: 'Boss extremes',
+    label: 'Boss stats',
     color: 'var(--primary)',
   },
 } satisfies ChartConfig;
@@ -68,7 +73,10 @@ const getClickedPoint = (entry: unknown) => {
 };
 
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [selectedGame, setSelectedGame] = useState<GameComparison | null>(null);
+  const [lockedPosition, setLockedPosition] =
+    useState<AverageTooltipPosition | null>(null);
   const [hoveredAverage, setHoveredAverage] = useState<HoveredAverage>(null);
   const [averageTooltipPosition, setAverageTooltipPosition] =
     useState<AverageTooltipPosition>({ x: 12, y: 12 });
@@ -89,6 +97,14 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
           return [
             {
               ...game,
+              scaledDeaths: compressBossStat(
+                Math.max(0, toughestBoss.attempts - 1),
+                100,
+              ),
+              scaledFightSeconds: compressBossStat(
+                longestBossFight.winningAttemptSeconds,
+                960,
+              ),
               longestBossFightSeconds: longestBossFight.winningAttemptSeconds,
               toughestBossDeaths: Math.max(0, toughestBoss.attempts - 1),
             },
@@ -115,14 +131,12 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
 
   const maximumDeaths = Math.max(
     1,
-    Math.ceil(
-      Math.max(...points.map((point) => point.toughestBossDeaths)) * 1.1,
-    ),
+    Math.ceil(Math.max(...points.map((point) => point.scaledDeaths)) * 1.1),
   );
   const maximumFightSeconds = Math.max(
     60,
     Math.ceil(
-      Math.max(...points.map((point) => point.longestBossFightSeconds)) * 1.1,
+      Math.max(...points.map((point) => point.scaledFightSeconds)) * 1.1,
     ),
   );
   const averageDeaths = getAverage(
@@ -135,6 +149,18 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
     const point = getClickedPoint(entry);
 
     if (point) {
+      const card = cardRef.current;
+      const popup = card?.querySelector('.recharts-tooltip-wrapper');
+      if (popup && card) {
+        const popupBounds = popup.getBoundingClientRect();
+        const cardBounds = card.getBoundingClientRect();
+        setLockedPosition({
+          x: popupBounds.left - cardBounds.left,
+          y: popupBounds.top - cardBounds.top,
+        });
+      } else {
+        setLockedPosition(null);
+      }
       setSelectedGame(point);
     }
   };
@@ -170,12 +196,23 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
   return (
     <Card className="overflow-hidden">
       <CardContent
+        ref={cardRef}
         className="relative p-3 sm:p-6"
         onClick={closeLockedTooltip}
         onMouseMove={positionAverageTooltip}
       >
         {selectedGame ? (
-          <div className="locked-chart-popup absolute top-24 right-6 z-30">
+          <div
+            className={cn(
+              'locked-chart-popup absolute z-30',
+              !lockedPosition && 'top-24 right-6',
+            )}
+            style={
+              lockedPosition
+                ? { left: lockedPosition.x, top: lockedPosition.y }
+                : undefined
+            }
+          >
             <GameDifficultyTooltip game={selectedGame} />
           </div>
         ) : null}
@@ -193,7 +230,7 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
           </div>
         ) : null}
         <div className="mb-4">
-          <h2 className="text-lg font-bold">Boss extremes</h2>
+          <h2 className="text-lg font-bold">Boss stats</h2>
           <p className="text-sm text-muted-foreground">
             Right means more deaths on the game&apos;s deadliest boss. Higher
             means a longer winning attempt. Games in the top-right had both.
@@ -213,7 +250,10 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
             <CartesianGrid stroke="var(--border)" strokeOpacity={0.55} />
             <XAxis
               type="number"
-              dataKey="toughestBossDeaths"
+              dataKey="scaledDeaths"
+              tickFormatter={(value: number) =>
+                String(Math.round(expandBossStat(value, 100)))
+              }
               domain={[0, maximumDeaths]}
               allowDecimals={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
@@ -227,21 +267,23 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
             />
             <YAxis
               type="number"
-              dataKey="longestBossFightSeconds"
+              dataKey="scaledFightSeconds"
               domain={[0, maximumFightSeconds]}
-              tickFormatter={formatStatsDuration}
+              tickFormatter={(value: number) =>
+                formatStatsDuration(Math.round(expandBossStat(value, 960)))
+              }
               tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
               width={62}
             />
             <ZAxis range={[343, 343]} />
             <ReferenceLine
-              x={averageDeaths}
+              x={compressBossStat(averageDeaths, 100)}
               stroke="var(--muted-foreground)"
               strokeDasharray="4 5"
               strokeOpacity={0.35}
             />
             <ReferenceLine
-              x={averageDeaths}
+              x={compressBossStat(averageDeaths, 100)}
               stroke="transparent"
               strokeWidth={18}
               onMouseEnter={() => setHoveredAverage('deaths')}
@@ -249,13 +291,13 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               className="cursor-help"
             />
             <ReferenceLine
-              y={averageFightSeconds}
+              y={compressBossStat(averageFightSeconds, 960)}
               stroke="var(--muted-foreground)"
               strokeDasharray="4 5"
               strokeOpacity={0.35}
             />
             <ReferenceLine
-              y={averageFightSeconds}
+              y={compressBossStat(averageFightSeconds, 960)}
               stroke="transparent"
               strokeWidth={18}
               onMouseEnter={() => setHoveredAverage('time')}
@@ -279,12 +321,28 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               onMouseEnter={() => setHoveredAverage(null)}
               onClick={selectPoint}
               className="cursor-pointer"
-            />
+            >
+              {points.map((point) => (
+                <Cell
+                  key={point.id}
+                  stroke={
+                    selectedGame?.id === point.id
+                      ? 'var(--primary)'
+                      : 'var(--background)'
+                  }
+                  style={
+                    selectedGame?.id === point.id
+                      ? { filter: 'drop-shadow(0 0 6px var(--primary))' }
+                      : undefined
+                  }
+                />
+              ))}
+            </Scatter>
           </ScatterChart>
         </ChartContainer>
 
         <ol
-          aria-label="Boss extremes game data"
+          aria-label="Boss stats game data"
           className="mt-3 grid gap-2 sm:grid-cols-2"
         >
           {points.map((point) => (
@@ -292,8 +350,16 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               <button
                 type="button"
                 aria-label={`Lock details for ${point.name}`}
-                onClick={() => setSelectedGame(point)}
-                className="chart-game-key grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 px-3 py-2 text-left transition-colors hover:border-primary/45 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-pressed={selectedGame?.id === point.id}
+                onClick={() => {
+                  setLockedPosition(null);
+                  setSelectedGame(point);
+                }}
+                className={cn(
+                  'chart-game-key grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 px-3 py-2 text-left transition-colors hover:border-primary/45 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  selectedGame?.id === point.id &&
+                    'border-primary shadow-[0_0_12px_var(--primary)] bg-primary/10',
+                )}
               >
                 <span className="truncate text-sm font-semibold">
                   {point.name}

@@ -36,10 +36,21 @@ describe('GameDifficultyTooltip', () => {
     );
 
     expect(screen.getByText('Most attempts')).toBeInTheDocument();
-    expect(screen.getByText('Longest winning attempt')).toBeInTheDocument();
-    expect(screen.getByText('Toughest balanced boss')).toBeInTheDocument();
+    expect(screen.getAllByText('Longest winning attempt')).toHaveLength(2);
+    expect(screen.getByText('Most difficult boss')).toBeInTheDocument();
     expect(screen.getAllByText('Sister Friede')).toHaveLength(2);
     expect(screen.getByText('4m 0s')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: /Most deaths: Highest/ }),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole('button', { name: /Toughest overall: Strongest/ }),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole('button', {
+        name: /Longest winning attempt: Longest final/,
+      }),
+    ).toHaveLength(1);
   });
 
   it('shows honest timing fallbacks for an untimed game', () => {

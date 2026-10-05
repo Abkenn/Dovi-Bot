@@ -34,6 +34,11 @@ describe('GeneralStatsPipSummary', () => {
       />,
     );
 
+    const summary = screen.getByRole('region', {
+      name: 'General stats PiP summary',
+    });
+    expect(summary).toHaveClass('font-sans', 'py-0', 'gap-0');
+    expect(summary.querySelector('.truncate')).toBeNull();
     expect(screen.getAllByText(/6 attempts/)).toHaveLength(3);
     expect(screen.getAllByText(/avg untracked/)).toHaveLength(3);
     expect(screen.getAllByText(/win untracked/)).toHaveLength(3);

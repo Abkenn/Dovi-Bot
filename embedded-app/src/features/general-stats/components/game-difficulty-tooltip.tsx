@@ -1,5 +1,9 @@
 import { motion } from 'motion/react';
-import type { GameComparison } from '@/live-stats.types';
+import type {
+  BossAchievement,
+  BossComparison,
+  GameComparison,
+} from '@/live-stats.types';
 import { formatStatsDuration } from '../lib/general-stats-chart.utils';
 import { BossHighlight } from './boss-highlight';
 
@@ -10,6 +14,17 @@ type GameDifficultyTooltipProps = {
 export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
   const { mostAttempts, longestWinningAttempt, toughestOverall } =
     game.bossHighlights;
+
+  const achievementsFor = (boss: BossComparison | null): BossAchievement[] => {
+    if (!boss) return [];
+    const achievements: BossAchievement[] = [];
+    if (boss.name === mostAttempts.name) achievements.push('MOST_DEATHS');
+    if (boss.name === longestWinningAttempt?.name)
+      achievements.push('LONGEST_WINNING_ATTEMPT');
+    if (boss.name === toughestOverall?.name)
+      achievements.push('TOUGHEST_OVERALL');
+    return achievements;
+  };
 
   return (
     <motion.div
@@ -35,11 +50,13 @@ export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
         <BossHighlight
           label="Most attempts"
           boss={mostAttempts}
+          achievements={achievementsFor(mostAttempts)}
           detail={`${mostAttempts.attempts} attempts`}
         />
         <BossHighlight
           label="Longest winning attempt"
           boss={longestWinningAttempt}
+          achievements={achievementsFor(longestWinningAttempt)}
           detail={
             longestWinningAttempt?.winningAttemptSeconds
               ? formatStatsDuration(longestWinningAttempt.winningAttemptSeconds)
@@ -47,8 +64,9 @@ export const GameDifficultyTooltip = ({ game }: GameDifficultyTooltipProps) => {
           }
         />
         <BossHighlight
-          label="Toughest balanced boss"
+          label="Most difficult boss"
           boss={toughestOverall}
+          achievements={achievementsFor(toughestOverall)}
           detail={
             toughestOverall
               ? `${toughestOverall.attempts} attempts / ${

@@ -39,7 +39,7 @@ export const GeneralStatsPage = ({
         longestWinningAttempt={longestWinningAttempt}
         toughestOverall={toughestOverall}
       />
-      <div className="general-stats-full contents activity-compact:hidden">
+      <div className="general-stats-full space-y-6 activity-compact:hidden">
         <StatsPageHeader
           eyebrow="Dovi Career Stats"
           title="General Stats"
