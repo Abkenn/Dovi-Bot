@@ -1,3 +1,4 @@
+import { RPCHandler } from '@orpc/server/fetch';
 import { Hono } from 'hono';
 import type {
   MusicFactsResponse,
@@ -9,6 +10,7 @@ import {
   getMusicFacts,
   searchMusicCatalog,
 } from '../modules/music/music-search.service';
+import { musicRouter } from './music-rpc';
 
 export const createMusicApi = () => {
   const api = new Hono();
@@ -22,6 +24,13 @@ export const createMusicApi = () => {
       { error: 'Music is unavailable right now. Try again shortly.' },
       503,
     );
+  });
+  const rpc = new RPCHandler(musicRouter);
+  api.all('/rpc/*', async (c) => {
+    const prefix = `/${c.req.routePath.slice(1, -2)}` as const;
+    const result = await rpc.handle(c.req.raw, { prefix });
+    if (result.matched) return result.response;
+    return c.notFound();
   });
   api.get('/facts', async (c) =>
     c.json({ facts: await getMusicFacts() } satisfies MusicFactsResponse),

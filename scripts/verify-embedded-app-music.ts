@@ -76,16 +76,34 @@ worker.on('error', (error) => {
 });
 let nextId = 0;
 const app = new Hono();
-app.get('/api/music/facts', (c) => c.json(facts));
-app.get('/api/music/search', (c) => {
-  if (c.req.query('query') === 'Missing') return c.json({ results: [] });
-  if (c.req.query('query') === 'Error')
-    return c.json({ error: 'Unavailable' }, 503);
-  return c.json(
-    c.req.query('game') === 'yes'
-      ? matches
-      : { results: matches.results?.slice(0, 1) },
-  );
+app.post('/api/music/rpc/facts', (c) => c.json({ json: facts }));
+app.post('/api/music/rpc/searchPage', async (c) => {
+  const body = await c.req.json<{
+    json: { query: string; game: boolean; cursor: number };
+  }>();
+  const input = body.json;
+  if (input.query === 'Error')
+    return c.json(
+      {
+        json: {
+          code: 'SERVICE_UNAVAILABLE',
+          status: 503,
+          message: 'Unavailable',
+          defined: false,
+        },
+      },
+      503,
+    );
+  const results = input.query === 'Missing' ? [] : (matches.results ?? []);
+  const selected = input.game ? results : results.slice(0, 1);
+  const next = input.cursor + 20;
+  return c.json({
+    json: {
+      results: selected.slice(input.cursor, next),
+      total: selected.length,
+      nextCursor: next < selected.length ? next : null,
+    },
+  });
 });
 app.use('*', serveStatic({ root: './embedded-app/dist/client' }));
 app.all('*', async (c) => {
@@ -148,8 +166,24 @@ try {
   await page.getByRole('button', { name: 'Search music' }).click();
   await page.getByText('21 tracks').waitFor();
   assert.equal(await page.getByText('Most played track').count(), 0);
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  assert.equal(
+    await page.getByRole('link', { name: 'Theme 20', exact: true }).count(),
+    0,
+  );
+  await page
+    .getByRole('button', { name: 'Load more tracks', exact: true })
+    .scrollIntoViewIfNeeded();
   await page.getByRole('link', { name: 'Theme 20', exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole('link', { name: 'Theme 0', exact: true }).count(),
+    1,
+  );
+  assert.equal(
+    await page
+      .getByRole('button', { name: 'Load more tracks', exact: true })
+      .count(),
+    0,
+  );
   await page.screenshot({ path: path.join(output, 'focused-results.png') });
   await page.getByRole('link', { name: 'Stats', exact: true }).click();
   await page.getByRole('link', { name: 'Music', exact: true }).click();
@@ -216,7 +250,7 @@ try {
   assert.equal(await page.getByRole('textbox').isVisible(), true);
   await page.screenshot({ path: path.join(output, 'mobile-focused.png') });
   console.log(
-    'Music browser audit passed: searches, pagination, tab reset, command launch, four PiP sizes, and focused restoration.',
+    'Music browser audit passed: searches, infinite scrolling, tab reset, command launch, four PiP sizes, and focused restoration.',
   );
 } finally {
   await browser.close();

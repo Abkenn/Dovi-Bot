@@ -1,40 +1,65 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
-const http = vi.hoisted(() => ({ get: vi.fn(), json: vi.fn() }));
-vi.mock('ky', () => ({ default: { get: http.get } }));
+const http = vi.hoisted(() => ({ request: vi.fn() }));
+vi.mock('ky', () => ({ default: http.request }));
 
-import { loadMusicFacts, searchMusic } from './music-api';
+import { loadMusicFacts, searchMusicPage } from './music-api';
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  http.get.mockReturnValue({ json: http.json });
+beforeEach(() => vi.resetAllMocks());
+
+it('loads validated RPC facts and preserves missing catalogs', async () => {
+  http.request
+    .mockResolvedValueOnce(
+      Response.json({ json: { facts: { track: null, series: null } } }),
+    )
+    .mockResolvedValueOnce(Response.json({ json: { facts: null } }));
+  expect(await loadMusicFacts()).toEqual({ track: null, series: null });
+  expect(await loadMusicFacts()).toBeNull();
+  expect(http.request.mock.calls[0]?.[0].url).toContain('/api/music/rpc/facts');
 });
-it('uses Ky with typed facts/results, mode parameters, and cancellation', async () => {
-  const signal = new AbortController().signal;
-  http.json
-    .mockResolvedValueOnce({ facts: { track: null, series: null } })
-    .mockResolvedValueOnce({ results: [] })
-    .mockResolvedValueOnce({ results: null });
-  expect(await loadMusicFacts(signal)).toEqual({ track: null, series: null });
-  expect(http.get).toHaveBeenCalledWith('/api/music/facts', { signal });
-  expect(await searchMusic({ query: 'A & B', game: true }, signal)).toEqual([]);
-  expect(http.get).toHaveBeenCalledWith('/api/music/search', {
-    searchParams: { query: 'A & B', game: 'yes' },
-    signal,
+
+it('uses Ky for typed RPC pages and preserves cancellation without transport retries', async () => {
+  const controller = new AbortController();
+  http.request.mockResolvedValue(
+    Response.json({ json: { results: [], total: 0, nextCursor: null } }),
+  );
+  expect(
+    await searchMusicPage(
+      { query: 'A & B', game: true, cursor: 20 },
+      controller.signal,
+    ),
+  ).toEqual({ results: [], total: 0, nextCursor: null });
+  const request: unknown = http.request.mock.calls[0]?.[0];
+  expect(request).toBeInstanceOf(Request);
+  if (!(request instanceof Request)) throw new Error('Expected an RPC Request');
+  expect(request.url).toContain('/api/music/rpc/searchPage');
+  expect(await request.json()).toEqual({
+    json: { query: 'A & B', game: true, cursor: 20 },
   });
-  expect(await searchMusic({ query: 'Theme', game: false }, signal)).toBeNull();
-  expect(http.get).toHaveBeenLastCalledWith('/api/music/search', {
-    searchParams: { query: 'Theme', game: 'no' },
-    signal,
-  });
+  expect(http.request).toHaveBeenCalledWith(
+    expect.any(Request),
+    expect.objectContaining({ retry: 0, throwHttpErrors: false }),
+  );
+  controller.abort();
+  expect(request.signal.aborted).toBe(true);
 });
-it('rejects invalid responses and propagates transport failures', async () => {
-  const signal = new AbortController().signal;
-  http.json
-    .mockResolvedValueOnce({ facts: 'wrong' })
-    .mockRejectedValueOnce(new Error('Unavailable'));
-  await expect(loadMusicFacts(signal)).rejects.toThrow();
+
+it('rejects malformed facts and pages at the browser boundary', async () => {
+  http.request
+    .mockResolvedValueOnce(Response.json({ json: { facts: 'wrong' } }))
+    .mockResolvedValueOnce(
+      Response.json({ json: { results: [], total: -1, nextCursor: null } }),
+    );
+  await expect(loadMusicFacts()).rejects.toThrow();
   await expect(
-    searchMusic({ query: 'Theme', game: false }, signal),
+    searchMusicPage({ query: 'Theme', game: false, cursor: 0 }),
+  ).rejects.toThrow();
+});
+
+it('propagates transport failures', async () => {
+  http.request.mockRejectedValue(new Error('Unavailable'));
+  await expect(loadMusicFacts()).rejects.toThrow('Unavailable');
+  await expect(
+    searchMusicPage({ query: 'Theme', game: false, cursor: 0 }),
   ).rejects.toThrow('Unavailable');
 });

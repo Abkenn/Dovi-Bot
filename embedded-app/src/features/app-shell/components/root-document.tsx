@@ -1,6 +1,7 @@
 import { HeadContent, Scripts } from '@tanstack/react-router';
 import { LayoutGroup, MotionConfig } from 'motion/react';
 import type { PropsWithChildren } from 'react';
+import { QueryProvider } from './query-provider';
 
 type RootDocumentProps = PropsWithChildren;
 
@@ -14,7 +15,9 @@ export const RootDocument = ({ children }: RootDocumentProps) => (
         reducedMotion="user"
         transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
       >
-        <LayoutGroup id="game-stats-navigation">{children}</LayoutGroup>
+        <QueryProvider>
+          <LayoutGroup id="game-stats-navigation">{children}</LayoutGroup>
+        </QueryProvider>
       </MotionConfig>
       <Scripts />
     </body>

@@ -13,7 +13,7 @@ import { Route as StatsRouteImport } from './routes/stats'
 import { Route as MusicRouteImport } from './routes/music'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesGameIdRouteImport } from './routes/games.$gameId'
-import { Route as ApiMusicActionRouteImport } from './routes/api.music.$action'
+import { Route as ApiMusicSplatRouteImport } from './routes/api.music.$'
 
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
@@ -35,9 +35,9 @@ const GamesGameIdRoute = GamesGameIdRouteImport.update({
   path: '/games/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMusicActionRoute = ApiMusicActionRouteImport.update({
-  id: '/api/music/$action',
-  path: '/api/music/$action',
+const ApiMusicSplatRoute = ApiMusicSplatRouteImport.update({
+  id: '/api/music/$',
+  path: '/api/music/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -46,14 +46,14 @@ export interface FileRoutesByFullPath {
   '/music': typeof MusicRoute
   '/stats': typeof StatsRoute
   '/games/$gameId': typeof GamesGameIdRoute
-  '/api/music/$action': typeof ApiMusicActionRoute
+  '/api/music/$': typeof ApiMusicSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/music': typeof MusicRoute
   '/stats': typeof StatsRoute
   '/games/$gameId': typeof GamesGameIdRoute
-  '/api/music/$action': typeof ApiMusicActionRoute
+  '/api/music/$': typeof ApiMusicSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,20 +61,14 @@ export interface FileRoutesById {
   '/music': typeof MusicRoute
   '/stats': typeof StatsRoute
   '/games/$gameId': typeof GamesGameIdRoute
-  '/api/music/$action': typeof ApiMusicActionRoute
+  '/api/music/$': typeof ApiMusicSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$action'
+  fullPaths: '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$action'
-  id:
-    | '__root__'
-    | '/'
-    | '/music'
-    | '/stats'
-    | '/games/$gameId'
-    | '/api/music/$action'
+  to: '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$'
+  id: '__root__' | '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -82,7 +76,7 @@ export interface RootRouteChildren {
   MusicRoute: typeof MusicRoute
   StatsRoute: typeof StatsRoute
   GamesGameIdRoute: typeof GamesGameIdRoute
-  ApiMusicActionRoute: typeof ApiMusicActionRoute
+  ApiMusicSplatRoute: typeof ApiMusicSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,11 +109,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesGameIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/music/$action': {
-      id: '/api/music/$action'
-      path: '/api/music/$action'
-      fullPath: '/api/music/$action'
-      preLoaderRoute: typeof ApiMusicActionRouteImport
+    '/api/music/$': {
+      id: '/api/music/$'
+      path: '/api/music/$'
+      fullPath: '/api/music/$'
+      preLoaderRoute: typeof ApiMusicSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -130,7 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   MusicRoute: MusicRoute,
   StatsRoute: StatsRoute,
   GamesGameIdRoute: GamesGameIdRoute,
-  ApiMusicActionRoute: ApiMusicActionRoute,
+  ApiMusicSplatRoute: ApiMusicSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

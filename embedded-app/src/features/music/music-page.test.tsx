@@ -1,4 +1,12 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  act,
+  fireEvent,
+  render as renderView,
+  screen,
+  within,
+} from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/game-stats/components/game-switcher', () => ({
@@ -6,28 +14,38 @@ vi.mock('@/features/game-stats/components/game-switcher', () => ({
 }));
 const api = vi.hoisted(() => ({
   loadMusicFacts: vi.fn(),
-  searchMusic: vi.fn(),
+  searchMusicPage: vi.fn(),
 }));
 vi.mock('./music-api', () => api);
 
 import { MusicPage } from './music-page';
 
+const render = (
+  view: ReactElement,
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) =>
+  renderView(<QueryClientProvider client={client}>{view}</QueryClientProvider>);
+
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   api.loadMusicFacts.mockResolvedValue({
     track: { title: 'Theme', count: 5 },
     series: { title: 'Dark Souls', count: 9 },
   });
-  api.searchMusic.mockResolvedValue([
-    {
-      title: 'Boss Theme',
-      game: 'Dark Souls 2',
-      count: 3,
-      date: '2026-01-01',
-      offsetSeconds: 90,
-      url: 'https://www.youtube.com/watch?v=video&t=90s',
-    },
-  ]);
+  api.searchMusicPage.mockResolvedValue({
+    results: [
+      {
+        title: 'Boss Theme',
+        game: 'Dark Souls 2',
+        count: 3,
+        date: '2026-01-01',
+        offsetSeconds: 90,
+        url: 'https://www.youtube.com/watch?v=video&t=90s',
+      },
+    ],
+    total: 1,
+    nextCursor: null,
+  });
 });
 it('shows only two facts initially, searches compact game results, and resets on returning', async () => {
   const view = render(<MusicPage games={[]} />);
@@ -45,8 +63,8 @@ it('shows only two facts initially, searches compact game results, and resets on
   });
   fireEvent.click(screen.getByRole('button', { name: 'Search music' }));
   await screen.findByRole('link', { name: /Boss Theme/ });
-  expect(api.searchMusic).toHaveBeenCalledWith(
-    { query: 'Dark Souls', game: true },
+  expect(api.searchMusicPage).toHaveBeenCalledWith(
+    { query: 'Dark Souls', game: true, cursor: 0 },
     expect.any(AbortSignal),
   );
   expect(screen.queryByText('Most played track')).not.toBeInTheDocument();
@@ -65,8 +83,8 @@ it('runs a command launch query automatically without fetching default facts', a
   expect(screen.getByRole('textbox')).toHaveValue('Theme');
 });
 it('shows empty and failed search states without restoring facts', async () => {
-  api.searchMusic
-    .mockResolvedValueOnce([])
+  api.searchMusicPage
+    .mockResolvedValueOnce({ results: [], total: 0, nextCursor: null })
     .mockRejectedValueOnce(new Error('Offline'));
   render(
     <MusicPage games={[]} initialSearch={{ query: 'Missing', game: false }} />,
@@ -79,31 +97,106 @@ it('shows empty and failed search states without restoring facts', async () => {
   expect(screen.queryByText('Most played track')).not.toBeInTheDocument();
 });
 
-it('paginates compact game lists and keeps unlinked tracks visible when their video is missing', async () => {
-  api.searchMusic.mockResolvedValue(
-    Array.from({ length: 21 }, (_, index) => ({
-      title: `Track ${index}`,
-      game: null,
-      count: 1,
-      date: '2026-01-01',
-      offsetSeconds: 60,
-      url: null,
-    })),
+it('reuses fresh facts when returning to the tab without restoring an old query', async () => {
+  const client = new QueryClient();
+  const first = render(<MusicPage games={[]} />, client);
+  await screen.findByText('Most played track');
+  first.unmount();
+  render(<MusicPage games={[]} />, client);
+  await screen.findByText('Most played track');
+  expect(api.loadMusicFacts).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('textbox')).toHaveValue('');
+});
+
+it('keeps loaded tracks after a later page fails and lets the user retry', async () => {
+  api.searchMusicPage
+    .mockResolvedValueOnce({
+      results: [
+        {
+          title: 'First track',
+          game: null,
+          count: 1,
+          date: '2026-01-01',
+          offsetSeconds: 0,
+          url: null,
+        },
+      ],
+      total: 21,
+      nextCursor: 20,
+    })
+    .mockRejectedValueOnce(new Error('Unavailable'))
+    .mockResolvedValueOnce({
+      results: [
+        {
+          title: 'Last track',
+          game: null,
+          count: 1,
+          date: '2026-01-01',
+          offsetSeconds: 0,
+          url: null,
+        },
+      ],
+      total: 21,
+      nextCursor: null,
+    });
+  render(
+    <MusicPage games={[]} initialSearch={{ query: 'Series', game: true }} />,
   );
+  const results = await screen.findByRole('region', {
+    name: 'Music search results',
+  });
+  expect(within(results).getByText('First track')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Load more tracks' }));
+  await screen.findByText('Could not load more tracks. Try again.');
+  expect(within(results).getByText('First track')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Load more tracks' }));
+  await screen.findByText('Last track');
+  expect(within(results).getByText('First track')).toBeInTheDocument();
+});
+
+it('appends server pages and keeps earlier unlinked tracks visible', async () => {
+  const tracks = Array.from({ length: 21 }, (_, index) => ({
+    title: `Track ${index}`,
+    game: null,
+    count: 1,
+    date: '2026-01-01',
+    offsetSeconds: 60,
+    url: null,
+  }));
+  api.searchMusicPage
+    .mockResolvedValueOnce({
+      results: tracks.slice(0, 20),
+      total: 21,
+      nextCursor: 20,
+    })
+    .mockResolvedValueOnce({
+      results: tracks.slice(20),
+      total: 21,
+      nextCursor: null,
+    });
   render(
     <MusicPage games={[]} initialSearch={{ query: 'Series', game: true }} />,
   );
   await screen.findByText('21 tracks');
-  expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-  expect(screen.getByText('Track 20')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  expect(screen.queryByText('Track 20')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Load more tracks' }));
+  await screen.findByText('Track 20');
+  expect(api.searchMusicPage).toHaveBeenLastCalledWith(
+    { query: 'Series', game: true, cursor: 20 },
+    expect.any(AbortSignal),
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Load more tracks' }),
+  ).not.toBeInTheDocument();
   expect(screen.getByText('Track 19')).toBeInTheDocument();
 });
 
 it('handles missing history and disables offline requests', async () => {
-  api.searchMusic.mockResolvedValue(null);
+  api.searchMusicPage.mockResolvedValue({
+    results: null,
+    total: 0,
+    nextCursor: null,
+  });
   const view = render(
     <MusicPage games={[]} initialSearch={{ query: 'Theme', game: false }} />,
   );
@@ -112,7 +205,7 @@ it('handles missing history and disables offline requests', async () => {
   vi.clearAllMocks();
   render(<MusicPage games={[]} offline />);
   expect(screen.getByRole('button', { name: 'Search music' })).toBeDisabled();
-  expect(api.searchMusic).not.toHaveBeenCalled();
+  expect(api.searchMusicPage).not.toHaveBeenCalled();
   expect(api.loadMusicFacts).not.toHaveBeenCalled();
 });
 

@@ -1,6 +1,4 @@
 import { ExternalLink, Trophy } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import type {
   MusicActivityResult,
   MusicFacts,
@@ -39,11 +37,12 @@ const MusicFactsCards = ({ facts }: { facts: MusicFacts | null }) => (
 const MusicResults = ({
   results,
   game,
+  total,
 }: {
   results: MusicActivityResult[] | null;
   game: boolean;
+  total: number | undefined;
 }) => {
-  const [page, setPage] = useState(0);
   if (!results)
     return <p role="status">Music history has not been uploaded yet.</p>;
   if (!results.length)
@@ -52,17 +51,16 @@ const MusicResults = ({
         No tracks found. Try another track, artist, game, or series name.
       </p>
     );
-  const visible = results.slice(page * 20, (page + 1) * 20);
   return (
     <section
       aria-label="Music search results"
       className="overflow-hidden rounded-xl border bg-card"
     >
       <div className="border-b px-4 py-3 text-sm font-medium">
-        {game ? `${results.length} tracks` : 'Best match'}
+        {game ? `${total ?? results.length} tracks` : 'Best match'}
       </div>
       <ul className="divide-y">
-        {visible.map((result) => (
+        {results.map((result) => (
           <li
             key={`${result.game}:${result.title}`}
             className="flex items-center justify-between gap-3 px-4 py-3"
@@ -98,29 +96,6 @@ const MusicResults = ({
           </li>
         ))}
       </ul>
-      {results.length > 20 ? (
-        <div className="flex items-center justify-between border-t px-4 py-3">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 0}
-            onClick={() => setPage(page - 1)}
-          >
-            Back
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {page + 1} / {Math.ceil(results.length / 20)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={(page + 1) * 20 >= results.length}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      ) : null}
     </section>
   );
 };
@@ -128,9 +103,11 @@ const MusicResults = ({
 export const MusicContent = ({
   data,
   game,
+  total,
 }: {
   data: MusicData;
   game: boolean;
+  total?: number;
 }) => {
   if (data.kind === 'loading')
     return (
@@ -145,5 +122,5 @@ export const MusicContent = ({
       </p>
     );
   if (data.kind === 'facts') return <MusicFactsCards facts={data.facts} />;
-  return <MusicResults results={data.results} game={game} />;
+  return <MusicResults results={data.results} game={game} total={total} />;
 };

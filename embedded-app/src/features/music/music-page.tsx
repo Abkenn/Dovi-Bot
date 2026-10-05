@@ -1,15 +1,18 @@
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Music2, Search } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { GameSwitcher } from '@/features/game-stats/components/game-switcher';
 import { StatsPageHeader } from '@/features/game-stats/components/stats-page-header';
-import type { MusicData, MusicPageProps, SearchState } from './music.types';
-import { loadMusicFacts, searchMusic } from './music-api';
+import type { MusicPageProps, SearchState } from './music.types';
 import { MusicContent } from './music-content';
+import { MusicLoadMore } from './music-load-more';
 import { MusicPipSummary } from './music-pip-summary';
+import { musicQueries } from './music-queries';
+import { resolveMusicData } from './music-query-state';
 
 export const MusicPage = ({
   games,
@@ -21,32 +24,34 @@ export const MusicPage = ({
   const [submitted, setSubmitted] = useState<SearchState | null>(
     initialSearch ?? null,
   );
-  const [data, setData] = useState<MusicData>({ kind: 'loading' });
   const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (offline) {
-      setData({ kind: 'error' });
-      return;
-    }
-    const controller = new AbortController();
-    setData({ kind: 'loading' });
-    const request = submitted
-      ? searchMusic(submitted, controller.signal).then(
-          (results): MusicData => ({ kind: 'results', results }),
-        )
-      : loadMusicFacts(controller.signal).then(
-          (facts): MusicData => ({ kind: 'facts', facts }),
-        );
-    void request
-      .then((next) => {
-        if (!controller.signal.aborted) setData(next);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setData({ kind: 'error' });
-      });
-    return () => controller.abort();
-  }, [submitted, offline]);
+  const facts = useQuery(
+    musicQueries.facts.queryOptions({
+      enabled: !offline && !submitted,
+      staleTime: 60_000,
+    }),
+  );
+  const search = useInfiniteQuery(
+    musicQueries.searchPage.infiniteOptions({
+      input: (cursor: number) => ({
+        query: submitted?.query ?? '',
+        game: submitted?.game ?? false,
+        cursor,
+      }),
+      initialPageParam: 0,
+      getNextPageParam: (page) => page.nextCursor ?? undefined,
+      enabled: !offline && submitted !== null,
+      staleTime: 30_000,
+      retry: false,
+    }),
+  );
+  const data = resolveMusicData({
+    offline,
+    searching: submitted !== null,
+    facts: facts.data,
+    pages: search.data?.pages,
+    failed: submitted ? search.isError : facts.isError,
+  });
 
   return (
     <main className="music-frame mx-auto min-h-svh w-full max-w-5xl space-y-5 px-3 py-3 sm:px-8 sm:py-12">
@@ -63,8 +68,13 @@ export const MusicPage = ({
           className="flex flex-wrap gap-2 rounded-xl border bg-card p-3"
           onSubmit={(event) => {
             event.preventDefault();
-            if (query.trim().length >= 2)
-              setSubmitted({ query: query.trim(), game });
+            const trimmed = query.trim();
+            if (trimmed.length < 2) return;
+            if (submitted?.query === trimmed && submitted.game === game) {
+              void search.refetch();
+              return;
+            }
+            setSubmitted({ query: trimmed, game });
           }}
         >
           <NativeSelect
@@ -108,7 +118,25 @@ export const MusicPage = ({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.16 }}
         >
-          <MusicContent data={data} game={submitted?.game ?? false} />
+          <MusicContent
+            data={data}
+            game={submitted?.game ?? false}
+            total={search.data?.pages[0]?.total}
+          />
+          {search.isRefetchError ? (
+            <p role="alert">
+              Could not refresh tracks. Your previous results are still
+              available.
+            </p>
+          ) : null}
+          {data.kind === 'results' ? (
+            <MusicLoadMore
+              hasNextPage={search.hasNextPage && !offline}
+              loading={search.isFetching}
+              failed={search.isFetchNextPageError}
+              loadMore={search.fetchNextPage}
+            />
+          ) : null}
         </motion.div>
       </div>
     </main>
