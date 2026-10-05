@@ -1,4 +1,4 @@
-import { MessageFlags } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
@@ -25,6 +25,8 @@ vi.mock('../../src/config/discord-command-guards', () => ({
   assertCommandAccess: dependencies.assertCommandAccess,
 }));
 vi.mock('../../src/config/discord-access', () => ({
+  ADMIN_COMMAND_PERMISSION: 32n,
+  COMMAND_REGISTRATION_GUILDS: { PUBLIC: [] },
   BOT_GUILDS: {
     STAGING_ENV: 'staging-guild',
     PROD_ENV: 'production-guild',
@@ -32,6 +34,11 @@ vi.mock('../../src/config/discord-access', () => ({
 }));
 vi.mock('../../src/config/discord-command-metadata', () => ({
   COMMAND_METADATA: {
+    HELP: {
+      name: 'help',
+      description: 'Browse help topics.',
+      guildIds: ['staging-guild', 'production-guild'],
+    },
     STREAM_INFO: {
       name: 'streaminfo',
       description: 'Shows stream information.',
@@ -66,6 +73,7 @@ vi.mock('../../src/modules/stream-info/stream-reminder.utils', () => ({
   getStreamReminderOccurrence: dependencies.getStreamReminderOccurrence,
 }));
 
+import { HelpCommand } from '../../src/commands/help';
 import { StreamInfoCommand } from '../../src/commands/streaminfo';
 
 const makeInteraction = (isPrivate: boolean | null, isThread = false) => ({
@@ -100,7 +108,7 @@ describe('/streaminfo response privacy', () => {
     });
   });
 
-  it('registers the optional private boolean for both configured guilds', () => {
+  it('registers the optional private boolean globally', () => {
     const setRequired = vi.fn().mockReturnThis();
     const setDescription = vi.fn().mockReturnValue({ setRequired });
     const setName = vi.fn().mockReturnValue({ setDescription });
@@ -122,7 +130,7 @@ describe('/streaminfo response privacy', () => {
     expect(registerChatInputCommand).toHaveBeenCalledWith(
       expect.any(Function),
       {
-        guildIds: ['staging-guild', 'production-guild'],
+        guildIds: [],
       },
     );
     expect(builder.setName).toHaveBeenCalledWith('streaminfo');
@@ -131,6 +139,23 @@ describe('/streaminfo response privacy', () => {
       'Only you can see the response',
     );
     expect(setRequired).toHaveBeenCalledWith(false);
+  });
+
+  it('registers help globally with its existing topic autocomplete', () => {
+    const builder = new SlashCommandBuilder();
+    const registerChatInputCommand = vi.fn((configure) => configure(builder));
+    const command = new HelpCommand({} as never, {});
+
+    command.registerApplicationCommands({ registerChatInputCommand } as never);
+
+    expect(registerChatInputCommand).toHaveBeenCalledWith(
+      expect.any(Function),
+      { guildIds: [] },
+    );
+    expect(builder.toJSON()).toMatchObject({
+      name: 'help',
+      options: [{ name: 'topic', autocomplete: true }],
+    });
   });
 
   it('uses an ephemeral response that is not registered for background edits', async () => {

@@ -20,6 +20,16 @@ describe('Discord command guild access', () => {
     mockedEnv.value.ENABLE_PROD_GUILD_COMMAND_REGISTRATION = true;
   });
 
+  it('uses an empty list for public registration while keeping guild access lists', async () => {
+    const { COMMAND_REGISTRATION_GUILDS, COMMAND_GUILDS } = await import(
+      '../../src/config/discord-access'
+    );
+
+    expect(COMMAND_REGISTRATION_GUILDS.PUBLIC).toEqual([]);
+    expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
+    expect(COMMAND_GUILDS.STREAM_INFO).toEqual(['staging', 'prod']);
+  });
+
   it('registers prod commands when prod registration is enabled', async () => {
     const { COMMAND_GUILDS, isAllowedGuildForCommand } = await import(
       '../../src/config/discord-access'

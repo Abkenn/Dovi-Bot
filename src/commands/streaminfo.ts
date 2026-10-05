@@ -1,4 +1,5 @@
 import { Command } from '@sapphire/framework';
+import { COMMAND_REGISTRATION_GUILDS } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import {
@@ -39,7 +40,7 @@ export class StreamInfoCommand extends Command {
               .setRequired(false),
           ),
       {
-        guildIds: [...METADATA.guildIds],
+        guildIds: [...COMMAND_REGISTRATION_GUILDS.PUBLIC],
       },
     );
   }

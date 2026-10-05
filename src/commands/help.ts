@@ -1,5 +1,8 @@
 import { Command } from '@sapphire/framework';
-import { ADMIN_COMMAND_PERMISSION } from '../config/discord-access';
+import {
+  ADMIN_COMMAND_PERMISSION,
+  COMMAND_REGISTRATION_GUILDS,
+} from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
 import { runCommand } from '../modules/command-runner/run-command';
@@ -32,7 +35,7 @@ export class HelpCommand extends Command {
               .setAutocomplete(true),
           ),
       {
-        guildIds: [...METADATA.guildIds],
+        guildIds: [...COMMAND_REGISTRATION_GUILDS.PUBLIC],
       },
     );
   }

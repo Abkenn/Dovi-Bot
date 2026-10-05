@@ -15,6 +15,11 @@ export const BOT_GUILDS = {
   PROD_ENV: asBotGuildId(env.DISCORD_PROD_ENV_GUILD_ID),
 } as const;
 
+export const COMMAND_REGISTRATION_GUILDS = {
+  // An empty guild list registers globally; command access stays guild-scoped.
+  PUBLIC: [],
+} as const;
+
 export const COMMAND_GUILDS = {
   HELP: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
   STREAM_INFO: [BOT_GUILDS.STAGING_ENV, ...maybeProdEnvGuild],
