@@ -24,6 +24,8 @@ vi.mock('../../src/modules/command-logging/command-logging.service', () => ({
 }));
 
 import { EmbeddedAppStatsButtonsListener } from '../../src/listeners/embedded-app-stats-buttons';
+import { buildMusicActivityButton } from '../../src/modules/music/music-activity.discord';
+import { parseMusicActivityTarget } from '../../src/modules/music/music-activity-target';
 
 const makeInteraction = (
   customId: string,
@@ -40,6 +42,39 @@ const makeInteraction = (
 });
 
 describe('embedded app Stats buttons', () => {
+  it('launches music with the original command query and game mode', async () => {
+    const row = buildMusicActivityButton('staging-guild', {
+      query: 'Dark Souls',
+      game: true,
+    });
+    const button = row?.toJSON().components[0];
+    if (!button || !('custom_id' in button))
+      throw new Error('Missing Music button');
+    const interaction = makeInteraction(button.custom_id);
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      interaction as never,
+    );
+    expect(
+      parseMusicActivityTarget(
+        dependencies.launchEmbeddedAppStats.mock.calls[0]?.[1],
+      ),
+    ).toEqual({ query: 'Dark Souls', game: true });
+  });
+
+  it('explains expired music buttons instead of opening an unrelated game', async () => {
+    const interaction = makeInteraction(
+      'embedded-app-stats:music-search:expired',
+    );
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      interaction as never,
+    );
+    expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({ content: expect.stringContaining('expired') }),
+    );
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     dependencies.launchEmbeddedAppStats.mockResolvedValue({

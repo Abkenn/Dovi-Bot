@@ -9,6 +9,7 @@ import {
   replyWithEmbeddedAppStatsLink,
 } from '../modules/embedded-app/embedded-app-launch.service';
 import { parseEmbeddedAppStatsButton } from '../modules/embedded-app/embedded-app-stats.discord';
+import { resolveMusicActivityButtonTarget } from '../modules/music/music-activity.discord';
 
 const STATS_APP_ENTER_LOG_NAME = 'stats-app:enter';
 
@@ -87,9 +88,17 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
       }
 
       try {
+        const launchTarget = resolveMusicActivityButtonTarget(target.gameName);
+        if (target.gameName && !launchTarget) {
+          return interaction.reply({
+            content:
+              'This music search has expired. Run /music-search again to open a fresh search.',
+            flags: MessageFlags.Ephemeral,
+          });
+        }
         const result = interaction.channel?.isThread()
-          ? await replyWithEmbeddedAppStatsLink(interaction, target.gameName)
-          : await launchEmbeddedAppStats(interaction, target.gameName);
+          ? await replyWithEmbeddedAppStatsLink(interaction, launchTarget)
+          : await launchEmbeddedAppStats(interaction, launchTarget);
 
         await logStatsAppEnterSafely({
           interaction,

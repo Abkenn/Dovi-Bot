@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ChartNoAxesCombined, Radio } from 'lucide-react';
+import { ChartNoAxesCombined, Music2, Radio } from 'lucide-react';
 import { motion } from 'motion/react';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -94,6 +94,31 @@ export const GameSwitcher = ({ games, selectedGameId }: GameSwitcherProps) => {
             </motion.span>
           </Link>
         ))}
+        <Link
+          to="/music"
+          search={{}}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'sm' }),
+            'relative isolate overflow-hidden px-2.5',
+            selectedGameId === 'music' &&
+              'border-primary/40 text-primary-foreground',
+          )}
+        >
+          {selectedGameId === 'music' ? (
+            <motion.span
+              layoutId="active-game-tab"
+              className="absolute inset-0 -z-10 bg-primary"
+            />
+          ) : null}
+          <motion.span
+            className="flex items-center gap-1.5"
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Music2 className="size-3.5" aria-hidden="true" />
+            Music
+          </motion.span>
+        </Link>
       </div>
     </nav>
   );

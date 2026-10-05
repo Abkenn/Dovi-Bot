@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useDiscordSdk } from '@/hooks/use-discord-sdk';
 import { resolveActivityTargetGame } from '@/lib/activity-target';
 import type { LiveStats } from '@/live-stats.types';
+import { parseMusicActivityTarget } from '../../../../../src/modules/music/music-activity-target';
 import { cacheLiveStats } from '../lib/live-stats-cache';
 
 type CurrentBuildContentProps = {
@@ -30,6 +31,11 @@ export const CurrentBuildContent = ({
     }
 
     handledCustomId.current = requestedGameName;
+    const musicTarget = parseMusicActivityTarget(requestedGameName);
+    if (musicTarget) {
+      void navigate({ to: '/music', search: musicTarget, replace: true });
+      return;
+    }
     const targetGame = resolveActivityTargetGame(
       stats.games,
       requestedGameName,

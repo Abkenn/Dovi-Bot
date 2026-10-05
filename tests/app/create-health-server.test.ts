@@ -15,10 +15,24 @@ vi.mock('../../src/app/runtime-health', () => ({
 vi.mock('../../src/app/tanstack-start-server', () => ({
   fetchEmbeddedApp: tanstackStart.fetchEmbeddedApp,
 }));
+vi.mock('../../src/modules/music/music-search.service', () => ({
+  getMusicFacts: vi.fn(),
+  searchMusicCatalog: vi.fn(),
+}));
 
 import { createHealthServer } from '../../src/app/create-health-server';
+import { getMusicFacts } from '../../src/modules/music/music-search.service';
 
 describe('health and embedded app server', () => {
+  it('serves Music API requests through the Discord proxy without SSR', async () => {
+    vi.mocked(getMusicFacts).mockResolvedValue(null);
+    const response = await createHealthServer().request(
+      '/.proxy/api/music/facts',
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ facts: null });
+    expect(tanstackStart.fetchEmbeddedApp).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     tanstackStart.fetchEmbeddedApp.mockResolvedValue(

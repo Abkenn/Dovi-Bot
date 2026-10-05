@@ -15,6 +15,7 @@ import type {
   MusicPaginationInput,
   MusicPaginationSession,
 } from './music.types';
+import { buildMusicActivityButton } from './music-activity.discord';
 
 const sessions = new Map<string, MusicPaginationSession>();
 const prefix = 'music-page';
@@ -39,12 +40,20 @@ const buildPage = (
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(safePage === session.pages.length - 1),
   );
+  const activity = session.activityQuery
+    ? buildMusicActivityButton(session.guildId, {
+        query: session.activityQuery,
+        game: true,
+      })
+    : null;
+  const components = session.pages.length > 1 ? [buttons] : [];
+  if (activity) components.push(activity);
   return {
     content: session.pages[safePage] ?? '',
     embeds: [],
     flags: MessageFlags.SuppressEmbeds,
     allowedMentions: { parse: [] },
-    components: session.pages.length > 1 ? [buttons] : [],
+    components,
   } satisfies MessageEditOptions;
 };
 

@@ -1,6 +1,11 @@
 import { MessageFlags, MessageFlagsBitField } from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildMusicGamePages } from '../../src/modules/music/music.discord';
+
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: { PROD_ENV: 'prod', STAGING_ENV: 'staging' },
+}));
+
 import {
   createMusicSearchPagination,
   handleMusicSearchPage,

@@ -18,6 +18,7 @@ vi.mock('../lib/live-stats-cache', () => ({
   cacheLiveStats: dependencies.cacheLiveStats,
 }));
 
+import { encodeMusicActivityTarget } from '../../../../../src/modules/music/music-activity-target';
 import { CurrentBuildContent } from './current-build-content';
 
 const stats = {
@@ -79,5 +80,24 @@ describe('CurrentBuildContent', () => {
     render(<CurrentBuildContent discordClientId="client-1" stats={stats} />);
 
     expect(dependencies.navigate).not.toHaveBeenCalled();
+  });
+
+  it('opens the command music search once and permits later navigation back to a fresh tab', async () => {
+    const state = { query: 'Dark Souls', game: true };
+    dependencies.customId = encodeMusicActivityTarget(state);
+    const view = render(
+      <CurrentBuildContent discordClientId="client-1" stats={stats} />,
+    );
+    await waitFor(() =>
+      expect(dependencies.navigate).toHaveBeenCalledWith({
+        to: '/music',
+        search: state,
+        replace: true,
+      }),
+    );
+    view.rerender(
+      <CurrentBuildContent discordClientId="client-1" stats={{ ...stats }} />,
+    );
+    expect(dependencies.navigate).toHaveBeenCalledTimes(1);
   });
 });

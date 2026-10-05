@@ -21,6 +21,11 @@ vi.mock('@/features/general-stats/pages/general-stats-page', () => ({
 vi.mock('@/features/archived-game/pages/archived-game-page', () => ({
   ArchivedGamePage: () => <div>Game cached</div>,
 }));
+vi.mock('@/features/music/music-page', () => ({
+  MusicPage: ({ offline }: { offline: boolean }) => (
+    <div>{offline ? 'Music offline' : 'Music search'}</div>
+  ),
+}));
 
 import { CachedStatsContent } from './cached-stats-content';
 
@@ -56,6 +61,13 @@ const snapshot = {
 
 describe('CachedStatsContent', () => {
   beforeEach(() => window.history.replaceState(null, '', '/'));
+
+  it('shows an offline music state instead of falling back to Live', () => {
+    window.history.replaceState(null, '', '/music');
+    render(<CachedStatsContent snapshot={snapshot} />);
+    expect(screen.getByText('Music offline')).toBeInTheDocument();
+    expect(screen.queryByText('Live cached')).not.toBeInTheDocument();
+  });
 
   it('navigates cached tabs locally without invoking route loaders', () => {
     render(<CachedStatsContent snapshot={snapshot} />);

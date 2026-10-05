@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArchivedGamePage } from '@/features/archived-game/pages/archived-game-page';
 import { GeneralStatsPage } from '@/features/general-stats/pages/general-stats-page';
 import { LiveStatsPage } from '@/features/live-stats/pages/live-stats-page';
+import { MusicPage } from '@/features/music/music-page';
 import type { LiveStatsSnapshot } from '../lib/live-stats-cache';
 import { OfflineSnapshotBanner } from './offline-snapshot-banner';
 
@@ -52,6 +53,15 @@ export const CachedStatsContent = ({ snapshot }: CachedStatsContentProps) => {
           games={snapshot.stats.games}
           generalStats={snapshot.stats.generalStats}
         />
+      </section>
+    );
+  }
+
+  if (pathname.endsWith('/music')) {
+    return (
+      <section onClickCapture={showCachedRoute}>
+        <OfflineSnapshotBanner cachedAt={snapshot.cachedAt} />
+        <MusicPage games={snapshot.stats.games} offline />
       </section>
     );
   }

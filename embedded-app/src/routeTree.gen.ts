@@ -10,12 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as MusicRouteImport } from './routes/music'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesGameIdRouteImport } from './routes/games.$gameId'
+import { Route as ApiMusicActionRouteImport } from './routes/api.music.$action'
 
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MusicRoute = MusicRouteImport.update({
+  id: '/music',
+  path: '/music',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,35 +35,54 @@ const GamesGameIdRoute = GamesGameIdRouteImport.update({
   path: '/games/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMusicActionRoute = ApiMusicActionRouteImport.update({
+  id: '/api/music/$action',
+  path: '/api/music/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/music': typeof MusicRoute
   '/stats': typeof StatsRoute
   '/games/$gameId': typeof GamesGameIdRoute
+  '/api/music/$action': typeof ApiMusicActionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/music': typeof MusicRoute
   '/stats': typeof StatsRoute
   '/games/$gameId': typeof GamesGameIdRoute
+  '/api/music/$action': typeof ApiMusicActionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/music': typeof MusicRoute
   '/stats': typeof StatsRoute
   '/games/$gameId': typeof GamesGameIdRoute
+  '/api/music/$action': typeof ApiMusicActionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/stats' | '/games/$gameId'
+  fullPaths: '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$action'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/stats' | '/games/$gameId'
-  id: '__root__' | '/' | '/stats' | '/games/$gameId'
+  to: '/' | '/music' | '/stats' | '/games/$gameId' | '/api/music/$action'
+  id:
+    | '__root__'
+    | '/'
+    | '/music'
+    | '/stats'
+    | '/games/$gameId'
+    | '/api/music/$action'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MusicRoute: typeof MusicRoute
   StatsRoute: typeof StatsRoute
   GamesGameIdRoute: typeof GamesGameIdRoute
+  ApiMusicActionRoute: typeof ApiMusicActionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -66,6 +92,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/music': {
+      id: '/music'
+      path: '/music'
+      fullPath: '/music'
+      preLoaderRoute: typeof MusicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -82,13 +115,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesGameIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/music/$action': {
+      id: '/api/music/$action'
+      path: '/api/music/$action'
+      fullPath: '/api/music/$action'
+      preLoaderRoute: typeof ApiMusicActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MusicRoute: MusicRoute,
   StatsRoute: StatsRoute,
   GamesGameIdRoute: GamesGameIdRoute,
+  ApiMusicActionRoute: ApiMusicActionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

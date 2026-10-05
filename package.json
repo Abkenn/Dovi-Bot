@@ -21,6 +21,7 @@
     "test:full": "vitest run",
     "test:embedded-app": "vitest run --config embedded-app/vitest.config.ts",
     "test:embedded-app:pip": "pnpm run build:embedded-app && tsx --tsconfig embedded-app/tsconfig.json scripts/verify-embedded-app-pip.ts",
+    "test:embedded-app:music": "pnpm run build:embedded-app && tsx --tsconfig embedded-app/tsconfig.json scripts/verify-embedded-app-music.ts",
     "test:embedded-app:coverage": "vitest run --coverage --config embedded-app/vitest.config.ts",
     "test:typecheck": "tsc --noEmit -p tsconfig.test.json",
     "test:coverage": "vitest run --coverage",

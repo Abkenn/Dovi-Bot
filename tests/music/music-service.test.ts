@@ -4,11 +4,12 @@ import type { MusicPlay } from '../../src/modules/music/music.types';
 const dependencies = vi.hoisted(() => ({
   save: vi.fn(),
   read: vi.fn(),
-  fetch: vi.fn(),
+  download: vi.fn(),
   handle: vi.fn(),
   video: vi.fn(),
   refresh: vi.fn(),
 }));
+vi.mock('ky', () => ({ default: { get: dependencies.download } }));
 vi.mock('../../src/config/discord-access', () => ({
   BOT_GUILDS: { PROD_ENV: 'prod', STAGING_ENV: 'staging' },
 }));
@@ -27,8 +28,11 @@ vi.mock('../../src/modules/music/music-youtube', () => ({
 import {
   importMusicUpload,
   refreshStoredMusicCatalog,
-  searchMusicCatalog,
 } from '../../src/modules/music/music.service';
+import {
+  getMusicFacts,
+  searchMusicCatalog,
+} from '../../src/modules/music/music-search.service';
 
 const upload = {
   authorId: '632504207441920011',
@@ -42,6 +46,15 @@ const upload = {
 const text = 'Per Stream :\nStream 32 : 25/09/26\n1:00 Song - Game';
 
 describe('music uploads and search', () => {
+  it('returns only aggregated facts and handles an unavailable catalog', async () => {
+    dependencies.read.mockResolvedValueOnce(null);
+    expect(await getMusicFacts()).toBeNull();
+    dependencies.read.mockResolvedValueOnce({
+      rawText: 'private catalog text',
+      plays: [],
+    });
+    expect(await getMusicFacts()).toEqual({ track: null, series: null });
+  });
   it('groups repeated game tracks with counts and links only their latest occurrence', async () => {
     dependencies.read.mockResolvedValue({
       plays: [
@@ -89,8 +102,7 @@ describe('music uploads and search', () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal('fetch', dependencies.fetch);
-    dependencies.fetch.mockResolvedValue(new Response(text));
+    dependencies.download.mockResolvedValue(new Response(text));
     dependencies.save.mockResolvedValue(true);
     dependencies.handle.mockReturnValue('@primary');
     dependencies.video.mockResolvedValue({
@@ -106,7 +118,7 @@ describe('music uploads and search', () => {
   });
 
   it('keeps song and game searches separate after importing a collector upload', async () => {
-    dependencies.fetch.mockResolvedValue(
+    dependencies.download.mockResolvedValue(
       new Response(`Per Stream :
 Stream 1 : 01/01/26
 1:00 Majula - Dark Souls II
@@ -144,7 +156,7 @@ Stream 1 : 1:00 Majula - DS2`),
     { size: 2_000_001 },
   ])('ignores ineligible attachments before download: %s', async (change) => {
     expect(await importMusicUpload({ ...upload, ...change })).toBe('ignored');
-    expect(dependencies.fetch).not.toHaveBeenCalled();
+    expect(dependencies.download).not.toHaveBeenCalled();
     expect(dependencies.save).not.toHaveBeenCalled();
   });
 
@@ -165,7 +177,7 @@ Stream 1 : 1:00 Majula - DS2`),
     expect(await importMusicUpload({ ...upload, filename: '32.0.txt' })).toBe(
       'updated',
     );
-    dependencies.fetch.mockResolvedValue(new Response(text));
+    dependencies.download.mockResolvedValue(new Response(text));
     dependencies.save.mockResolvedValue(false);
     expect(await importMusicUpload(upload)).toBe('unchanged');
   });
@@ -175,19 +187,21 @@ Stream 1 : 1:00 Majula - DS2`),
     'http://cdn.discordapp.com/file.txt',
   ])('rejects unexpected download locations', async (url) => {
     await expect(importMusicUpload({ ...upload, url })).rejects.toThrow();
-    expect(dependencies.fetch).not.toHaveBeenCalled();
+    expect(dependencies.download).not.toHaveBeenCalled();
   });
 
   it('keeps previous data on malformed content or failed downloads', async () => {
-    dependencies.fetch.mockResolvedValue(new Response('not a catalog'));
+    dependencies.download.mockResolvedValue(new Response('not a catalog'));
     await expect(importMusicUpload(upload)).rejects.toThrow();
-    dependencies.fetch.mockResolvedValue(new Response('', { status: 404 }));
+    dependencies.download.mockResolvedValue(new Response('', { status: 404 }));
     await expect(importMusicUpload(upload)).rejects.toThrow();
     expect(dependencies.save).not.toHaveBeenCalled();
   });
 
   it('bounds the actual response body even when attachment metadata is wrong', async () => {
-    dependencies.fetch.mockResolvedValue(new Response('x'.repeat(2_000_001)));
+    dependencies.download.mockResolvedValue(
+      new Response('x'.repeat(2_000_001)),
+    );
     await expect(importMusicUpload(upload)).rejects.toThrow();
     expect(dependencies.save).not.toHaveBeenCalled();
   });

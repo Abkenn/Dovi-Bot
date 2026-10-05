@@ -6,8 +6,9 @@ import {
   buildMusicGamePages,
   buildMusicSearchReply,
 } from '../modules/music/music.discord';
-import { searchMusicCatalog } from '../modules/music/music.service';
+import { buildMusicActivityButton } from '../modules/music/music-activity.discord';
 import { createMusicSearchPagination } from '../modules/music/music-pagination';
+import { searchMusicCatalog } from '../modules/music/music-search.service';
 
 const METADATA = COMMAND_METADATA.MUSIC_SEARCH;
 
@@ -70,10 +71,18 @@ export class MusicSearchCommand extends Command {
             createMusicSearchPagination({
               pages: buildMusicGamePages(gameResults, query),
               guildId: interaction.guildId,
+              activityQuery: query,
             }),
           );
         }
-        return editReply(buildMusicSearchReply(results, { game, query }));
+        const activity = buildMusicActivityButton(interaction.guildId, {
+          game,
+          query,
+        });
+        return editReply({
+          ...buildMusicSearchReply(results, { game, query }),
+          components: activity ? [activity] : [],
+        });
       },
     });
   }

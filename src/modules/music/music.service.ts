@@ -1,8 +1,6 @@
+import ky from 'ky';
 import { BOT_GUILDS } from '../../config/discord-access';
-import {
-  findMusicCatalog,
-  findMusicStreamVideo,
-} from '../../data/queries/music-catalog';
+import { findMusicCatalog } from '../../data/queries/music-catalog';
 import { replaceMusicCatalog } from '../../data/transactions/music-catalog';
 import {
   MUSIC_CATALOG_MAX_BYTES,
@@ -11,15 +9,8 @@ import {
 import type { MusicUpload } from './music.types';
 import { parseMusicCatalog } from './music-catalog.parser';
 import { isDigits } from './music-normalization';
-import {
-  findMusicGamePlays,
-  groupMusicGameTracks,
-  searchMusicPlays,
-} from './music-search';
-import {
-  getMusicChannelHandle,
-  refreshMusicStreamVideos,
-} from './music-youtube';
+
+import { refreshMusicStreamVideos } from './music-youtube';
 
 const isCatalogFilename = (filename: string) => {
   const name = filename.toLowerCase();
@@ -38,8 +29,11 @@ const downloadCatalog = async (url: string) => {
   ) {
     throw new Error('Unexpected music attachment URL.');
   }
-  const response = await fetch(url, {
+  const response = await ky.get(url, {
     signal: AbortSignal.timeout(15_000),
+    timeout: false,
+    retry: 0,
+    throwHttpErrors: false,
     redirect: 'error',
   });
   if (!response.ok || !response.body)
@@ -97,43 +91,6 @@ export const importMusicUpload = async (upload: MusicUpload) => {
     }
   }
   return updated ? 'updated' : 'unchanged';
-};
-
-type MusicSearchOptions = {
-  game: boolean;
-};
-
-const resolveMusicVideo = async (streamDate: string) => {
-  const handle = getMusicChannelHandle();
-  const cachedVideo = handle
-    ? await findMusicStreamVideo(handle, streamDate)
-    : null;
-  return cachedVideo?.videoId && cachedVideo.title
-    ? { videoId: cachedVideo.videoId, title: cachedVideo.title }
-    : null;
-};
-
-export const searchMusicCatalog = async (
-  query: string,
-  options: MusicSearchOptions = { game: false },
-) => {
-  const catalog = await findMusicCatalog();
-  if (!catalog) return null;
-  if (options.game) {
-    const plays = groupMusicGameTracks(
-      findMusicGamePlays(catalog.plays, query),
-    );
-    return Promise.all(
-      plays.map(async (play) => ({
-        ...play,
-        video: await resolveMusicVideo(play.streamDate),
-      })),
-    );
-  }
-  const best = searchMusicPlays(catalog.plays, query)[0];
-  if (!best) return [];
-  const video = await resolveMusicVideo(best.lastDate);
-  return [{ ...best, video }];
 };
 
 export const refreshStoredMusicCatalog = async () => {

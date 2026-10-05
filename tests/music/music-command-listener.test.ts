@@ -13,6 +13,9 @@ const dependencies = vi.hoisted(() => ({
   upload: vi.fn(),
   editReply: vi.fn(),
 }));
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: { PROD_ENV: 'prod', STAGING_ENV: 'staging' },
+}));
 vi.mock('@sapphire/framework', () => ({
   Command: class {
     constructor(_context: unknown, options: object) {
@@ -41,8 +44,11 @@ vi.mock('../../src/modules/command-runner/run-command', () => ({
   runCommand: dependencies.runner,
 }));
 vi.mock('../../src/modules/music/music.service', () => ({
-  searchMusicCatalog: dependencies.search,
   importMusicUpload: dependencies.upload,
+}));
+
+vi.mock('../../src/modules/music/music-search.service', () => ({
+  searchMusicCatalog: dependencies.search,
 }));
 
 import { MusicSearchCommand } from '../../src/commands/music-search';
@@ -92,6 +98,7 @@ describe('music command and listener wiring', () => {
       return options.run({ editReply: dependencies.editReply });
     });
     const interaction = {
+      guildId: 'staging',
       options: { getString: vi.fn().mockReturnValue('song') },
     };
     await MusicSearchCommand.prototype.chatInputRun.call(
@@ -101,9 +108,15 @@ describe('music command and listener wiring', () => {
     expect(dependencies.guard).toHaveBeenCalled();
     expect(interaction.options.getString).toHaveBeenCalledWith('query', true);
     expect(dependencies.search).toHaveBeenCalledWith('song', { game: false });
-    expect(dependencies.editReply).toHaveBeenCalledWith({
-      content: 'No matching tracks found. Try part of the song or game name.',
-    });
+    expect(dependencies.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'No matching tracks found. Try part of the song or game name.',
+      }),
+    );
+    expect(
+      dependencies.editReply.mock.calls[0]?.[0].components[0].toJSON()
+        .components[0].label,
+    ).toBe('Music Stats');
   });
 
   it('renders game search results through the game reply path', async () => {
@@ -136,6 +149,10 @@ describe('music command and listener wiring', () => {
     expect(dependencies.search).toHaveBeenCalledWith('dark souls 2', {
       game: true,
     });
+    expect(
+      dependencies.editReply.mock.calls[0]?.[0].components[0].toJSON()
+        .components[0].label,
+    ).toBe('Music Stats');
     expect(dependencies.editReply).toHaveBeenCalledWith(
       expect.objectContaining({
         content: expect.stringContaining('* [Majula - Dark Souls 2]'),

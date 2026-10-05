@@ -82,6 +82,7 @@ describe('GameSwitcher', () => {
       'Stats',
       'Dark Souls III',
       'Elden Ring',
+      'Music',
     ]);
     expect(screen.getByText('Stats').closest('a')).toHaveClass(
       'text-primary-foreground',

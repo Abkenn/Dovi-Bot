@@ -1,6 +1,7 @@
 import { pingDatabase } from '@data/queries/database-health';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
+import { createMusicApi } from './music-api';
 import { getRuntimeHealth } from './runtime-health';
 import { fetchEmbeddedApp } from './tanstack-start-server';
 
@@ -61,6 +62,8 @@ export function createHealthServer() {
   app.use('/.proxy/*', async (c) =>
     app.fetch(normalizeDiscordProxyRequest(c.req.raw)),
   );
+
+  app.route('/api/music', createMusicApi());
 
   app.get('/health', async (c) => {
     const runtimeHealth = getRuntimeHealth();

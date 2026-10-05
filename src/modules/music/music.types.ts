@@ -52,7 +52,23 @@ export type MusicUpload = {
 export type MusicPaginationInput = {
   pages: string[];
   guildId: string | null;
+  activityQuery?: string;
 };
+
+export type MusicSearchOptions = { game: boolean };
+export type MusicSearchInput = MusicSearchOptions & { query: string };
+export type MusicActivityResult = {
+  title: string;
+  game: string | null;
+  count: number;
+  date: string;
+  offsetSeconds: number;
+  url: string | null;
+};
+export type MusicFact = { title: string; count: number };
+export type MusicFacts = { track: MusicFact | null; series: MusicFact | null };
+export type MusicFactsResponse = { facts: MusicFacts | null };
+export type MusicSearchResponse = { results: MusicActivityResult[] | null };
 
 export type MusicPaginationSession = MusicPaginationInput & {
   expiresAt: number;

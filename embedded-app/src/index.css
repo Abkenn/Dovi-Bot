@@ -17,6 +17,27 @@
   display: none;
 }
 
+.music-pip-only {
+  display: none;
+}
+html[data-activity-layout="pip"] .music-frame {
+  height: 100svh;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0.25rem;
+  display: grid;
+  overflow: hidden;
+}
+html[data-activity-layout="pip"] .music-full {
+  display: none;
+}
+html[data-activity-layout="pip"] .music-pip-only {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
 html[data-activity-layout="pip"] .general-stats-frame {
   width: 100%;
   max-width: none;
