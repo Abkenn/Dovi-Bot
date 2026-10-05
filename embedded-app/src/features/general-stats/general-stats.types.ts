@@ -1,4 +1,8 @@
-import type { BossAchievement, BossComparison } from '@/live-stats.types';
+import type {
+  BossAchievement,
+  BossComparison,
+  GameComparison,
+} from '@/live-stats.types';
 
 export type ChartBoss = {
   gameId: string;
@@ -11,3 +15,11 @@ export type ChartBossWinner = {
 };
 
 export type ChartBossWinners = Record<BossAchievement, ChartBossWinner | null>;
+
+export type HoveredChartGame = { game: GameComparison; source: 'dot' | 'key' };
+
+export type PipGameHighlight = {
+  label: string;
+  achievement: BossAchievement;
+  game: GameComparison | null;
+};

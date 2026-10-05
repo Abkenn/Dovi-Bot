@@ -1,12 +1,20 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import type { CSSProperties, ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <div>Game switcher</div>,
 }));
 vi.mock('recharts', () => ({
-  Cell: () => null,
+  Cell: ({ style }: { style?: CSSProperties }) => (
+    <span data-testid="chart-dot" style={style} />
+  ),
   CartesianGrid: () => <div>Grid</div>,
   ReferenceLine: ({
     onMouseEnter,
@@ -38,18 +46,21 @@ vi.mock('recharts', () => ({
     data,
     onClick,
     onMouseEnter,
+    onMouseLeave,
   }: {
     children: ReactNode;
     data: unknown[];
     onClick: (entry: unknown) => void;
-    onMouseEnter: () => void;
+    onMouseEnter: (entry: unknown) => void;
+    onMouseLeave: () => void;
   }) => (
     <div>
       {children}
       <button
         type="button"
         className="recharts-scatter-symbol"
-        onMouseEnter={onMouseEnter}
+        onMouseEnter={() => onMouseEnter(data[0])}
+        onMouseLeave={onMouseLeave}
         onClick={() => onClick(data[0])}
       >
         First chart dot
@@ -147,6 +158,150 @@ const makeComparison = (
 });
 
 describe('GeneralStatsPage', () => {
+  it('uses the chart medal winners for PiP instead of the game-average leaders', () => {
+    const eigong = makeComparison('nine-sols', 'Nine Sols', 76, 360);
+    const sekiro = {
+      ...makeComparison('sekiro', 'Sekiro', 24, 337),
+      bossHighlights: {
+        mostAttempts: {
+          name: 'Isshin',
+          attempts: 24,
+          winningAttemptSeconds: 337,
+        },
+        longestWinningAttempt: {
+          name: 'Monkeys',
+          attempts: 4,
+          winningAttemptSeconds: 1628,
+        },
+        toughestOverall: null,
+      },
+    };
+    const elden = makeComparison('elden-ring', 'Elden Ring', 60, 600);
+    const cuphead = makeComparison('cuphead', 'Cuphead', 2, 30);
+    render(
+      <GeneralStatsPage
+        games={[]}
+        generalStats={{
+          hardestByDeathsGameId: cuphead.id,
+          longestWinningAttemptGameId: cuphead.id,
+          toughestOverallGameId: cuphead.id,
+          games: [eigong, sekiro, elden, cuphead],
+        }}
+      />,
+    );
+    const pip = within(
+      screen.getByRole('region', { name: 'General stats PiP summary' }),
+    );
+    expect(pip.getByText('Nine Sols')).toBeInTheDocument();
+    expect(pip.getByText('Sekiro')).toBeInTheDocument();
+    expect(pip.getByText('Elden Ring')).toBeInTheDocument();
+    expect(pip.queryByText('Cuphead')).not.toBeInTheDocument();
+    expect(pip.getAllByRole('button')).toHaveLength(3);
+  });
+
+  it('mirrors subtle dot hover onto the matching game button and keeps selection stronger', () => {
+    const game = makeComparison('nine-sols', 'Nine Sols', 76, 360);
+    render(
+      <GeneralStatsPage
+        games={[]}
+        generalStats={{
+          hardestByDeathsGameId: game.id,
+          longestWinningAttemptGameId: game.id,
+          toughestOverallGameId: game.id,
+          games: [game],
+        }}
+      />,
+    );
+    const dot = screen.getByRole('button', { name: 'First chart dot' });
+    const key = screen.getByRole('button', {
+      name: 'Lock details for Nine Sols',
+    });
+    const glow = screen.getByTestId('chart-dot');
+    fireEvent.mouseEnter(dot);
+    expect(key).toHaveClass('border-primary/45', 'bg-primary/5');
+    expect(key).not.toHaveClass('border-primary');
+    expect(glow.style.filter).toContain('2px');
+    fireEvent.click(dot);
+    expect(key).toHaveClass('border-primary');
+    expect(glow.style.filter).toContain('6px');
+    fireEvent.mouseLeave(dot);
+    expect(key).toHaveClass('border-primary');
+    expect(key).not.toHaveClass('bg-primary/5');
+  });
+
+  it('previews game buttons at the static position without locking and clears the preview on leave', async () => {
+    const game = makeComparison('preview', 'Preview Game', 20, 180);
+    render(
+      <GeneralStatsPage
+        games={[]}
+        generalStats={{
+          hardestByDeathsGameId: game.id,
+          longestWinningAttemptGameId: game.id,
+          toughestOverallGameId: game.id,
+          games: [game],
+        }}
+      />,
+    );
+    const key = screen.getByRole('button', {
+      name: 'Lock details for Preview Game',
+    });
+    fireEvent.mouseEnter(key);
+    expect(key).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('chart-dot').style.filter).toContain('2px');
+    expect(
+      screen.getByText('Preview Game boss').closest('.locked-chart-popup'),
+    ).toHaveClass('top-24', 'right-6');
+    fireEvent.mouseLeave(key);
+    await waitFor(() =>
+      expect(screen.queryByText('Preview Game boss')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('chart-dot').style.filter).toBe('');
+    fireEvent.mouseEnter(key);
+    fireEvent.click(key);
+    fireEvent.mouseLeave(key);
+    expect(key).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Preview Game boss')).toBeInTheDocument();
+    expect(screen.getByTestId('chart-dot').style.filter).toContain('6px');
+  });
+
+  it('restores the clicked selection after previewing another game button', () => {
+    const selected = makeComparison('selected', 'Selected Game', 30, 240);
+    const preview = makeComparison('preview', 'Preview Game', 20, 180);
+    render(
+      <GeneralStatsPage
+        games={[]}
+        generalStats={{
+          hardestByDeathsGameId: selected.id,
+          longestWinningAttemptGameId: selected.id,
+          toughestOverallGameId: selected.id,
+          games: [selected, preview],
+        }}
+      />,
+    );
+    const selectedKey = screen.getByRole('button', {
+      name: 'Lock details for Selected Game',
+    });
+    const previewKey = screen.getByRole('button', {
+      name: 'Lock details for Preview Game',
+    });
+    fireEvent.click(selectedKey);
+    fireEvent.mouseEnter(previewKey);
+    const activePopup = () => {
+      const popup = document.querySelector(
+        '.locked-chart-popup[aria-hidden="false"]',
+      );
+      if (!(popup instanceof HTMLElement))
+        throw new Error('Expected active popup');
+      return within(popup);
+    };
+    expect(activePopup().getByText('Preview Game boss')).toBeInTheDocument();
+    expect(selectedKey).toHaveAttribute('aria-pressed', 'true');
+    expect(previewKey).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.mouseLeave(previewKey);
+    expect(activePopup().getByText('Selected Game boss')).toBeInTheDocument();
+    expect(selectedKey).toHaveClass('border-primary');
+  });
+
   it('shows large chart dots with hover details that lock on click', async () => {
     const tiedGames = [
       {
@@ -257,10 +412,12 @@ describe('GeneralStatsPage', () => {
       chartCardContent.querySelector('.locked-chart-popup'),
     ).not.toHaveStyle({ left: '320px' });
     expect(
-      screen.getByRole('button', { name: /Most deaths: Highest death count/ }),
+      within(chartCardContent).getByRole('button', {
+        name: /Most deaths: Highest death count/,
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {
+      within(chartCardContent).getByRole('button', {
         name: /Longest winning attempt: Longest final/,
       }),
     ).toBeInTheDocument();
@@ -309,35 +466,43 @@ describe('GeneralStatsPage', () => {
         }}
       />,
     );
+    const card = screen
+      .getByRole('img', {
+        name: 'Boss deaths and winning-attempt time comparison chart',
+      })
+      .closest('[data-slot="card-content"]');
+    if (!(card instanceof HTMLElement))
+      throw new Error('Expected chart content');
+    const chart = within(card);
     fireEvent.click(
       screen.getByRole('button', { name: 'Lock details for Other Game' }),
     );
     expect(
-      screen.queryAllByRole('button', { name: /Most deaths: Highest/ }),
+      chart.queryAllByRole('button', { name: /Most deaths: Highest/ }),
     ).toHaveLength(0);
     expect(
-      screen.queryAllByRole('button', {
+      chart.queryAllByRole('button', {
         name: /Longest winning attempt: Longest final/,
       }),
     ).toHaveLength(0);
     expect(
-      screen.queryAllByRole('button', { name: /Toughest overall: Strongest/ }),
+      chart.queryAllByRole('button', { name: /Toughest overall: Strongest/ }),
     ).toHaveLength(0);
     fireEvent.click(
       screen.getByRole('button', { name: 'Lock details for Nine Sols' }),
     );
     expect(
-      screen.getAllByRole('button', {
+      chart.getAllByRole('button', {
         name: /Most deaths: Highest death count across all chart games/,
       }),
     ).toHaveLength(1);
     expect(
-      screen.getAllByRole('button', {
+      chart.getAllByRole('button', {
         name: /Longest winning attempt: Longest final successful attempt across all chart games/,
       }),
     ).toHaveLength(1);
     expect(
-      screen.getAllByRole('button', { name: /Toughest overall: Strongest/ }),
+      chart.getAllByRole('button', { name: /Toughest overall: Strongest/ }),
     ).toHaveLength(1);
   });
 

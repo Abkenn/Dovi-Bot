@@ -5,6 +5,7 @@ import type { ArchivedGame, GeneralStats } from '@/live-stats.types';
 import { GameDifficultyChart } from '../components/game-difficulty-chart';
 import { GeneralStatsHighlightCard } from '../components/general-stats-highlight-card';
 import { GeneralStatsPipSummary } from '../components/general-stats-pip-summary';
+import { getChartBossWinners } from '../lib/chart-boss-achievements';
 import {
   findGeneralStatsGame,
   formatStatsDuration,
@@ -32,12 +33,20 @@ export const GeneralStatsPage = ({
     generalStats.toughestOverallGameId,
   );
 
+  const chartGames = generalStats.games.filter(
+    (game) =>
+      game.bossHighlights.longestWinningAttempt?.winningAttemptSeconds != null,
+  );
+  const chartWinners = getChartBossWinners(chartGames);
+  const medalGame = (achievement: keyof typeof chartWinners) =>
+    findGeneralStatsGame(chartGames, chartWinners[achievement]?.gameId ?? null);
+
   return (
     <main className="general-stats-frame mx-auto min-h-svh w-full max-w-5xl space-y-5 px-3 py-3 sm:px-8 sm:py-12">
       <GeneralStatsPipSummary
-        hardestByDeaths={hardestByDeaths}
-        longestWinningAttempt={longestWinningAttempt}
-        toughestOverall={toughestOverall}
+        hardestByDeaths={medalGame('MOST_DEATHS')}
+        longestWinningAttempt={medalGame('LONGEST_WINNING_ATTEMPT')}
+        toughestOverall={medalGame('TOUGHEST_OVERALL')}
       />
       <div className="general-stats-full space-y-6 activity-compact:hidden">
         <StatsPageHeader

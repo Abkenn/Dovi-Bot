@@ -1,6 +1,8 @@
 import { BrainCircuit } from 'lucide-react';
+import { BossAchievements } from '@/components/boss-achievements';
 import { Card, CardContent } from '@/components/ui/card';
 import type { GameComparison } from '@/live-stats.types';
+import type { PipGameHighlight } from '../general-stats.types';
 import { formatStatsDuration } from '../lib/general-stats-chart.utils';
 
 type GeneralStatsPipSummaryProps = {
@@ -15,10 +17,18 @@ export const GeneralStatsPipSummary = ({
   toughestOverall,
 }: GeneralStatsPipSummaryProps) => {
   const highlights = [
-    { label: 'Deaths', game: hardestByDeaths },
-    { label: 'Winning time', game: longestWinningAttempt },
-    { label: 'Overall', game: toughestOverall },
-  ];
+    { label: 'Most deaths', achievement: 'MOST_DEATHS', game: hardestByDeaths },
+    {
+      label: 'Longest win',
+      achievement: 'LONGEST_WINNING_ATTEMPT',
+      game: longestWinningAttempt,
+    },
+    {
+      label: 'Toughest overall',
+      achievement: 'TOUGHEST_OVERALL',
+      game: toughestOverall,
+    },
+  ] satisfies PipGameHighlight[];
 
   return (
     <Card
@@ -34,25 +44,34 @@ export const GeneralStatsPipSummary = ({
           </div>
         </div>
         <dl className="general-stats-pip-rows grid min-h-0 flex-1 auto-rows-fr gap-1">
-          {highlights.map(({ label, game }) => (
+          {highlights.map(({ label, achievement, game }) => (
             <div
               key={label}
-              className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)] content-center items-center gap-x-2 rounded-lg bg-muted/45 px-2 py-1"
+              className="grid min-h-0 grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] content-center items-center gap-x-2 rounded-lg bg-muted/45 px-2 py-1"
             >
-              <dt className="text-[0.65rem] font-semibold text-muted-foreground">
-                {label}
+              <dt className="flex justify-center [&_button]:size-4">
+                <span className="sr-only">{label}</span>
+                {game ? (
+                  <BossAchievements
+                    achievements={[achievement]}
+                    scope="chart"
+                  />
+                ) : null}
               </dt>
-              <dd className="min-w-0 text-right">
+              <dd className="min-w-0 text-center">
                 <span
-                  className="block truncate text-xs font-bold"
+                  className="general-stats-pip-game block truncate font-sans text-xs leading-4 font-semibold"
                   title={game?.name}
                 >
                   {game?.name ?? 'Not enough data'}
                 </span>
               </dd>
               {game ? (
-                <dd className="general-stats-pip-metrics col-span-2 whitespace-nowrap text-[0.65rem] text-muted-foreground">
-                  {game.averageAttemptsPerBoss} attempts ·{' '}
+                <dd
+                  title="Game averages per boss: attempts, attempt duration, winning-attempt duration"
+                  className="general-stats-pip-metrics col-span-3 whitespace-nowrap text-center text-[0.65rem] text-muted-foreground"
+                >
+                  Avg: {game.averageAttemptsPerBoss} attempts ·{' '}
                   {game.averageAttemptSeconds == null
                     ? 'avg untracked'
                     : `${formatStatsDuration(game.averageAttemptSeconds)} avg`}{' '}

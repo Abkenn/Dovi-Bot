@@ -62,9 +62,9 @@ const scenarios = [
   {
     name: 'normal',
     props: {
-      hardestByDeaths: makeGame('Cuphead'),
-      longestWinningAttempt: makeGame('UNDERTALE'),
-      toughestOverall: makeGame('UNDERTALE'),
+      hardestByDeaths: makeGame('Nine Sols'),
+      longestWinningAttempt: makeGame('Sekiro'),
+      toughestOverall: makeGame('Elden Ring'),
     },
   },
   {
@@ -133,6 +133,35 @@ try {
           };
         });
       });
+      const typography = await page.evaluate(() =>
+        [...document.querySelectorAll('.general-stats-pip-game')].map(
+          (element) => {
+            const bounds = element.getBoundingClientRect();
+            const row = element.closest('.general-stats-pip-rows > div');
+            if (!row) throw new Error('Missing PiP row');
+            const rowBounds = row.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              centerOffset: Math.abs(
+                (bounds.left + bounds.right) / 2 -
+                  (rowBounds.left + rowBounds.right) / 2,
+              ),
+              fontFamily: style.fontFamily,
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+            };
+          },
+        ),
+      );
+      for (const game of typography) {
+        assert(game.centerOffset <= 1, JSON.stringify({ size, game }));
+        assert(
+          game.fontFamily.includes('sans-serif'),
+          JSON.stringify({ size, game }),
+        );
+        assert.equal(game.fontSize, typography[0]?.fontSize);
+        assert.equal(game.fontWeight, typography[0]?.fontWeight);
+      }
       for (const element of result) {
         assert(
           element.top >= 0 && element.bottom <= size.height,

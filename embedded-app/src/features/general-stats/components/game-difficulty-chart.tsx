@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
 import type { GameComparison } from '@/live-stats.types';
+import type { HoveredChartGame } from '../general-stats.types';
 import { compressBossStat, expandBossStat } from '../lib/boss-stats-scale';
 import { getChartBossWinners } from '../lib/chart-boss-achievements';
 import { formatStatsDuration } from '../lib/general-stats-chart.utils';
@@ -74,8 +75,22 @@ const getClickedPoint = (entry: unknown) => {
   return null;
 };
 
+const getDotStyle = (selected: boolean, hovered: boolean) => {
+  const transition = 'filter 150ms ease-out';
+  if (selected)
+    return { transition, filter: 'drop-shadow(0 0 6px var(--primary))' };
+  if (hovered)
+    return {
+      transition,
+      filter:
+        'drop-shadow(0 0 2px color-mix(in oklab, var(--primary) 40%, transparent))',
+    };
+  return { transition };
+};
+
 export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [hoveredGame, setHoveredGame] = useState<HoveredChartGame | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameComparison | null>(null);
   const [lockedPosition, setLockedPosition] =
     useState<AverageTooltipPosition | null>(null);
@@ -120,6 +135,10 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
         ),
     [games],
   );
+
+  const keyPreview = hoveredGame?.source === 'key' ? hoveredGame.game : null;
+  const popupGame = keyPreview ?? selectedGame;
+  const popupPosition = keyPreview ? null : lockedPosition;
 
   const winners = useMemo(() => getChartBossWinners(points), [points]);
 
@@ -206,16 +225,16 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
         onMouseMove={positionAverageTooltip}
       >
         <AnimatePresence>
-          {selectedGame ? (
+          {popupGame ? (
             <LockedGameTooltip
-              key={selectedGame.id}
-              game={selectedGame}
+              key={popupGame.id}
+              game={popupGame}
               winners={winners}
-              position={lockedPosition}
+              position={popupPosition}
             />
           ) : null}
         </AnimatePresence>
-        {selectedGame === null && hoveredAverage ? (
+        {popupGame === null && hoveredAverage ? (
           <div
             className="pointer-events-none absolute z-20 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur"
             style={{
@@ -303,7 +322,7 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               onMouseLeave={() => setHoveredAverage(null)}
               className="cursor-help"
             />
-            {selectedGame === null ? (
+            {popupGame === null ? (
               <ChartTooltip
                 content={(props) => (
                   <GameChartTooltip {...props} winners={winners} />
@@ -319,7 +338,12 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
               stroke="var(--background)"
               strokeWidth={3}
               isAnimationActive={false}
-              onMouseEnter={() => setHoveredAverage(null)}
+              onMouseEnter={(entry) => {
+                setHoveredAverage(null);
+                const game = getClickedPoint(entry);
+                setHoveredGame(game ? { game, source: 'dot' } : null);
+              }}
+              onMouseLeave={() => setHoveredGame(null)}
               onClick={selectPoint}
               className="cursor-pointer"
             >
@@ -331,11 +355,10 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
                       ? 'var(--primary)'
                       : 'var(--background)'
                   }
-                  style={
-                    selectedGame?.id === point.id
-                      ? { filter: 'drop-shadow(0 0 6px var(--primary))' }
-                      : undefined
-                  }
+                  style={getDotStyle(
+                    selectedGame?.id === point.id,
+                    hoveredGame?.game.id === point.id,
+                  )}
                 />
               ))}
             </Scatter>
@@ -352,14 +375,24 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
                 type="button"
                 aria-label={`Lock details for ${point.name}`}
                 aria-pressed={selectedGame?.id === point.id}
+                onMouseEnter={() => {
+                  setHoveredAverage(null);
+                  setHoveredGame({ game: point, source: 'key' });
+                }}
+                onMouseLeave={() => setHoveredGame(null)}
                 onClick={() => {
                   setLockedPosition(null);
                   setSelectedGame(point);
                 }}
                 className={cn(
-                  'chart-game-key grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 px-3 py-2 text-left transition-colors hover:border-primary/45 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  'chart-game-key grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  selectedGame?.id !== point.id &&
+                    'hover:border-primary/45 hover:bg-primary/5',
                   selectedGame?.id === point.id &&
                     'border-primary shadow-[0_0_12px_var(--primary)] bg-primary/10',
+                  selectedGame?.id !== point.id &&
+                    hoveredGame?.game.id === point.id &&
+                    'border-primary/45 bg-primary/5',
                 )}
               >
                 <span className="truncate text-sm font-semibold">

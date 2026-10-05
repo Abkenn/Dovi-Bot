@@ -44,7 +44,11 @@ describe('GeneralStatsPipSummary', () => {
     );
     expect(
       summary.querySelectorAll('.general-stats-pip-metrics')[0],
-    ).toHaveClass('col-span-2');
+    ).toHaveClass('col-span-3');
+    expect(screen.getAllByText('Untimed Game')[0].parentElement).toHaveClass(
+      'text-center',
+    );
+    expect(screen.getAllByRole('button')).toHaveLength(3);
     expect(screen.getAllByText(/6 attempts/)).toHaveLength(3);
     expect(screen.getAllByText(/avg untracked/)).toHaveLength(3);
     expect(screen.getAllByText(/win untracked/)).toHaveLength(3);
