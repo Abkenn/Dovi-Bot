@@ -24,43 +24,46 @@ export const GeneralStatsPipSummary = ({
     <Card
       role="region"
       aria-label="General stats PiP summary"
-      className="general-stats-pip-only activity-compact:flex hidden w-full max-w-md gap-0 py-0 font-sans"
+      className="general-stats-pip-only activity-compact:flex hidden w-full max-w-md min-h-0 gap-0 py-0 font-sans"
     >
-      <CardContent className="w-full p-2">
-        <div className="mb-1 flex items-center gap-2">
+      <CardContent className="general-stats-pip-content flex min-h-0 w-full flex-col p-2">
+        <div className="mb-1 flex shrink-0 items-center gap-2">
           <BrainCircuit className="size-4 text-primary" aria-hidden="true" />
           <div>
             <h1 className="text-sm font-bold">General Stats</h1>
           </div>
         </div>
-        <dl className="grid gap-1">
+        <dl className="general-stats-pip-rows grid min-h-0 flex-1 auto-rows-fr gap-1">
           {highlights.map(({ label, game }) => (
             <div
               key={label}
-              className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 rounded-lg bg-muted/45 px-2 py-1"
+              className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)] content-center items-center gap-x-2 rounded-lg bg-muted/45 px-2 py-1"
             >
               <dt className="text-[0.65rem] font-semibold text-muted-foreground">
                 {label}
               </dt>
               <dd className="min-w-0 text-right">
-                <span className="block text-xs font-bold">
+                <span
+                  className="block truncate text-xs font-bold"
+                  title={game?.name}
+                >
                   {game?.name ?? 'Not enough data'}
                 </span>
-                {game ? (
-                  <span className="block text-[0.65rem] text-muted-foreground">
-                    {game.averageAttemptsPerBoss} attempts ·{' '}
-                    {game.averageAttemptSeconds == null
-                      ? 'avg untracked'
-                      : `${formatStatsDuration(game.averageAttemptSeconds)} avg`}{' '}
-                    ·{' '}
-                    {game.averageWinningAttemptSeconds === null
-                      ? 'win untracked'
-                      : `${formatStatsDuration(
-                          game.averageWinningAttemptSeconds,
-                        )} win`}
-                  </span>
-                ) : null}
               </dd>
+              {game ? (
+                <dd className="general-stats-pip-metrics col-span-2 whitespace-nowrap text-[0.65rem] text-muted-foreground">
+                  {game.averageAttemptsPerBoss} attempts ·{' '}
+                  {game.averageAttemptSeconds == null
+                    ? 'avg untracked'
+                    : `${formatStatsDuration(game.averageAttemptSeconds)} avg`}{' '}
+                  ·{' '}
+                  {game.averageWinningAttemptSeconds === null
+                    ? 'win untracked'
+                    : `${formatStatsDuration(
+                        game.averageWinningAttemptSeconds,
+                      )} win`}
+                </dd>
+              ) : null}
             </div>
           ))}
         </dl>

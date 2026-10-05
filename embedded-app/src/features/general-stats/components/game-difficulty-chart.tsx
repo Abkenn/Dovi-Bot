@@ -1,3 +1,4 @@
+import { AnimatePresence } from 'motion/react';
 import type { MouseEvent } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import {
@@ -19,9 +20,10 @@ import {
 import { cn } from '@/lib/utils';
 import type { GameComparison } from '@/live-stats.types';
 import { compressBossStat, expandBossStat } from '../lib/boss-stats-scale';
+import { getChartBossWinners } from '../lib/chart-boss-achievements';
 import { formatStatsDuration } from '../lib/general-stats-chart.utils';
 import { GameChartTooltip } from './game-chart-tooltip';
-import { GameDifficultyTooltip } from './game-difficulty-tooltip';
+import { LockedGameTooltip } from './locked-game-tooltip';
 
 type GameDifficultyChartProps = {
   games: GameComparison[];
@@ -119,6 +121,8 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
     [games],
   );
 
+  const winners = useMemo(() => getChartBossWinners(points), [points]);
+
   if (points.length === 0) {
     return (
       <Card>
@@ -201,21 +205,16 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
         onClick={closeLockedTooltip}
         onMouseMove={positionAverageTooltip}
       >
-        {selectedGame ? (
-          <div
-            className={cn(
-              'locked-chart-popup absolute z-30',
-              !lockedPosition && 'top-24 right-6',
-            )}
-            style={
-              lockedPosition
-                ? { left: lockedPosition.x, top: lockedPosition.y }
-                : undefined
-            }
-          >
-            <GameDifficultyTooltip game={selectedGame} />
-          </div>
-        ) : null}
+        <AnimatePresence>
+          {selectedGame ? (
+            <LockedGameTooltip
+              key={selectedGame.id}
+              game={selectedGame}
+              winners={winners}
+              position={lockedPosition}
+            />
+          ) : null}
+        </AnimatePresence>
         {selectedGame === null && hoveredAverage ? (
           <div
             className="pointer-events-none absolute z-20 rounded-lg border border-border bg-card/95 px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur"
@@ -306,7 +305,9 @@ export const GameDifficultyChart = ({ games }: GameDifficultyChartProps) => {
             />
             {selectedGame === null ? (
               <ChartTooltip
-                content={GameChartTooltip}
+                content={(props) => (
+                  <GameChartTooltip {...props} winners={winners} />
+                )}
                 cursor={false}
                 isAnimationActive={false}
                 wrapperStyle={{ pointerEvents: 'none', zIndex: 30 }}

@@ -1,8 +1,11 @@
 import type { TooltipContentProps } from 'recharts';
 import type { GameComparison } from '@/live-stats.types';
+import type { ChartBossWinners } from '../general-stats.types';
 import { GameDifficultyTooltip } from './game-difficulty-tooltip';
 
-type GameChartTooltipProps = TooltipContentProps;
+type GameChartTooltipProps = TooltipContentProps & {
+  winners?: ChartBossWinners;
+};
 
 const isGameComparison = (candidate: unknown): candidate is GameComparison =>
   Boolean(
@@ -15,6 +18,7 @@ const isGameComparison = (candidate: unknown): candidate is GameComparison =>
 export const GameChartTooltip = ({
   active,
   payload,
+  winners,
 }: GameChartTooltipProps) => {
   const game = payload?.[0]?.payload;
 
@@ -22,5 +26,5 @@ export const GameChartTooltip = ({
     return null;
   }
 
-  return <GameDifficultyTooltip game={game} />;
+  return <GameDifficultyTooltip game={game} winners={winners} />;
 };

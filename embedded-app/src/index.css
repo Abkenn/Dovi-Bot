@@ -23,10 +23,9 @@ html[data-activity-layout="pip"] .general-stats-frame {
   height: 100svh;
   min-height: 0;
   padding: 0.25rem;
-  display: flex;
-  align-items: safe center;
-  justify-content: center;
-  overflow: auto;
+  display: grid;
+  place-items: stretch;
+  overflow: hidden;
 }
 
 html[data-activity-layout="pip"] .general-stats-full {
@@ -35,6 +34,22 @@ html[data-activity-layout="pip"] .general-stats-full {
 
 html[data-activity-layout="pip"] .general-stats-pip-only {
   display: flex;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+}
+
+html[data-activity-layout="pip"] .general-stats-pip-content {
+  height: 100%;
+}
+
+html[data-activity-layout="pip"] .general-stats-pip-rows {
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+
+html[data-activity-layout="pip"] .general-stats-pip-metrics {
+  font-size: clamp(0.5rem, 3.1vw, 0.65rem);
 }
 
 .game-switcher-scroll {

@@ -6,6 +6,14 @@ describe('GameDifficultyTooltip', () => {
   it('shows three boss categories and allows the same boss to win twice', () => {
     render(
       <GameDifficultyTooltip
+        winners={{
+          MOST_DEATHS: { gameId: 'ds3', bossName: 'Sister Friede' },
+          LONGEST_WINNING_ATTEMPT: {
+            gameId: 'ds3',
+            bossName: 'Slave Knight Gael',
+          },
+          TOUGHEST_OVERALL: { gameId: 'ds3', bossName: 'Sister Friede' },
+        }}
         game={{
           id: 'ds3',
           name: 'Dark Souls III',
@@ -42,10 +50,10 @@ describe('GameDifficultyTooltip', () => {
     expect(screen.getByText('4m 0s')).toBeInTheDocument();
     expect(
       screen.getAllByRole('button', { name: /Most deaths: Highest/ }),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(
       screen.getAllByRole('button', { name: /Toughest overall: Strongest/ }),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(
       screen.getAllByRole('button', {
         name: /Longest winning attempt: Longest final/,

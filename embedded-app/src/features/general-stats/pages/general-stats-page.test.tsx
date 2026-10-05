@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -147,7 +147,7 @@ const makeComparison = (
 });
 
 describe('GeneralStatsPage', () => {
-  it('shows large chart dots with hover details that lock on click', () => {
+  it('shows large chart dots with hover details that lock on click', async () => {
     const tiedGames = [
       {
         ...makeComparison('bloodborne', 'Bloodborne', 4, 240),
@@ -273,12 +273,72 @@ describe('GeneralStatsPage', () => {
         name: 'Boss deaths and winning-attempt time comparison chart',
       }),
     );
-    expect(screen.queryByText('Bloodborne boss')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText('Bloodborne boss')).not.toBeInTheDocument(),
+    );
     expect(screen.getByText('Hovered Game')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Wrapped chart dot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Invalid chart dot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Empty chart dot' }));
+  });
+
+  it('shows chart-wide badges on the winning boss and no badges for other games', () => {
+    const championBoss = {
+      name: 'Eigong',
+      attempts: 76,
+      winningAttemptSeconds: 600,
+    };
+    const champion = {
+      ...makeComparison('nine-sols', 'Nine Sols', 76, 600),
+      bossHighlights: {
+        mostAttempts: championBoss,
+        longestWinningAttempt: championBoss,
+        toughestOverall: championBoss,
+      },
+    };
+    const other = makeComparison('other', 'Other Game', 4, 120);
+    render(
+      <GeneralStatsPage
+        games={[]}
+        generalStats={{
+          hardestByDeathsGameId: champion.id,
+          longestWinningAttemptGameId: champion.id,
+          toughestOverallGameId: champion.id,
+          games: [champion, other],
+        }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Lock details for Other Game' }),
+    );
+    expect(
+      screen.queryAllByRole('button', { name: /Most deaths: Highest/ }),
+    ).toHaveLength(0);
+    expect(
+      screen.queryAllByRole('button', {
+        name: /Longest winning attempt: Longest final/,
+      }),
+    ).toHaveLength(0);
+    expect(
+      screen.queryAllByRole('button', { name: /Toughest overall: Strongest/ }),
+    ).toHaveLength(0);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Lock details for Nine Sols' }),
+    );
+    expect(
+      screen.getAllByRole('button', {
+        name: /Most deaths: Highest death count across all chart games/,
+      }),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByRole('button', {
+        name: /Longest winning attempt: Longest final successful attempt across all chart games/,
+      }),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByRole('button', { name: /Toughest overall: Strongest/ }),
+    ).toHaveLength(1);
   });
 
   it('shows comparison highlights and a boss extremes chart', () => {

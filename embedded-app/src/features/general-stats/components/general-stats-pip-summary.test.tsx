@@ -38,7 +38,13 @@ describe('GeneralStatsPipSummary', () => {
       name: 'General stats PiP summary',
     });
     expect(summary).toHaveClass('font-sans', 'py-0', 'gap-0');
-    expect(summary.querySelector('.truncate')).toBeNull();
+    expect(summary.querySelector('dl')).toHaveClass('general-stats-pip-rows');
+    expect(summary.querySelectorAll('.general-stats-pip-metrics')).toHaveLength(
+      3,
+    );
+    expect(
+      summary.querySelectorAll('.general-stats-pip-metrics')[0],
+    ).toHaveClass('col-span-2');
     expect(screen.getAllByText(/6 attempts/)).toHaveLength(3);
     expect(screen.getAllByText(/avg untracked/)).toHaveLength(3);
     expect(screen.getAllByText(/win untracked/)).toHaveLength(3);
