@@ -1,4 +1,8 @@
+import { createORPCClient } from '@orpc/client';
+import { RPCLink } from '@orpc/client/fetch';
+import type { RouterClient } from '@orpc/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { musicRouter } from '../../src/app/music-rpc';
 
 const database = vi.hoisted(() => ({ pingDatabase: vi.fn() }));
 const runtime = vi.hoisted(() => ({ getRuntimeHealth: vi.fn() }));
@@ -26,11 +30,19 @@ import { getMusicFacts } from '../../src/modules/music/music-search.service';
 describe('health and embedded app server', () => {
   it('serves Music API requests through the Discord proxy without SSR', async () => {
     vi.mocked(getMusicFacts).mockResolvedValue(null);
-    const response = await createHealthServer().request(
-      '/.proxy/api/music/facts',
+    const api = createHealthServer();
+    const client: RouterClient<typeof musicRouter> = createORPCClient(
+      new RPCLink({
+        url: 'http://localhost/.proxy/api/music/rpc',
+        fetch: async (request) => {
+          const response = await api.request(request);
+          expect(response.status).toBe(200);
+          expect(response.headers.get('cache-control')).toBe('no-store');
+          return response;
+        },
+      }),
     );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ facts: null });
+    expect(await client.facts()).toEqual({ facts: null });
     expect(tanstackStart.fetchEmbeddedApp).not.toHaveBeenCalled();
   });
   beforeEach(() => {

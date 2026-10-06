@@ -1,14 +1,11 @@
 import { ORPCError, os } from '@orpc/server';
-import { toMusicActivityResults } from '../modules/music/music-activity';
 import {
   musicFactsResponseSchema,
   musicSearchPageInputSchema,
   musicSearchPageSchema,
 } from '../modules/music/music-activity.schema';
-import {
-  getMusicFacts,
-  searchMusicCatalog,
-} from '../modules/music/music-search.service';
+import { getMusicFacts } from '../modules/music/music-search.service';
+import { getMusicSearchPage } from '../modules/music/music-search-page.service';
 
 const procedure = os.use(async ({ next }) => {
   try {
@@ -29,16 +26,5 @@ export const musicRouter = {
   searchPage: procedure
     .input(musicSearchPageInputSchema)
     .output(musicSearchPageSchema)
-    .handler(async ({ input }) => {
-      const matches = await searchMusicCatalog(input.query, {
-        game: input.game,
-      });
-      if (!matches) return { results: null, total: 0, nextCursor: null };
-      const next = input.cursor + 20;
-      return {
-        results: toMusicActivityResults(matches.slice(input.cursor, next)),
-        total: matches.length,
-        nextCursor: next < matches.length ? next : null,
-      };
-    }),
+    .handler(({ input }) => getMusicSearchPage(input)),
 };
