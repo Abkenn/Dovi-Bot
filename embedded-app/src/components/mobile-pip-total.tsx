@@ -18,7 +18,7 @@ export const MobilePipTotal = ({
   const valueSize = Math.abs(value) >= 100 ? 'text-xl' : 'text-2xl';
 
   return (
-    <div className="min-w-0 rounded-lg border border-border bg-card/70 px-2 py-3 text-center">
+    <div className="mobile-pip-total min-w-0 rounded-lg border border-border bg-card/70 px-2 py-3 text-center">
       {fallback ? (
         <span className="block text-sm leading-none font-bold">{fallback}</span>
       ) : (

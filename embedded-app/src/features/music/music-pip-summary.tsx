@@ -1,4 +1,5 @@
 import { Music2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { MusicData } from './music.types';
 
 export const MusicPipSummary = ({ data }: { data: MusicData }) => {
@@ -37,7 +38,10 @@ export const MusicPipSummary = ({ data }: { data: MusicData }) => {
           </p>
         ) : null}
         {data.kind === 'loading' ? (
-          <p className="text-center">Loading music…</p>
+          <div role="status" aria-label="Loading music" className="space-y-2">
+            <Skeleton className="h-3 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
         ) : null}
         {data.kind === 'error' ? (
           <p className="text-center">Music unavailable</p>

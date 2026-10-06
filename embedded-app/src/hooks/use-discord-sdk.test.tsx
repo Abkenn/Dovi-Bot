@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getActivityLinkOpener } from '@/lib/activity-links';
 import { useDiscordSdk } from './use-discord-sdk';
 
 const sdk = vi.hoisted(() => ({
@@ -9,6 +10,7 @@ const sdk = vi.hoisted(() => ({
   unsubscribe: vi.fn().mockResolvedValue(undefined),
   customId: null as string | null,
   platform: 'mobile',
+  openExternalLink: vi.fn().mockResolvedValue({ opened: true }),
 }));
 
 vi.mock('@discord/embedded-app-sdk', () => ({
@@ -22,6 +24,7 @@ vi.mock('@discord/embedded-app-sdk', () => ({
     public unsubscribe = sdk.unsubscribe;
     public customId = sdk.customId;
     public platform = sdk.platform;
+    public commands = { openExternalLink: sdk.openExternalLink };
   },
   Common: {
     LayoutModeTypeObject: { PIP: 1 },
@@ -30,6 +33,18 @@ vi.mock('@discord/embedded-app-sdk', () => ({
 }));
 
 describe('useDiscordSdk', () => {
+  it('routes external links through the existing ready SDK and removes its opener on cleanup', async () => {
+    const { unmount } = renderHook(() => useDiscordSdk('client-1'));
+    await getActivityLinkOpener()?.(
+      'https://www.youtube.com/watch?v=video&t=90s',
+    );
+    expect(sdk.openExternalLink).toHaveBeenCalledWith({
+      url: 'https://www.youtube.com/watch?v=video&t=90s',
+    });
+    expect(sdk.constructor).toHaveBeenCalledOnce();
+    unmount();
+    expect(getActivityLinkOpener()).toBeNull();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     sdk.customId = null;

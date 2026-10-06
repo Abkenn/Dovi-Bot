@@ -35,6 +35,7 @@ export const CachedStatsContent = ({ snapshot }: CachedStatsContentProps) => {
     }
 
     const targetUrl = new URL(link.href);
+    if (targetUrl.origin !== window.location.origin) return;
     event.preventDefault();
     event.stopPropagation();
     window.history.replaceState(null, '', targetUrl);

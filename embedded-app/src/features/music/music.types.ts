@@ -17,6 +17,19 @@ export type MusicData =
   | { kind: 'results'; results: MusicActivityResult[] | null }
   | { kind: 'error' };
 
+export type MusicResultsProps = {
+  results: MusicActivityResult[] | null;
+  game: boolean;
+  total: number | undefined;
+};
+
+export type MusicContentProps = {
+  data: MusicData;
+  game: boolean;
+  total?: number;
+  searching?: boolean;
+};
+
 export type MusicLoadMoreProps = {
   hasNextPage: boolean;
   loading: boolean;

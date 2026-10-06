@@ -1,5 +1,6 @@
 import { Common, DiscordSDK } from '@discord/embedded-app-sdk';
 import { useEffect, useState } from 'react';
+import { registerActivityLinkOpener } from '@/lib/activity-links';
 
 type ActivityLayoutUpdate = { layout_mode: number };
 type OrientationUpdate = { screen_orientation: number };
@@ -25,6 +26,10 @@ export const useDiscordSdk = (clientId: string) => {
     }
 
     const discordSdk = new DiscordSDK(clientId);
+    const unregisterLinkOpener = registerActivityLinkOpener(async (url) => {
+      await discordSdk.ready();
+      await discordSdk.commands.openExternalLink({ url });
+    });
     setCustomId(discordSdk.customId);
     document.documentElement.dataset.discordPlatform = discordSdk.platform;
 
@@ -38,6 +43,7 @@ export const useDiscordSdk = (clientId: string) => {
     });
 
     return () => {
+      unregisterLinkOpener();
       if (subscribed) {
         void discordSdk.unsubscribe(
           'ACTIVITY_LAYOUT_MODE_UPDATE',

@@ -182,3 +182,4 @@ data/boss-discussion-backfill-*.jsonl
 embedded-app/ARCHITECTURE.md
 /scripts/music-catalog-import.ts
 /tests/music/fixtures/
+scripts/verify-embedded-app-music.ts

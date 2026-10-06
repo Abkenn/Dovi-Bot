@@ -1,9 +1,8 @@
 import { ExternalLink, Trophy } from 'lucide-react';
-import type {
-  MusicActivityResult,
-  MusicFacts,
-} from '../../../../src/modules/music/music.types';
-import type { MusicData } from './music.types';
+import { ActivityExternalLink } from '@/components/activity-external-link';
+import type { MusicFacts } from '../../../../src/modules/music/music.types';
+import type { MusicContentProps, MusicResultsProps } from './music.types';
+import { MusicSkeleton } from './music-skeleton';
 
 const formatTimestamp = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -34,15 +33,7 @@ const MusicFactsCards = ({ facts }: { facts: MusicFacts | null }) => (
   </section>
 );
 
-const MusicResults = ({
-  results,
-  game,
-  total,
-}: {
-  results: MusicActivityResult[] | null;
-  game: boolean;
-  total: number | undefined;
-}) => {
+const MusicResults = ({ results, game, total }: MusicResultsProps) => {
   if (!results)
     return <p role="status">Music history has not been uploaded yet.</p>;
   if (!results.length)
@@ -67,7 +58,7 @@ const MusicResults = ({
           >
             <div className="min-w-0">
               {result.url ? (
-                <a
+                <ActivityExternalLink
                   href={result.url}
                   target="_blank"
                   rel="noreferrer"
@@ -78,7 +69,7 @@ const MusicResults = ({
                     className="size-3 shrink-0"
                     aria-hidden="true"
                   />
-                </a>
+                </ActivityExternalLink>
               ) : (
                 <p className="text-sm font-semibold break-words">
                   {result.title}
@@ -104,17 +95,9 @@ export const MusicContent = ({
   data,
   game,
   total,
-}: {
-  data: MusicData;
-  game: boolean;
-  total?: number;
-}) => {
-  if (data.kind === 'loading')
-    return (
-      <p role="status" className="text-sm text-muted-foreground">
-        Loading music…
-      </p>
-    );
+  searching = false,
+}: MusicContentProps) => {
+  if (data.kind === 'loading') return <MusicSkeleton searching={searching} />;
   if (data.kind === 'error')
     return (
       <p role="alert" className="text-sm text-muted-foreground">

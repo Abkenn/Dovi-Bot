@@ -122,6 +122,7 @@ export const MusicPage = ({
             data={data}
             game={submitted?.game ?? false}
             total={search.data?.pages[0]?.total}
+            searching={submitted !== null}
           />
           {search.isRefetchError ? (
             <p role="alert">

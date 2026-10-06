@@ -7,6 +7,7 @@ vi.mock('@/features/live-stats/pages/live-stats-page', () => ({
       Live cached
       <a href="/stats">Stats tab</a>
       <a href="/games/game-1">Game tab</a>
+      <a href="https://www.youtube.com/watch?v=video">Stream link</a>
     </div>
   ),
 }));
@@ -61,6 +62,13 @@ const snapshot = {
 
 describe('CachedStatsContent', () => {
   beforeEach(() => window.history.replaceState(null, '', '/'));
+
+  it('leaves external links available for the browser or Activity SDK', () => {
+    render(<CachedStatsContent snapshot={snapshot} />);
+    expect(fireEvent.click(screen.getByText('Stream link'))).toBe(true);
+    expect(window.location.pathname).toBe('/');
+    expect(screen.getByText('Live cached')).toBeInTheDocument();
+  });
 
   it('shows an offline music state instead of falling back to Live', () => {
     window.history.replaceState(null, '', '/music');
