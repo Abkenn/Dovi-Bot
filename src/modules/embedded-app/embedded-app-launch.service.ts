@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { getNumberProperty } from '../../lib/type-guards';
 import { parseMusicActivityTarget } from '../music/music-activity-target';
+import { registerActivityInstance } from './activity-tracking.service';
 import { registerEmbeddedAppLaunchTarget } from './embedded-app-launch-target.service';
 import { buildEmbeddedAppActivityUrl } from './embedded-app-link';
 
@@ -85,6 +86,16 @@ export const launchEmbeddedAppStats = async (
 
     if (instanceId && gameName) {
       registerEmbeddedAppLaunchTarget(instanceId, gameName);
+    }
+
+    if (instanceId && interaction.guildId) {
+      registerActivityInstance({
+        instanceId,
+        guildId: interaction.guildId,
+        channelId: interaction.channelId,
+        launchedByUserId: interaction.user.id,
+        target: gameName ?? null,
+      });
     }
 
     return { launched: true, note: null };

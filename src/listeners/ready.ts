@@ -1,5 +1,5 @@
 import { Listener } from '@sapphire/framework';
-import { ActivityType } from 'discord.js';
+import { ActivityType, Events } from 'discord.js';
 import { notifyDeploymentReady } from '../app/deployment-notifications';
 import {
   startHealthCheckMonitor,
@@ -7,6 +7,7 @@ import {
 } from '../app/uptime-status-monitor';
 import { startDaviBossStatsSyncScheduler } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.scheduler';
 import { startBossTrialLifecycleScheduler } from '../modules/boss-trials/poll/boss-trial.scheduler';
+import { startActivityTracking } from '../modules/embedded-app/activity-tracking.scheduler';
 import { startPollTournamentScheduler } from '../modules/poll-tournaments/poll-tournament.scheduler';
 import { startStreamInfoMessageUpdater } from '../modules/stream-info/stream-info-message-updater.scheduler';
 import { startYouTubeUploadScheduler } from '../modules/youtube-uploads/youtube-upload.scheduler';
@@ -18,7 +19,7 @@ export class ReadyListener extends Listener {
   ) {
     super(context, {
       ...options,
-      event: 'ready',
+      event: Events.ClientReady,
       once: true,
     });
   }
@@ -45,6 +46,7 @@ export class ReadyListener extends Listener {
     startYouTubeUploadScheduler(this.container.client);
     startUptimeStatusMonitor(this.container.client);
     startHealthCheckMonitor(this.container.client);
+    startActivityTracking(this.container.client);
     void notifyDeploymentReady(this.container.client).catch((error) => {
       this.container.logger.error('Failed to send deployment DM.', error);
     });

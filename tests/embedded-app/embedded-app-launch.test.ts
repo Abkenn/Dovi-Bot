@@ -13,6 +13,7 @@ vi.mock(
   }),
 );
 
+import { getTrackedActivityInstances } from '../../src/modules/embedded-app/activity-tracking.service';
 import { launchEmbeddedAppStats } from '../../src/modules/embedded-app/embedded-app-launch.service';
 
 const makeInteraction = () => {
@@ -29,6 +30,30 @@ const makeInteraction = () => {
 
 describe('embedded app launch', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('registers real guild launches for presence sampling without delaying the launch', async () => {
+    const { interaction, launchActivity } = makeInteraction();
+    Object.assign(interaction, {
+      guildId: 'tracking-guild',
+      channelId: 'channel-1',
+      user: { id: 'alice' },
+    });
+    launchActivity.mockResolvedValue({
+      interaction: { activityInstanceId: 'tracked-launch' },
+    });
+    await expect(
+      launchEmbeddedAppStats(interaction, 'Elden Ring'),
+    ).resolves.toEqual({ launched: true, note: null });
+    expect(getTrackedActivityInstances('tracking-guild')).toMatchObject([
+      {
+        instanceId: 'tracked-launch',
+        channelId: 'channel-1',
+        launchedByUserId: 'alice',
+        target: 'Elden Ring',
+        status: 'pending',
+      },
+    ]);
+  });
 
   it('launches the configured Discord Activity and binds its game target', async () => {
     const { interaction, launchActivity, reply } = makeInteraction();

@@ -337,6 +337,14 @@ export const COMMAND_METADATA = {
     helpAudience: HELP_AUDIENCES.ADMIN,
     helpCategory: COMMAND_CATEGORIES.STAGING,
   },
+  PLAYGROUND: {
+    name: 'playground',
+    description: 'Experiments with Discord components and Activity presence.',
+    guildIds: COMMAND_GUILDS.PLAYGROUND,
+    access: COMMAND_ACCESSES.DEFAULT,
+    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpCategory: COMMAND_CATEGORIES.STAGING,
+  },
   DAVI_UPDATE_ANNOUNCEMENT: {
     name: 'davi-update-announcement',
     description: 'Prepares or corrects a production stream announcement.',
