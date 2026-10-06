@@ -1,5 +1,5 @@
+import { paginateArray } from 'orpc-stack/server';
 import { expect, it } from 'vitest';
-import { paginateArray } from '../../src/lib/pagination';
 
 it('returns bounded pages with the full total and terminal cursor', () => {
   const items = ['first', 'second', 'third', 'fourth'];

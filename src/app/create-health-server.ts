@@ -63,7 +63,7 @@ export function createHealthServer() {
     app.fetch(normalizeDiscordProxyRequest(c.req.raw)),
   );
 
-  app.route('/api/music', createMusicApi());
+  app.route('/', createMusicApi());
 
   app.get('/health', async (c) => {
     const runtimeHealth = getRuntimeHealth();

@@ -13,6 +13,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "paths": {
+      "@modules/*": ["./src/modules/*"],
       "@zod-schemas/*": ["./src/types/zod-schemas/*"],
       "@data/*": ["./src/data/*"]
     }

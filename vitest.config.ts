@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     maxWorkers: 2,
     exclude: [
+      '**/.local/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/coverage/**',
@@ -12,6 +13,7 @@ export default defineConfig({
     ],
     coverage: {
       exclude: [
+        '**/.local/**',
         '**/node_modules/**',
         '**/dist/**',
         '**/coverage/**',

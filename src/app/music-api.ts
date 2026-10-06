@@ -1,11 +1,22 @@
-import { RPCHandler } from '@orpc/server/fetch';
+import { ORPCError } from '@orpc/server';
 import { Hono } from 'hono';
-import { routePath } from 'hono/route';
-import { musicRouter } from './music-rpc';
+import { mountHono } from 'orpc-stack/hono';
+import { paginate } from 'orpc-stack/server';
+import { musicEndpoint } from '../modules/music/music-endpoint';
+import { getMusicFacts } from '../modules/music/music-search.service';
+import { getMusicSearchResults } from '../modules/music/music-search-results.service';
+
+const mapHandlerError = (error: unknown) => {
+  if (error instanceof ORPCError) return error;
+  console.error('Music activity request failed.', error);
+  return new ORPCError('SERVICE_UNAVAILABLE', {
+    message: 'Music is unavailable right now. Try again shortly.',
+  });
+};
 
 export const createMusicApi = () => {
   const api = new Hono();
-  api.use('*', async (c, next) => {
+  api.use(`${musicEndpoint.path}/*`, async (c, next) => {
     c.header('Cache-Control', 'no-store');
     await next();
   });
@@ -16,13 +27,14 @@ export const createMusicApi = () => {
       503,
     );
   });
-  const rpc = new RPCHandler(musicRouter);
-  api.all('/rpc/*', async (c) => {
-    const prefix = `/${routePath(c).slice(1, -2)}` as const;
-    const result = await rpc.handle(c.req.raw, { prefix });
-    if (result.matched)
-      return c.newResponse(result.response.body, result.response);
-    return c.notFound();
-  });
+  mountHono(
+    api,
+    musicEndpoint,
+    {
+      facts: getMusicFacts,
+      searchPage: paginate(getMusicSearchResults, { pageSize: 20 }),
+    },
+    { mapHandlerError },
+  );
   return api;
 };

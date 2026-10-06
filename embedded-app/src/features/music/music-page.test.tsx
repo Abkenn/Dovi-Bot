@@ -16,7 +16,20 @@ const api = vi.hoisted(() => ({
   loadMusicFacts: vi.fn(),
   searchMusicPage: vi.fn(),
 }));
-vi.mock('./music-api', () => api);
+vi.mock('orpc-stack/client', async () => {
+  const { createTanstackQueryUtils } = await import('@orpc/tanstack-query');
+  return {
+    createQueries: () =>
+      createTanstackQueryUtils({
+        facts: (_input: undefined, options?: { signal?: AbortSignal }) =>
+          api.loadMusicFacts(options?.signal),
+        searchPage: (
+          input: { query: string; game: boolean; cursor: number },
+          options?: { signal?: AbortSignal },
+        ) => api.searchMusicPage(input, options?.signal),
+      }),
+  };
+});
 
 import { MusicPage } from './music-page';
 

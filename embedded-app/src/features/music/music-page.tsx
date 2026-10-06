@@ -1,8 +1,10 @@
+import { musicEndpoint } from '@modules/music/music-endpoint';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Music2, Search } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
+import { createQueries } from 'orpc-stack/client';
+import { kyTransport } from 'orpc-stack/ky';
 import { useState } from 'react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -12,8 +14,9 @@ import type { MusicPageProps, SearchState } from './music.types';
 import { MusicContent } from './music-content';
 import { MusicLoadMore } from './music-load-more';
 import { MusicPipSummary } from './music-pip-summary';
-import { musicQueries } from './music-queries';
 import { resolveMusicData } from './music-query-state';
+
+const musicQueries = createQueries(musicEndpoint, { fetch: kyTransport });
 
 export const MusicPage = ({
   games,

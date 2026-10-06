@@ -1,8 +1,8 @@
 import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
-import type { RouterClient } from '@orpc/server';
+import type { RpcClient } from 'orpc-stack';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { musicRouter } from '../../src/app/music-rpc';
+import type { musicEndpoint } from '../../src/modules/music/music-endpoint';
 
 const database = vi.hoisted(() => ({ pingDatabase: vi.fn() }));
 const runtime = vi.hoisted(() => ({ getRuntimeHealth: vi.fn() }));
@@ -31,7 +31,7 @@ describe('health and embedded app server', () => {
   it('serves Music API requests through the Discord proxy without SSR', async () => {
     vi.mocked(getMusicFacts).mockResolvedValue(null);
     const api = createHealthServer();
-    const client: RouterClient<typeof musicRouter> = createORPCClient(
+    const client: RpcClient<typeof musicEndpoint.procedures> = createORPCClient(
       new RPCLink({
         url: 'http://localhost/.proxy/api/music/rpc',
         fetch: async (request) => {
@@ -42,7 +42,7 @@ describe('health and embedded app server', () => {
         },
       }),
     );
-    expect(await client.facts()).toEqual({ facts: null });
+    expect(await client.facts()).toBeNull();
     expect(tanstackStart.fetchEmbeddedApp).not.toHaveBeenCalled();
   });
   beforeEach(() => {

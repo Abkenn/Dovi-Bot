@@ -13,6 +13,7 @@
     "moduleResolution": "Bundler",
     "paths": {
       "@/*": ["./src/*"],
+      "@modules/*": ["../src/modules/*"],
       "@data/*": ["../src/data/*"],
       "@zod-schemas/*": ["../src/types/zod-schemas/*"]
     },
