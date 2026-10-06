@@ -49,7 +49,7 @@ beforeEach(() => {
 });
 it('shows only two facts initially, searches compact game results, and resets on returning', async () => {
   const view = render(<MusicPage games={[]} />);
-  await screen.findByText('Most played track');
+  await screen.findByRole('region', { name: 'Music highlights' });
   expect(
     within(screen.getByRole('region', { name: 'Music highlights' })).getByText(
       'Theme',
@@ -70,7 +70,7 @@ it('shows only two facts initially, searches compact game results, and resets on
   expect(screen.queryByText('Most played track')).not.toBeInTheDocument();
   view.unmount();
   render(<MusicPage games={[]} />);
-  await screen.findByText('Most played track');
+  await screen.findByRole('region', { name: 'Music highlights' });
   expect(screen.getByRole('textbox')).toHaveValue('');
   expect(screen.getByRole('combobox')).toHaveValue('track');
 });
@@ -100,10 +100,10 @@ it('shows empty and failed search states without restoring facts', async () => {
 it('reuses fresh facts when returning to the tab without restoring an old query', async () => {
   const client = new QueryClient();
   const first = render(<MusicPage games={[]} />, client);
-  await screen.findByText('Most played track');
+  await screen.findByRole('region', { name: 'Music highlights' });
   first.unmount();
   render(<MusicPage games={[]} />, client);
-  await screen.findByText('Most played track');
+  await screen.findByRole('region', { name: 'Music highlights' });
   expect(api.loadMusicFacts).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('textbox')).toHaveValue('');
 });

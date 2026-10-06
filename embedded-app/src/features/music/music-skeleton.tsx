@@ -1,3 +1,4 @@
+import { Trophy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const MusicSkeleton = ({ searching }: { searching: boolean }) => (
@@ -22,9 +23,12 @@ export const MusicSkeleton = ({ searching }: { searching: boolean }) => (
       </div>
     ) : (
       <div className="grid gap-3 sm:grid-cols-2">
-        {['track', 'series'].map((key) => (
-          <div key={key} className="space-y-3 rounded-xl border bg-card p-5">
-            <Skeleton className="h-4 w-36" />
+        {['Most played track', 'Most played game series'].map((label) => (
+          <div key={label} className="space-y-3 rounded-xl border bg-card p-5">
+            <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Trophy className="size-4 text-primary" aria-hidden="true" />
+              {label}
+            </p>
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-4 w-16" />
           </div>
