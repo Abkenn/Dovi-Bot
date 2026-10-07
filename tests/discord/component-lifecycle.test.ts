@@ -9,7 +9,20 @@ import {
   expireComponentLifetime,
   registerComponentLifetime,
   trackComponentMessage,
+  trackInteractionComponentReply,
 } from '../../src/modules/discord/component-lifecycle';
+
+it('ignores missing reply messages after an Activity launch but reports unexpected tracking failures', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const fetchReply = vi.fn().mockRejectedValue({ code: 10008 });
+  await trackInteractionComponentReply({ replied: true, fetchReply } as never);
+  expect(log).not.toHaveBeenCalled();
+  const error = new Error('Discord unavailable');
+  fetchReply.mockRejectedValue(error);
+  await trackInteractionComponentReply({ replied: true, fetchReply } as never);
+  expect(log).toHaveBeenCalledWith('Could not track Discord controls.', error);
+  log.mockRestore();
+});
 
 const components = (customId: string) => [
   {

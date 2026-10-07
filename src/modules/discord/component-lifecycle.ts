@@ -214,6 +214,7 @@ export const trackInteractionComponentReply = async (
     }
     trackComponentMessage(message);
   } catch (error) {
+    if (getNumberProperty(error, 'code') === 10008) return;
     console.error('Could not track Discord controls.', error);
   }
 };

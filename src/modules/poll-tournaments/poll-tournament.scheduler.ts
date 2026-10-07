@@ -11,9 +11,13 @@ const runScheduledTick = (client: Client) => {
     return activeTick;
   }
 
-  activeTick = runPollTournamentLifecycleTick(client).finally(() => {
-    activeTick = undefined;
-  });
+  activeTick = runPollTournamentLifecycleTick(client)
+    .catch((error: unknown) => {
+      console.error('Poll tournament scheduler tick failed.', error);
+    })
+    .finally(() => {
+      activeTick = undefined;
+    });
 
   return activeTick;
 };

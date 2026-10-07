@@ -44,6 +44,7 @@ const coveredDalExports = {
   '../../src/data/queries/music-catalog': [
     'findMusicCatalog',
     'findMusicStreamVideo',
+    'findMusicStreamVideos',
     'saveMusicStreamVideo',
   ],
   '../../src/data/transactions/music-catalog': ['replaceMusicCatalog'],
@@ -352,8 +353,12 @@ test('music catalog replacements are atomic, ordered, idempotent and preserve so
   const { replaceMusicCatalog } = await import(
     '../../src/data/transactions/music-catalog'
   );
-  const { findMusicCatalog, findMusicStreamVideo, saveMusicStreamVideo } =
-    await import('../../src/data/queries/music-catalog');
+  const {
+    findMusicCatalog,
+    findMusicStreamVideo,
+    findMusicStreamVideos,
+    saveMusicStreamVideo,
+  } = await import('../../src/data/queries/music-catalog');
   const { prisma } = await import('../../src/lib/prisma');
   const input = {
     messageId: 100n,
@@ -417,6 +422,31 @@ test('music catalog replacements are atomic, ordered, idempotent and preserve so
     title: 'Stream title',
   });
   expect(await findMusicStreamVideo('@other', '2026-09-11')).toBeNull();
+  await saveMusicStreamVideo({
+    channelHandle: '@other',
+    streamDate: '2026-09-11',
+    videoId: 'other',
+    title: 'Other channel',
+  });
+  await saveMusicStreamVideo({
+    channelHandle: '@primary',
+    streamDate: '2026-09-12',
+    videoId: 'next',
+    title: 'Next stream',
+  });
+  expect(
+    await findMusicStreamVideos('@primary', [
+      '2026-09-11',
+      '2026-09-11',
+      'missing',
+    ]),
+  ).toEqual([
+    { streamDate: '2026-09-11', videoId: 'video1', title: 'Stream title' },
+  ]);
+  expect(await findMusicStreamVideos('@primary', [])).toEqual([]);
+  expect(
+    await findMusicStreamVideos('@primary', ['2026-09-11', '2026-09-12']),
+  ).toHaveLength(2);
   await saveMusicStreamVideo({
     channelHandle: '@primary',
     streamDate: '2026-09-11',

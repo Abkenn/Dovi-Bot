@@ -72,8 +72,8 @@ export const buildMusicSearchReply = (
     return {
       content: 'No matching tracks found. Try part of the song or game name.',
     };
-  if (options.game) {
-    const gameResults = results as MusicGameSearchView[];
+  if (options.game || !('lastStream' in result)) {
+    const gameResults = results.filter((result) => 'offsetSeconds' in result);
     const game = gameHeading(gameResults, options.query);
     if (!game) return { content: 'No matching game tracks found.' };
     const heading = `**${escapeMarkdown(game)}**`;
@@ -96,21 +96,20 @@ export const buildMusicSearchReply = (
     const content = `${heading}\n${visible.join('\n')}${note}\n${credit}`;
     return { content, allowedMentions: { parse: [] } };
   }
-  const trackResult = result as MusicSearchView;
   const matchTitle = escapeMarkdown(
-    trackLabel(trackResult.title, trackResult.game),
+    trackLabel(result.title, result.game),
   ).slice(0, 400);
-  const time = timestamp(trackResult.lastOffsetSeconds);
-  let latest = `${escapeMarkdown(trackResult.lastStream).slice(0, 150)} · ${trackResult.lastDate} · ${time} (link unavailable)`;
-  if (trackResult.video) {
+  const time = timestamp(result.lastOffsetSeconds);
+  let latest = `${escapeMarkdown(result.lastStream).slice(0, 150)} · ${result.lastDate} · ${time} (link unavailable)`;
+  if (result.video) {
     const title = escapeMarkdown(
-      trackResult.video.title.replaceAll('\n', ' ').replaceAll('\r', ' '),
+      result.video.title.replaceAll('\n', ' ').replaceAll('\r', ' '),
     ).slice(0, 400);
-    const url = `https://www.youtube.com/watch?v=${encodeURIComponent(trackResult.video.videoId)}&t=${trackResult.lastOffsetSeconds}s`;
-    latest = `[${title} · ${trackResult.lastDate} · ${time}](<${url}>)`;
+    const url = `https://www.youtube.com/watch?v=${encodeURIComponent(result.video.videoId)}&t=${result.lastOffsetSeconds}s`;
+    latest = `[${title} · ${result.lastDate} · ${time}](<${url}>)`;
   }
   return {
-    content: `**${matchTitle}**\nLatest stream: ${latest}\nHeard **${trackResult.count} ${trackResult.count === 1 ? 'time' : 'times'}** in past streams.\n*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`,
+    content: `**${matchTitle}**\nLatest stream: ${latest}\nHeard **${result.count} ${result.count === 1 ? 'time' : 'times'}** in past streams.\n*Data collected by <@${MUSIC_CATALOG_UPLOADER_ID}>.*`,
     allowedMentions: { parse: [] },
   };
 };

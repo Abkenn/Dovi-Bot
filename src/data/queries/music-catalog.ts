@@ -44,3 +44,12 @@ export const saveMusicStreamVideo = (input: MusicStreamVideoInput) =>
     create: input,
     update: input,
   });
+
+export const findMusicStreamVideos = (
+  channelHandle: string,
+  streamDates: string[],
+) =>
+  prisma.musicStreamVideo.findMany({
+    where: { channelHandle, streamDate: { in: streamDates } },
+    select: { streamDate: true, videoId: true, title: true },
+  });

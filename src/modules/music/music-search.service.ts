@@ -1,6 +1,7 @@
 import {
   findMusicCatalog,
   findMusicStreamVideo,
+  findMusicStreamVideos,
 } from '../../data/queries/music-catalog';
 import type { MusicSearchOptions } from './music.types';
 import { buildMusicFacts } from './music-activity';
@@ -36,12 +37,26 @@ export const searchMusicCatalog = async (
     const plays = groupMusicGameTracks(
       findMusicGamePlays(catalog.plays, query),
     );
-    return Promise.all(
-      plays.map(async (play) => ({
-        ...play,
-        video: await resolveMusicVideo(play.streamDate),
-      })),
+    const handle = getMusicChannelHandle();
+    const videos =
+      handle && plays.length
+        ? await findMusicStreamVideos(handle, [
+            ...new Set(plays.map((play) => play.streamDate)),
+          ])
+        : [];
+    const videosByDate = new Map(
+      videos.map((video) => [video.streamDate, video]),
     );
+    return plays.map((play) => {
+      const video = videosByDate.get(play.streamDate);
+      return {
+        ...play,
+        video:
+          video?.videoId && video.title
+            ? { videoId: video.videoId, title: video.title }
+            : null,
+      };
+    });
   }
   const best = searchMusicPlays(catalog.plays, query)[0];
   if (!best) return [];

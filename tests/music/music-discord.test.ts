@@ -6,6 +6,19 @@ import {
 } from '../../src/modules/music/music.discord';
 
 describe('music search response', () => {
+  it('renders game-shaped results safely when the caller omits the game option', () => {
+    const result = {
+      title: 'Majula - DS2',
+      game: 'Dark Souls 2',
+      count: 1,
+      streamDate: '2026-09-11',
+      offsetSeconds: 60,
+      video: null,
+    };
+    expect(buildMusicSearchReply([result])).toEqual(
+      buildMusicSearchReply([result], { game: true }),
+    );
+  });
   it.each([
     'https://youtu.be/ofeCOBSAWRQ',
     '<https://youtu.be/ofeCOBSAWRQ>',

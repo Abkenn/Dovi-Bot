@@ -7,6 +7,7 @@ const dependencies = vi.hoisted(() => ({
   download: vi.fn(),
   handle: vi.fn(),
   video: vi.fn(),
+  videos: vi.fn(),
   refresh: vi.fn(),
 }));
 vi.mock('ky', () => ({ default: { get: dependencies.download } }));
@@ -19,6 +20,7 @@ vi.mock('../../src/data/transactions/music-catalog', () => ({
 vi.mock('../../src/data/queries/music-catalog', () => ({
   findMusicCatalog: dependencies.read,
   findMusicStreamVideo: dependencies.video,
+  findMusicStreamVideos: dependencies.videos,
 }));
 vi.mock('../../src/modules/music/music-youtube', () => ({
   getMusicChannelHandle: dependencies.handle,
@@ -95,10 +97,9 @@ describe('music uploads and search', () => {
         offsetSeconds: 180,
       }),
     ]);
-    expect(dependencies.video).toHaveBeenCalledExactlyOnceWith(
-      '@primary',
+    expect(dependencies.videos).toHaveBeenCalledExactlyOnceWith('@primary', [
       '2026-02-01',
-    );
+    ]);
   });
   beforeEach(() => {
     vi.clearAllMocks();
@@ -109,12 +110,53 @@ describe('music uploads and search', () => {
       videoId: 'video',
       title: 'Latest broadcast',
     });
+    dependencies.videos.mockResolvedValue([]);
     dependencies.refresh.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('batches distinct stream dates and attaches the correct video to every game track', async () => {
+    dependencies.read.mockResolvedValue({
+      plays: ['First', 'Second', 'Third'].map((title, index) => ({
+        title: `${title} - OMORI`,
+        originalTitle: `${title} - OMORI`,
+        game: 'OMORI',
+        streamLabel: 'Stream 1',
+        streamDate: index < 2 ? '2026-01-01' : '2026-02-01',
+        offsetSeconds: 60,
+        musicMode: 'UNKNOWN',
+      })),
+    });
+    dependencies.videos.mockResolvedValue([
+      { streamDate: '2026-01-01', videoId: 'first', title: 'First stream' },
+      { streamDate: '2026-02-01', videoId: null, title: null },
+    ]);
+    const results = await searchMusicCatalog('omori', { game: true });
+    expect(results).toEqual([
+      expect.objectContaining({
+        video: { videoId: 'first', title: 'First stream' },
+      }),
+      expect.objectContaining({
+        video: { videoId: 'first', title: 'First stream' },
+      }),
+      expect.objectContaining({ video: null }),
+    ]);
+    expect(dependencies.videos).toHaveBeenCalledExactlyOnceWith('@primary', [
+      '2026-01-01',
+      '2026-02-01',
+    ]);
+    expect(dependencies.video).not.toHaveBeenCalled();
+    dependencies.handle.mockReturnValue(undefined);
+    expect(await searchMusicCatalog('omori', { game: true })).toEqual([
+      expect.objectContaining({ video: null }),
+      expect.objectContaining({ video: null }),
+      expect.objectContaining({ video: null }),
+    ]);
+    expect(dependencies.videos).toHaveBeenCalledTimes(1);
   });
 
   it('keeps song and game searches separate after importing a collector upload', async () => {
