@@ -1,3 +1,4 @@
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
@@ -39,9 +40,55 @@ const makeInteraction = (
   channel: { isThread: () => isThread },
   user: { id: 'user-1', tag: 'DoviFan' },
   reply: vi.fn(),
+  update: vi.fn(),
+  message: { components: [] },
 });
 
 describe('embedded app Stats buttons', () => {
+  it.each([
+    ['embedded-app-stats:music-search:expired', 'staging-guild'],
+    ['embedded-app-stats', 'unknown-guild'],
+  ])('handles an expired reply for %s in %s', async (customId, guildId) => {
+    const interaction = makeInteraction(customId, guildId);
+    const acknowledge =
+      guildId === 'unknown-guild' ? interaction.reply : interaction.update;
+    acknowledge.mockRejectedValue({ code: 10062 });
+    await expect(
+      EmbeddedAppStatsButtonsListener.prototype.run.call(
+        {} as EmbeddedAppStatsButtonsListener,
+        interaction as never,
+      ),
+    ).resolves.toBeUndefined();
+    expect(acknowledge).toHaveBeenCalledOnce();
+    expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
+  });
+
+  it('replies to a denied guild before waiting for database logging', async () => {
+    const interaction = makeInteraction('embedded-app-stats', 'unknown-guild');
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      interaction as never,
+    );
+    expect(dependencies.createInteractionExecutionLog).toHaveBeenCalledOnce();
+    expect(interaction.reply.mock.invocationCallOrder[0]).toBeLessThan(
+      dependencies.createInteractionExecutionLog.mock.invocationCallOrder[0] ??
+        0,
+    );
+  });
+
+  it('preserves unexpected errors from expired-search updates', async () => {
+    const interaction = makeInteraction(
+      'embedded-app-stats:music-search:expired',
+    );
+    const error = new Error('Discord unavailable');
+    interaction.update.mockRejectedValue(error);
+    await expect(
+      EmbeddedAppStatsButtonsListener.prototype.run.call(
+        {} as EmbeddedAppStatsButtonsListener,
+        interaction as never,
+      ),
+    ).rejects.toBe(error);
+  });
   it('launches music with the original command query and game mode', async () => {
     const row = buildMusicActivityButton('staging-guild', {
       query: 'Dark Souls',
@@ -62,7 +109,7 @@ describe('embedded app Stats buttons', () => {
     ).toEqual({ query: 'Dark Souls', game: true });
   });
 
-  it('explains expired music buttons instead of opening an unrelated game', async () => {
+  it('removes expired music buttons without replying or changing the result', async () => {
     const interaction = makeInteraction(
       'embedded-app-stats:music-search:expired',
     );
@@ -71,9 +118,34 @@ describe('embedded app Stats buttons', () => {
       interaction as never,
     );
     expect(dependencies.launchEmbeddedAppStats).not.toHaveBeenCalled();
-    expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: expect.stringContaining('expired') }),
+    expect(interaction.update).toHaveBeenCalledWith({ components: [] });
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+  it('preserves other buttons when removing an expired music button', async () => {
+    const customId = 'embedded-app-stats:music-search:expired';
+    const remaining = new ButtonBuilder()
+      .setLabel('Stream')
+      .setStyle(ButtonStyle.Link)
+      .setURL('https://youtube.com/watch?v=test');
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId(customId)
+        .setLabel('Music Stats')
+        .setStyle(ButtonStyle.Secondary),
+      remaining,
     );
+    const interaction = {
+      ...makeInteraction(customId),
+      message: { components: [row] },
+    };
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      interaction as never,
+    );
+    expect(interaction.update).toHaveBeenCalledWith({
+      components: [{ ...row.toJSON(), components: [remaining.toJSON()] }],
+    });
+    expect(interaction.reply).not.toHaveBeenCalled();
   });
   beforeEach(() => {
     vi.clearAllMocks();

@@ -1,7 +1,14 @@
 import { Listener } from '@sapphire/framework';
-import { Events, type Interaction, MessageFlags } from 'discord.js';
+import {
+  type APIMessageTopLevelComponent,
+  ComponentType,
+  Events,
+  type Interaction,
+  MessageFlags,
+} from 'discord.js';
 import { BOT_GUILDS } from '../config/discord-access';
 import { CommandExecutionStatus } from '../generated/prisma/client';
+import { getNumberProperty } from '../lib/type-guards';
 import { createInteractionExecutionLog } from '../modules/command-logging/command-logging.service';
 import { trackInteractionComponentReply } from '../modules/discord/component-lifecycle';
 import {
@@ -73,6 +80,10 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
         interaction.guildId === BOT_GUILDS.PROD_ENV;
 
       if (!isEmbeddedAppGuild) {
+        await interaction.reply({
+          content: 'Live Stats is unavailable in this server.',
+          flags: MessageFlags.Ephemeral,
+        });
         await logStatsAppEnterSafely({
           interaction,
           targetGame: target.gameName,
@@ -81,20 +92,31 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
           note: 'Live Stats is unavailable in this server.',
         });
 
-        return interaction.reply({
-          content: 'Live Stats is unavailable in this server.',
-          flags: MessageFlags.Ephemeral,
-        });
+        return;
       }
 
       try {
         const launchTarget = resolveMusicActivityButtonTarget(target.gameName);
         if (target.gameName && !launchTarget) {
-          return interaction.reply({
-            content:
-              'This music search has expired. Run /music-search again to open a fresh search.',
-            flags: MessageFlags.Ephemeral,
-          });
+          const components = interaction.message.components.flatMap(
+            (row): APIMessageTopLevelComponent[] => {
+              const component = row.toJSON();
+              if (component.type !== ComponentType.ActionRow)
+                return [component];
+              const remaining = component.components.filter(
+                (button) =>
+                  !(
+                    'custom_id' in button &&
+                    button.custom_id === interaction.customId
+                  ),
+              );
+              return remaining.length
+                ? [{ ...component, components: remaining }]
+                : [];
+            },
+          );
+          await interaction.update({ components });
+          return;
         }
         const result = interaction.channel?.isThread()
           ? await replyWithEmbeddedAppStatsLink(interaction, launchTarget)
@@ -122,6 +144,8 @@ export class EmbeddedAppStatsButtonsListener extends Listener {
         });
         throw error;
       }
+    } catch (error) {
+      if (getNumberProperty(error, 'code') !== 10062) throw error;
     } finally {
       await trackInteractionComponentReply(interaction);
     }
