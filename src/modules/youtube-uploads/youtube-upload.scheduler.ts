@@ -4,7 +4,7 @@ import { announceNewYouTubeUploads } from './youtube-upload.service';
 
 const YOUTUBE_UPLOAD_POLL_INTERVAL_MS = 5 * 60 * 1000;
 const RECENT_UPLOAD_POLL_INTERVAL_MS = 6 * 60 * 60 * 1000;
-const RECENT_UPLOAD_QUIET_PERIOD_HOURS = 48;
+const RECENT_UPLOAD_QUIET_PERIOD_HOURS = 18;
 const INITIAL_UPLOAD_POLL_DELAY_MS = 20_000;
 
 let scheduledPoll: NodeJS.Timeout | undefined;
@@ -14,13 +14,14 @@ export const getYouTubeUploadPollDelayMs = (
   latestPublishedAt: Date | null,
   now: DateTime = DateTime.utc(),
 ): number => {
-  if (
-    latestPublishedAt &&
-    DateTime.fromJSDate(latestPublishedAt).plus({
-      hours: RECENT_UPLOAD_QUIET_PERIOD_HOURS,
-    }) >= now
-  ) {
-    return RECENT_UPLOAD_POLL_INTERVAL_MS;
+  if (latestPublishedAt) {
+    const quietPeriodRemainingMs =
+      DateTime.fromJSDate(latestPublishedAt)
+        .plus({ hours: RECENT_UPLOAD_QUIET_PERIOD_HOURS })
+        .toMillis() - now.toMillis();
+    if (quietPeriodRemainingMs > 0) {
+      return Math.min(RECENT_UPLOAD_POLL_INTERVAL_MS, quietPeriodRemainingMs);
+    }
   }
 
   return YOUTUBE_UPLOAD_POLL_INTERVAL_MS;

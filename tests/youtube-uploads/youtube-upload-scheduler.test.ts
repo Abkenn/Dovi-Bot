@@ -25,14 +25,14 @@ describe('YouTube upload polling schedule', () => {
     vi.useRealTimers();
   });
 
-  it('backs off to six-hour checks for two days after an upload', async () => {
+  it('backs off to six-hour checks within 18 hours after an upload', async () => {
     const { getYouTubeUploadPollDelayMs } = await import(
       '../../src/modules/youtube-uploads/youtube-upload.scheduler'
     );
     const now = DateTime.fromISO('2026-09-24T12:00:00.000Z');
 
     expect(
-      getYouTubeUploadPollDelayMs(new Date('2026-09-23T12:00:00.000Z'), now),
+      getYouTubeUploadPollDelayMs(new Date('2026-09-24T00:00:00.000Z'), now),
     ).toBe(6 * 60 * 60 * 1000);
   });
 
@@ -43,9 +43,38 @@ describe('YouTube upload polling schedule', () => {
     const now = DateTime.fromISO('2026-09-24T12:00:00.000Z');
 
     expect(
-      getYouTubeUploadPollDelayMs(new Date('2026-09-22T11:59:59.999Z'), now),
+      getYouTubeUploadPollDelayMs(new Date('2026-09-23T18:00:00.000Z'), now),
     ).toBe(5 * 60 * 1000);
     expect(getYouTubeUploadPollDelayMs(null, now)).toBe(5 * 60 * 1000);
+  });
+
+  it('caps the next check at the end of the 18-hour quiet period', async () => {
+    const { getYouTubeUploadPollDelayMs } = await import(
+      '../../src/modules/youtube-uploads/youtube-upload.scheduler'
+    );
+    const now = DateTime.fromISO('2026-09-24T12:00:00.000Z');
+
+    expect(
+      getYouTubeUploadPollDelayMs(new Date('2026-09-23T19:00:00.000Z'), now),
+    ).toBe(60 * 60 * 1000);
+  });
+
+  it('resumes frequent polling after the quiet period without a restart', async () => {
+    service.announceNewYouTubeUploads.mockResolvedValue(
+      new Date('2026-09-23T19:00:00.000Z'),
+    );
+    const { startYouTubeUploadScheduler } = await import(
+      '../../src/modules/youtube-uploads/youtube-upload.scheduler'
+    );
+
+    startYouTubeUploadScheduler(client);
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(service.announceNewYouTubeUploads).toHaveBeenCalledOnce();
+
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000 - 20_000);
+    expect(service.announceNewYouTubeUploads).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(service.announceNewYouTubeUploads).toHaveBeenCalledTimes(3);
   });
 
   it('waits six hours between polls after seeing a recent upload', async () => {
