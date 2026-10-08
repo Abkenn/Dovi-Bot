@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MusicPlay } from '../../src/modules/music/music.types';
+import { parseMusicCatalog } from '../../src/modules/music/music-catalog.parser';
 
 const dependencies = vi.hoisted(() => ({
   save: vi.fn(),
@@ -48,6 +49,35 @@ const upload = {
 const text = 'Per Stream :\nStream 32 : 25/09/26\n1:00 Song - Game';
 
 describe('music uploads and search', () => {
+  it('returns sequel tracks with counts and latest stream links for game search', async () => {
+    dependencies.read.mockResolvedValue({
+      plays: parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 City of Tears - Hollow Knight
+2:00 Lost Lace - Hollow Knight Silksong
+Stream 2 : 02/01/26
+3:00 Lost Lace - Hollow Knight Silksong
+Per Game :
+Hollow Knight :
+Stream 1 : 1:00 City of Tears
+Stream 1 : 2:00 Lost Lace
+Stream 2 : 3:00 Lost Lace`),
+    });
+    dependencies.videos.mockResolvedValue([
+      { streamDate: '2026-01-02', videoId: 'sequel-video', title: 'Stream 2' },
+    ]);
+    expect(await searchMusicCatalog('silksong', { game: true })).toEqual([
+      expect.objectContaining({
+        count: 2,
+        streamDate: '2026-01-02',
+        offsetSeconds: 180,
+        video: { videoId: 'sequel-video', title: 'Stream 2' },
+      }),
+    ]);
+    expect(dependencies.videos).toHaveBeenCalledExactlyOnceWith('@primary', [
+      '2026-01-02',
+    ]);
+  });
   it('returns only aggregated facts and handles an unavailable catalog', async () => {
     dependencies.read.mockResolvedValueOnce(null);
     expect(await getMusicFacts()).toBeNull();

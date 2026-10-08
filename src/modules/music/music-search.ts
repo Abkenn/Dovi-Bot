@@ -28,7 +28,11 @@ export const groupMusicGameTracks = (
   return [...groups.values()];
 };
 
-import { musicGameInitials, resolveMusicGames } from './music-games';
+import {
+  musicGameFamily,
+  musicGameInitials,
+  resolveMusicGames,
+} from './music-games';
 import { isDigits, musicIdentity, musicWords } from './music-normalization';
 import { scoreMusicText } from './music-text-match';
 import { musicTrackSearchText } from './music-tracks';
@@ -148,7 +152,19 @@ export const findMusicGamePlays = (
     const gameNumbers = musicWords(play.game).filter(isDigits);
     if (!queryNumbers.every((number) => gameNumbers.includes(number)))
       return [];
-    const score = scoreMusicText(play.game, terms);
+    const familyWords = musicWords(musicGameFamily(play.game));
+    const titleGameLabels = [play.originalTitle, play.title].flatMap((title) =>
+      title.split(/\s+-\s+/).filter((part) => {
+        const words = musicWords(part);
+        return familyWords.every((word, index) => words[index] === word);
+      }),
+    );
+    const score =
+      scoreMusicText(play.game, terms) ||
+      Math.max(
+        0,
+        ...titleGameLabels.map((label) => scoreMusicText(label, terms)),
+      );
     return score > 0 ? [{ play, score }] : [];
   });
   const bestScore = Math.max(0, ...scoredPlays.map(({ score }) => score));

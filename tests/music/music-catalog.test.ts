@@ -21,6 +21,25 @@ Death's Door :
 Stream 32 : 7:46 Avarice`;
 
 describe('music catalog', () => {
+  it('finds named sequels within a parent game without matching song names', () => {
+    const plays = parseMusicCatalog(`Per Stream :
+Stream 1 : 01/01/26
+1:00 City of Tears - Hollow Knight
+2:00 Lost Lace - Hollow Knight Silksong
+3:00 Hollow Knight Silksong - Cogwork Core
+Per Game :
+Hollow Knight :
+Stream 1 : 1:00 City of Tears
+Stream 1 : 2:00 Lost Lace
+Stream 1 : 3:00 Cogwork Core`);
+    expect(
+      findMusicGamePlays(plays, 'silksong').map((play) => play.offsetSeconds),
+    ).toEqual([120, 180]);
+    expect(findMusicGamePlays(plays, 'hollow knight silksong')).toHaveLength(2);
+    expect(findMusicGamePlays(plays, 'hollow knight')).toHaveLength(3);
+    expect(findMusicGamePlays(plays, 'lost lace')).toEqual([]);
+    expect(findMusicGamePlays(plays, 'cogwork')).toEqual([]);
+  });
   it('does not fuzzy-match short queries to unrelated songs', () => {
     const plays = parseMusicCatalog(`Per Stream :
 Stream 1 : 01/01/26
