@@ -2,7 +2,10 @@ import { StreamKind } from '../../generated/prisma/client';
 import type { StreamAnnouncementEdits } from './stream-announcement.types';
 import type { StreamInfoResult, StreamOccurrence } from './stream-info.types';
 import { resolveTitle } from './stream-info.utils';
-import { isStreamReminderEligible } from './stream-reminder.utils';
+import {
+  isStreamAnnouncementReminderEligible,
+  isStreamReminderEligible,
+} from './stream-reminder.utils';
 
 const STREAM_ANNOUNCEMENT_REVIEW_LEAD_MS = 50 * 60 * 1000;
 const STREAM_ANNOUNCEMENT_UPDATE_LEAD_MS = 60 * 60 * 1000;
@@ -23,7 +26,10 @@ export const isStreamAnnouncementReviewDue = (
 export const isStreamAnnouncementEligible = (
   occurrence: StreamOccurrence | null,
 ): occurrence is StreamOccurrence =>
-  occurrence?.streamIsLive === true || isStreamReminderEligible(occurrence);
+  occurrence?.streamIsLive === true ||
+  (Boolean(occurrence?.streamUrl) &&
+    isStreamAnnouncementReminderEligible(occurrence)) ||
+  isStreamReminderEligible(occurrence);
 
 export const findEditableStreamAnnouncementOccurrence = (
   streamInfo: StreamInfoResult,

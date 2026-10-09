@@ -540,16 +540,29 @@ describe('stream info message updater', () => {
     expect(streamReminderService.deliverStreamReminders).not.toHaveBeenCalled();
   });
 
-  it('does not post an upload announcement days before the stream', async () => {
+  it('posts and records a confirmed public stream even days before its start', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-01T18:10:00.000Z'));
-    const send = vi.fn();
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'early-link' })
+      .mockResolvedValueOnce({ id: 'early-info' });
     const client = makeClient({ channel: { send } });
     streamInfoService.getStreamInfo.mockResolvedValue({
       timezone: 'America/Sao_Paulo',
       current: null,
+      previous: null,
       next: {
         dateKey: '2026-08-07',
+        weekday: 'FRIDAY',
+        endAt: new Date('2026-08-07T22:10:00Z'),
+        streamKind: 'GAME',
+        musicMode: null,
+        title: 'Game Stream',
+        customTitle: null,
+        musicTheme: null,
+        gameName: 'Test',
+        isOverride: false,
         startAt: new Date('2026-08-07T18:10:00.000Z'),
         streamUrl: 'https://youtube.test/watch?v=planned',
       },
@@ -557,7 +570,28 @@ describe('stream info message updater', () => {
 
     await announcePlannedStreamInfo(client);
 
-    expect(send).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(
+      streamAnnouncementQueries.createStreamAnnouncement,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: 'early-info',
+        linkMessageId: 'early-link',
+        streamDateKey: '2026-08-07',
+        streamUrl: 'https://youtube.test/watch?v=planned',
+      }),
+    );
+    streamAnnouncementQueries.findStreamAnnouncementByDate.mockResolvedValue({
+      channelId: 'channel',
+      messageId: 'early-info',
+      linkMessageId: 'early-link',
+      streamUrl: 'https://youtube.test/watch?v=planned',
+      streamInfoJson:
+        streamAnnouncementQueries.createStreamAnnouncement.mock.calls[0]?.[0]
+          .streamInfoJson,
+    });
+    await announcePlannedStreamInfo(client);
+    expect(send).toHaveBeenCalledTimes(2);
   });
 
   it('posts a manual staging preview with the example YouTube URL', async () => {

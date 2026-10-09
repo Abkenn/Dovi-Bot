@@ -22,7 +22,7 @@ type YouTubeChannel = {
   uploadsPlaylistId: string;
 };
 
-const YOUTUBE_POLL_INTERVAL_MS = 5 * 60 * 1000;
+const YOUTUBE_POLL_INTERVAL_MS = 30_000;
 const YOUTUBE_MAX_UPLOADS_PER_CHANNEL = 5;
 
 let channelCache: YouTubeChannel[] | undefined;

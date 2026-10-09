@@ -22,6 +22,20 @@ describe('stream info message updater scheduler', () => {
     vi.useRealTimers();
   });
 
+  it('checks for public streams every thirty seconds outside the watch window', async () => {
+    updater.refreshLastStreamInfoMessages.mockResolvedValue(undefined);
+    const { startStreamInfoMessageUpdater } = await import(
+      '../../src/modules/stream-info/stream-info-message-updater.scheduler'
+    );
+    startStreamInfoMessageUpdater({} as Client);
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(updater.refreshLastStreamInfoMessages).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(18_000);
+    expect(updater.refreshLastStreamInfoMessages).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(updater.refreshLastStreamInfoMessages).toHaveBeenCalledTimes(3);
+  });
+
   it('delays startup and retries transient failures without rejecting', async () => {
     const connectionError = new Error('Connection terminated due to timeout');
     updater.refreshLastStreamInfoMessages
@@ -95,15 +109,15 @@ describe('stream info message updater scheduler', () => {
 
     startStreamInfoMessageUpdater({} as Client);
     startStreamInfoMessageUpdater({} as Client);
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(updater.refreshLastStreamInfoMessages).toHaveBeenCalledOnce();
 
     resolveStartup?.();
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     updater.refreshLastStreamInfoMessages.mockRejectedValueOnce(
       new Error('refresh'),
     );
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(30_000);
 
     expect(updater.refreshLastStreamInfoMessages).toHaveBeenCalledTimes(3);
     expect(consoleError).toHaveBeenCalledWith(

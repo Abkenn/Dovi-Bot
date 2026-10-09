@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StreamKind } from '../../src/generated/prisma/client';
 import {
   applyStreamAnnouncementEdits,
@@ -33,6 +33,29 @@ const streamInfo: StreamInfoResult = {
 };
 
 describe('stream announcement timing', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('announces a public upcoming stream immediately even hours before start', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-11T12:00:00Z'));
+    expect(
+      isStreamAnnouncementEligible({
+        ...occurrence,
+        streamUrl: 'https://www.youtube.com/watch?v=new',
+        streamIsLive: false,
+      }),
+    ).toBe(true);
+    expect(isStreamAnnouncementEligible(occurrence)).toBe(false);
+    expect(isStreamAnnouncementEligible(null)).toBe(false);
+    vi.setSystemTime(new Date('2026-09-12T12:00:00Z'));
+    expect(
+      isStreamAnnouncementEligible({
+        ...occurrence,
+        streamUrl: 'https://www.youtube.com/watch?v=old',
+        streamIsLive: false,
+      }),
+    ).toBe(false);
+  });
   it('allows a late automatic announcement when a stream is already live', () => {
     expect(
       isStreamAnnouncementEligible({ ...occurrence, streamIsLive: true }),

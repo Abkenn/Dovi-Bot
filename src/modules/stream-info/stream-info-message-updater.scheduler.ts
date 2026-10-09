@@ -4,7 +4,7 @@ import { isStreamAnnouncementWatchWindow } from './stream-announcement-watch';
 import { refreshLastStreamInfoMessages } from './stream-info-message-updater.service';
 
 const STREAM_INFO_MESSAGE_REFRESH_INTERVAL_MS = 15_000;
-const NORMAL_STREAM_INFO_MESSAGE_REFRESH_INTERVAL_MS = 60_000;
+const NORMAL_STREAM_INFO_MESSAGE_REFRESH_INTERVAL_MS = 30_000;
 const INITIAL_REFRESH_DELAY_MS = 12_000;
 const STARTUP_RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
 
