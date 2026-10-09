@@ -20,7 +20,7 @@ describe('embedded app stats Discord button', () => {
       components: [
         {
           custom_id: 'embedded-app-stats',
-          label: 'Stats',
+          label: 'Game Stats',
           emoji: { name: '📊' },
         },
       ],
@@ -33,7 +33,7 @@ describe('embedded app stats Discord button', () => {
     ).toMatchObject({
       components: [
         {
-          label: 'Stats',
+          label: 'Game Stats',
           emoji: { name: '📊' },
           custom_id: 'embedded-app-stats:UNDERTALE',
         },
@@ -47,7 +47,7 @@ describe('embedded app stats Discord button', () => {
     ).toMatchObject({
       components: [
         {
-          label: 'Stats',
+          label: 'Game Stats',
           custom_id: 'embedded-app-stats:Elden Ring',
         },
       ],

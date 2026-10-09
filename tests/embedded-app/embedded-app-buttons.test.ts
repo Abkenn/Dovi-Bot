@@ -45,6 +45,17 @@ const makeInteraction = (
 });
 
 describe('embedded app Stats buttons', () => {
+  it('launches the persistent music overview without a search session', async () => {
+    const interaction = makeInteraction('embedded-app-stats:music');
+    await EmbeddedAppStatsButtonsListener.prototype.run.call(
+      {} as EmbeddedAppStatsButtonsListener,
+      interaction as never,
+    );
+    expect(dependencies.launchEmbeddedAppStats).toHaveBeenCalledWith(
+      interaction,
+      'music',
+    );
+  });
   it.each([
     ['embedded-app-stats:music-search:expired', 'staging-guild'],
     ['embedded-app-stats', 'unknown-guild'],

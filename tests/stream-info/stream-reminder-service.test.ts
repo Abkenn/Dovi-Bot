@@ -1,3 +1,7 @@
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: { STAGING_ENV: 'staging-guild', PROD_ENV: 'production-guild' },
+}));
+
 import type { Client } from 'discord.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StreamKind } from '../../src/generated/prisma/client';

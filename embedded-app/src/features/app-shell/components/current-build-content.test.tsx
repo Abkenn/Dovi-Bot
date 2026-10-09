@@ -54,6 +54,18 @@ describe('CurrentBuildContent', () => {
     dependencies.navigate.mockReset();
   });
 
+  it('opens the persistent music overview without a saved search', async () => {
+    dependencies.customId = 'music';
+    render(<CurrentBuildContent discordClientId="client-1" stats={stats} />);
+    await waitFor(() =>
+      expect(dependencies.navigate).toHaveBeenCalledWith({
+        to: '/music',
+        search: {},
+        replace: true,
+      }),
+    );
+  });
+
   it('renders the active route without a launch target', () => {
     render(<CurrentBuildContent discordClientId="client-1" stats={stats} />);
 

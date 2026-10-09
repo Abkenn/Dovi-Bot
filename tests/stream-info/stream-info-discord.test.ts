@@ -1,3 +1,7 @@
+vi.mock('../../src/config/discord-access', () => ({
+  BOT_GUILDS: { STAGING_ENV: 'staging-guild', PROD_ENV: 'production-guild' },
+}));
+
 import { type EmbedBuilder, MessageFlagsBitField } from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MusicMode, StreamKind } from '../../src/generated/prisma/client';
@@ -45,11 +49,57 @@ const makeOccurrence = (
 const embedJson = (embed: EmbedBuilder) => embed.toJSON();
 
 describe('stream info discord output', () => {
+  it.each([
+    [StreamKind.MUSIC, true, ['Remind Me', 'Game Stats', 'Music Stats']],
+    [StreamKind.MUSIC, false, ['Remind Me', 'Music Stats']],
+    [StreamKind.GAME, false, ['Remind Me', 'Game Stats']],
+  ])('builds persistent announcement buttons for %s combined=%s', async (streamKind, isCombined, labels) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-12T18:00:00.000Z'));
+    const occurrence = makeOccurrence({
+      streamKind,
+      isCombined,
+      streamUrl: 'https://youtube.test/stream',
+    });
+    const { info } = buildStreamAnnouncementMessages({
+      occurrence,
+      streamInfo: {
+        timezone: 'America/Sao_Paulo',
+        current: null,
+        previous: null,
+        next: occurrence,
+      },
+    });
+    const components = info.components.map((row) => row.toJSON());
+    expect(
+      components.flatMap((row) =>
+        row.components.map((button) =>
+          'label' in button ? button.label : null,
+        ),
+      ),
+    ).toEqual(labels);
+    const music = components
+      .flatMap((row) => row.components)
+      .find((button) => 'label' in button && button.label === 'Music Stats');
+    if (music)
+      expect(music).toMatchObject({ custom_id: 'embedded-app-stats:music' });
+    const message = {
+      id: `persistent-${streamKind}-${isCombined}`,
+      flags: new MessageFlagsBitField(),
+      components: info.components,
+      edit: vi.fn(),
+      fetch: vi.fn(),
+    };
+    message.fetch.mockResolvedValue(message);
+    trackComponentMessage(message as never);
+    await vi.advanceTimersByTimeAsync(30 * 24 * 60 * 60_000);
+    expect(message.edit).not.toHaveBeenCalled();
+  });
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('removes announcement reminder and review controls when their stream starts', async () => {
+  it('keeps announcement reminders while removing review controls at stream start', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-12T18:00:00.000Z'));
     const occurrence = makeOccurrence();
@@ -80,8 +130,8 @@ describe('stream info discord output', () => {
       },
     );
     await vi.advanceTimersByTimeAsync(10 * 60_000);
-    for (const result of messages)
-      expect(result.edit).toHaveBeenCalledWith({ components: [] });
+    expect(messages[0]?.edit).not.toHaveBeenCalled();
+    expect(messages[1]?.edit).toHaveBeenCalledWith({ components: [] });
   });
 
   it('keeps the stream label plain and the YouTube title clickable', () => {
@@ -225,7 +275,7 @@ describe('stream info discord output', () => {
     expect(messages.info).not.toHaveProperty('content');
   });
 
-  it('keeps a second combined-stream URL inside the embed only', () => {
+  it('includes both combined-stream URLs for native YouTube previews', () => {
     const occurrence = makeOccurrence({
       isCombined: true,
       streamKind: StreamKind.MUSIC,
@@ -258,9 +308,9 @@ describe('stream info discord output', () => {
     });
 
     expect(messages.link.content).toBe(
-      '<@&video-role>\nhttps://youtube.test/music',
+      '<@&video-role>\nhttps://youtube.test/music\nhttps://youtube.test/game',
     );
-    expect(messages.link.content).not.toContain('https://youtube.test/game');
+    expect(messages.link).not.toHaveProperty('embeds');
     const infoEmbed = messages.info.embeds[0];
     expect(infoEmbed).toBeDefined();
     if (!infoEmbed) {

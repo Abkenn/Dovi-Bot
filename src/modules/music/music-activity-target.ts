@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import type { MusicSearchInput } from './music.types';
 
+export const MUSIC_ACTIVITY_OVERVIEW_TARGET = 'music';
+
+export const isMusicActivityTarget = (target: string | null | undefined) =>
+  target === MUSIC_ACTIVITY_OVERVIEW_TARGET ||
+  parseMusicActivityTarget(target) !== null;
+
 export const musicActivitySearchSchema = z.object({
   query: z.string().trim().min(2).max(100),
   game: z.boolean(),

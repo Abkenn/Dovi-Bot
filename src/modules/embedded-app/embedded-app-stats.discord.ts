@@ -1,5 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { BOT_GUILDS } from '../../config/discord-access';
+import { isMusicActivityTarget } from '../music/music-activity-target';
 
 export const EMBEDDED_APP_STATS_CUSTOM_ID = 'embedded-app-stats';
 const MAX_COMPONENT_CUSTOM_ID_LENGTH = 100;
@@ -30,7 +31,10 @@ export const buildEmbeddedAppStatsButton = (
     return null;
   }
 
-  const button = new ButtonBuilder().setLabel('Stats').setEmoji('\u{1F4CA}');
+  const isMusic = isMusicActivityTarget(gameName);
+  const button = new ButtonBuilder()
+    .setLabel(isMusic ? 'Music Stats' : 'Game Stats')
+    .setEmoji(isMusic ? '\u{1F3B5}' : '\u{1F4CA}');
 
   const cleanGameName = gameName?.trim();
   const targetedCustomId = cleanGameName

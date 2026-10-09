@@ -7,7 +7,7 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { getNumberProperty } from '../../lib/type-guards';
-import { parseMusicActivityTarget } from '../music/music-activity-target';
+import { isMusicActivityTarget } from '../music/music-activity-target';
 import { registerActivityInstance } from './activity-tracking.service';
 import { registerEmbeddedAppLaunchTarget } from './embedded-app-launch-target.service';
 import { buildEmbeddedAppActivityUrl } from './embedded-app-link';
@@ -45,12 +45,12 @@ export const replyWithEmbeddedAppStatsLink = async (
   interaction: ButtonInteraction,
   gameName?: string | null,
 ): Promise<EmbeddedAppLaunchResult> => {
-  const label = parseMusicActivityTarget(gameName) ? 'Music Stats' : 'Stats';
+  const label = isMusicActivityTarget(gameName) ? 'Music Stats' : 'Game Stats';
   const replied = await replySafely(interaction, {
     content:
       label === 'Music Stats'
         ? 'Open Music Stats in Discord:'
-        : 'Open Live Stats in Discord:',
+        : 'Open Game Stats in Discord:',
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()

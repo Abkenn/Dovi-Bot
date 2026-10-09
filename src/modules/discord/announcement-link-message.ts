@@ -2,6 +2,7 @@ import type { MessageCreateOptions } from 'discord.js';
 
 type BuildAnnouncementLinkMessageInput = {
   url: string;
+  additionalUrls?: string[];
   roleId?: string | undefined;
   userId?: string | undefined;
 };
@@ -25,10 +26,11 @@ const getAllowedMentions = (roleId?: string, userId?: string) => {
 
 export const buildAnnouncementLinkMessage = ({
   url,
+  additionalUrls = [],
   roleId,
   userId,
 }: BuildAnnouncementLinkMessageInput): AnnouncementLinkMessage => ({
-  content: [getMention(roleId, userId), url]
+  content: [getMention(roleId, userId), ...new Set([url, ...additionalUrls])]
     .filter((line) => line !== null)
     .join('\n'),
   allowedMentions: getAllowedMentions(roleId, userId),

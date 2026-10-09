@@ -10,6 +10,7 @@ import {
   MessageFlags,
   type TopLevelComponentData,
 } from 'discord.js';
+import { BOT_GUILDS } from '../../config/discord-access';
 import {
   COMMAND_CATEGORIES,
   getCommandCategoryAccentColor,
@@ -17,6 +18,8 @@ import {
 import { MusicMode, StreamKind } from '../../generated/prisma/client';
 import { buildAnnouncementLinkMessage } from '../discord/announcement-link-message';
 import { registerComponentLifetime } from '../discord/component-lifecycle';
+import { buildEmbeddedAppStatsButton } from '../embedded-app/embedded-app-stats.discord';
+import { MUSIC_ACTIVITY_OVERVIEW_TARGET } from '../music/music-activity-target';
 import type {
   BuildAppliedStreamAnnouncementChangeInput,
   BuildStreamAnnouncementChangePreviewInput,
@@ -215,10 +218,6 @@ export const buildStreamReminderButton = (
     return null;
   }
 
-  registerComponentLifetime(
-    `${STREAM_REMINDER_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`,
-    occurrence.startAt.getTime(),
-  );
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`${STREAM_REMINDER_CUSTOM_ID_PREFIX}:${occurrence.dateKey}`)
@@ -236,10 +235,6 @@ export const buildStreamAnnouncementReminderButton = (
     return null;
   }
 
-  registerComponentLifetime(
-    `${customIdPrefix}:${occurrence.dateKey}`,
-    occurrence.startAt.getTime(),
-  );
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`${customIdPrefix}:${occurrence.dateKey}`)
@@ -264,6 +259,26 @@ export const buildStreamAnnouncementMessages = ({
     occurrence,
     reminderCustomIdPrefix,
   );
+  const guildId =
+    reminderCustomIdPrefix === STREAM_STAGING_REMINDER_CUSTOM_ID_PREFIX
+      ? BOT_GUILDS.STAGING_ENV
+      : BOT_GUILDS.PROD_ENV;
+  if (reminderButton) {
+    if (occurrence.streamKind === StreamKind.GAME || occurrence.isCombined) {
+      const gameStats = buildEmbeddedAppStatsButton(
+        guildId,
+        occurrence.gameName,
+      );
+      if (gameStats) reminderButton.addComponents(...gameStats.components);
+    }
+    if (occurrence.streamKind === StreamKind.MUSIC || occurrence.isCombined) {
+      const musicStats = buildEmbeddedAppStatsButton(
+        guildId,
+        MUSIC_ACTIVITY_OVERVIEW_TARGET,
+      );
+      if (musicStats) reminderButton.addComponents(...musicStats.components);
+    }
+  }
   return {
     info: {
       embeds: [buildStreamInfoEmbed(streamInfo)],
@@ -272,6 +287,9 @@ export const buildStreamAnnouncementMessages = ({
     },
     link: buildAnnouncementLinkMessage({
       url: occurrence.streamUrl,
+      additionalUrls: occurrence.isCombined
+        ? getOccurrenceVideoLinks(occurrence).map((video) => video.url)
+        : [],
       roleId,
       userId,
     }),

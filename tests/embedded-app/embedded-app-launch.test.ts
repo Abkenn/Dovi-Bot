@@ -114,13 +114,13 @@ describe('embedded app launch', () => {
 
     expect(reply).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: 'Open Live Stats in Discord:',
+        content: 'Open Game Stats in Discord:',
         components: [
           expect.objectContaining({
             components: [
               expect.objectContaining({
                 data: expect.objectContaining({
-                  label: 'Stats',
+                  label: 'Game Stats',
                   url: 'https://discord.com/activities/app-1?custom_id=Elden+Ring',
                 }),
               }),

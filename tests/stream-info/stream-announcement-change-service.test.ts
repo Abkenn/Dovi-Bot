@@ -41,6 +41,7 @@ vi.mock('../../src/modules/stream-info/stream-info.discord', () => discord);
 import {
   applyStreamAnnouncementChange,
   declineStreamAnnouncementChange,
+  editTrackedAnnouncement,
   prepareStreamAnnouncementChange,
   refreshTrackedStreamAnnouncement,
 } from '../../src/modules/stream-info/stream-announcement-change.service';
@@ -79,6 +80,60 @@ const makeClient = (channel: unknown): Client =>
   }) as unknown as Client;
 
 describe('stream announcement changes', () => {
+  it('edits the existing video-ping message with both combined URLs', async () => {
+    const builders = await vi.importActual<
+      typeof import('../../src/modules/stream-info/stream-info.discord')
+    >('../../src/modules/stream-info/stream-info.discord');
+    discord.buildStreamAnnouncementMessages.mockImplementationOnce(
+      builders.buildStreamAnnouncementMessages,
+    );
+    const combined = {
+      ...occurrence,
+      isCombined: true,
+      streamKind: StreamKind.MUSIC,
+      videos: [
+        {
+          title: 'Music',
+          url: occurrence.streamUrl,
+          actualStartAt: null,
+          scheduledStartAt: occurrence.startAt,
+        },
+        {
+          title: 'Game',
+          url: 'https://youtube.test/game',
+          actualStartAt: null,
+          scheduledStartAt: occurrence.startAt,
+        },
+      ],
+    };
+    const editInfo = vi.fn();
+    const editLink = vi.fn();
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ edit: editInfo })
+      .mockResolvedValueOnce({ edit: editLink });
+    const send = vi.fn();
+    await editTrackedAnnouncement({
+      client: makeClient({ messages: { fetch }, send }),
+      guildId: 'prod-guild',
+      channelId: 'prod-channel',
+      messageId: 'prod-message',
+      linkMessageId: 'prod-link',
+      streamDateKey: occurrence.dateKey,
+      streamUrl: occurrence.streamUrl,
+      streamInfo: { ...streamInfo, next: combined },
+    });
+    expect(fetch).toHaveBeenNthCalledWith(2, 'prod-link');
+    expect(editLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining(
+          `${occurrence.streamUrl}\nhttps://youtube.test/game`,
+        ),
+      }),
+    );
+    expect(editInfo).toHaveBeenCalledOnce();
+    expect(send).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     queries.createStreamAnnouncementChangeRequest.mockResolvedValue({
