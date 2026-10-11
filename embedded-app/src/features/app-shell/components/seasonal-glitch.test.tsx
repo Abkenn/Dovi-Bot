@@ -39,10 +39,12 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('seasonal Activity glitch', () => {
-  it('briefly appears once after the Activity settles, and stays gone when navigating or toggling the theme', async () => {
+  it('appears within the first five seconds, then stays gone when navigating or toggling the theme', async () => {
     const view = render(<SeasonalGlitch enabled />);
     expect(screen.queryByTestId('glitch')).not.toBeInTheDocument();
-    await act(() => vi.advanceTimersByTimeAsync(8000));
+    await act(() => vi.advanceTimersByTimeAsync(1199));
+    expect(screen.queryByTestId('glitch')).not.toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(1));
     expect(screen.getByTestId('glitch')).toHaveClass('pointer-events-none');
     act(() => preferences.complete());
     expect(screen.queryByTestId('glitch')).not.toBeInTheDocument();

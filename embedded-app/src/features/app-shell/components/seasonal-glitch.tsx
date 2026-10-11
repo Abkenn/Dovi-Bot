@@ -16,7 +16,7 @@ export const SeasonalGlitch = ({ enabled }: { enabled: boolean }) => {
     const timer = window.setTimeout(() => {
       hasShown.current = true;
       setVisible(true);
-    }, 8000);
+    }, 1200);
     return () => window.clearTimeout(timer);
   }, [enabled, reducedMotion]);
 
@@ -25,13 +25,13 @@ export const SeasonalGlitch = ({ enabled }: { enabled: boolean }) => {
   return (
     <motion.div
       aria-hidden="true"
-      className="seasonal-glitch pointer-events-none fixed right-5 top-16 z-50 text-[#8b0000]"
+      className="seasonal-glitch pointer-events-none fixed right-5 top-16 z-50 text-[#d64949]"
       initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 0.38, 0.08, 0.25, 0], x: [0, -2, 2, -1, 0] }}
-      transition={{ duration: 0.22, ease: 'linear' }}
+      animate={{ opacity: [0, 0.75, 0.12, 0.6, 0], x: [0, -2, 2, -1, 0] }}
+      transition={{ duration: 0.45, ease: 'linear' }}
       onAnimationComplete={() => setVisible(false)}
     >
-      <Eye size={28} strokeWidth={1.2} />
+      <Eye size={36} strokeWidth={1.2} />
     </motion.div>
   );
 };
