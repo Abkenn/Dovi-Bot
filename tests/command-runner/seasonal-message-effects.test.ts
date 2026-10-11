@@ -20,8 +20,14 @@ import {
   startSeasonalMessageEffectRecovery,
   trackSeasonalMessageEffects,
 } from '../../src/modules/command-runner/seasonal-message-effects';
+import { getBotSeasonalTheme } from '../../src/modules/command-runner/seasonal-theme.service';
 
 const eye = '<a:eye:1558676165785419866>';
+const halloween = () => {
+  const theme = getSeasonalTheme('halloween');
+  if (!theme) throw new Error('Missing Halloween profile');
+  return theme;
+};
 const makeMessage = (id: string, title = `# ${eye} Stream Info`) => {
   let components: APIMessageTopLevelComponent[] = [
     {
@@ -76,24 +82,73 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-10-11T12:00:00Z'));
   vi.clearAllMocks();
+  vi.mocked(getBotSeasonalTheme).mockResolvedValue(halloween());
   db.deleteSeasonalMessageEffect.mockResolvedValue({ count: 1 });
-  db.saveSeasonalMessageEffect.mockImplementation(async (input) => ({
-    ...input,
-    buttonSwapAt: new Date(input.startedAt.getTime() + 15000),
-    buttonRestoreAt: new Date(input.startedAt.getTime() + 75000),
-    eyeExpiresAt: new Date(input.startedAt.getTime() + 900000),
-  }));
+  db.saveSeasonalMessageEffect.mockImplementation(async (input) => input);
 });
 afterEach(() => vi.useRealTimers());
 
 describe('seasonal Discord message effects', () => {
+  it('does not schedule cleanup when a theme has no temporary effects', async () => {
+    const { effects: _effects, ...permanentTheme } = halloween();
+    const { message } = makeMessage('permanent');
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      permanentTheme,
+    );
+    expect(db.saveSeasonalMessageEffect).not.toHaveBeenCalled();
+  });
+  it('can expire a decoration without changing Activity buttons', async () => {
+    const theme = { ...halloween(), effects: { emojiLifetimeMs: 900000 } };
+    const { message, getComponents } = makeMessage('text-only');
+    await trackSeasonalMessageEffects(message as unknown as Message, theme);
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(message.edit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(885000);
+    expect(getComponents()[0]).toMatchObject({
+      accent_color: 0x8b0000,
+      components: [{ content: '# Stream Info' }],
+    });
+    expect(getComponents()[1]).toMatchObject({
+      components: [{ emoji: { name: '📊' } }, { url: 'https://example.com' }],
+    });
+  });
+  it('uses another season’s emoji and cleanup timing while keeping its accent', async () => {
+    const easter = {
+      ...halloween(),
+      id: 'easter',
+      emoji: '🐰',
+      effects: {
+        emojiLifetimeMs: 10000,
+        activityButton: { delayMs: 1000, durationMs: 2000 },
+      },
+    };
+    vi.mocked(getBotSeasonalTheme).mockResolvedValue(easter);
+    const { message, getComponents } = makeMessage(
+      'easter',
+      '# 🐰 Stream Info',
+    );
+    await trackSeasonalMessageEffects(message as unknown as Message, easter);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(getComponents()[1]).toMatchObject({
+      components: [{ emoji: { name: '🐰' } }, { url: 'https://example.com' }],
+    });
+    await vi.advanceTimersByTimeAsync(9000);
+    expect(getComponents()[0]).toMatchObject({
+      accent_color: 0x8b0000,
+      components: [{ content: '# Stream Info' }],
+    });
+  });
   it('uses the current deadline after a slow Discord fetch', async () => {
     const { message, getComponents } = makeMessage('slow-fetch');
     message.fetch.mockImplementationOnce(async () => {
       vi.setSystemTime(new Date('2026-10-11T12:15:01Z'));
       return message;
     });
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(15000);
     expect(getComponents()[0]).toMatchObject({
       accent_color: 0x8b0000,
@@ -103,7 +158,10 @@ describe('seasonal Discord message effects', () => {
   });
   it('swaps the Activity button at 15 seconds, restores it at 75 seconds, and removes the title eye at 15 minutes while retaining dark red', async () => {
     const { message, getComponents } = makeMessage('sequence');
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(14999);
     expect(message.edit).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -129,7 +187,10 @@ describe('seasonal Discord message effects', () => {
     const { message, getComponents } = makeMessage('text-expiry');
     getComponents().splice(0);
     message.content = `${eye} No matching tracks found.`;
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(900000);
     expect(message.content).toBe('No matching tracks found.');
     expect(message.edit).toHaveBeenCalledTimes(1);
@@ -137,7 +198,10 @@ describe('seasonal Discord message effects', () => {
 
   it('preserves newer content and never resurrects removed controls', async () => {
     const { message, getComponents } = makeMessage('updated-message');
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     getComponents().splice(1, 1);
     const container = getComponents()[0];
     if (container?.type !== ComponentType.Container)
@@ -157,7 +221,10 @@ describe('seasonal Discord message effects', () => {
 
   it('preserves an emoji changed by newer work during the eye phase', async () => {
     const { message, getComponents } = makeMessage('newer-emoji');
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(15000);
     const row = getComponents()[1];
     if (row?.type !== ComponentType.ActionRow)
@@ -176,7 +243,10 @@ describe('seasonal Discord message effects', () => {
     const { message, getComponents } = makeMessage('db-failure');
     db.saveSeasonalMessageEffect.mockRejectedValueOnce(new Error('Offline'));
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(900000);
     expect(getComponents()[0]).toMatchObject({
       components: [{ content: '# Stream Info' }],
@@ -188,7 +258,10 @@ describe('seasonal Discord message effects', () => {
     const { message, getComponents } = makeMessage('fetch-retry');
     message.fetch.mockRejectedValueOnce(new Error('Temporary outage'));
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(20000);
     expect(getComponents()[1]).toMatchObject({
       components: [
@@ -208,21 +281,24 @@ describe('seasonal Discord message effects', () => {
     message.fetch.mockRejectedValueOnce(
       Object.assign(new Error('Deleted'), { code: 10008 }),
     );
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(15000);
     expect(db.deleteSeasonalMessageEffect).toHaveBeenCalledWith('deleted');
     const privateMessage = makeMessage('private').message;
     privateMessage.flags.has = () => true;
     await trackSeasonalMessageEffects(
       privateMessage as unknown as Message,
-      eye,
+      halloween(),
     );
-    await trackSeasonalMessageEffects(undefined, eye);
+    await trackSeasonalMessageEffects(undefined, halloween());
     const ordinary = makeMessage('ordinary', '# Ordinary');
     ordinary.getComponents().splice(1);
     await trackSeasonalMessageEffects(
       ordinary.message as unknown as Message,
-      eye,
+      halloween(),
     );
     expect(db.saveSeasonalMessageEffect).toHaveBeenCalledTimes(1);
   });
@@ -270,7 +346,10 @@ describe('seasonal Discord message effects', () => {
   });
   it('runs the button effect even when the command reply did not receive a title eye', async () => {
     const { message, getComponents } = makeMessage('regular', '# Stream Info');
-    await trackSeasonalMessageEffects(message as unknown as Message, eye);
+    await trackSeasonalMessageEffects(
+      message as unknown as Message,
+      halloween(),
+    );
     await vi.advanceTimersByTimeAsync(15000);
     expect(getComponents()[1]).toMatchObject({
       components: [

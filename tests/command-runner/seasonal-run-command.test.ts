@@ -58,7 +58,7 @@ describe('seasonal command runner integration', () => {
       });
       expect(trackSeasonalMessageEffects).toHaveBeenLastCalledWith(
         delivered,
-        '<a:eye:1558676165785419866>',
+        getSeasonalTheme('halloween'),
       );
     }
     expect(trackSeasonalMessageEffects).toHaveBeenCalledTimes(2);

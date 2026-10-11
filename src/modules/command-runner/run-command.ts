@@ -356,13 +356,12 @@ export const runCommand = async <T, TPreflight = void>({
             : normalizedReply,
         );
         hasSentCommandResponse = true;
-        if (activeSeasonalTheme?.id === 'halloween') {
-          void trackSeasonalMessageEffects(
-            response,
-            activeSeasonalTheme.emoji,
-          ).catch((error: unknown) => {
-            console.error('Could not track seasonal message effects.', error);
-          });
+        if (activeSeasonalTheme?.effects) {
+          void trackSeasonalMessageEffects(response, activeSeasonalTheme).catch(
+            (error: unknown) => {
+              console.error('Could not track seasonal message effects.', error);
+            },
+          );
         }
         if (response?.flags?.has(MessageFlags.Ephemeral)) {
           trackComponentMessage(

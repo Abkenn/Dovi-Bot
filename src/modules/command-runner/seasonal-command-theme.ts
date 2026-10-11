@@ -90,54 +90,8 @@ export const preserveSeasonalReplyTheme = (
   previous: readonly ReplyComponent[],
   theme = getSeasonalTheme(),
   eyeAllowed = true,
-  buttonEyeAllowed = false,
 ): MessageEditOptions => {
   if (!theme) return options;
-  if (buttonEyeAllowed && options.components) {
-    const previousButtonIds = previous.flatMap((component) => {
-      const data = componentData(component);
-      const ids: string[] = [];
-      if (data.type !== ComponentType.ActionRow || !('components' in data))
-        return ids;
-      for (const button of data.components) {
-        if (
-          'custom_id' in button &&
-          typeof button.custom_id === 'string' &&
-          'emoji' in button &&
-          typeof button.emoji === 'object' &&
-          button.emoji !== null &&
-          'id' in button.emoji &&
-          button.emoji.id === theme.emoji.split(':')[2]?.slice(0, -1)
-        )
-          ids.push(button.custom_id);
-      }
-      return ids;
-    });
-    options = {
-      ...options,
-      components: options.components.map((component) => {
-        const data = componentData(component);
-        if (data.type !== ComponentType.ActionRow || !('components' in data))
-          return component;
-        return {
-          ...data,
-          components: data.components.map((button) => {
-            if (!('custom_id' in button)) return button;
-            return previousButtonIds.includes(button.custom_id)
-              ? {
-                  ...button,
-                  emoji: {
-                    id: theme.emoji.split(':')[2]?.slice(0, -1),
-                    name: 'eye',
-                    animated: theme.emoji.startsWith('<a:'),
-                  },
-                }
-              : button;
-          }),
-        };
-      }),
-    };
-  }
   const hasEye = previous.some((component) => {
     const data = componentData(component);
     if (data.type !== ComponentType.Container || !('components' in data))

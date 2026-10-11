@@ -1,4 +1,8 @@
-import { ComponentType, EmbedBuilder } from 'discord.js';
+import {
+  type APIMessageTopLevelComponent,
+  ComponentType,
+  EmbedBuilder,
+} from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getSeasonalTheme,
@@ -10,6 +14,7 @@ import {
   createSeasonalReplySelector,
   preserveSeasonalReplyTheme,
 } from '../../src/modules/command-runner/seasonal-command-theme';
+import { preserveSeasonalButtonEmoji } from '../../src/modules/command-runner/seasonal-message-effects.discord';
 import { buildComponentEmbedMessageFromEmbeds } from '../../src/modules/discord/component-embed';
 
 const eye = '<a:eye:1558676165785419866>';
@@ -160,27 +165,29 @@ describe('seasonal reply presentation', () => {
           ],
         },
       ],
-    } as const;
+    } satisfies { components: APIMessageTopLevelComponent[] };
     const previous = [
       {
         type: ComponentType.ActionRow,
         components: [
           {
-            ...fresh.components[0].components[0],
+            type: ComponentType.Button,
+            style: 2,
+            custom_id: 'embedded-app-stats',
+            label: 'Game Stats',
             emoji: { id: '1558676165785419866', name: 'eye', animated: true },
           },
         ],
       },
-    ] as const;
+    ] satisfies APIMessageTopLevelComponent[];
     expect(
-      preserveSeasonalReplyTheme(fresh, previous, halloween(), true, true)
-        .components,
+      preserveSeasonalButtonEmoji(fresh, previous, eye).components,
     ).toMatchObject([
       { components: [{ emoji: { id: '1558676165785419866' } }] },
     ]);
-    expect(
-      preserveSeasonalReplyTheme(fresh, previous, halloween(), true, false),
-    ).toEqual(fresh);
+    expect(preserveSeasonalButtonEmoji(fresh, fresh.components, eye)).toEqual(
+      fresh,
+    );
   });
   it('leaves a full-length text reply intact rather than exceeding Discord limits', () => {
     const reply = { content: 'x'.repeat(2000) };

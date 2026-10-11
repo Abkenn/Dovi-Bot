@@ -10,6 +10,10 @@ export type SeasonalTheme = {
   emoji: string;
   embed: SeasonalReplyCadence;
   text: SeasonalReplyCadence;
+  effects?: {
+    emojiLifetimeMs: number;
+    activityButton?: { delayMs: number; durationMs: number };
+  };
 };
 
 export type SeasonalReplySelectionInput = {

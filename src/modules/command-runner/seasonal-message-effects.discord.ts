@@ -2,10 +2,43 @@ import {
   type APIComponentInContainer,
   type APIMessageTopLevelComponent,
   ComponentType,
+  type MessageEditOptions,
+  parseEmoji,
 } from 'discord.js';
 import type { SeasonalButtonSnapshot } from '../../data/queries/seasonal-message-effects.types';
 
 type EffectComponent = APIMessageTopLevelComponent | APIComponentInContainer;
+
+export const preserveSeasonalButtonEmoji = (
+  options: MessageEditOptions,
+  previous: readonly APIMessageTopLevelComponent[],
+  emoji: string,
+): MessageEditOptions => {
+  const decoration = parseEmoji(emoji);
+  const buttons = getSeasonalActivityButtons(previous).filter((button) =>
+    decoration?.id
+      ? button.emoji?.id === decoration.id
+      : button.emoji?.name === decoration?.name,
+  );
+  if (!decoration || !buttons.length || !options.components) return options;
+  return {
+    ...options,
+    components: options.components.map((component) => {
+      const data = 'toJSON' in component ? component.toJSON() : component;
+      if (data.type !== ComponentType.ActionRow || !('components' in data))
+        return component;
+      return {
+        ...data,
+        components: data.components.map((button) =>
+          'custom_id' in button &&
+          buttons.some((previous) => previous.customId === button.custom_id)
+            ? { ...button, emoji: decoration }
+            : button,
+        ),
+      };
+    }),
+  };
+};
 
 export const stripSeasonalEye = (content: string, emoji: string) => {
   if (content.startsWith(`# ${emoji} `))
@@ -25,7 +58,11 @@ export const getSeasonalActivityButtons = (
     return component.components.flatMap((button) => {
       if (button.type !== ComponentType.Button || !('custom_id' in button))
         return [];
-      if (!button.custom_id.startsWith('embedded-app-stats')) return [];
+      if (
+        button.custom_id !== 'embedded-app-stats' &&
+        !button.custom_id.startsWith('embedded-app-stats:')
+      )
+        return [];
       return [{ customId: button.custom_id, emoji: button.emoji ?? null }];
     });
   });
@@ -37,8 +74,7 @@ export const updateSeasonalEffectComponents = (
   showButtonEye: boolean,
   removeTextEye: boolean,
 ): APIMessageTopLevelComponent[] => {
-  const parts = emoji.split(':');
-  const eyeId = parts[2]?.slice(0, -1);
+  const decoration = parseEmoji(emoji);
   const transform = <T extends EffectComponent>(component: T): T => {
     if (component.type === ComponentType.Container)
       return { ...component, components: component.components.map(transform) };
@@ -56,17 +92,16 @@ export const updateSeasonalEffectComponents = (
         const original = buttons.find(
           (entry) => entry.customId === button.custom_id,
         );
-        if (!original || !eyeId) return button;
+        if (!original || !decoration) return button;
         if (showButtonEye)
           return {
             ...button,
-            emoji: {
-              id: eyeId,
-              name: parts[1] ?? 'eye',
-              animated: emoji.startsWith('<a:'),
-            },
+            emoji: decoration,
           };
-        if (button.emoji?.id !== eyeId) return button;
+        const matches = decoration.id
+          ? button.emoji?.id === decoration.id
+          : !button.emoji?.id && button.emoji?.name === decoration.name;
+        if (!matches) return button;
         const { emoji: _emoji, ...restored } = button;
         return original.emoji
           ? { ...restored, emoji: original.emoji }

@@ -19,7 +19,6 @@ export const saveSeasonalMessageEffect = (
 export const findSeasonalMessageEffects = () =>
   prisma.seasonalMessageEffect.findMany({
     orderBy: { eyeExpiresAt: 'asc' },
-    take: 1000,
   });
 
 export const deleteSeasonalMessageEffect = (messageId: string) =>
