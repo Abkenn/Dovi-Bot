@@ -1,3 +1,7 @@
+vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
+  getBotSeasonalTheme: vi.fn(async () => null),
+}));
+
 import {
   Collection,
   MessageFlags,

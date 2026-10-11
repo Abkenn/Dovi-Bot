@@ -9,7 +9,17 @@ export const SEASONAL_THEMES: Record<string, SeasonalTheme | null> = {
     text: { every: 5, first: false, repeats: 'skip' },
     effects: {
       emojiLifetimeMs: 15 * 60000,
-      activityButton: { delayMs: 15000, durationMs: 60000 },
+      titlePulse: {
+        visibleMs: 8000,
+        minIntervalMs: 30000,
+        maxIntervalMs: 90000,
+        lifetimeMs: 30 * 60000,
+      },
+      activityButton: {
+        delayMs: 15000,
+        durationMs: 30 * 60000,
+        cycleMs: 30000,
+      },
     },
   },
   christmas: null,

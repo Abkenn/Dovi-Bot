@@ -7,6 +7,12 @@ import {
   type MessageEditOptions,
   MessageFlags,
 } from 'discord.js';
+import { trackSeasonalMessageEffects } from '../command-runner/seasonal-message-effects';
+import {
+  getSeasonalActivityButtons,
+  preserveSeasonalButtonEmoji,
+} from '../command-runner/seasonal-message-effects.discord';
+import { getBotSeasonalTheme } from '../command-runner/seasonal-theme.service';
 import {
   expireComponentLifetime,
   registerComponentLifetime,
@@ -106,12 +112,39 @@ export const handleMusicSearchPage = async (interaction: ButtonInteraction) => {
       flags: MessageFlags.Ephemeral,
     });
   }
-  const reply = buildPage(session, id, page);
+  const theme = await getBotSeasonalTheme();
+  const fresh = buildPage(session, id, page);
+  const reply = theme
+    ? preserveSeasonalButtonEmoji(
+        fresh,
+        interaction.message.components?.map((component) =>
+          component.toJSON(),
+        ) ?? [],
+        theme.emoji,
+      )
+    : fresh;
   if (interaction.message.flags.has(MessageFlags.Ephemeral)) {
     return interaction.update(reply);
   }
-  return interaction.reply({
+  const response = await interaction.reply({
     ...reply,
+    content: fresh.content,
     flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,
   });
+  if (theme?.effects && typeof interaction.fetchReply === 'function') {
+    void interaction
+      .fetchReply()
+      .then((message) =>
+        trackSeasonalMessageEffects(message, theme, {
+          interaction,
+          originalButtons: getSeasonalActivityButtons(
+            fresh.components.map((row) => row.toJSON()),
+          ),
+        }),
+      )
+      .catch((error: unknown) =>
+        console.error('Could not track private seasonal buttons.', error),
+      );
+  }
+  return response;
 };

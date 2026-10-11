@@ -6,8 +6,61 @@ import {
   parseEmoji,
 } from 'discord.js';
 import type { SeasonalButtonSnapshot } from '../../data/queries/seasonal-message-effects.types';
+import type { SeasonalTitlePulse } from './seasonal-command-theme.types';
 
 type EffectComponent = APIMessageTopLevelComponent | APIComponentInContainer;
+
+export const getSeasonalTitlePulse = (
+  messageId: string,
+  elapsedMs: number,
+  pulse: SeasonalTitlePulse,
+) => {
+  let start = 0;
+  let phase = 0;
+  while (true) {
+    let seed = 2166136261;
+    for (const character of `${messageId}:title:${phase}`)
+      seed = Math.imul(seed ^ character.charCodeAt(0), 16777619) >>> 0;
+    const next =
+      start +
+      pulse.minIntervalMs +
+      (seed % (pulse.maxIntervalMs - pulse.minIntervalMs + 1));
+    if (elapsedMs < next) {
+      const visible = elapsedMs < start + pulse.visibleMs;
+      return {
+        visible,
+        nextChangeMs: visible ? start + pulse.visibleMs : next,
+      };
+    }
+    start = next;
+    phase++;
+  }
+};
+
+const buttonKey = (button: { custom_id: string; label?: string }) => {
+  if (button.custom_id.startsWith('music-page:'))
+    return `${button.custom_id.split(':').slice(0, 2).join(':')}:${button.label}`;
+  if (button.custom_id.startsWith('embedded-app-stats:music-search:'))
+    return 'embedded-app-stats:music-search';
+  return button.custom_id;
+};
+
+export const getSeasonalButtonCycle = (
+  messageId: string,
+  buttons: readonly SeasonalButtonSnapshot[],
+  phase: number,
+): string[] => {
+  if (!buttons.length) return [];
+  let seed = 2166136261;
+  for (const character of `${messageId}:${phase}`)
+    seed = Math.imul(seed ^ character.charCodeAt(0), 16777619) >>> 0;
+  if (phase % 4 === 3 && seed % 3 === 0) return [];
+  const first = seed % buttons.length;
+  const chosen = [buttons[first]?.customId ?? ''];
+  if (buttons.length > 1 && seed % 4 === 0)
+    chosen.push(buttons[(first + 1) % buttons.length]?.customId ?? '');
+  return chosen;
+};
 
 export const preserveSeasonalButtonEmoji = (
   options: MessageEditOptions,
@@ -31,7 +84,7 @@ export const preserveSeasonalButtonEmoji = (
         ...data,
         components: data.components.map((button) =>
           'custom_id' in button &&
-          buttons.some((previous) => previous.customId === button.custom_id)
+          buttons.some((previous) => previous.customId === buttonKey(button))
             ? { ...button, emoji: decoration }
             : button,
         ),
@@ -60,10 +113,11 @@ export const getSeasonalActivityButtons = (
         return [];
       if (
         button.custom_id !== 'embedded-app-stats' &&
-        !button.custom_id.startsWith('embedded-app-stats:')
+        !button.custom_id.startsWith('embedded-app-stats:') &&
+        !button.custom_id.startsWith('music-page:')
       )
         return [];
-      return [{ customId: button.custom_id, emoji: button.emoji ?? null }];
+      return [{ customId: buttonKey(button), emoji: button.emoji ?? null }];
     });
   });
 
@@ -71,18 +125,27 @@ export const updateSeasonalEffectComponents = (
   components: readonly APIMessageTopLevelComponent[],
   buttons: readonly SeasonalButtonSnapshot[],
   emoji: string,
-  showButtonEye: boolean,
+  showButtonEye: boolean | readonly string[],
   removeTextEye: boolean,
+  titleEye?: boolean,
 ): APIMessageTopLevelComponent[] => {
   const decoration = parseEmoji(emoji);
+  let titleHandled = false;
   const transform = <T extends EffectComponent>(component: T): T => {
     if (component.type === ComponentType.Container)
       return { ...component, components: component.components.map(transform) };
-    if (component.type === ComponentType.TextDisplay && removeTextEye)
-      return {
-        ...component,
-        content: stripSeasonalEye(component.content, emoji),
-      };
+    if (component.type === ComponentType.TextDisplay) {
+      let content =
+        removeTextEye || titleEye === false
+          ? stripSeasonalEye(component.content, emoji)
+          : component.content;
+      if (titleEye && !titleHandled && content.startsWith('# ')) {
+        titleHandled = true;
+        if (!content.startsWith(`# ${emoji} `))
+          content = `# ${emoji} ${content.slice(2)}`;
+      }
+      return { ...component, content };
+    }
     if (component.type !== ComponentType.ActionRow) return component;
     return {
       ...component,
@@ -90,10 +153,16 @@ export const updateSeasonalEffectComponents = (
         if (button.type !== ComponentType.Button || !('custom_id' in button))
           return button;
         const original = buttons.find(
-          (entry) => entry.customId === button.custom_id,
+          (entry) =>
+            entry.customId === buttonKey(button) ||
+            entry.customId === button.custom_id,
         );
         if (!original || !decoration) return button;
-        if (showButtonEye)
+        const selected =
+          typeof showButtonEye === 'boolean'
+            ? showButtonEye
+            : showButtonEye.includes(original.customId);
+        if (selected)
           return {
             ...button,
             emoji: decoration,

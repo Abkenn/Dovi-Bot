@@ -481,7 +481,10 @@ const editStreamInfoMessage = async ({
         options,
         message.components,
         theme,
-        !theme?.effects || age < theme.effects.emojiLifetimeMs,
+        !theme?.effects ||
+          age <
+            (theme.effects.titlePulse?.lifetimeMs ??
+              theme.effects.emojiLifetimeMs),
       ),
     ),
   );

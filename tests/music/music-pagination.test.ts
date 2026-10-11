@@ -1,5 +1,15 @@
+vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
+  getBotSeasonalTheme: vi.fn(async () => null),
+}));
+vi.mock('../../src/modules/command-runner/seasonal-message-effects', () => ({
+  trackSeasonalMessageEffects: vi.fn(async () => undefined),
+}));
+
 import { MessageFlags, MessageFlagsBitField } from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getSeasonalTheme } from '../../src/config/seasonal-themes';
+import { trackSeasonalMessageEffects } from '../../src/modules/command-runner/seasonal-message-effects';
+import { getBotSeasonalTheme } from '../../src/modules/command-runner/seasonal-theme.service';
 import { buildMusicGamePages } from '../../src/modules/music/music.discord';
 
 vi.mock('../../src/config/discord-access', () => ({
@@ -31,7 +41,114 @@ const button = (
 };
 
 describe('music search pagination', () => {
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.mocked(getBotSeasonalTheme).mockResolvedValue(null);
+  });
+
+  it('preserves Back and Music Stats eyes across public-to-private and private pagination', async () => {
+    const theme = getSeasonalTheme('halloween');
+    vi.mocked(getBotSeasonalTheme).mockResolvedValue(theme);
+    const original = createMusicSearchPagination({
+      pages: ['first', 'second', 'third'],
+      guildId: 'prod',
+      activityQuery: 'Deltarune',
+    });
+    const components = original.components.map((row) => row.toJSON());
+    for (const row of components) {
+      for (const button of row.components) {
+        if (
+          'custom_id' in button &&
+          (button.label === 'Back' || button.label === 'Music Stats')
+        )
+          button.emoji = {
+            id: '1558676165785419866',
+            name: 'eye',
+            animated: true,
+          };
+      }
+    }
+    const delivered = { id: 'private-page' };
+    const interaction = {
+      customId: button(original, 1).custom_id,
+      guildId: 'prod',
+      message: {
+        flags: new MessageFlagsBitField(),
+        components: components.map((row) => ({ toJSON: () => row })),
+      },
+      reply: vi.fn(),
+      update: vi.fn(),
+      fetchReply: vi.fn(async () => delivered),
+    };
+    await handleMusicSearchPage(interaction as never);
+    await Promise.resolve();
+    const reply = interaction.reply.mock.calls[0]?.[0];
+    expect(reply).toMatchObject({
+      content: 'second',
+      components: [
+        {
+          components: [
+            {
+              label: 'Back',
+              disabled: false,
+              emoji: { id: '1558676165785419866' },
+            },
+            { label: 'Next' },
+          ],
+        },
+        {
+          components: [
+            { label: 'Music Stats', emoji: { id: '1558676165785419866' } },
+          ],
+        },
+      ],
+    });
+    expect(trackSeasonalMessageEffects).toHaveBeenCalledWith(
+      delivered,
+      theme,
+      expect.objectContaining({
+        originalButtons: expect.arrayContaining([
+          expect.objectContaining({
+            emoji: expect.objectContaining({ name: '🎵' }),
+          }),
+        ]),
+      }),
+    );
+    await handleMusicSearchPage({
+      ...interaction,
+      customId: `${interaction.customId.split(':').slice(0, 2).join(':')}:2`,
+      message: {
+        flags: new MessageFlagsBitField(MessageFlags.Ephemeral),
+        components: reply.components.map((row: { toJSON?: () => unknown }) => ({
+          toJSON: () => (row.toJSON ? row.toJSON() : row),
+        })),
+      },
+    } as never);
+    expect(interaction.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'third',
+        components: [
+          expect.objectContaining({
+            components: [
+              expect.objectContaining({
+                label: 'Back',
+                emoji: expect.objectContaining({ id: '1558676165785419866' }),
+              }),
+              expect.objectContaining({ label: 'Next', disabled: true }),
+            ],
+          }),
+          expect.objectContaining({
+            components: [
+              expect.objectContaining({
+                label: 'Music Stats',
+                emoji: expect.objectContaining({ id: '1558676165785419866' }),
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
+  });
 
   it('shows every track exactly once with intact links, counts, headings and credit under 2000 characters', () => {
     const pages = buildMusicGamePages(results, 'touhou');

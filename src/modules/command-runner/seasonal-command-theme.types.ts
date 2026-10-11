@@ -12,8 +12,16 @@ export type SeasonalTheme = {
   text: SeasonalReplyCadence;
   effects?: {
     emojiLifetimeMs: number;
-    activityButton?: { delayMs: number; durationMs: number };
+    activityButton?: { delayMs: number; durationMs: number; cycleMs?: number };
+    titlePulse?: SeasonalTitlePulse;
   };
+};
+
+export type SeasonalTitlePulse = {
+  visibleMs: number;
+  minIntervalMs: number;
+  maxIntervalMs: number;
+  lifetimeMs: number;
 };
 
 export type SeasonalReplySelectionInput = {
