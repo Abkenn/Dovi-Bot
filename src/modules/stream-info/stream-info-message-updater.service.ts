@@ -24,6 +24,8 @@ import {
 import { DateTime } from 'luxon';
 import { BOT_GUILDS } from '../../config/discord-access';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
+import { preserveSeasonalReplyTheme } from '../command-runner/seasonal-command-theme';
+import { getBotSeasonalTheme } from '../command-runner/seasonal-theme.service';
 import {
   buildComponentEmbedMessageFromEmbeds,
   mergeButtonActionRows,
@@ -462,7 +464,13 @@ const editStreamInfoMessage = async ({
   message: Message;
 }) => {
   trackComponentMessage(
-    await message.edit(await buildStreamInfoMessageEdit(guildId)),
+    await message.edit(
+      preserveSeasonalReplyTheme(
+        await buildStreamInfoMessageEdit(guildId),
+        message.components,
+        await getBotSeasonalTheme(),
+      ),
+    ),
   );
 };
 

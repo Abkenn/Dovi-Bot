@@ -1,6 +1,10 @@
 import { MessageFlags, MessageFlagsBitField } from 'discord.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
+  getBotSeasonalTheme: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock('../../src/modules/command-logging/command-logging.service', () => ({
   createCommandExecutionLog: vi.fn(),
   createCommandErrorLog: vi.fn(),

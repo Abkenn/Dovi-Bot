@@ -36,6 +36,7 @@ const makeConfig = (overrides: Partial<GuildConfig> = {}): GuildConfig => ({
   canonicalTimezone: 'America/Sao_Paulo',
   currentWindowMinutes: 240,
   lookaheadDays: 21,
+  seasonalThemeMode: 'auto',
   defaultStreamKind: StreamKind.GAME,
   defaultGameName: 'Default Game',
   defaultMusicMode: null,

@@ -75,6 +75,7 @@ export const COMMAND_GUILDS = {
   DAVI_UPDATE_ANNOUNCEMENT: [BOT_GUILDS.STAGING_ENV],
   STAGING_ANNOUNCE: [BOT_GUILDS.STAGING_ENV],
   PLAYGROUND: [BOT_GUILDS.STAGING_ENV],
+  SET_BOT_THEME: [BOT_GUILDS.STAGING_ENV],
 } as const satisfies Record<string, readonly BotGuildId[]>;
 
 export const ADMIN_COMMAND_PERMISSION = PermissionFlagsBits.ManageGuild;

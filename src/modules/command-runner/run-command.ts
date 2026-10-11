@@ -26,6 +26,15 @@ import {
 import { buildComponentEmbedMessageFromEmbeds } from '../discord/component-embed';
 import { trackComponentMessage } from '../discord/component-lifecycle';
 import { buildCommandErrorReplyOptions } from './command-error-reply';
+import {
+  applySeasonalReplyTheme,
+  createSeasonalReplySelector,
+  hasSeasonalReplyContainer,
+} from './seasonal-command-theme';
+import type { SeasonalTheme } from './seasonal-command-theme.types';
+import { getBotSeasonalTheme } from './seasonal-theme.service';
+
+const selectSeasonalReply = createSeasonalReplySelector();
 
 const getUserFacingErrorMessage = (error: unknown): string => {
   if (error instanceof CommandDeniedError) {
@@ -280,6 +289,7 @@ export const runCommand = async <T, TPreflight = void>({
   const abortController = new AbortController();
   let timeoutId: NodeJS.Timeout | undefined;
   let hasSentCommandResponse = false;
+  let seasonalTheme: SeasonalTheme | null | undefined;
 
   try {
     const preflight = beforeDefer
@@ -303,10 +313,44 @@ export const runCommand = async <T, TPreflight = void>({
           return;
         }
 
+        const normalizedReply = normalizeEditReplyOptions(options, {
+          commandName,
+        });
+        if (seasonalTheme === undefined) {
+          const eligible =
+            interaction.guildId &&
+            !interaction.ephemeral &&
+            !commandName.includes(':') &&
+            ![
+              'staging-announce',
+              'davi-update-announcement',
+              'davi-say',
+            ].includes(commandName);
+          const visible =
+            hasSeasonalReplyContainer(normalizedReply) ||
+            Boolean(normalizedReply.content);
+          if (visible) {
+            const theme = eligible ? await getBotSeasonalTheme() : null;
+            if (abortController.signal.aborted) return;
+            seasonalTheme =
+              theme &&
+              eligible &&
+              selectSeasonalReply({
+                scope: `${interaction.guildId}:${interaction.channelId}`,
+                userId: interaction.user.id,
+                kind: hasSeasonalReplyContainer(normalizedReply)
+                  ? 'embed'
+                  : 'text',
+                theme,
+              })
+                ? theme
+                : null;
+          }
+        }
         const response = await interaction.editReply(
-          normalizeEditReplyOptions(options, {
-            commandName,
-          }),
+          seasonalTheme
+            ? applySeasonalReplyTheme(normalizedReply, seasonalTheme)
+            : normalizedReply,
         );
         hasSentCommandResponse = true;
         if (response?.flags?.has(MessageFlags.Ephemeral)) {

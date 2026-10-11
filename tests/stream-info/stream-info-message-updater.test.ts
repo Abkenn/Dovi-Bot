@@ -3,10 +3,17 @@ import {
   ButtonBuilder,
   ButtonStyle,
   type Client,
+  ContainerBuilder,
   EmbedBuilder,
   type Message,
 } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSeasonalTheme } from '../../src/config/seasonal-themes';
+import { getBotSeasonalTheme } from '../../src/modules/command-runner/seasonal-theme.service';
+
+vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
+  getBotSeasonalTheme: vi.fn().mockResolvedValue(null),
+}));
 
 const streamInfoMessageQueries = vi.hoisted(() => ({
   deleteExpiredStreamInfoMessages: vi.fn(),
@@ -154,6 +161,7 @@ const makeMessage = (isThread = false) => {
 
   return {
     id: 'message-1',
+    components: [],
     edit,
     channel: {
       isThread: () => isThread,
@@ -751,6 +759,45 @@ describe('stream info message updater', () => {
     expect(
       streamInfoMessageQueries.upsertLastStreamInfoMessage,
     ).not.toHaveBeenCalled();
+  });
+
+  it('keeps the original eye and creepypasta accent when refreshing public stream info', async () => {
+    const eye = '<a:eye:1558676165785419866>';
+    const message = makeMessage();
+    const existing = new ContainerBuilder()
+      .setAccentColor(0x8b0000)
+      .addTextDisplayComponents((text) =>
+        text.setContent(`# ${eye} Stream Info`),
+      );
+    Object.assign(message, { components: [existing] });
+    vi.mocked(getBotSeasonalTheme).mockResolvedValueOnce(
+      getSeasonalTheme('halloween'),
+    );
+    streamInfoDiscord.buildStreamInfoEmbed.mockReturnValue(
+      new EmbedBuilder().setTitle('Stream Info').setColor(0xff3131),
+    );
+    await refreshStreamInfoMessage({
+      client: makeClient({
+        channel: { messages: { fetch: vi.fn().mockResolvedValue(message) } },
+      }),
+      pointer: {
+        guildId: 'guild-1',
+        channelId: 'channel-1',
+        messageId: 'message-1',
+      },
+    });
+    expect(message.edit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: [
+          expect.objectContaining({
+            accentColor: 0x8b0000,
+            components: [
+              expect.objectContaining({ content: `# ${eye} Stream Info` }),
+            ],
+          }),
+        ],
+      }),
+    );
   });
 
   it('refreshes a stored stream info message', async () => {

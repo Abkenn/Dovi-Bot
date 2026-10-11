@@ -41,6 +41,10 @@ const now = new Date('2026-06-12T18:00:00.000Z');
 const guildId = 'dal-guild';
 
 const coveredDalExports = {
+  '../../src/data/queries/seasonal-theme': [
+    'findSeasonalThemeMode',
+    'saveSeasonalThemeMode',
+  ],
   '../../src/data/queries/music-catalog': [
     'findMusicCatalog',
     'findMusicStreamVideo',
@@ -272,6 +276,31 @@ test.beforeEach(async () => {
 test.afterAll(async () => {
   const { prisma } = await import('../../src/lib/prisma');
   await prisma.$disconnect();
+});
+
+test('persists a seasonal override without changing stream configuration', async () => {
+  const { findSeasonalThemeMode, saveSeasonalThemeMode } = await import(
+    '../../src/data/queries/seasonal-theme'
+  );
+  const { prisma } = await import('../../src/lib/prisma');
+  expect(await findSeasonalThemeMode(guildId)).toBe('auto');
+  await prisma.guildConfig.create({
+    data: { guildId, defaultGameName: 'Existing Game' },
+  });
+  await saveSeasonalThemeMode(guildId, 'halloween');
+  expect(await findSeasonalThemeMode(guildId)).toBe('halloween');
+  expect(
+    await prisma.guildConfig.findUnique({ where: { guildId } }),
+  ).toMatchObject({
+    defaultGameName: 'Existing Game',
+    seasonalThemeMode: 'halloween',
+  });
+  await saveSeasonalThemeMode(guildId, 'normal');
+  expect(await findSeasonalThemeMode(guildId)).toBe('normal');
+  await saveSeasonalThemeMode(guildId, 'auto');
+  expect(await findSeasonalThemeMode(guildId)).toBe('auto');
+  await saveSeasonalThemeMode('new-guild', 'halloween');
+  expect(await findSeasonalThemeMode('new-guild')).toBe('halloween');
 });
 
 test('new music snapshots apply old-stream corrections and new streams without retaining obsolete rows', async () => {

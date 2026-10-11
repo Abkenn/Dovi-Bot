@@ -22,6 +22,15 @@ export type CommandMetadata = {
 };
 
 export const COMMAND_METADATA = {
+  SET_BOT_THEME: {
+    name: 'set-bot-theme',
+    description:
+      'Sets the bot-wide seasonal theme or restores the automatic schedule.',
+    guildIds: COMMAND_GUILDS.SET_BOT_THEME,
+    access: COMMAND_ACCESSES.DEFAULT,
+    helpAudience: HELP_AUDIENCES.ADMIN,
+    helpCategory: COMMAND_CATEGORIES.STAGING,
+  },
   HELP: {
     name: 'help',
     description: 'Shows information and help for commands.',

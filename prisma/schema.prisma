@@ -113,6 +113,7 @@ model GuildConfig {
   canonicalTimezone    String @default("America/Sao_Paulo")
   currentWindowMinutes Int    @default(240)
   lookaheadDays        Int    @default(21)
+  seasonalThemeMode    String @default("auto")
 
   defaultStreamKind    StreamKind @default(GAME)
   defaultGameName      String?

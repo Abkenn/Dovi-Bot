@@ -7,6 +7,10 @@ import {
 } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
+  getBotSeasonalTheme: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock('@zod-schemas/env.zod', () => ({
   env: {
     DISCORD_STAGING_ENV_GUILD_ID: 'staging',
