@@ -50,10 +50,10 @@ const embedJson = (embed: EmbedBuilder) => embed.toJSON();
 
 describe('stream info discord output', () => {
   it.each([
-    [StreamKind.MUSIC, true, ['Remind Me', 'Game Stats', 'Music Stats']],
-    [StreamKind.MUSIC, false, ['Remind Me', 'Music Stats']],
-    [StreamKind.GAME, false, ['Remind Me', 'Game Stats']],
-  ])('builds persistent announcement buttons for %s combined=%s', async (streamKind, isCombined, labels) => {
+    [StreamKind.MUSIC, true, ['Remind Me']],
+    [StreamKind.MUSIC, false, ['Remind Me']],
+    [StreamKind.GAME, false, ['Remind Me']],
+  ])('keeps only persistent reminder buttons on announcements for %s combined=%s', async (streamKind, isCombined, labels) => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-12T18:00:00.000Z'));
     const occurrence = makeOccurrence({
@@ -78,11 +78,6 @@ describe('stream info discord output', () => {
         ),
       ),
     ).toEqual(labels);
-    const music = components
-      .flatMap((row) => row.components)
-      .find((button) => 'label' in button && button.label === 'Music Stats');
-    if (music)
-      expect(music).toMatchObject({ custom_id: 'embedded-app-stats:music' });
     const message = {
       id: `persistent-${streamKind}-${isCombined}`,
       flags: new MessageFlagsBitField(),
