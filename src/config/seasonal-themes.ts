@@ -8,8 +8,8 @@ export const SEASONAL_THEMES: Record<string, SeasonalTheme | null> = {
     embed: { every: 2, first: true, repeats: 'normal-and-reset' },
     text: { every: 5, first: false, repeats: 'skip' },
     avatar: {
-      // Add 'PROD_ENV' to enable this event's avatar in production.
-      environments: ['STAGING_ENV'],
+      // Choose the servers that use this event avatar.
+      environments: ['STAGING_ENV', 'PROD_ENV'],
       image: new URL(
         '../../assets/seasonal/halloween-avatar.png',
         import.meta.url,

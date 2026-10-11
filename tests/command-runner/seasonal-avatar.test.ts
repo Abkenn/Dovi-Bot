@@ -44,10 +44,11 @@ describe('seasonal guild avatar', () => {
     expect(starts.size).toBeGreaterThan(90);
     expect(SEASONAL_THEMES.halloween?.avatar?.environments).toEqual([
       'STAGING_ENV',
+      'PROD_ENV',
     ]);
   });
 
-  it('changes only staging, skips duplicate updates, and restores when disabled', async () => {
+  it('changes staging and prod, skips duplicate updates, and restores when disabled', async () => {
     const now = Date.UTC(2026, 9, 11, 12);
     const window = getSeasonalAvatarWindow('staging', now, 900_000);
     vi.setSystemTime(window.start + 1000);
@@ -61,8 +62,9 @@ describe('seasonal guild avatar', () => {
       guilds: { fetch },
       once,
     } as unknown as Client);
-    await vi.waitFor(() => expect(editMe).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(editMe).toHaveBeenCalledTimes(2));
     expect(fetch).toHaveBeenCalledWith('staging');
+    expect(fetch).toHaveBeenCalledWith('prod');
     expect(editMe.mock.calls[0]).toEqual([
       {
         avatar: expect.any(Buffer),
@@ -70,7 +72,7 @@ describe('seasonal guild avatar', () => {
       },
     ]);
     await vi.advanceTimersByTimeAsync(30_000);
-    expect(editMe).toHaveBeenCalledTimes(1);
+    expect(editMe).toHaveBeenCalledTimes(2);
     vi.mocked(getBotThemeMode).mockResolvedValue('normal');
     await vi.advanceTimersByTimeAsync(30_000);
     expect(editMe).toHaveBeenLastCalledWith({
@@ -80,7 +82,7 @@ describe('seasonal guild avatar', () => {
     expect(once).toHaveBeenCalledWith(Events.Invalidated, expect.any(Function));
     once.mock.calls[0]?.[1]();
     await vi.advanceTimersByTimeAsync(60_000);
-    expect(editMe).toHaveBeenCalledTimes(2);
+    expect(editMe).toHaveBeenCalledTimes(4);
   });
 
   it('restores the regular glitch GIF after restarting outside its ghost window', async () => {
@@ -97,7 +99,7 @@ describe('seasonal guild avatar', () => {
       guilds: { fetch },
       once: vi.fn(),
     } as unknown as Client);
-    await vi.waitFor(() => expect(editMe).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(editMe).toHaveBeenCalledTimes(2));
     const expectedGif = await readFile(
       new URL(
         '../../assets/seasonal/halloween-glitch-avatar.gif',
