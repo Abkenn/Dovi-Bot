@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const services = vi.hoisted(() => ({
   getCachedEmbeddedAppStats: vi.fn(),
   getEmbeddedAppLaunchTarget: vi.fn(),
+  getBotSeasonalTheme: vi.fn(),
+}));
+
+vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
+  getBotSeasonalTheme: services.getBotSeasonalTheme,
 }));
 
 vi.mock('../../src/config/discord-access', () => ({
@@ -103,7 +108,23 @@ const createFakeWorker = (
 };
 
 describe('TanStack Start SSR worker integration', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    services.getBotSeasonalTheme.mockResolvedValue(null);
+  });
+
+  it('adds the active seasonal appearance without mutating cached stats', async () => {
+    services.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);
+    services.getBotSeasonalTheme.mockResolvedValue({ id: 'halloween' });
+    await expect(
+      loadEmbeddedAppStatsForRequest(new Request('https://dovi.test/')),
+    ).resolves.toEqual({ ...emptyStats, seasonalTheme: 'halloween' });
+    expect(emptyStats).not.toHaveProperty('seasonalTheme');
+    services.getBotSeasonalTheme.mockResolvedValue(null);
+    await expect(
+      loadEmbeddedAppStatsForRequest(new Request('https://dovi.test/')),
+    ).resolves.toBe(emptyStats);
+  });
 
   it('adds a short-lived Activity instance game target to the SSR payload', async () => {
     services.getCachedEmbeddedAppStats.mockResolvedValue(emptyStats);

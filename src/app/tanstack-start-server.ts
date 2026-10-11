@@ -1,4 +1,5 @@
 import { BOT_GUILDS } from '../config/discord-access';
+import { getBotSeasonalTheme } from '../modules/command-runner/seasonal-theme.service';
 import { getEmbeddedAppLaunchTarget } from '../modules/embedded-app/embedded-app-launch-target.service';
 import type { EmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats.types';
 import { getCachedEmbeddedAppStats } from '../modules/embedded-app/embedded-app-stats-cache.service';
@@ -153,7 +154,13 @@ export const loadEmbeddedAppStatsForRequest = async (request: Request) => {
     throw new Error('Embedded app request came from an unsupported guild.');
   }
 
-  const stats = await getCachedEmbeddedAppStats(BOT_GUILDS.PROD_ENV);
+  const [cachedStats, theme] = await Promise.all([
+    getCachedEmbeddedAppStats(BOT_GUILDS.PROD_ENV),
+    getBotSeasonalTheme(),
+  ]);
+  const stats = theme
+    ? { ...cachedStats, seasonalTheme: theme.id }
+    : cachedStats;
   const instanceId = url.searchParams.get('instance_id');
   const initialGameName = instanceId
     ? getEmbeddedAppLaunchTarget(instanceId)

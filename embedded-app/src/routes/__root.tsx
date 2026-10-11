@@ -31,7 +31,7 @@ function RootComponent() {
   const deploymentChanged = useDeploymentRecovery(deploymentVersion);
 
   return (
-    <RootDocument>
+    <RootDocument seasonalTheme={stats.seasonalTheme}>
       {deploymentChanged ? (
         <ActivityLoadingState />
       ) : (

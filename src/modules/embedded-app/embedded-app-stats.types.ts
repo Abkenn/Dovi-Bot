@@ -80,6 +80,7 @@ export type EmbeddedAppGeneralStats = {
 };
 
 export type EmbeddedAppStats = {
+  seasonalTheme?: string;
   initialGameName?: string | null;
   game: {
     id: string;

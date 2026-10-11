@@ -3,11 +3,17 @@ import { LayoutGroup, MotionConfig } from 'motion/react';
 import type { PropsWithChildren } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { QueryProvider } from './query-provider';
+import { SeasonalGlitch } from './seasonal-glitch';
 
-type RootDocumentProps = PropsWithChildren;
+type RootDocumentProps = PropsWithChildren<{
+  seasonalTheme?: string | undefined;
+}>;
 
-export const RootDocument = ({ children }: RootDocumentProps) => (
-  <html lang="en" className="dark">
+export const RootDocument = ({
+  children,
+  seasonalTheme,
+}: RootDocumentProps) => (
+  <html lang="en" className="dark" data-seasonal-theme={seasonalTheme}>
     <head>
       <HeadContent />
     </head>
@@ -23,6 +29,7 @@ export const RootDocument = ({ children }: RootDocumentProps) => (
         </QueryProvider>
       </MotionConfig>
       <Scripts />
+      <SeasonalGlitch enabled={seasonalTheme === 'halloween'} />
     </body>
   </html>
 );
