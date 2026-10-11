@@ -212,6 +212,52 @@ html[data-activity-layout="pip"] .seasonal-glitch {
   display: none;
 }
 
+::view-transition-group(.seasonal-screen-glitch) {
+  animation-duration: 140ms;
+  pointer-events: none;
+}
+
+::view-transition-old(.seasonal-screen-glitch) {
+  animation: none;
+}
+
+::view-transition-new(.seasonal-screen-glitch) {
+  animation: seasonal-screen-glitch 140ms steps(1, end);
+  mix-blend-mode: normal;
+}
+
+@keyframes seasonal-screen-glitch {
+  0%,
+  100% {
+    transform: none;
+    filter: none;
+  }
+  20%,
+  60% {
+    transform: translateX(1px);
+    filter: url("#seasonal-screen-static");
+  }
+  40% {
+    transform: translateX(-1px);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(.seasonal-screen-glitch),
+  ::view-transition-old(.seasonal-screen-glitch),
+  ::view-transition-new(.seasonal-screen-glitch) {
+    animation: none;
+  }
+}
+
+html[data-activity-layout="pip"]::view-transition-group(
+    .seasonal-screen-glitch
+  ),
+html[data-activity-layout="pip"]::view-transition-new(.seasonal-screen-glitch) {
+  animation: none;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

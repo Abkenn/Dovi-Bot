@@ -10,6 +10,11 @@ const dependencies = vi.hoisted(() => ({
 vi.mock('@tanstack/react-router', () => ({
   Outlet: () => <div>Route outlet</div>,
   useNavigate: () => dependencies.navigate,
+  useRouterState: ({
+    select,
+  }: {
+    select: (state: { location: { pathname: string } }) => string;
+  }) => select({ location: { pathname: '/music' } }),
 }));
 vi.mock('@/hooks/use-discord-sdk', () => ({
   useDiscordSdk: () => dependencies.customId,
