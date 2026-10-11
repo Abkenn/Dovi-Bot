@@ -7,6 +7,7 @@ import {
 } from '../app/uptime-status-monitor';
 import { startDaviBossStatsSyncScheduler } from '../modules/boss-encounter-stats/sync/davi-boss-stats-sync.scheduler';
 import { startBossTrialLifecycleScheduler } from '../modules/boss-trials/poll/boss-trial.scheduler';
+import { startSeasonalAvatarScheduler } from '../modules/command-runner/seasonal-avatar.scheduler';
 import { startSeasonalMessageEffectRecovery } from '../modules/command-runner/seasonal-message-effects';
 import { startActivityTracking } from '../modules/embedded-app/activity-tracking.scheduler';
 import { startPollTournamentScheduler } from '../modules/poll-tournaments/poll-tournament.scheduler';
@@ -49,6 +50,7 @@ export class ReadyListener extends Listener {
     startHealthCheckMonitor(this.container.client);
     startActivityTracking(this.container.client);
     startSeasonalMessageEffectRecovery(this.container.client);
+    startSeasonalAvatarScheduler(this.container.client);
     void notifyDeploymentReady(this.container.client).catch((error) => {
       this.container.logger.error('Failed to send deployment DM.', error);
     });

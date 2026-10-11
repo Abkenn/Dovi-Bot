@@ -10,6 +10,7 @@ export type SeasonalTheme = {
   emoji: string;
   embed: SeasonalReplyCadence;
   text: SeasonalReplyCadence;
+  avatar?: SeasonalAvatar;
   effects?: {
     emojiLifetimeMs: number;
     activityButton?: { delayMs: number; durationMs: number; cycleMs?: number };
@@ -29,4 +30,14 @@ export type SeasonalReplySelectionInput = {
   userId: string;
   kind: 'embed' | 'text';
   theme: SeasonalTheme;
+};
+
+export type SeasonalAvatar = {
+  environments: readonly ('STAGING_ENV' | 'PROD_ENV')[];
+  image: URL;
+  // Optional event asset used between random windows; otherwise inherit global avatar.
+  outsideWindowImage?: URL;
+  schedule:
+    | { mode: 'continuous' }
+    | { mode: 'random-window'; intervalMs: number; durationMs: number };
 };

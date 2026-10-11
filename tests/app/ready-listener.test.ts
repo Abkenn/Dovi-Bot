@@ -13,11 +13,15 @@ vi.mock('@sapphire/framework', () => ({
 
 const startup = vi.hoisted(() => ({
   startActivityTracking: vi.fn(),
+  startSeasonalAvatarScheduler: vi.fn(),
   notifyDeploymentReady: vi.fn().mockResolvedValue(undefined),
   scheduler: vi.fn(),
 }));
 vi.mock('../../src/modules/embedded-app/activity-tracking.scheduler', () => ({
   startActivityTracking: startup.startActivityTracking,
+}));
+vi.mock('../../src/modules/command-runner/seasonal-avatar.scheduler', () => ({
+  startSeasonalAvatarScheduler: startup.startSeasonalAvatarScheduler,
 }));
 vi.mock('../../src/modules/command-runner/seasonal-message-effects', () => ({
   startSeasonalMessageEffectRecovery: startup.scheduler,
@@ -72,6 +76,9 @@ describe('client ready startup', () => {
       client,
     );
     expect(startup.scheduler).toHaveBeenCalledTimes(8);
+    expect(
+      startup.startSeasonalAvatarScheduler,
+    ).toHaveBeenCalledExactlyOnceWith(client);
   });
 
   it('logs deployment notification failure without interrupting startup', async () => {

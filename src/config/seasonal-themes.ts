@@ -7,6 +7,24 @@ export const SEASONAL_THEMES: Record<string, SeasonalTheme | null> = {
     emoji: '<a:eye:1558676165785419866>',
     embed: { every: 2, first: true, repeats: 'normal-and-reset' },
     text: { every: 5, first: false, repeats: 'skip' },
+    avatar: {
+      // Add 'PROD_ENV' to enable this event's avatar in production.
+      environments: ['STAGING_ENV'],
+      image: new URL(
+        '../../assets/seasonal/halloween-avatar.png',
+        import.meta.url,
+      ),
+      outsideWindowImage: new URL(
+        '../../assets/seasonal/halloween-glitch-avatar.gif',
+        import.meta.url,
+      ),
+      // Use { mode: 'continuous' } to keep the asset throughout the event.
+      schedule: {
+        mode: 'random-window',
+        intervalMs: 60 * 60_000,
+        durationMs: 15 * 60_000,
+      },
+    },
     effects: {
       emojiLifetimeMs: 15 * 60000,
       titlePulse: {
