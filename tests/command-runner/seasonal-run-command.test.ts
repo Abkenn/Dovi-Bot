@@ -18,8 +18,12 @@ vi.mock('../../src/modules/discord/component-lifecycle', () => ({
 vi.mock('../../src/modules/command-runner/seasonal-theme.service', () => ({
   getBotSeasonalTheme: vi.fn(async () => getSeasonalTheme('halloween')),
 }));
+vi.mock('../../src/modules/command-runner/seasonal-message-effects', () => ({
+  trackSeasonalMessageEffects: vi.fn(async () => undefined),
+}));
 
 import { runCommand } from '../../src/modules/command-runner/run-command';
+import { trackSeasonalMessageEffects } from '../../src/modules/command-runner/seasonal-message-effects';
 import { getBotSeasonalTheme } from '../../src/modules/command-runner/seasonal-theme.service';
 
 afterEach(() => vi.useRealTimers());
@@ -39,6 +43,26 @@ const interactionFor = (
 });
 
 describe('seasonal command runner integration', () => {
+  it('tracks delivered Halloween replies even when a repeat gets the normal accent', async () => {
+    vi.mocked(trackSeasonalMessageEffects).mockClear();
+    for (const id of ['creepy', 'repeat-normal']) {
+      const interaction = interactionFor('a', 'timed-effects');
+      const delivered = { id };
+      interaction.editReply.mockResolvedValue(delivered);
+      await runCommand({
+        interaction: interaction as unknown as ChatInputCommandInteraction,
+        commandName: 'streaminfo',
+        withCommandLogging: false,
+        run: ({ editReply }) =>
+          editReply({ embeds: [new EmbedBuilder().setTitle('Stream Info')] }),
+      });
+      expect(trackSeasonalMessageEffects).toHaveBeenLastCalledWith(
+        delivered,
+        '<a:eye:1558676165785419866>',
+      );
+    }
+    expect(trackSeasonalMessageEffects).toHaveBeenCalledTimes(2);
+  });
   it('does not send a late themed reply when loading settings times out', async () => {
     vi.useFakeTimers();
     const interaction = interactionFor('a', 'timeout');

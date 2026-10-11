@@ -71,6 +71,19 @@ model MusicStreamVideo {
   @@id([channelHandle, streamDate])
 }
 
+model SeasonalMessageEffect {
+  messageId       String   @id
+  guildId         String
+  channelId       String
+  startedAt       DateTime
+  buttonSwapAt    DateTime
+  buttonRestoreAt DateTime
+  eyeExpiresAt    DateTime
+  eyeEmoji        String
+  originalButtons Json
+
+  @@index([eyeExpiresAt])
+}
 model ReactionEchoCounter {
   ruleId               String   @id
   count                Int      @default(0)

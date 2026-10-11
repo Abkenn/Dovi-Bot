@@ -162,6 +162,7 @@ const makeMessage = (isThread = false) => {
   return {
     id: 'message-1',
     components: [],
+    createdTimestamp: Date.now(),
     edit,
     channel: {
       isThread: () => isThread,

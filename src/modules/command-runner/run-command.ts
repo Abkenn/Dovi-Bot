@@ -32,6 +32,7 @@ import {
   hasSeasonalReplyContainer,
 } from './seasonal-command-theme';
 import type { SeasonalTheme } from './seasonal-command-theme.types';
+import { trackSeasonalMessageEffects } from './seasonal-message-effects';
 import { getBotSeasonalTheme } from './seasonal-theme.service';
 
 const selectSeasonalReply = createSeasonalReplySelector();
@@ -290,6 +291,7 @@ export const runCommand = async <T, TPreflight = void>({
   let timeoutId: NodeJS.Timeout | undefined;
   let hasSentCommandResponse = false;
   let seasonalTheme: SeasonalTheme | null | undefined;
+  let activeSeasonalTheme: SeasonalTheme | null = null;
 
   try {
     const preflight = beforeDefer
@@ -331,6 +333,7 @@ export const runCommand = async <T, TPreflight = void>({
             Boolean(normalizedReply.content);
           if (visible) {
             const theme = eligible ? await getBotSeasonalTheme() : null;
+            activeSeasonalTheme = theme;
             if (abortController.signal.aborted) return;
             seasonalTheme =
               theme &&
@@ -353,6 +356,14 @@ export const runCommand = async <T, TPreflight = void>({
             : normalizedReply,
         );
         hasSentCommandResponse = true;
+        if (activeSeasonalTheme?.id === 'halloween') {
+          void trackSeasonalMessageEffects(
+            response,
+            activeSeasonalTheme.emoji,
+          ).catch((error: unknown) => {
+            console.error('Could not track seasonal message effects.', error);
+          });
+        }
         if (response?.flags?.has(MessageFlags.Ephemeral)) {
           trackComponentMessage(
             response,

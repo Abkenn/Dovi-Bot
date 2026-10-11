@@ -144,6 +144,44 @@ describe('seasonal command selection', () => {
 });
 
 describe('seasonal reply presentation', () => {
+  it('preserves a current Activity eye during refresh only inside its timed window', () => {
+    const fresh = {
+      components: [
+        {
+          type: ComponentType.ActionRow,
+          components: [
+            {
+              type: ComponentType.Button,
+              style: 2,
+              custom_id: 'embedded-app-stats',
+              label: 'Game Stats',
+              emoji: { name: '📊' },
+            },
+          ],
+        },
+      ],
+    } as const;
+    const previous = [
+      {
+        type: ComponentType.ActionRow,
+        components: [
+          {
+            ...fresh.components[0].components[0],
+            emoji: { id: '1558676165785419866', name: 'eye', animated: true },
+          },
+        ],
+      },
+    ] as const;
+    expect(
+      preserveSeasonalReplyTheme(fresh, previous, halloween(), true, true)
+        .components,
+    ).toMatchObject([
+      { components: [{ emoji: { id: '1558676165785419866' } }] },
+    ]);
+    expect(
+      preserveSeasonalReplyTheme(fresh, previous, halloween(), true, false),
+    ).toEqual(fresh);
+  });
   it('leaves a full-length text reply intact rather than exceeding Discord limits', () => {
     const reply = { content: 'x'.repeat(2000) };
     expect(applySeasonalReplyTheme(reply, halloween())).toEqual(reply);
@@ -197,6 +235,24 @@ describe('seasonal reply presentation', () => {
     ).toEqual(fresh);
   });
 
+  it('keeps dark red after the title eye expires and never re-adds it during refresh', () => {
+    const fresh = buildComponentEmbedMessageFromEmbeds([
+      new EmbedBuilder().setTitle('Stream Info').setColor(0xff3131),
+    ]);
+    const previous = applySeasonalReplyTheme(fresh, halloween());
+    const expired = preserveSeasonalReplyTheme(
+      fresh,
+      previous.components ?? [],
+      halloween(),
+      false,
+    );
+    expect(expired.components).toMatchObject([
+      { accentColor: 0x8b0000, components: [{ content: '# Stream Info' }] },
+    ]);
+    expect(
+      preserveSeasonalReplyTheme(fresh, expired.components ?? [], halloween()),
+    ).toEqual(expired);
+  });
   it('leaves ordinary announcements and refreshes unchanged', () => {
     const fresh = buildComponentEmbedMessageFromEmbeds([
       new EmbedBuilder().setTitle('Stream Info').setColor(0xff3131),

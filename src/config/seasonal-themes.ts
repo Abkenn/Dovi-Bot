@@ -1,5 +1,9 @@
 import type { SeasonalTheme } from '../modules/command-runner/seasonal-command-theme.types';
 
+export const SEASONAL_EYE_MAX_AGE_MS = 15 * 60000;
+export const SEASONAL_BUTTON_EYE_DELAY_MS = 15000;
+export const SEASONAL_BUTTON_EYE_DURATION_MS = 60000;
+
 export const SEASONAL_THEMES: Record<string, SeasonalTheme | null> = {
   halloween: {
     id: 'halloween',

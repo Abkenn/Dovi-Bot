@@ -23,6 +23,11 @@ import {
 } from 'discord.js';
 import { DateTime } from 'luxon';
 import { BOT_GUILDS } from '../../config/discord-access';
+import {
+  SEASONAL_BUTTON_EYE_DELAY_MS,
+  SEASONAL_BUTTON_EYE_DURATION_MS,
+  SEASONAL_EYE_MAX_AGE_MS,
+} from '../../config/seasonal-themes';
 import { getNumberProperty, isUnknownRecord } from '../../lib/type-guards';
 import { preserveSeasonalReplyTheme } from '../command-runner/seasonal-command-theme';
 import { getBotSeasonalTheme } from '../command-runner/seasonal-theme.service';
@@ -469,6 +474,9 @@ const editStreamInfoMessage = async ({
         await buildStreamInfoMessageEdit(guildId),
         message.components,
         await getBotSeasonalTheme(),
+        Date.now() - message.createdTimestamp < SEASONAL_EYE_MAX_AGE_MS,
+        Date.now() - message.createdTimestamp <
+          SEASONAL_BUTTON_EYE_DELAY_MS + SEASONAL_BUTTON_EYE_DURATION_MS,
       ),
     ),
   );

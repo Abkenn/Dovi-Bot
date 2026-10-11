@@ -47,6 +47,7 @@ const prefixEye = (content: string, emoji: string) =>
 export const applySeasonalReplyTheme = (
   options: MessageEditOptions,
   theme: SeasonalTheme,
+  withEye = true,
 ): MessageEditOptions => {
   let hasEye = false;
   const components = options.components?.map((component) => {
@@ -62,7 +63,8 @@ export const applySeasonalReplyTheme = (
         if (
           childData.type !== ComponentType.TextDisplay ||
           !('content' in childData) ||
-          hasEye
+          hasEye ||
+          !withEye
         )
           return child;
         hasEye = true;
@@ -73,8 +75,9 @@ export const applySeasonalReplyTheme = (
       }),
     };
   });
-  if (components && hasEye) return { ...options, components };
+  if (components && (hasEye || !withEye)) return { ...options, components };
   if (
+    withEye &&
     options.content &&
     options.content.length + theme.emoji.length + 1 <= 2000
   )
@@ -86,9 +89,56 @@ export const preserveSeasonalReplyTheme = (
   options: MessageEditOptions,
   previous: readonly ReplyComponent[],
   theme = getSeasonalTheme(),
+  eyeAllowed = true,
+  buttonEyeAllowed = false,
 ): MessageEditOptions => {
   if (!theme) return options;
-  const wasThemed = previous.some((component) => {
+  if (buttonEyeAllowed && options.components) {
+    const previousButtonIds = previous.flatMap((component) => {
+      const data = componentData(component);
+      const ids: string[] = [];
+      if (data.type !== ComponentType.ActionRow || !('components' in data))
+        return ids;
+      for (const button of data.components) {
+        if (
+          'custom_id' in button &&
+          typeof button.custom_id === 'string' &&
+          'emoji' in button &&
+          typeof button.emoji === 'object' &&
+          button.emoji !== null &&
+          'id' in button.emoji &&
+          button.emoji.id === theme.emoji.split(':')[2]?.slice(0, -1)
+        )
+          ids.push(button.custom_id);
+      }
+      return ids;
+    });
+    options = {
+      ...options,
+      components: options.components.map((component) => {
+        const data = componentData(component);
+        if (data.type !== ComponentType.ActionRow || !('components' in data))
+          return component;
+        return {
+          ...data,
+          components: data.components.map((button) => {
+            if (!('custom_id' in button)) return button;
+            return previousButtonIds.includes(button.custom_id)
+              ? {
+                  ...button,
+                  emoji: {
+                    id: theme.emoji.split(':')[2]?.slice(0, -1),
+                    name: 'eye',
+                    animated: theme.emoji.startsWith('<a:'),
+                  },
+                }
+              : button;
+          }),
+        };
+      }),
+    };
+  }
+  const hasEye = previous.some((component) => {
     const data = componentData(component);
     if (data.type !== ComponentType.Container || !('components' in data))
       return false;
@@ -102,5 +152,14 @@ export const preserveSeasonalReplyTheme = (
       return childData.content.startsWith(`# ${theme.emoji} `);
     });
   });
-  return wasThemed ? applySeasonalReplyTheme(options, theme) : options;
+  const hasSeasonalAccent = previous.some((component) => {
+    const data = componentData(component);
+    if (data.type !== ComponentType.Container) return false;
+    if ('accent_color' in data && data.accent_color === theme.accentColor)
+      return true;
+    return 'accentColor' in data && data.accentColor === theme.accentColor;
+  });
+  return hasEye || hasSeasonalAccent
+    ? applySeasonalReplyTheme(options, theme, hasEye && eyeAllowed)
+    : options;
 };

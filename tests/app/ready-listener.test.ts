@@ -19,6 +19,9 @@ const startup = vi.hoisted(() => ({
 vi.mock('../../src/modules/embedded-app/activity-tracking.scheduler', () => ({
   startActivityTracking: startup.startActivityTracking,
 }));
+vi.mock('../../src/modules/command-runner/seasonal-message-effects', () => ({
+  startSeasonalMessageEffectRecovery: startup.scheduler,
+}));
 vi.mock('../../src/app/deployment-notifications', () => ({
   notifyDeploymentReady: startup.notifyDeploymentReady,
 }));
@@ -68,7 +71,7 @@ describe('client ready startup', () => {
     expect(startup.notifyDeploymentReady).toHaveBeenCalledExactlyOnceWith(
       client,
     );
-    expect(startup.scheduler).toHaveBeenCalledTimes(7);
+    expect(startup.scheduler).toHaveBeenCalledTimes(8);
   });
 
   it('logs deployment notification failure without interrupting startup', async () => {

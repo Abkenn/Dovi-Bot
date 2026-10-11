@@ -41,6 +41,12 @@ const now = new Date('2026-06-12T18:00:00.000Z');
 const guildId = 'dal-guild';
 
 const coveredDalExports = {
+  '../../src/data/queries/seasonal-message-effects': [
+    'saveSeasonalMessageEffect',
+    'findSeasonalMessageEffects',
+    'deleteSeasonalMessageEffect',
+  ],
+
   '../../src/data/queries/seasonal-theme': [
     'findSeasonalThemeMode',
     'saveSeasonalThemeMode',
@@ -278,6 +284,44 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
+test('persists seasonal effect deadlines without extending them on repeat tracking', async () => {
+  const {
+    saveSeasonalMessageEffect,
+    findSeasonalMessageEffects,
+    deleteSeasonalMessageEffect,
+  } = await import('../../src/data/queries/seasonal-message-effects');
+  const input = {
+    messageId: 'effect-message',
+    channelId: 'effect-channel',
+    guildId,
+    startedAt: now,
+    buttonSwapAt: new Date(now.getTime() + 15000),
+    buttonRestoreAt: new Date(now.getTime() + 75000),
+    eyeExpiresAt: new Date(now.getTime() + 900000),
+    eyeEmoji: '<a:eye:1558676165785419866>',
+    originalButtons: [
+      { customId: 'embedded-app-stats', emoji: { name: '📊' } },
+      { customId: 'embedded-app-stats:music', emoji: null },
+    ],
+  };
+  await saveSeasonalMessageEffect(input);
+  await saveSeasonalMessageEffect({
+    ...input,
+    eyeExpiresAt: new Date(now.getTime() + 1800000),
+    originalButtons: [],
+  });
+  expect(await findSeasonalMessageEffects()).toEqual([
+    expect.objectContaining({
+      messageId: input.messageId,
+      eyeExpiresAt: input.eyeExpiresAt,
+      originalButtons: input.originalButtons,
+    }),
+  ]);
+  expect(await deleteSeasonalMessageEffect(input.messageId)).toEqual({
+    count: 1,
+  });
+  expect(await findSeasonalMessageEffects()).toEqual([]);
+});
 test('persists a seasonal override without changing stream configuration', async () => {
   const { findSeasonalThemeMode, saveSeasonalThemeMode } = await import(
     '../../src/data/queries/seasonal-theme'
