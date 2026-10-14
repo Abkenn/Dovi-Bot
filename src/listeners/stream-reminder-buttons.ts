@@ -2,6 +2,7 @@ import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { BOT_GUILDS, isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
+import { isDebugLevel } from '../config/log-level';
 import {
   CommandExecutionStatus,
   type Prisma,
@@ -402,7 +403,10 @@ export class StreamReminderButtonsListener extends Listener {
           }
         }
 
-        return interaction.editReply(message);
+        const replyMessage = isDebugLevel({ guildId })
+          ? message
+          : 'Something went wrong while setting the reminder.';
+        return interaction.editReply(replyMessage);
       }
     } finally {
       await trackInteractionComponentReply(interaction);

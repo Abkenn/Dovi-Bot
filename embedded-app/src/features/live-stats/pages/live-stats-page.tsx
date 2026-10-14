@@ -36,8 +36,8 @@ export const LiveStatsPage = ({ stats }: LiveStatsPageProps) => {
               No tracked game yet
             </h1>
             <p className="text-muted-foreground">
-              Start a boss tracking session in staging to light up this
-              dashboard.
+              Game stats will appear here when a game is selected or tracking
+              begins.
             </p>
           </div>
         </div>
@@ -129,9 +129,6 @@ export const LiveStatsPage = ({ stats }: LiveStatsPageProps) => {
           <BossHistory bosses={stats.bosses} cacheKey={stats.game.id} />
         </div>
       </ViewTransition>
-      <footer className="activity-compact:hidden mobile-pip-hide py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
-        Anonymous view · Refreshes every 5 seconds
-      </footer>
     </main>
   );
 };

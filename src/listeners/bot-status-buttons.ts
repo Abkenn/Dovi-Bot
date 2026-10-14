@@ -1,7 +1,8 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
-import { BOT_GUILDS, isAllowedGuildForCommand } from '../config/discord-access';
+import { isAllowedGuildForCommand } from '../config/discord-access';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
+import { isDebugLevel } from '../config/log-level';
 import {
   BOT_STATUS_REFRESH_CUSTOM_ID,
   buildBotStatusMessage,
@@ -44,13 +45,14 @@ export class BotStatusButtonsListener extends Listener {
 
       try {
         const status = await fetchBotStatus({
-          includeDatabase: guildId === BOT_GUILDS.STAGING_ENV,
+          includeDatabase: isDebugLevel({ guildId }),
         });
 
         return interaction.update(buildBotStatusMessage(status));
       } catch (error) {
+        const showDetailedError = isDebugLevel({ guildId });
         const message =
-          error instanceof Error
+          showDetailedError && error instanceof Error
             ? error.message
             : 'Something went wrong while checking bot status.';
 

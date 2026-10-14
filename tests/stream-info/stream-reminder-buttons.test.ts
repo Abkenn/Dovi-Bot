@@ -499,6 +499,33 @@ describe('stream reminder DM buttons', () => {
     );
   });
 
+  it.each([
+    ['prod-guild', 'Something went wrong while setting the reminder.'],
+    ['staging-guild', 'Database connection failed: internal host'],
+  ])('keeps detailed errors only in staging (%s)', async (guildId, response) => {
+    const error = new Error('Database connection failed: internal host');
+    streamInfoService.getStreamInfo.mockRejectedValueOnce(error);
+    const editReply = vi.fn();
+    const interaction = {
+      customId: 'stream-reminder:date-key',
+      deferReply: vi.fn(),
+      editReply,
+      guildId,
+      isButton: () => true,
+      user: { id: 'user-1' },
+    } as unknown as Interaction;
+
+    await StreamReminderButtonsListener.prototype.run.call(
+      {} as StreamReminderButtonsListener,
+      interaction,
+    );
+
+    expect(editReply).toHaveBeenCalledWith(response);
+    expect(commandLogging.createInteractionExecutionLog).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'ERROR', note: error.message }),
+    );
+  });
+
   it('does not fail a reminder when analytics logging is unavailable', async () => {
     const occurrence = {
       dateKey: 'date-key',

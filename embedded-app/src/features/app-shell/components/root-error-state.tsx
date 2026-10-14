@@ -37,5 +37,5 @@ export const RootErrorState = ({ reset }: RootErrorStateProps) => {
     return <CachedStatsContent snapshot={snapshot} />;
   }
 
-  return <ActivityErrorState message="A new version may be waking up." />;
+  return <ActivityErrorState message="Stats are temporarily unavailable." />;
 };

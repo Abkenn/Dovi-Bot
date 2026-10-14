@@ -2,6 +2,7 @@ import { Command } from '@sapphire/framework';
 import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
+import { isDebugLevel } from '../config/log-level';
 import { getBossView } from '../modules/bosses/bosses.service';
 import { runCommand } from '../modules/command-runner/run-command';
 import {
@@ -77,8 +78,9 @@ export class GameDiscussionStatsCommand extends Command {
 
           if (!stats) {
             return editReply({
-              content:
-                'Community topic tables are not ready yet. Run the DB migration first.',
+              content: isDebugLevel({ guildId: interaction.guildId })
+                ? 'Community topic tables are not ready yet. Run the DB migration first.'
+                : 'Discussion stats are unavailable right now. Try again later.',
             });
           }
 
@@ -99,8 +101,9 @@ export class GameDiscussionStatsCommand extends Command {
 
         if (!stats) {
           return editReply({
-            content:
-              'Community topic tables are not ready yet. Run the DB migration first.',
+            content: isDebugLevel({ guildId: interaction.guildId })
+              ? 'Community topic tables are not ready yet. Run the DB migration first.'
+              : 'Discussion stats are unavailable right now. Try again later.',
           });
         }
 

@@ -1,6 +1,7 @@
 import { Listener } from '@sapphire/framework';
 import { Events, type Interaction, MessageFlags } from 'discord.js';
 import { DateTime } from 'luxon';
+import { isDebugLevel } from '../config/log-level';
 import { BOSS_TRIAL_VERDICT_LABELS } from '../modules/boss-trials/boss-trial.config';
 import { parseBossTrialButtonAction } from '../modules/boss-trials/poll/boss-trial.discord';
 import {
@@ -157,8 +158,11 @@ export class BossTrialButtonsListener extends Listener {
           content: 'Published the latest boss trial results.',
         });
       } catch (error) {
+        const showDetailedError = isDebugLevel({
+          guildId: interaction.guildId,
+        });
         const message =
-          error instanceof Error
+          showDetailedError && error instanceof Error
             ? error.message
             : 'Something went wrong with this boss trial interaction.';
 

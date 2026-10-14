@@ -1,7 +1,7 @@
 import { Command } from '@sapphire/framework';
-import { BOT_GUILDS } from '../config/discord-access';
 import { assertCommandAccess } from '../config/discord-command-guards';
 import { COMMAND_METADATA } from '../config/discord-command-metadata';
+import { isDebugLevel } from '../config/log-level';
 import { buildBotStatusMessage } from '../modules/bot-status/bot-status.discord';
 import { fetchBotStatus } from '../modules/bot-status/bot-status.service';
 import { runCommand } from '../modules/command-runner/run-command';
@@ -35,7 +35,7 @@ export class BotStatusCommand extends Command {
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply, preflight: guildId, signal }) => {
         const status = await fetchBotStatus({
-          includeDatabase: guildId === BOT_GUILDS.STAGING_ENV,
+          includeDatabase: isDebugLevel({ guildId }),
           signal,
         });
 

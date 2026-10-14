@@ -68,8 +68,5 @@ export const ArchivedGamePage = ({ game, games }: ArchivedGamePageProps) => (
         <BossHistory bosses={game.bosses} cacheKey={game.id} />
       </div>
     </ViewTransition>
-    <footer className="activity-compact:hidden mobile-pip-hide py-2 text-center text-[0.65rem] text-muted-foreground sm:py-3 sm:text-xs">
-      Archived game stats · Anonymous view
-    </footer>
   </main>
 );
