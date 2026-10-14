@@ -12,6 +12,7 @@ type DurableBossData = {
 };
 
 type DurableGameData = {
+  recordedTotalDeaths?: number | null;
   topicTerms: DurableTopicTerm[];
   defaultStreamGameConfig: unknown | null;
   _count: {
@@ -73,6 +74,7 @@ export const hasDurableBossData = (boss: DurableBossData) =>
   hasSystemOwnedTopicTerm(boss.topicTerms);
 
 export const hasDurableGameData = (game: DurableGameData) =>
+  (game.recordedTotalDeaths ?? null) !== null ||
   game._count.bosses > 0 ||
   game._count.trials > 0 ||
   game._count.trackingSessions > 0 ||

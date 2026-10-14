@@ -1,8 +1,16 @@
+import type { Client } from 'discord.js';
 import type {
   MusicMode,
   StreamKind,
   Weekday,
 } from '../../generated/prisma/client';
+
+export type SetDefaultStreamGameInput = {
+  client: Client;
+  gameName: string;
+  guildId: string;
+  app?: boolean;
+};
 
 export type StreamOccurrence = {
   dateKey: string;

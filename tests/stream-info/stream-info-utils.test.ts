@@ -39,6 +39,7 @@ const makeConfig = (overrides: Partial<GuildConfig> = {}): GuildConfig => ({
   seasonalThemeMode: 'auto',
   defaultStreamKind: StreamKind.GAME,
   defaultGameName: 'Default Game',
+  embeddedAppLiveGameId: null,
   defaultMusicMode: null,
   defaultTitleOverride: null,
   createdAt: now,
@@ -168,6 +169,7 @@ describe('stream info utils', () => {
       defaultMusicMode: MusicMode.UNKNOWN,
       defaultTitleOverride: 'Default Title',
       defaultGameName: 'Default Game',
+      embeddedAppLiveGameId: null,
     });
     const rule = makeDefaultRule({
       streamKind: StreamKind.MUSIC,

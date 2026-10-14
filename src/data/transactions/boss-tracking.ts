@@ -137,6 +137,7 @@ const deleteOrphanedGameAfterCancel = async ({
   const game = await tx.bossGame.findUnique({
     where: { id: gameId },
     select: {
+      recordedTotalDeaths: true,
       topicTerms: { select: { createdByUserId: true } },
       _count: {
         select: {
@@ -154,10 +155,10 @@ const deleteOrphanedGameAfterCancel = async ({
 
   const defaultStreamGameConfig = await tx.guildConfig.findFirst({
     where: {
-      defaultGameName: {
-        equals: gameName,
-        mode: 'insensitive',
-      },
+      OR: [
+        { defaultGameName: { equals: gameName, mode: 'insensitive' } },
+        { embeddedAppLiveGameId: gameId },
+      ],
     },
     select: { guildId: true },
   });

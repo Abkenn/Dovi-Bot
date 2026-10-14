@@ -32,6 +32,12 @@ export class DaviSetGameCommand extends Command {
               .setName('game')
               .setDescription('Default game name')
               .setRequired(true),
+          )
+          .addBooleanOption((option) =>
+            option
+              .setName('app')
+              .setDescription('Also show this game in the activity Live tab')
+              .setRequired(false),
           ),
       {
         guildIds: [...METADATA.guildIds],
@@ -49,16 +55,18 @@ export class DaviSetGameCommand extends Command {
       beforeDefer: () => assertCommandAccess(interaction, METADATA),
       run: async ({ editReply }) => {
         const game = interaction.options.getString('game', true);
+        const app = interaction.options.getBoolean('app') ?? false;
         const targetGuildId = BOT_GUILDS.PROD_ENV;
 
         await setDefaultStreamGame({
           client: this.container.client,
           gameName: game,
           guildId: targetGuildId,
+          app,
         });
 
         return editReply({
-          content: `Prod env default game updated to **${game}**.`,
+          content: `Prod env default game updated to **${game}**.${app ? ' Also selected for the activity Live tab.' : ''}`,
           embeds: [await getStreamInfoEmbed(targetGuildId)],
         });
       },

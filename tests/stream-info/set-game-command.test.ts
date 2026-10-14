@@ -66,6 +66,10 @@ const register = (CommandClass: CommandConstructor) => {
     setRequired: vi.fn().mockReturnThis(),
   };
   const builder = {
+    addBooleanOption: vi.fn((configure) => {
+      configure(option);
+      return builder;
+    }),
     addStringOption: vi.fn((configure) => {
       configure(option);
       return builder;
@@ -83,6 +87,7 @@ const register = (CommandClass: CommandConstructor) => {
 
 const interaction = {
   options: {
+    getBoolean: vi.fn().mockReturnValue(null),
     getString: vi.fn((name: string, required?: boolean) => {
       if (name === 'game') return 'Ace Combat 7';
       if (required) throw new Error(`Missing required option ${name}`);
@@ -95,6 +100,7 @@ const interaction = {
 describe('set game commands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    interaction.options.getBoolean.mockReturnValue(null);
     dependencies.getStreamInfoEmbed.mockResolvedValue({ title: 'Stream Info' });
     dependencies.setDefaultStreamGame.mockResolvedValue(undefined);
     dependencies.updateLiveGameInfo.mockResolvedValue({
@@ -120,6 +126,9 @@ describe('set game commands', () => {
     expect(regular.option.setName).toHaveBeenCalledWith('game');
     expect(regular.option.setName).toHaveBeenCalledWith('aliases');
     expect(regular.option.setName).toHaveBeenCalledWith('tags');
+    expect(regular.builder.addBooleanOption).toHaveBeenCalledOnce();
+    expect(regular.option.setName).toHaveBeenCalledWith('app');
+    expect(davi.builder.addBooleanOption).toHaveBeenCalledOnce();
     expect(davi.command.name).toBe('davisetgame');
     expect(davi.builder.addStringOption).toHaveBeenCalledOnce();
     expect(davi.builder.setDefaultMemberPermissions).toHaveBeenCalledWith(32n);
@@ -135,6 +144,7 @@ describe('set game commands', () => {
       client: { id: 'client' },
       gameName: 'Ace Combat 7',
       guildId: 'interaction-guild',
+      app: false,
     });
   });
 
@@ -148,6 +158,24 @@ describe('set game commands', () => {
       client: { id: 'client' },
       gameName: 'Ace Combat 7',
       guildId: 'production-guild',
+      app: false,
     });
+  });
+  it.each([
+    SetGameCommand,
+    DaviSetGameCommand,
+  ])('activates the activity only with an explicit app:true', async (CommandClass) => {
+    interaction.options.getBoolean.mockReturnValue(true);
+    await CommandClass.prototype.chatInputRun.call(
+      { container: { client: { id: 'client' } }, name: 'setgame' },
+      interaction as never,
+    );
+    expect(dependencies.setDefaultStreamGame).toHaveBeenCalledWith(
+      expect.objectContaining({ app: true }),
+    );
+    expect(dependencies.updateLiveGameInfo).not.toHaveBeenCalled();
+    expect(dependencies.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({ content: expect.stringContaining('Live tab') }),
+    );
   });
 });

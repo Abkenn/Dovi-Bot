@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { Prisma } from '../../src/generated/prisma/client';
 import {
+  BossEncounterSource,
   BossTopicTermKind,
   BossTrackingAttemptTimingStatus,
   BossTrackingEndResult,
@@ -217,6 +218,7 @@ const coveredDalExports = {
     'releasePollTournamentStart',
   ],
   '../../src/data/transactions/stream-info': [
+    'updateDefaultGameAndActivity',
     'updateDefaultGameAndTargetStreamOverride',
     'upsertMovedTargetStreamOverride',
   ],
@@ -1135,6 +1137,104 @@ test('covers boss stats queries and spreadsheet sync transaction', async () => {
       }),
     ]),
   );
+});
+
+test('activity selection is opt-in, survives stream default changes, and needs no boss session', async () => {
+  const { prisma } = await import('../../src/lib/prisma');
+  const { updateDefaultGameAndActivity } = await import(
+    '../../src/data/transactions/stream-info'
+  );
+  const { updateDefaultGameName } = await import(
+    '../../src/data/queries/stream-info'
+  );
+  const { findEmbeddedAppGameStats } = await import(
+    '../../src/data/queries/embedded-app-stats'
+  );
+  await prisma.guildConfig.create({
+    data: { guildId, defaultGameName: 'Ace Combat 8' },
+  });
+  await prisma.bossGame.create({
+    data: {
+      name: 'Ace Combat 8',
+      normalizedName: 'ace combat 8',
+      recordedTotalDeaths: 8,
+    },
+  });
+  await expect(
+    prisma.guildConfig.findUnique({ where: { guildId } }),
+  ).resolves.toMatchObject({ embeddedAppLiveGameId: null });
+  const selected = await updateDefaultGameAndActivity({
+    guildId,
+    gameName: 'Ace Combat 8',
+    normalizedGameName: 'ace combat 8',
+  });
+  expect(selected.embeddedAppLiveGameId).not.toBeNull();
+  await updateDefaultGameAndActivity({
+    guildId,
+    gameName: 'Ace Combat 8',
+    normalizedGameName: 'ace combat 8',
+  });
+  expect(await prisma.bossGame.count()).toBe(1);
+  await updateDefaultGameName(guildId, 'Future Game');
+  const result = await findEmbeddedAppGameStats([guildId], guildId);
+  expect(result).toMatchObject({
+    game: { name: 'Ace Combat 8' },
+    sessions: [],
+    archiveGames: [{ recordedTotalDeaths: 8, bosses: [] }],
+  });
+  await expect(
+    prisma.guildConfig.findUnique({ where: { guildId } }),
+  ).resolves.toMatchObject({
+    defaultGameName: 'Future Game',
+    embeddedAppLiveGameId: selected.embeddedAppLiveGameId,
+  });
+});
+test('archive query excludes catalog-only games and preserves spreadsheet-only deaths', async () => {
+  const { prisma } = await import('../../src/lib/prisma');
+  const { findEmbeddedAppGameStats } = await import(
+    '../../src/data/queries/embedded-app-stats'
+  );
+  await prisma.bossGame.createMany({
+    data: [
+      {
+        name: 'Ace Combat 7: Skies Unknown',
+        normalizedName: 'ace combat 7 skies unknown',
+        recordedTotalDeaths: 85,
+      },
+      { name: 'Mewgenics', normalizedName: 'mewgenics' },
+      {
+        name: 'Recorded Zero',
+        normalizedName: 'recorded zero',
+        recordedTotalDeaths: 0,
+      },
+    ],
+  });
+  const { boss } = await createBoss({ gameName: 'Spreadsheet Game' });
+  await prisma.bossEncounterStat.create({
+    data: {
+      bossId: boss.id,
+      playerDiscordUserId: 'davi',
+      source: BossEncounterSource.DAVI_SPREADSHEET,
+      deaths: 4,
+    },
+  });
+
+  const result = await findEmbeddedAppGameStats([guildId]);
+  expect(result.archiveGames.map((game) => game.name)).toEqual([
+    'Ace Combat 7: Skies Unknown',
+    'Recorded Zero',
+    'Spreadsheet Game',
+  ]);
+  expect(result.archiveGames[0]).toMatchObject({
+    recordedTotalDeaths: 85,
+    bosses: [],
+    trackingSessions: [],
+  });
+  expect(result.archiveGames[2]).toMatchObject({
+    recordedTotalDeaths: null,
+    trackingSessions: [],
+    bosses: [{ stats: [{ deaths: 4 }] }],
+  });
 });
 
 test('covers boss tracking transactions and queries', async () => {

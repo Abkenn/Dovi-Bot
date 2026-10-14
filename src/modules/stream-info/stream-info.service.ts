@@ -9,6 +9,7 @@ import {
   upsertTargetStreamOverride,
 } from '@data/queries/stream-info';
 import {
+  updateDefaultGameAndActivity,
   updateDefaultGameAndTargetStreamOverride,
   upsertMovedTargetStreamOverride,
 } from '@data/transactions/stream-info';
@@ -20,6 +21,7 @@ import type {
   Weekday,
 } from '../../generated/prisma/client';
 import { ScheduleStatus, StreamKind } from '../../generated/prisma/client';
+import { normalizeBossName } from '../bosses/bosses.utils';
 import {
   applyFridayMusicRotation,
   FRIDAY_ROTATION_START_DATE_KEY,
@@ -534,9 +536,20 @@ export const getStreamInfoForAnnouncementPreview = async (
 ): Promise<StreamInfoResult> =>
   getStreamInfoForOccurrence(guildId, streamDateKey);
 
-export const setDefaultGameName = async (guildId: string, gameName: string) => {
+export const setDefaultGameName = async (
+  guildId: string,
+  gameName: string,
+  app = false,
+) => {
   await ensureGuildStreamConfig(guildId);
 
+  if (app) {
+    return updateDefaultGameAndActivity({
+      guildId,
+      gameName,
+      normalizedGameName: normalizeBossName(gameName),
+    });
+  }
   return updateDefaultGameName(guildId, gameName);
 };
 

@@ -9,33 +9,39 @@ import { OPEN_BOSS_TRACKING_SESSION_STATUSES } from '../boss-tracking.constants'
 const findEmbeddedAppArchiveGames = (guildIds: string[]) =>
   prisma.bossGame.findMany({
     where: {
-      bosses: {
-        some: {
-          OR: [
-            {
-              stats: {
-                some: {
-                  source: BossEncounterSource.DAVI_SPREADSHEET,
-                  deaths: { not: null },
+      OR: [
+        { recordedTotalDeaths: { not: null } },
+        {
+          bosses: {
+            some: {
+              OR: [
+                {
+                  stats: {
+                    some: {
+                      source: BossEncounterSource.DAVI_SPREADSHEET,
+                      deaths: { not: null },
+                    },
+                  },
                 },
-              },
-            },
-            {
-              trackingSessions: {
-                some: {
-                  guildId: { in: guildIds },
-                  status: { not: BossTrackingSessionStatus.CANCELLED },
+                {
+                  trackingSessions: {
+                    some: {
+                      guildId: { in: guildIds },
+                      status: { not: BossTrackingSessionStatus.CANCELLED },
+                    },
+                  },
                 },
-              },
+              ],
             },
-          ],
+          },
         },
-      },
+      ],
     },
     orderBy: { name: 'asc' },
     select: {
       id: true,
       name: true,
+      recordedTotalDeaths: true,
       trackingSessions: {
         where: {
           guildId: { in: guildIds },
@@ -104,25 +110,24 @@ const findEmbeddedAppArchiveGames = (guildIds: string[]) =>
     },
   });
 
-export const findEmbeddedAppGameStats = async (guildIds: string[]) => {
+export const findEmbeddedAppGameStats = async (
+  guildIds: string[],
+  liveGameGuildId?: string,
+) => {
   const archiveGamesPromise = findEmbeddedAppArchiveGames(guildIds);
-  const latestSession = await prisma.bossTrackingSession.findFirst({
-    where: {
-      guildId: { in: guildIds },
-      status: { in: OPEN_BOSS_TRACKING_SESSION_STATUSES },
-    },
-    select: {
-      gameId: true,
-      game: { select: { id: true, name: true } },
-    },
-    orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
-  });
-  const fallbackSession = latestSession
+  const config = liveGameGuildId
+    ? await prisma.guildConfig.findUnique({
+        where: { guildId: liveGameGuildId },
+        select: { embeddedAppLiveGame: { select: { id: true, name: true } } },
+      })
+    : null;
+  const selectedGame = config?.embeddedAppLiveGame;
+  const latestSession = selectedGame
     ? null
     : await prisma.bossTrackingSession.findFirst({
         where: {
           guildId: { in: guildIds },
-          status: { not: BossTrackingSessionStatus.CANCELLED },
+          status: { in: OPEN_BOSS_TRACKING_SESSION_STATUSES },
         },
         select: {
           gameId: true,
@@ -130,9 +135,24 @@ export const findEmbeddedAppGameStats = async (guildIds: string[]) => {
         },
         orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
       });
+  const fallbackSession =
+    selectedGame || latestSession
+      ? null
+      : await prisma.bossTrackingSession.findFirst({
+          where: {
+            guildId: { in: guildIds },
+            status: { not: BossTrackingSessionStatus.CANCELLED },
+          },
+          select: {
+            gameId: true,
+            game: { select: { id: true, name: true } },
+          },
+          orderBy: [{ focusedAt: 'desc' }, { startedAt: 'desc' }],
+        });
   const targetSession = latestSession ?? fallbackSession;
+  const targetGame = selectedGame ?? targetSession?.game;
 
-  if (!targetSession) {
+  if (!targetGame) {
     return {
       game: null,
       gameDeaths: 0,
@@ -144,7 +164,7 @@ export const findEmbeddedAppGameStats = async (guildIds: string[]) => {
   const sessions = await prisma.bossTrackingSession.findMany({
     where: {
       guildId: { in: guildIds },
-      gameId: targetSession.gameId,
+      gameId: targetGame.id,
       status: { not: BossTrackingSessionStatus.CANCELLED },
     },
     select: {
@@ -186,7 +206,7 @@ export const findEmbeddedAppGameStats = async (guildIds: string[]) => {
     : 0;
 
   return {
-    game: targetSession.game,
+    game: targetGame,
     gameDeaths,
     sessions,
     archiveGames: await archiveGamesPromise,

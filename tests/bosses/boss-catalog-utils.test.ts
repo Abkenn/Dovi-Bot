@@ -50,6 +50,15 @@ describe('boss catalog identity', () => {
     });
 
     expect(hasDurableGameData(makeGame(0, 0, 0))).toBe(false);
+    expect(
+      hasDurableGameData({ ...makeGame(0, 0, 0), recordedTotalDeaths: null }),
+    ).toBe(false);
+    expect(
+      hasDurableGameData({ ...makeGame(0, 0, 0), recordedTotalDeaths: 0 }),
+    ).toBe(true);
+    expect(
+      hasDurableGameData({ ...makeGame(0, 0, 0), recordedTotalDeaths: 85 }),
+    ).toBe(true);
     expect(hasDurableGameData(makeGame(1, 0, 0))).toBe(true);
     expect(hasDurableGameData(makeGame(0, 1, 0))).toBe(true);
     expect(hasDurableGameData(makeGame(0, 0, 1))).toBe(true);

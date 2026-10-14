@@ -32,6 +32,12 @@ export class SetGameCommand extends Command {
               .setDescription('Default game name')
               .setRequired(true),
           )
+          .addBooleanOption((option) =>
+            option
+              .setName('app')
+              .setDescription('Also show this game in the activity Live tab')
+              .setRequired(false),
+          )
           .addStringOption((option) =>
             option
               .setName('aliases')
@@ -64,22 +70,27 @@ export class SetGameCommand extends Command {
         const game = interaction.options.getString('game', true);
         const aliases = interaction.options.getString('aliases');
         const tags = interaction.options.getString('tags');
+        const app = interaction.options.getBoolean('app') ?? false;
 
-        const result = await updateLiveGameInfo({
-          guildId,
-          userId: interaction.user.id,
-          gameName: game,
-          aliases,
-          contextWords: tags,
-        });
+        const result =
+          aliases?.trim() || tags?.trim()
+            ? await updateLiveGameInfo({
+                guildId,
+                userId: interaction.user.id,
+                gameName: game,
+                aliases,
+                contextWords: tags,
+              })
+            : { gameName: game.trim() };
         await setDefaultStreamGame({
           client: this.container.client,
           gameName: result.gameName,
           guildId,
+          app,
         });
 
         return editReply({
-          content: `Default game for future regular game streams updated to **${result.gameName}**.`,
+          content: `Default game for future regular game streams updated to **${result.gameName}**.${app ? ' Also selected for the activity Live tab.' : ''}`,
           embeds: [await getStreamInfoEmbed(guildId)],
         });
       },

@@ -306,10 +306,10 @@ describe('embedded app stats', () => {
     expect(currentGame?.killedBosses).toEqual(
       currentGame?.bosses.filter((boss) => boss.outcome === 'KILLED'),
     );
-    expect(queries.findEmbeddedAppGameStats).toHaveBeenCalledWith([
+    expect(queries.findEmbeddedAppGameStats).toHaveBeenCalledWith(
+      ['staging-guild', 'production-guild'],
       'staging-guild',
-      'production-guild',
-    ]);
+    );
   });
 
   it('keeps Saturday updates in the last non-skipped Friday stream', async () => {
@@ -651,6 +651,43 @@ describe('embedded app stats', () => {
     });
   });
 
+  it.each([
+    0, 85,
+  ])('shows a recorded game total of %i without inventing boss fights', async (recordedTotalDeaths) => {
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game: null,
+      gameDeaths: 0,
+      sessions: [],
+      archiveGames: [
+        {
+          id: 'ace-combat-7',
+          name: 'Ace Combat 7: Skies Unknown',
+          recordedTotalDeaths,
+          trackingSessions: [],
+          bosses: [],
+        },
+      ],
+    });
+
+    await expect(
+      getEmbeddedAppStats('production-guild'),
+    ).resolves.toMatchObject({
+      game: null,
+      games: [
+        {
+          name: 'Ace Combat 7: Skies Unknown',
+          deaths: recordedTotalDeaths,
+          bossDeaths: 0,
+          nonBossDeaths: recordedTotalDeaths,
+          killedBossCount: 0,
+          bosses: [],
+          killedBosses: [],
+        },
+      ],
+      generalStats: { games: [] },
+    });
+  });
+
   it('returns an empty state when staging has no tracking history', async () => {
     queries.findEmbeddedAppGameStats.mockResolvedValue({
       game: null,
@@ -675,5 +712,45 @@ describe('embedded app stats', () => {
         toughestOverallGameId: null,
       },
     });
+  });
+  it.each([
+    null,
+    0,
+    8,
+  ])('shows the selected Live game without boss sessions and recorded deaths:%s', async (recordedTotalDeaths) => {
+    const game = { id: 'ac8', name: 'Ace Combat 8: Wings of Theve' };
+    queries.findEmbeddedAppGameStats.mockResolvedValue({
+      game,
+      gameDeaths: 0,
+      sessions: [],
+      archiveGames:
+        recordedTotalDeaths === null
+          ? []
+          : [
+              {
+                ...game,
+                recordedTotalDeaths,
+                trackingSessions: [],
+                bosses: [],
+              },
+            ],
+    });
+    queries.getStreamInfo.mockResolvedValue({
+      current: null,
+      previous: null,
+      next: null,
+      timezone: 'America/Sao_Paulo',
+    });
+    const result = await getEmbeddedAppStats('production-guild');
+    expect(result.game).toEqual({
+      ...game,
+      deaths: recordedTotalDeaths ?? 0,
+      bossDeaths: 0,
+      nonBossDeaths: recordedTotalDeaths,
+      killedBossCount: 0,
+    });
+    expect(result.currentBoss).toBeNull();
+    expect(result.lastKilledBoss).toBeNull();
+    expect(result.streamEncounters).toEqual([]);
   });
 });

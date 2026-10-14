@@ -208,9 +208,13 @@ const toArchivedGame = (
       .map((session) => session.finalDeaths)
       .filter((deaths) => deaths !== null)
       .sort((left, right) => right - left)[0] ?? null;
+  const recordedTotals = [trackedTotalDeaths, game.recordedTotalDeaths].filter(
+    (deaths): deaths is number => deaths !== null && deaths !== undefined,
+  );
   const deathTotals = summarizeGameDeathTotals({
     bossDeaths: bosses.reduce((total, boss) => total + boss.deaths, 0),
-    trackedTotalDeaths,
+    trackedTotalDeaths:
+      recordedTotals.length > 0 ? Math.max(...recordedTotals) : null,
   });
 
   return {
@@ -391,10 +395,10 @@ const toPreviousStreamEncounters = (
 export const getEmbeddedAppStats = async (
   guildId: string,
 ): Promise<EmbeddedAppStats> => {
-  const result = await findEmbeddedAppGameStats([
-    BOT_GUILDS.STAGING_ENV,
-    BOT_GUILDS.PROD_ENV,
-  ]);
+  const result = await findEmbeddedAppGameStats(
+    [BOT_GUILDS.STAGING_ENV, BOT_GUILDS.PROD_ENV],
+    guildId,
+  );
   const baseGames = result.archiveGames
     .map(toArchivedGame)
     .sort((left, right) => {
@@ -483,10 +487,10 @@ export const getEmbeddedAppStats = async (
       : null;
   const currentDeathTotals = summarizeGameDeathTotals({
     bossDeaths: currentGameArchive?.bossDeaths ?? result.gameDeaths,
-    trackedTotalDeaths: Math.max(
-      archivedTrackedTotal ?? 0,
-      liveTrackedTotal ?? 0,
-    ),
+    trackedTotalDeaths:
+      archivedTrackedTotal !== null || liveTrackedTotal !== null
+        ? Math.max(archivedTrackedTotal ?? 0, liveTrackedTotal ?? 0)
+        : null,
   });
 
   return {

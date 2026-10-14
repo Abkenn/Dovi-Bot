@@ -3,6 +3,37 @@ import {
   buildTargetStreamOverrideUpsertArgs,
   type TargetStreamOverrideInput,
 } from '../queries/stream-info';
+import type { SetDefaultGameAndActivityInput } from './stream-info.types';
+
+export const updateDefaultGameAndActivity = async ({
+  guildId,
+  gameName,
+  normalizedGameName,
+}: SetDefaultGameAndActivityInput) =>
+  prisma.$transaction(async (tx) => {
+    const existingGame = await tx.bossGame.findFirst({
+      where: {
+        OR: [
+          { normalizedName: normalizedGameName },
+          { name: { equals: gameName, mode: 'insensitive' } },
+          { topicTerms: { some: { normalizedValue: normalizedGameName } } },
+        ],
+      },
+      select: { id: true },
+    });
+    const game =
+      existingGame ??
+      (await tx.bossGame.upsert({
+        where: { normalizedName: normalizedGameName },
+        create: { name: gameName, normalizedName: normalizedGameName },
+        update: {},
+        select: { id: true },
+      }));
+    return tx.guildConfig.update({
+      where: { guildId },
+      data: { defaultGameName: gameName, embeddedAppLiveGameId: game.id },
+    });
+  });
 
 export const updateDefaultGameAndTargetStreamOverride = async ({
   guildId,

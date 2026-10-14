@@ -84,6 +84,7 @@ model SeasonalMessageEffect {
 
   @@index([eyeExpiresAt])
 }
+
 model ReactionEchoCounter {
   ruleId               String   @id
   count                Int      @default(0)
@@ -128,10 +129,12 @@ model GuildConfig {
   lookaheadDays        Int    @default(21)
   seasonalThemeMode    String @default("auto")
 
-  defaultStreamKind    StreamKind @default(GAME)
-  defaultGameName      String?
-  defaultMusicMode     MusicMode?
-  defaultTitleOverride String?
+  defaultStreamKind     StreamKind @default(GAME)
+  defaultGameName       String?
+  embeddedAppLiveGameId String?
+  embeddedAppLiveGame   BossGame?  @relation(fields: [embeddedAppLiveGameId], references: [id], onDelete: SetNull)
+  defaultMusicMode      MusicMode?
+  defaultTitleOverride  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -448,11 +451,13 @@ model DeletedLog {
 }
 
 model BossGame {
-  id             String   @id @default(cuid())
-  name           String
-  normalizedName String   @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String        @id @default(cuid())
+  name                String
+  normalizedName      String        @unique
+  recordedTotalDeaths Int?
+  liveAppGuilds       GuildConfig[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   bosses           Boss[]
   trials           BossTrial[]
