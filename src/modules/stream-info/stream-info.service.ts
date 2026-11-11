@@ -468,10 +468,14 @@ const getStreamInfoForOccurrence = async (
     rollingHistoryStart < FRIDAY_ROTATION_START_DATE_KEY
       ? rollingHistoryStart
       : FRIDAY_ROTATION_START_DATE_KEY;
-  const end = nowLocal
-    .plus({ days: config.lookaheadDays })
-    .endOf('day')
-    .toFormat('yyyy-LL-dd');
+  const monthEnd = nowLocal.endOf('month').startOf('day');
+  const lastFriday = monthEnd.minus({
+    days: (monthEnd.weekday - WEEKDAY_TO_LUXON.FRIDAY + 7) % 7,
+  });
+  const end = DateTime.max(
+    nowLocal.plus({ days: config.lookaheadDays }),
+    lastFriday,
+  ).toFormat('yyyy-LL-dd');
 
   const overrideRows = await findStreamScheduleOverridesInDateRange({
     guildId,
@@ -482,6 +486,26 @@ const getStreamInfoForOccurrence = async (
   const overrides = new Map<string, StreamScheduleOverride>();
   for (const row of overrideRows) {
     overrides.set(row.streamDateKey, row);
+  }
+
+  const fridayRule = getDefaultRuleForWeekday(defaults, 'FRIDAY');
+  let lastFridayThisMonth: StreamInfoResult['lastFridayThisMonth'] = null;
+  if (fridayRule) {
+    const base = applyFridayMusicRotation(
+      buildDefaultOccurrence(config, fridayRule, lastFriday),
+      overrides,
+    );
+    const override = overrides.get(base.dateKey);
+    const resolved = override
+      ? applyOverrideToOccurrence(config, base, override)
+      : base;
+    let title = 'Cancelled';
+    if (resolved) {
+      title = resolved.isCombined
+        ? `Combined Stream: ${resolved.title} + Game Stream`
+        : (resolved.title ?? 'Stream');
+    }
+    lastFridayThisMonth = { startAt: resolved?.startAt ?? base.startAt, title };
   }
 
   const occurrences = buildOccurrences(config, defaults, overrides);
@@ -519,6 +543,7 @@ const getStreamInfoForOccurrence = async (
 
   return {
     timezone: config.canonicalTimezone,
+    lastFridayThisMonth,
     current,
     previous,
     next,

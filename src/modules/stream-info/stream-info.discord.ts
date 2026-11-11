@@ -181,7 +181,10 @@ const buildOccurrenceValue = (
   return lines.join('\n');
 };
 
-export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
+export const buildStreamInfoEmbed = (
+  data: StreamInfoResult,
+  showMonthlyReminder = false,
+): EmbedBuilder => {
   const embed = new EmbedBuilder()
     .setTitle('Stream Info')
     .setColor(getCommandCategoryAccentColor(COMMAND_CATEGORIES.STREAM_INFO));
@@ -202,6 +205,14 @@ export const buildStreamInfoEmbed = (data: StreamInfoResult): EmbedBuilder => {
     embed.addFields({
       name: 'Following stream',
       value: buildOccurrenceValue('Following', data.following),
+    });
+  }
+
+  if (showMonthlyReminder && data.lastFridayThisMonth) {
+    const { startAt, title } = data.lastFridayThisMonth;
+    embed.addFields({
+      name: title,
+      value: `${discordTs(startAt, 'F')} (${discordTs(startAt, 'R')})`,
     });
   }
 

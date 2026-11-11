@@ -39,6 +39,7 @@ export type StreamVideo = {
 };
 
 export type StreamInfoResult = {
+  lastFridayThisMonth?: { startAt: Date; title: string } | null;
   timezone: string;
   current: StreamOccurrence | null;
   previous: StreamOccurrence | null;

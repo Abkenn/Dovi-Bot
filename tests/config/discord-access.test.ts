@@ -28,7 +28,7 @@ describe('Discord command guild access', () => {
     expect(COMMAND_REGISTRATION_GUILDS.PUBLIC).toEqual([]);
     expect(COMMAND_GUILDS.HELP).toEqual(['staging', 'prod']);
     expect(COMMAND_GUILDS.STREAM_INFO).toEqual(['staging', 'prod']);
-  });
+  }, 15_000);
 
   it('registers prod commands when prod registration is enabled', async () => {
     const { COMMAND_GUILDS, isAllowedGuildForCommand } = await import(

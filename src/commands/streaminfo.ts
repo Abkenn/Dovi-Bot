@@ -67,7 +67,7 @@ export class StreamInfoCommand extends Command {
         const components =
           buttonRows.length > 0 ? [mergeButtonActionRows(buttonRows)] : [];
         const message = await editReply({
-          embeds: [buildStreamInfoEmbed(streamInfo)],
+          embeds: [buildStreamInfoEmbed(streamInfo, true)],
           components,
         });
 

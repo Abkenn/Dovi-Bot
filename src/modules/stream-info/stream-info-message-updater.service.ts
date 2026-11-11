@@ -160,7 +160,7 @@ const findRecentStreamInfoMessage = async ({
 
 const buildStreamInfoMessageEdit = async (guildId: string) => {
   const streamInfo = await getStreamInfo(guildId);
-  const embed = buildStreamInfoEmbed(streamInfo);
+  const embed = buildStreamInfoEmbed(streamInfo, true);
   const reminderButton = buildStreamReminderButton(
     getStreamReminderOccurrence(streamInfo),
   );
