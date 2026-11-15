@@ -6,5 +6,9 @@ export const getMusicSearchResults = async (
   input: MusicSearchInput,
 ): Promise<MusicActivityResult[] | null> => {
   const matches = await searchMusicCatalog(input.query, { game: input.game });
-  return matches ? toMusicActivityResults(matches) : null;
+  return matches
+    ? toMusicActivityResults(matches).sort(
+        (left, right) => right.count - left.count,
+      )
+    : null;
 };

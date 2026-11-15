@@ -234,3 +234,19 @@ it('ignores a stale facts response after a search replaces it', async () => {
   expect(screen.getByRole('link', { name: /Boss Theme/ })).toBeInTheDocument();
   expect(screen.queryByText('Most played track')).not.toBeInTheDocument();
 });
+
+it('restores cached highlights immediately when the query is cleared', async () => {
+  render(<MusicPage games={[]} />);
+  await screen.findByRole('region', { name: 'Music highlights' });
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Theme' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Search music' }));
+  await screen.findByRole('link', { name: /Boss Theme/ });
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+  expect(
+    screen.getByRole('region', { name: 'Music highlights' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('link', { name: /Boss Theme/ }),
+  ).not.toBeInTheDocument();
+  expect(api.loadMusicFacts).toHaveBeenCalledTimes(1);
+});

@@ -46,3 +46,23 @@ it('distinguishes an unavailable catalog from an available catalog with no match
     game: false,
   });
 });
+
+it('orders all matches by descending play count and preserves ties', async () => {
+  service.searchMusicCatalog.mockResolvedValue(
+    [1, 5, 2, 5].map((count, index) => ({
+      title: `Theme ${index}`,
+      game: 'Series',
+      count,
+      lastDate: '2026-01-01',
+      lastOffsetSeconds: 0,
+      video: null,
+    })),
+  );
+  const results = await getMusicSearchResults({ query: 'Series', game: true });
+  expect(results?.map(({ title, count }) => ({ title, count }))).toEqual([
+    { title: 'Theme 1', count: 5 },
+    { title: 'Theme 3', count: 5 },
+    { title: 'Theme 2', count: 2 },
+    { title: 'Theme 0', count: 1 },
+  ]);
+});

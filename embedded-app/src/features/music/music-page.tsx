@@ -93,7 +93,11 @@ export const MusicPage = ({
               game ? 'Search a game or series…' : 'Search a track or artist…'
             }
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setQuery(value);
+              if (!value.trim()) setSubmitted(null);
+            }}
             minLength={2}
             maxLength={100}
             required

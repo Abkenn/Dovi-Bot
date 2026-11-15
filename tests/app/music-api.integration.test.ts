@@ -22,7 +22,7 @@ it('runs orpc-stack queries and pagination over real HTTP through Ky and the Mus
     Array.from({ length: 21 }, (_, index) => ({
       title: `Theme ${index}`,
       game: 'Series',
-      count: 1,
+      count: index + 1,
       lastDate: '2026-01-01',
       lastOffsetSeconds: 60,
       lastStream: 'D1',
@@ -64,6 +64,12 @@ it('runs orpc-stack queries and pagination over real HTTP through Ky and the Mus
       { total: 21, nextCursor: 20, size: 20 },
       { total: 21, nextCursor: null, size: 1 },
     ]);
+    expect(
+      results.pages
+        .flatMap((page) => page.results ?? [])
+        .map((track) => track.count),
+    ).toEqual(Array.from({ length: 21 }, (_, index) => 21 - index));
+    expect(results.pages[0]?.results?.[0]?.title).toBe('Theme 20');
     service.getMusicFacts.mockRejectedValueOnce(
       new Error('internal database detail'),
     );
