@@ -1,4 +1,6 @@
-import { act, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, render as renderView, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
@@ -20,6 +22,17 @@ vi.mock('./cached-stats-content', () => ({
 }));
 
 import { RootErrorState } from './root-error-state';
+
+const render = (view: ReactElement) =>
+  renderView(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      {view}
+    </QueryClientProvider>,
+  );
 
 describe('RootErrorState', () => {
   afterEach(() => {

@@ -9,6 +9,13 @@ import {
 import type { ReactElement } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
+// Vitest does not run Start's isomorphic compilation; select the browser branch.
+vi.mock('@tanstack/react-start', () => ({
+  createIsomorphicFn: () => ({
+    server: () => ({ client: (fn: unknown) => fn }),
+  }),
+}));
+
 vi.mock('@/features/game-stats/components/game-switcher', () => ({
   GameSwitcher: () => <nav>Music navigation</nav>,
 }));
@@ -249,4 +256,19 @@ it('restores cached highlights immediately when the query is cleared', async () 
     screen.queryByRole('link', { name: /Boss Theme/ }),
   ).not.toBeInTheDocument();
   expect(api.loadMusicFacts).toHaveBeenCalledTimes(1);
+});
+
+it('keeps the search form available while facts suspend and isolates facts failures', async () => {
+  const consoleError = vi
+    .spyOn(console, 'error')
+    .mockImplementation(() => undefined);
+  api.loadMusicFacts.mockRejectedValue(new Error('Facts unavailable'));
+  const view = render(<MusicPage games={[]} />);
+  expect(screen.getByRole('textbox', { name: 'Music query' })).toBeEnabled();
+  await screen.findByRole('alert');
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Theme' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Search music' }));
+  await screen.findByRole('link', { name: /Boss Theme/ });
+  view.unmount();
+  consoleError.mockRestore();
 });

@@ -1,6 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityErrorState } from '@/components/activity-state';
-import { getLiveStats } from '@/live-stats.functions';
+import { liveStatsQueryOptions } from '@/live-stats.query';
 import { readCachedLiveStats } from '../lib/live-stats-cache';
 import { CachedStatsContent } from './cached-stats-content';
 
@@ -14,6 +15,7 @@ type RootErrorStateProps = {
 export const RootErrorState = ({ reset }: RootErrorStateProps) => {
   const [showOfflineSnapshot, setShowOfflineSnapshot] = useState(false);
   const snapshot = readCachedLiveStats();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const timeout = window.setTimeout(
@@ -25,13 +27,14 @@ export const RootErrorState = ({ reset }: RootErrorStateProps) => {
 
   useEffect(() => {
     const retry = () => {
-      void getLiveStats()
+      void queryClient
+        .query({ ...liveStatsQueryOptions, staleTime: 0 })
         .then(() => reset())
         .catch(() => undefined);
     };
     const interval = window.setInterval(retry, RECOVERY_RETRY_DELAY_MS);
     return () => window.clearInterval(interval);
-  }, [reset]);
+  }, [queryClient, reset]);
 
   if (showOfflineSnapshot && snapshot) {
     return <CachedStatsContent snapshot={snapshot} />;

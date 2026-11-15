@@ -54,6 +54,9 @@ importers:
       '@tanstack/react-router':
         specifier: 1.170.42
         version: 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tanstack/react-router-ssr-query':
+        specifier: 1.167.3
+        version: 1.167.3(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.35)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: ~1.168.61
         version: 1.168.61(@rsbuild/core@2.1.5)(@rspack/core@2.1.3(@swc/helpers@0.5.23))(esbuild@0.28.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.19)(vite@8.3.8(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4))
@@ -85,8 +88,8 @@ importers:
         specifier: 13.5.0
         version: 13.5.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       orpc-stack:
-        specifier: 1.0.1
-        version: 1.0.1(@orpc/client@1.15.4)(@orpc/server@1.15.4(ws@8.21.0))(@orpc/tanstack-query@1.15.4(@orpc/client@1.15.4)(@tanstack/query-core@5.107.1))(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(hono@4.13.18)(ky@2.1.0)(react@19.3.1)
+        specifier: 1.1.0
+        version: 1.1.0(@orpc/client@1.15.4)(@orpc/server@1.15.4(ws@8.21.0))(@orpc/tanstack-query@1.15.4(@orpc/client@1.15.4)(@tanstack/query-core@5.107.1))(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(hono@4.13.18)(ky@2.1.0)(react@19.3.1)
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -1456,6 +1459,16 @@ packages:
       '@types/react':
         optional: true
 
+  '@tanstack/react-router-ssr-query@1.167.3':
+    resolution: {integrity: sha512-HA0pxuPuhU+rwoe+z1Xcbytuoo6ZbcROpgNgNSm38s3/hGLmgzOBLzDg+Vyx6ex26QilnPbZ+5Ypet5mImm9bQ==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      '@tanstack/query-core': '>=5.102.0'
+      '@tanstack/react-query': '>=5.102.0'
+      '@tanstack/react-router': '>=1.170.33'
+      react: '>=18.0.0 || >=19.0.0'
+      react-dom: '>=18.0.0 || >=19.0.0'
+
   '@tanstack/react-router@1.170.42':
     resolution: {integrity: sha512-4wBptX7DRvc+v/XQ0MxL9rKlmSFb0ob3tSEZWF4ssSl1DD+1HAofWM3HwSn9liQN0r7e00qiv5WQMp6rObOc1g==}
     engines: {node: '>=20.19'}
@@ -1545,6 +1558,13 @@ packages:
         optional: true
       webpack:
         optional: true
+
+  '@tanstack/router-ssr-query-core@1.169.3':
+    resolution: {integrity: sha512-0EE3mFa753mExMJEfWhZMi+EKViSLmZHoiYADZJzr5+2S/T4T12soHg8fMn67jCvDwL2dpd1mE7aL/XXzDPfhA==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      '@tanstack/query-core': '>=5.102.0'
+      '@tanstack/router-core': '>=1.171.28'
 
   '@tanstack/router-utils@1.162.3':
     resolution: {integrity: sha512-Icb0xGuG1+54IV0WMLRcc3ErTx2HeJWyPG661FkQ8UT6guoBq1FJjFRqlG/JS0xi4mFFkBhvwO7tbLa32f3yxA==}
@@ -3036,8 +3056,8 @@ packages:
     resolution: {integrity: sha512-weP+BZ8MVNnlCm8c0Qdc1WSWq4Qn7I+9CJGm7Qali6g44e/PUzbjNqJX5NJ9ljlNMosfJvg1fKEGILklK9cwnw==}
     engines: {node: '>=18'}
 
-  orpc-stack@1.0.1:
-    resolution: {integrity: sha512-d4QapX2YygsKYNKMnZp5F03AFtbDZ3Jlcxo+u1UJGSCM7uhDkpaEWtTF307aXzKIFih4LI7odtfR9S23ZoLapw==}
+  orpc-stack@1.1.0:
+    resolution: {integrity: sha512-BMtxXtp61Ggrq9/bsf8TXmP6S7UKjUv1c6ZgEC2LkPaQ01zS9JlZmxGyVZMjG10IdqLQzdsLAukotSHRtY+S4g==}
     engines: {node: '>=22'}
     peerDependencies:
       '@orpc/client': ^1.15.4
@@ -5142,6 +5162,17 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
+  '@tanstack/react-router-ssr-query@1.167.3(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tanstack/router-core@1.171.35)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@tanstack/query-core': 5.107.1
+      '@tanstack/react-query': 5.107.1(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/react-router': 1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tanstack/router-ssr-query-core': 1.169.3(@tanstack/query-core@5.107.1)(@tanstack/router-core@1.171.35)
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+    transitivePeerDependencies:
+      - '@tanstack/router-core'
+
   '@tanstack/react-router@1.170.42(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@tanstack/history': 1.162.5
@@ -5278,6 +5309,11 @@ snapshots:
       - rollup
       - supports-color
       - unloader
+
+  '@tanstack/router-ssr-query-core@1.169.3(@tanstack/query-core@5.107.1)(@tanstack/router-core@1.171.35)':
+    dependencies:
+      '@tanstack/query-core': 5.107.1
+      '@tanstack/router-core': 1.171.35
 
   '@tanstack/router-utils@1.162.3':
     dependencies:
@@ -6633,7 +6669,7 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
-  orpc-stack@1.0.1(@orpc/client@1.15.4)(@orpc/server@1.15.4(ws@8.21.0))(@orpc/tanstack-query@1.15.4(@orpc/client@1.15.4)(@tanstack/query-core@5.107.1))(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(hono@4.13.18)(ky@2.1.0)(react@19.3.1):
+  orpc-stack@1.1.0(@orpc/client@1.15.4)(@orpc/server@1.15.4(ws@8.21.0))(@orpc/tanstack-query@1.15.4(@orpc/client@1.15.4)(@tanstack/query-core@5.107.1))(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(hono@4.13.18)(ky@2.1.0)(react@19.3.1):
     dependencies:
       '@orpc/client': 1.15.4
       '@orpc/server': 1.15.4(ws@8.21.0)

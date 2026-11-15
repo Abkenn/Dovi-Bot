@@ -1,24 +1,18 @@
-import { musicEndpoint } from '@modules/music/music-endpoint';
 import { Music2, Search } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
-import { createQueries } from 'orpc-stack/client';
-import { kyTransport } from 'orpc-stack/ky';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { GameSwitcher } from '@/features/game-stats/components/game-switcher';
 import { StatsPageHeader } from '@/features/game-stats/components/stats-page-header';
+import { musicQueries } from './music.queries';
 import type { MusicPageProps, SearchState } from './music.types';
 import { MusicContent } from './music-content';
+import { MusicFactsState } from './music-facts-state';
 import { MusicLoadMore } from './music-load-more';
 import { MusicPipSummary } from './music-pip-summary';
 import { resolveMusicData } from './music-query-state';
-
-const { useFactsQuery, useSearchPageInfiniteQuery } = createQueries(
-  musicEndpoint,
-  { fetch: kyTransport },
-);
 
 export const MusicPage = ({
   games,
@@ -31,11 +25,7 @@ export const MusicPage = ({
     initialSearch ?? null,
   );
   const reducedMotion = useReducedMotion();
-  const facts = useFactsQuery({
-    enabled: !offline && !submitted,
-    staleTime: 60_000,
-  });
-  const search = useSearchPageInfiniteQuery(
+  const search = musicQueries.useSearchPageInfiniteQuery(
     {
       query: submitted?.query ?? '',
       game: submitted?.game ?? false,
@@ -49,14 +39,18 @@ export const MusicPage = ({
   const data = resolveMusicData({
     offline,
     searching: submitted !== null,
-    facts: facts.data,
+    facts: undefined,
     pages: search.data?.pages,
-    failed: submitted ? search.isError : facts.isError,
+    failed: search.isError,
   });
 
   return (
     <main className="music-frame mx-auto min-h-svh w-full max-w-5xl space-y-5 px-3 py-3 sm:px-8 sm:py-12">
-      <MusicPipSummary data={data} />
+      {!offline && !submitted ? (
+        <MusicFactsState compact />
+      ) : (
+        <MusicPipSummary data={data} />
+      )}
       <div className="music-full space-y-6">
         <StatsPageHeader
           eyebrow="Dovi Music History"
@@ -123,12 +117,16 @@ export const MusicPage = ({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.16 }}
         >
-          <MusicContent
-            data={data}
-            game={submitted?.game ?? false}
-            total={search.data?.pages[0]?.total}
-            searching={submitted !== null}
-          />
+          {!offline && !submitted ? (
+            <MusicFactsState />
+          ) : (
+            <MusicContent
+              data={data}
+              game={submitted?.game ?? false}
+              total={search.data?.pages[0]?.total}
+              searching={submitted !== null}
+            />
+          )}
           {search.isRefetchError ? (
             <p role="alert">
               Could not refresh tracks. Your previous results are still
