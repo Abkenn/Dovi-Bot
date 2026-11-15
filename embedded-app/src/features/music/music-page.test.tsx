@@ -16,20 +16,15 @@ const api = vi.hoisted(() => ({
   loadMusicFacts: vi.fn(),
   searchMusicPage: vi.fn(),
 }));
-vi.mock('orpc-stack/client', async () => {
-  const { createTanstackQueryUtils } = await import('@orpc/tanstack-query');
-  return {
-    createQueries: () =>
-      createTanstackQueryUtils({
-        facts: (_input: undefined, options?: { signal?: AbortSignal }) =>
-          api.loadMusicFacts(options?.signal),
-        searchPage: (
-          input: { query: string; game: boolean; cursor: number },
-          options?: { signal?: AbortSignal },
-        ) => api.searchMusicPage(input, options?.signal),
-      }),
-  };
-});
+vi.mock('orpc-stack/ky', () => ({
+  kyTransport: async (request: Request) => {
+    const { json: input } = await request.json();
+    const result = request.url.endsWith('/facts')
+      ? await api.loadMusicFacts(request.signal)
+      : await api.searchMusicPage(input, request.signal);
+    return Response.json({ json: result });
+  },
+}));
 
 import { MusicPage } from './music-page';
 

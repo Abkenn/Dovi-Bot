@@ -1,5 +1,4 @@
 import { musicEndpoint } from '@modules/music/music-endpoint';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Music2, Search } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { createQueries } from 'orpc-stack/client';
@@ -16,7 +15,10 @@ import { MusicLoadMore } from './music-load-more';
 import { MusicPipSummary } from './music-pip-summary';
 import { resolveMusicData } from './music-query-state';
 
-const musicQueries = createQueries(musicEndpoint, { fetch: kyTransport });
+const { useFactsQuery, useSearchPageInfiniteQuery } = createQueries(
+  musicEndpoint,
+  { fetch: kyTransport },
+);
 
 export const MusicPage = ({
   games,
@@ -29,25 +31,20 @@ export const MusicPage = ({
     initialSearch ?? null,
   );
   const reducedMotion = useReducedMotion();
-  const facts = useQuery(
-    musicQueries.facts.queryOptions({
-      enabled: !offline && !submitted,
-      staleTime: 60_000,
-    }),
-  );
-  const search = useInfiniteQuery(
-    musicQueries.searchPage.infiniteOptions({
-      input: (cursor: number) => ({
-        query: submitted?.query ?? '',
-        game: submitted?.game ?? false,
-        cursor,
-      }),
-      initialPageParam: 0,
-      getNextPageParam: (page) => page.nextCursor ?? undefined,
+  const facts = useFactsQuery({
+    enabled: !offline && !submitted,
+    staleTime: 60_000,
+  });
+  const search = useSearchPageInfiniteQuery(
+    {
+      query: submitted?.query ?? '',
+      game: submitted?.game ?? false,
+    },
+    {
       enabled: !offline && submitted !== null,
       staleTime: 30_000,
       retry: false,
-    }),
+    },
   );
   const data = resolveMusicData({
     offline,

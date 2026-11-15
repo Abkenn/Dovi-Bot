@@ -11,6 +11,7 @@ export const musicEndpoint = defineRpcEndpoint('/api/music/rpc', {
     responseValidator: musicFactsResponseSchema.shape.facts,
   },
   searchPage: {
+    kind: 'infinite',
     input: musicSearchPageInputSchema,
     output: musicSearchPageSchema,
     responseValidator: musicSearchPageSchema,
